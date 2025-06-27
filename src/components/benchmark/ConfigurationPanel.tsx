@@ -7,7 +7,7 @@ interface ModelConfiguration {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter';
+  interface: 'langchain' | 'openrouter' | 'manual';
   system_prompt: string;
 }
 
@@ -76,7 +76,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               value="langchain"
               checked={model.interface === 'langchain'}
               onChange={(e) => {
-                const update = { interface: e.target.value as 'langchain' | 'openrouter' };
+                const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
                 isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
               }}
               disabled={isRunning}
@@ -91,13 +91,28 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               value="openrouter"
               checked={model.interface === 'openrouter'}
               onChange={(e) => {
-                const update = { interface: e.target.value as 'langchain' | 'openrouter' };
+                const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
                 isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
               }}
               disabled={isRunning}
               className="mr-2"
             />
             OpenRouter
+          </label>
+          <label className="flex items-center text-slate-900 dark:text-white">
+            <input
+              type="radio"
+              name={`${model.id}-interface`}
+              value="manual"
+              checked={model.interface === 'manual'}
+              onChange={(e) => {
+                const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
+                isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+              }}
+              disabled={isRunning}
+              className="mr-2"
+            />
+            Manual
           </label>
         </div>
       </div>

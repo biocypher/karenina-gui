@@ -8,6 +8,7 @@ import { exportFromServer, exportFilteredResults, ExportableResult } from '../ut
 import { ConfigurationPanel } from './benchmark/ConfigurationPanel';
 import { ProgressIndicator } from './benchmark/ProgressIndicator';
 import { BenchmarkTable } from './BenchmarkTable';
+import { ManualTraceUpload } from './ManualTraceUpload';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
 
 
@@ -373,6 +374,20 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onTogglePromptExpanded={togglePromptExpanded}
             onReplicateCountChange={setReplicateCount}
           />
+
+          {/* Manual Trace Upload - Show if any answering model uses manual interface */}
+          {answeringModels.some(model => model.interface === 'manual') && (
+            <ManualTraceUpload
+              onUploadSuccess={(traceCount) => {
+                setError(null);
+                // Could add a success notification here if needed
+                console.log(`Successfully loaded ${traceCount} manual traces`);
+              }}
+              onUploadError={(errorMessage) => {
+                setError(`Manual trace upload failed: ${errorMessage}`);
+              }}
+            />
+          )}
 
           {/* Control Panel */}
           <Card>
