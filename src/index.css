@@ -1,0 +1,325 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar for code editor */
+.code-editor-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.code-editor-container::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark .code-editor-container::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.code-editor-container::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+}
+
+.dark .code-editor-container::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
+.code-editor-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark .code-editor-container::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
+/* Hide scrollbar for syntax highlighting pre element */
+pre::-webkit-scrollbar {
+  display: none;
+}
+
+pre {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Ensure proper text rendering in code editor */
+.language-python {
+  font-family: Monaco, Menlo, "Ubuntu Mono", "Consolas", "source-code-pro", monospace !important;
+}
+
+/* Enhanced Prism theme for better Python syntax highlighting */
+/* Dark theme (default for code editor) */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #6a9955 !important;
+  font-style: italic;
+}
+
+.token.punctuation {
+  color: #d4d4d4 !important;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #b5cea8 !important;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #ce9178 !important;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #d4d4d4 !important;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #569cd6 !important;
+  font-weight: bold;
+}
+
+.token.function,
+.token.class-name {
+  color: #dcdcaa !important;
+  font-weight: bold;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #d16969 !important;
+}
+
+/* Python-specific token styling */
+.token.decorator {
+  color: #ffd700 !important;
+}
+
+.token.triple-quoted-string {
+  color: #ce9178 !important;
+  font-style: italic;
+}
+
+/* Light theme overrides for code in light mode contexts */
+.light-code .token.comment,
+.light-code .token.prolog,
+.light-code .token.doctype,
+.light-code .token.cdata {
+  color: #708090 !important;
+}
+
+.light-code .token.punctuation {
+  color: #333333 !important;
+}
+
+.light-code .token.property,
+.light-code .token.tag,
+.light-code .token.boolean,
+.light-code .token.number,
+.light-code .token.constant,
+.light-code .token.symbol,
+.light-code .token.deleted {
+  color: #0550ae !important;
+}
+
+.light-code .token.selector,
+.light-code .token.attr-name,
+.light-code .token.string,
+.light-code .token.char,
+.light-code .token.builtin,
+.light-code .token.inserted {
+  color: #0969da !important;
+}
+
+.light-code .token.operator,
+.light-code .token.entity,
+.light-code .token.url,
+.light-code .language-css .token.string,
+.light-code .style .token.string {
+  color: #333333 !important;
+}
+
+.light-code .token.atrule,
+.light-code .token.attr-value,
+.light-code .token.keyword {
+  color: #cf222e !important;
+  font-weight: bold;
+}
+
+.light-code .token.function,
+.light-code .token.class-name {
+  color: #8250df !important;
+  font-weight: bold;
+}
+
+.light-code .token.regex,
+.light-code .token.important,
+.light-code .token.variable {
+  color: #e36209 !important;
+}
+
+.light-code .token.decorator {
+  color: #bf8700 !important;
+}
+
+.light-code .token.triple-quoted-string {
+  color: #0969da !important;
+  font-style: italic;
+}
+
+/* Improve visibility of selected text */
+::selection {
+  background-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+::-moz-selection {
+  background-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+.dark ::selection {
+  background-color: rgba(99, 179, 237, 0.3) !important;
+}
+
+.dark ::-moz-selection {
+  background-color: rgba(99, 179, 237, 0.3) !important;
+}
+
+/* Custom slider styles */
+.slider-horizontal::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid #1e40af;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dark .slider-horizontal::-webkit-slider-thumb {
+  background: #60a5fa;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.slider-horizontal::-webkit-slider-thumb:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
+.dark .slider-horizontal::-webkit-slider-thumb:hover {
+  background: #93c5fd;
+}
+
+.slider-vertical::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #10b981;
+  cursor: pointer;
+  border: 2px solid #047857;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dark .slider-vertical::-webkit-slider-thumb {
+  background: #34d399;
+  border: 2px solid #10b981;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.slider-vertical::-webkit-slider-thumb:hover {
+  background: #059669;
+  transform: scale(1.1);
+  transition: all 0.2s ease;
+}
+
+.dark .slider-vertical::-webkit-slider-thumb:hover {
+  background: #6ee7b7;
+}
+
+/* Firefox slider styles */
+.slider-horizontal::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid #1e40af;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dark .slider-horizontal::-moz-range-thumb {
+  background: #60a5fa;
+  border: 2px solid #3b82f6;
+}
+
+.slider-vertical::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #10b981;
+  cursor: pointer;
+  border: 2px solid #047857;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dark .slider-vertical::-moz-range-thumb {
+  background: #34d399;
+  border: 2px solid #10b981;
+}
+
+/* Slider track styles */
+.slider-horizontal::-webkit-slider-track {
+  height: 8px;
+  border-radius: 4px;
+  background: #e5e7eb;
+}
+
+.dark .slider-horizontal::-webkit-slider-track {
+  background: #374151;
+}
+
+.slider-vertical::-webkit-slider-track {
+  height: 8px;
+  border-radius: 4px;
+  background: #e5e7eb;
+}
+
+.dark .slider-vertical::-webkit-slider-track {
+  background: #374151;
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

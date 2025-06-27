@@ -1,0 +1,329 @@
+import { create } from 'zustand';
+import { QuestionData, TemplateGenerationConfig, TemplateGenerationProgress, TemplateGenerationResult, GeneratedTemplate } from '../types';
+import { logger } from '../utils/logger';
+import { handleApiError } from '../utils/errorHandler';
+
+// Define the template store state interface
+interface TemplateState {
+  // Configuration state
+  config: TemplateGenerationConfig;
+  customSystemPrompt: string | null;
+  
+  // Selection state
+  selectedQuestions: Set<string>;
+  hasInitialized: boolean;
+  
+  // Generation state
+  isGenerating: boolean;
+  progress: TemplateGenerationProgress | null;
+  result: TemplateGenerationResult | null;
+  error: string | null;
+  jobId: string | null;
+  
+  // Generated templates state (ephemeral - not persisted)
+  generatedTemplates: Record<string, GeneratedTemplate>;
+  
+  // Actions
+  setConfig: (config: TemplateGenerationConfig) => void;
+  setCustomSystemPrompt: (prompt: string | null) => void;
+  setSelectedQuestions: (questions: Set<string>) => void;
+  setError: (error: string | null) => void;
+  
+  // Complex operations
+  initializeSelection: (questions: QuestionData) => void;
+  startGeneration: (questions: QuestionData, forceRegenerate?: boolean) => Promise<void>;
+  cancelGeneration: () => Promise<void>;
+  updateProgress: (progress: TemplateGenerationProgress) => void;
+  completeGeneration: (result: TemplateGenerationResult) => void;
+  failGeneration: (error: string) => void;
+  removeGeneratedTemplate: (questionId: string) => void;
+  downloadResults: () => void;
+  downloadAllGenerated: () => void;
+  addToCuration: (questions: QuestionData, onTemplatesGenerated: (data: QuestionData) => void, onSwitchToCurator?: () => void) => void;
+  resetTemplateState: () => void;
+  
+  // Computed getters
+  getPendingQuestions: (questions: QuestionData) => QuestionData;
+  getSelectedCount: () => number;
+  getGeneratedCount: () => number;
+  getSuccessfulTemplates: () => Record<string, GeneratedTemplate>;
+}
+
+// Create the store
+export const useTemplateStore = create<TemplateState>((set, get) => ({
+  // Initial state
+  config: {
+    model_provider: 'google_genai',
+    model_name: 'gemini-2.0-flash',
+    temperature: 0.1,
+    interface: 'langchain'
+  },
+  customSystemPrompt: null,
+  selectedQuestions: new Set(),
+  hasInitialized: false,
+  isGenerating: false,
+  progress: null,
+  result: null,
+  error: null,
+  jobId: null,
+  generatedTemplates: {},
+  
+  // Basic setters
+  setConfig: (config: TemplateGenerationConfig) => set(() => ({ config })),
+  setCustomSystemPrompt: (customSystemPrompt: string | null) => set(() => ({ customSystemPrompt })),
+  setSelectedQuestions: (selectedQuestions: Set<string>) => set(() => ({ selectedQuestions })),
+  setError: (error: string | null) => set(() => ({ error })),
+  
+  // Complex operations
+  initializeSelection: (questions: QuestionData) => {
+    const state = get();
+    if (state.hasInitialized) return;
+    
+    const pendingQuestions = state.getPendingQuestions(questions);
+    const pendingIds = Object.keys(pendingQuestions);
+    
+    if (pendingIds.length > 0 && state.selectedQuestions.size === 0) {
+      set(() => ({
+        selectedQuestions: new Set(pendingIds),
+        hasInitialized: true
+      }));
+    }
+  },
+  
+  startGeneration: async (questions: QuestionData, forceRegenerate: boolean = false) => {
+    const state = get();
+    
+    if (state.selectedQuestions.size === 0) {
+      set(() => ({ error: 'Please select at least one question to generate templates for.' }));
+      return;
+    }
+
+    set(() => ({
+      isGenerating: true,
+      progress: null,
+      result: null,
+      error: null
+    }));
+    
+    try {
+      // Filter questions to only include selected ones
+      const selectedQuestionsData: QuestionData = {};
+      const pendingQuestions = state.getPendingQuestions(questions);
+      
+      state.selectedQuestions.forEach(id => {
+        // If force regenerate, include all selected questions regardless of previous generation
+        // Otherwise only include pending questions
+        if (forceRegenerate ? questions[id] : pendingQuestions[id]) {
+          selectedQuestionsData[id] = questions[id];
+        }
+      });
+
+      // Add cache-busting timestamp to ensure fresh generation
+      const requestPayload = {
+        questions: selectedQuestionsData,
+        config: {
+          ...state.config,
+          // Add timestamp to ensure backend treats this as a fresh request
+          _cache_bust: Date.now(),
+          _force_regenerate: forceRegenerate
+        },
+        custom_system_prompt: state.customSystemPrompt
+      };
+
+      const response = await fetch('/api/generate-answer-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add cache-busting headers
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        body: JSON.stringify(requestPayload),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      set(() => ({ jobId: data.job_id }));
+    } catch (err) {
+      set(() => ({
+        isGenerating: false,
+        error: err instanceof Error ? err.message : 'Failed to start generation'
+      }));
+    }
+  },
+  
+  cancelGeneration: async () => {
+    const state = get();
+    if (!state.jobId) return;
+    
+    try {
+      await fetch(`/api/cancel-generation/${state.jobId}`, {
+        method: 'POST'
+      });
+      set(() => ({
+        isGenerating: false,
+        progress: null,
+        jobId: null
+      }));
+    } catch (err) {
+      handleApiError(err, 'Cancelling generation', {
+        logToConsole: true
+      });
+    }
+  },
+  
+  updateProgress: (progress: TemplateGenerationProgress) => {
+    set(() => ({ progress }));
+  },
+  
+  completeGeneration: (result: TemplateGenerationResult) => {
+    set((state) => ({
+      isGenerating: false,
+      result,
+      generatedTemplates: {
+        ...state.generatedTemplates,
+        // Force update the newly generated templates to override any cached ones
+        ...Object.fromEntries(
+          Object.entries(result.templates || {}).map(([questionId, template]) => [
+            questionId,
+            template as GeneratedTemplate
+          ])
+        )
+      }
+    }));
+  },
+  
+  failGeneration: (error: string) => {
+    set(() => ({
+      isGenerating: false,
+      error: error || 'Generation failed'
+    }));
+  },
+  
+  removeGeneratedTemplate: (questionId: string) => {
+    set((state) => {
+      const updated = { ...state.generatedTemplates };
+      delete updated[questionId];
+      return { generatedTemplates: updated };
+    });
+  },
+  
+  downloadResults: () => {
+    const state = get();
+    if (!state.result) return;
+    
+    const dataStr = JSON.stringify(state.result.templates, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `answer_templates_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  },
+  
+  downloadAllGenerated: () => {
+    const state = get();
+    if (Object.keys(state.generatedTemplates).length === 0) return;
+    
+    const dataStr = JSON.stringify(state.generatedTemplates, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `all_generated_templates_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  },
+  
+  addToCuration: (questions: QuestionData, onTemplatesGenerated: (data: QuestionData) => void, onSwitchToCurator?: () => void) => {
+    const state = get();
+    
+    // Create combined data from successful generated templates
+    const combinedData: QuestionData = {};
+    
+    Object.entries(state.generatedTemplates).forEach(([questionId, template]) => {
+      const originalQuestion = questions[questionId];
+      
+      // Only include if original question exists AND template was successfully generated with code
+      if (originalQuestion && template.success && template.template_code) {
+        combinedData[questionId] = {
+          ...originalQuestion,
+          answer_template: template.template_code
+        };
+      }
+    });
+    
+    if (Object.keys(combinedData).length > 0) {
+      onTemplatesGenerated(combinedData);
+      
+      // Switch to curator tab if callback is provided
+      if (onSwitchToCurator) {
+        onSwitchToCurator();
+      }
+      
+      logger.data.templatesGenerated(Object.keys(combinedData).length);
+    } else {
+      logger.warn.noGeneratedTemplates();
+    }
+  },
+  
+  resetTemplateState: () => {
+    set(() => ({
+      config: {
+        model_provider: 'google_genai',
+        model_name: 'gemini-2.0-flash',
+        temperature: 0.1,
+        interface: 'langchain'
+      },
+      customSystemPrompt: null,
+      selectedQuestions: new Set(),
+      hasInitialized: false,
+      isGenerating: false,
+      progress: null,
+      result: null,
+      error: null,
+      jobId: null,
+      generatedTemplates: {}
+    }));
+  },
+  
+  // Computed getters
+  getPendingQuestions: (questions: QuestionData) => {
+    const state = get();
+    const pendingQuestions: QuestionData = {};
+    Object.entries(questions).forEach(([id, question]) => {
+      if (!state.generatedTemplates[id] || !state.generatedTemplates[id].success) {
+        pendingQuestions[id] = question;
+      }
+    });
+    return pendingQuestions;
+  },
+  
+  getSelectedCount: () => {
+    const state = get();
+    return state.selectedQuestions.size;
+  },
+  
+  getGeneratedCount: () => {
+    const state = get();
+    return Object.keys(state.generatedTemplates).length;
+  },
+  
+  getSuccessfulTemplates: () => {
+    const state = get();
+    const successful: Record<string, GeneratedTemplate> = {};
+    Object.entries(state.generatedTemplates).forEach(([id, template]) => {
+      if (template.success && template.template_code) {
+        successful[id] = template;
+      }
+    });
+    return successful;
+  }
+}));

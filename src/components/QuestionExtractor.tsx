@@ -1,0 +1,537 @@
+import React, { useState, useRef } from 'react';
+import { Upload, FileText, Download, Eye, Settings, CheckCircle, AlertCircle } from 'lucide-react';
+import { FilePreview } from './FilePreview';
+import { QuestionVisualizer } from './QuestionVisualizer';
+import { QuestionData } from '../types';
+
+interface FileInfo {
+  file_id: string;
+  filename: string;
+  size: number;
+}
+
+interface PreviewData {
+  success: boolean;
+  total_rows?: number;
+  columns?: string[];
+  preview_rows?: number;
+  data?: Record<string, string>[];
+  error?: string;
+}
+
+interface ExtractedQuestions {
+  success: boolean;
+  questions_count?: number;
+  questions_data?: QuestionData;
+  error?: string;
+}
+
+interface QuestionExtractorProps {
+  onQuestionsExtracted?: (questions: QuestionData) => void;
+  extractedQuestions?: QuestionData;
+}
+
+export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ 
+  onQuestionsExtracted,
+  extractedQuestions: initialExtractedQuestions 
+}) => {
+  const [uploadedFile, setUploadedFile] = useState<FileInfo | null>(null);
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [extractedQuestions, setExtractedQuestions] = useState<ExtractedQuestions | null>(
+    initialExtractedQuestions && Object.keys(initialExtractedQuestions).length > 0 ? {
+      success: true,
+      questions_count: Object.keys(initialExtractedQuestions).length,
+      questions_data: initialExtractedQuestions
+    } : null
+  );
+  const [selectedQuestionColumn, setSelectedQuestionColumn] = useState<string>('');
+  const [selectedAnswerColumn, setSelectedAnswerColumn] = useState<string>('');
+  const [selectedSheet, setSelectedSheet] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'configure' | 'extract' | 'visualize'>(
+    initialExtractedQuestions && Object.keys(initialExtractedQuestions).length > 0 ? 'visualize' : 'upload'
+  );
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (file: File) => {
+    if (!file) return;
+    uploadFile(file);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      // Validate file type
+      const validExtensions = ['.xlsx', '.xls', '.csv', '.tsv', '.txt'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      
+      if (validExtensions.includes(fileExtension)) {
+        handleFileSelect(file);
+      } else {
+        alert('Please upload a valid file format: Excel (.xlsx, .xls), CSV (.csv), or TSV (.tsv, .txt)');
+      }
+    }
+  };
+
+  const uploadFile = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload-file', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      setUploadedFile(result);
+      setCurrentStep('preview');
+      
+      // Auto-preview the file
+      await handlePreviewFile(result.file_id);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePreviewFile = async (fileId?: string) => {
+    const id = fileId || uploadedFile?.file_id;
+    if (!id) return;
+
+    setIsPreviewing(true);
+    try {
+      const formData = new FormData();
+      formData.append('file_id', id);
+      if (selectedSheet) {
+        formData.append('sheet_name', selectedSheet);
+      }
+
+      const response = await fetch('/api/preview-file', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Preview failed');
+      }
+
+      const result = await response.json();
+      setPreviewData(result);
+      
+      if (result.success && result.columns) {
+        // Auto-select columns if they match common patterns
+        const questionCol = result.columns.find((col: string) => 
+          col.toLowerCase().includes('question') || col.toLowerCase().includes('q')
+        );
+        const answerCol = result.columns.find((col: string) => 
+          col.toLowerCase().includes('answer') || col.toLowerCase().includes('a')
+        );
+        
+        if (questionCol) setSelectedQuestionColumn(questionCol);
+        if (answerCol) setSelectedAnswerColumn(answerCol);
+        
+        setCurrentStep('configure');
+      }
+    } catch (error) {
+      console.error('Preview error:', error);
+      setPreviewData({ success: false, error: 'Failed to preview file' });
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  const handleExtractQuestions = async () => {
+    if (!uploadedFile || !selectedQuestionColumn || !selectedAnswerColumn) return;
+
+    setIsExtracting(true);
+    try {
+      const response = await fetch('/api/extract-questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_id: uploadedFile.file_id,
+          question_column: selectedQuestionColumn,
+          answer_column: selectedAnswerColumn,
+          sheet_name: selectedSheet || null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Extraction failed');
+      }
+
+      const result = await response.json();
+      setExtractedQuestions(result);
+      
+      if (result.success) {
+        setCurrentStep('visualize');
+        // Call the callback to persist the extracted questions
+        if (onQuestionsExtracted && result.questions_data) {
+          onQuestionsExtracted(result.questions_data);
+        }
+      }
+    } catch (error) {
+      console.error('Extraction error:', error);
+      setExtractedQuestions({ success: false, error: 'Failed to extract questions' });
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleDownloadQuestions = () => {
+    if (!extractedQuestions?.questions_data) return;
+
+    const dataStr = JSON.stringify(extractedQuestions.questions_data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `extracted_questions_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadPython = async () => {
+    if (!extractedQuestions?.questions_data) return;
+
+    try {
+      const response = await fetch('/api/export-questions-python', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questions: extractedQuestions.questions_data
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export Python file');
+      }
+
+      // Get the file blob
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `questions_${new Date().toISOString().split('T')[0]}.py`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading Python file:', error);
+      alert('Failed to download Python file. Please try again.');
+    }
+  };
+
+  const handleReset = () => {
+    setUploadedFile(null);
+    setPreviewData(null);
+    setExtractedQuestions(null);
+    setSelectedQuestionColumn('');
+    setSelectedAnswerColumn('');
+    setSelectedSheet('');
+    setCurrentStep('upload');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const getStepStatus = (step: string) => {
+    const steps = ['upload', 'preview', 'configure', 'extract', 'visualize'];
+    const currentIndex = steps.indexOf(currentStep);
+    const stepIndex = steps.indexOf(step);
+    
+    if (stepIndex < currentIndex) return 'completed';
+    if (stepIndex === currentIndex) return 'active';
+    return 'pending';
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8">
+      {/* Progress Steps */}
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+        <div className="flex items-center justify-between relative">
+          {[
+            { key: 'upload', label: 'Upload File', icon: Upload },
+            { key: 'preview', label: 'Preview Data', icon: Eye },
+            { key: 'configure', label: 'Configure Columns', icon: Settings },
+            { key: 'extract', label: 'Extract Questions', icon: FileText },
+            { key: 'visualize', label: 'Visualize Results', icon: CheckCircle },
+          ].map((step, index) => {
+            const status = getStepStatus(step.key);
+            const Icon = step.icon;
+            
+            return (
+              <React.Fragment key={step.key}>
+                <div className="flex items-center z-10">
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                    status === 'completed' 
+                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' 
+                      : status === 'active'
+                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                  }`}>
+                    <Icon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{step.label}</span>
+                  </div>
+                </div>
+                {index < 4 && (
+                  <div className={`flex-1 h-0.5 mx-4 ${
+                    getStepStatus(['upload', 'preview', 'configure', 'extract', 'visualize'][index + 1]) !== 'pending'
+                      ? 'bg-emerald-300 dark:bg-emerald-600'
+                      : 'bg-slate-300 dark:bg-slate-600'
+                  }`} />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Step 1: File Upload */}
+      {currentStep === 'upload' && (
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-8">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
+            <Upload className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            Upload Question File
+          </h3>
+          
+          <div 
+            className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
+              isDragOver 
+                ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' 
+                : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,.tsv,.txt"
+              onChange={handleFileUpload}
+              className="hidden"
+              id="file-upload"
+              aria-label="Select File"
+            />
+            
+            <div className="flex flex-col items-center gap-4">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
+                isDragOver ? 'bg-indigo-200 dark:bg-indigo-800' : 'bg-indigo-100 dark:bg-indigo-900/40'
+              }`}>
+                <Upload className={`w-8 h-8 ${isDragOver ? 'text-indigo-700 dark:text-indigo-300' : 'text-indigo-600 dark:text-indigo-400'}`} />
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                  {isDragOver ? 'Drop your file here' : 'Choose a file to upload'}
+                </p>
+                <p className="text-slate-600 dark:text-slate-300">
+                  Drag and drop or click to select • Supports Excel (.xlsx, .xls), CSV (.csv), and TSV (.tsv, .txt) files
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="px-6 py-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:bg-slate-400 dark:disabled:bg-slate-600 transition-colors font-medium"
+              >
+                {isUploading ? 'Uploading...' : 'Select File'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2 & 3: Preview and Configure */}
+      {(currentStep === 'preview' || currentStep === 'configure') && previewData && (
+        <div className="space-y-6">
+          {/* File Info */}
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                  {uploadedFile?.filename}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300">
+                  {previewData.total_rows?.toLocaleString()} rows • {uploadedFile?.size ? Math.round(uploadedFile.size / 1024) : 0} KB
+                </p>
+              </div>
+              <button
+                onClick={handleReset}
+                className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                Upload Different File
+              </button>
+            </div>
+          </div>
+
+          {/* Column Configuration */}
+          {currentStep === 'configure' && (
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                Configure Columns
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Question Column
+                  </label>
+                  <select
+                    value={selectedQuestionColumn}
+                    onChange={(e) => setSelectedQuestionColumn(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="">Select column...</option>
+                    {previewData.columns?.map((col) => (
+                      <option key={col} value={col}>{col}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Answer Column
+                  </label>
+                  <select
+                    value={selectedAnswerColumn}
+                    onChange={(e) => setSelectedAnswerColumn(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="">Select column...</option>
+                    {previewData.columns?.map((col) => (
+                      <option key={col} value={col}>{col}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleExtractQuestions}
+                  disabled={!selectedQuestionColumn || !selectedAnswerColumn || isExtracting}
+                  className="px-6 py-3 bg-emerald-600 dark:bg-emerald-700 text-white rounded-xl hover:bg-emerald-700 dark:hover:bg-emerald-600 disabled:bg-slate-400 dark:disabled:bg-slate-600 transition-colors font-medium"
+                >
+                  {isExtracting ? 'Extracting...' : 'Extract Questions'}
+                </button>
+                
+                {selectedQuestionColumn && selectedAnswerColumn && (
+                  <div className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    Ready to extract
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* File Preview */}
+          <FilePreview data={previewData} />
+        </div>
+      )}
+
+      {/* Step 4: Results */}
+      {currentStep === 'visualize' && extractedQuestions && (
+        <div className="space-y-6">
+          {/* Results Summary */}
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  Extraction Complete
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300">
+                  Successfully extracted {extractedQuestions.questions_count} questions
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleDownloadQuestions}
+                  className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-xl hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors flex items-center gap-2 font-medium"
+                >
+                  <Download className="w-4 h-4" />
+                  JSON
+                </button>
+                <button
+                  onClick={handleDownloadPython}
+                  className="px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors flex items-center gap-2 font-medium"
+                >
+                  <Download className="w-4 h-4" />
+                  Python
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  Start Over
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Question Visualizer */}
+          <QuestionVisualizer questions={extractedQuestions.questions_data || {}} />
+        </div>
+      )}
+
+      {/* Error States */}
+      {(previewData?.error || extractedQuestions?.error) && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4">
+          <div className="flex items-center gap-2 text-red-800 dark:text-red-300">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-medium">Error</span>
+          </div>
+          <p className="text-red-700 dark:text-red-300 mt-1">
+            {previewData?.error || extractedQuestions?.error}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}; 
