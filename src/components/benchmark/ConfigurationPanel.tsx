@@ -69,7 +69,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           Interface
         </label>
         <div className="flex gap-4">
-          <label className="flex items-center">
+          <label className="flex items-center text-slate-900 dark:text-white">
             <input
               type="radio"
               name={`${model.id}-interface`}
@@ -84,7 +84,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             />
             LangChain
           </label>
-          <label className="flex items-center">
+          <label className="flex items-center text-slate-900 dark:text-white">
             <input
               type="radio"
               name={`${model.id}-interface`}
