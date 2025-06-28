@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart3, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { ManualTraceUpload } from '../ManualTraceUpload';
 
 interface ModelConfiguration {
   id: string;
@@ -25,6 +26,8 @@ interface ConfigurationPanelProps {
   onUpdateParsingModel: (id: string, updates: Partial<ModelConfiguration>) => void;
   onTogglePromptExpanded: (modelId: string) => void;
   onReplicateCountChange: (count: number) => void;
+  onManualTraceUploadSuccess?: (traceCount: number) => void;
+  onManualTraceUploadError?: (error: string) => void;
 }
 
 export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
@@ -41,6 +44,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onUpdateParsingModel,
   onTogglePromptExpanded,
   onReplicateCountChange,
+  onManualTraceUploadSuccess,
+  onManualTraceUploadError,
 }) => {
   const renderModelConfiguration = (
     model: ModelConfiguration,
@@ -215,6 +220,17 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           </div>
         )}
       </div>
+
+      {/* Manual Trace Upload - Show only for answering models with manual interface */}
+      {isAnswering && model.interface === 'manual' && (
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+          <ManualTraceUpload
+            onUploadSuccess={onManualTraceUploadSuccess}
+            onUploadError={onManualTraceUploadError}
+            className="text-sm"
+          />
+        </div>
+      )}
     </div>
   );
 

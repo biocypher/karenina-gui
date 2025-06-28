@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
-import { Card } from './ui/Card';
 
 interface ManualTraceUploadProps {
   onUploadSuccess?: (traceCount: number) => void;
@@ -102,13 +101,13 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
   const getStatusIcon = () => {
     switch (uploadStatus.status) {
       case 'uploading':
-        return <div className="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full" />;
+        return <div className="animate-spin w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full" />;
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-600" />;
+        return <AlertCircle className="w-4 h-4 text-red-600" />;
       default:
-        return <Upload className="w-8 h-8 text-slate-400" />;
+        return <Upload className="w-6 h-6 text-slate-400" />;
     }
   };
 
@@ -128,20 +127,20 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
   };
 
   return (
-    <Card className={`p-6 ${className}`}>
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+    <div className={className}>
+      <div className="mb-3">
+        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           Upload Manual Traces
-        </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          Upload a JSON file containing precomputed answer traces keyed by question hash.
+        </h4>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Upload a JSON file with precomputed answer traces keyed by question hash.
         </p>
       </div>
 
       {/* Upload Area */}
       <div
-        className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${getStatusColor()}`}
+        className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-all duration-200 ${getStatusColor()}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -194,21 +193,20 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
       </div>
 
       {/* Help Text */}
-      <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+      <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded">
+        <h5 className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
           Expected JSON Format:
-        </h4>
-        <pre className="text-xs text-slate-600 dark:text-slate-400 font-mono bg-white dark:bg-slate-900 p-3 rounded border overflow-x-auto">
+        </h5>
+        <pre className="text-xs text-slate-600 dark:text-slate-400 font-mono bg-white dark:bg-slate-900 p-2 rounded border overflow-x-auto">
 {`{
-  "abc123...": "This is the answer trace for question 1...",
-  "def456...": "This is the answer trace for question 2...",
-  "ghi789...": "This is the answer trace for question 3..."
+  "abc123...": "Answer trace 1...",
+  "def456...": "Answer trace 2..."
 }`}
         </pre>
-        <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
-          Keys must be 32-character MD5 hashes of questions. Values must be non-empty answer traces.
+        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+          Keys: 32-char MD5 hashes. Values: non-empty traces.
         </p>
       </div>
-    </Card>
+    </div>
   );
 };

@@ -1,6 +1,5 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ManualTraceUpload } from '../../components/ManualTraceUpload';
 
 // Mock fetch globally
@@ -15,7 +14,7 @@ describe('ManualTraceUpload', () => {
     render(<ManualTraceUpload />);
     
     expect(screen.getByText('Upload Manual Traces')).toBeInTheDocument();
-    expect(screen.getByText('Upload a JSON file containing precomputed answer traces keyed by question hash.')).toBeInTheDocument();
+    expect(screen.getByText('Upload a JSON file with precomputed answer traces keyed by question hash.')).toBeInTheDocument();
     expect(screen.getByText('Click to upload')).toBeInTheDocument();
     expect(screen.getByText('JSON files only')).toBeInTheDocument();
   });
@@ -25,7 +24,7 @@ describe('ManualTraceUpload', () => {
     
     expect(screen.getByText('Expected JSON Format:')).toBeInTheDocument();
     expect(screen.getByText(/abc123/)).toBeInTheDocument();
-    expect(screen.getByText(/This is the answer trace for question/)).toBeInTheDocument();
+    expect(screen.getByText(/Answer trace 1/)).toBeInTheDocument();
   });
 
   it('accepts file input', () => {
