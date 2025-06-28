@@ -364,6 +364,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             replicateCount={replicateCount}
             expandedPrompts={expandedPrompts}
             isRunning={isRunning}
+            finishedTemplates={finishedTemplates}
             onAddAnsweringModel={addAnsweringModel}
             onAddParsingModel={addParsingModel}
             onRemoveAnsweringModel={removeAnsweringModel}
@@ -372,7 +373,15 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onUpdateParsingModel={updateParsingModel}
             onTogglePromptExpanded={togglePromptExpanded}
             onReplicateCountChange={setReplicateCount}
+            onManualTraceUploadSuccess={(traceCount) => {
+              setError(null);
+              console.log(`Successfully loaded ${traceCount} manual traces`);
+            }}
+            onManualTraceUploadError={(errorMessage) => {
+              setError(`Manual trace upload failed: ${errorMessage}`);
+            }}
           />
+
 
           {/* Control Panel */}
           <Card>

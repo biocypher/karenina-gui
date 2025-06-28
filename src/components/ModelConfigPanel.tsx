@@ -5,7 +5,7 @@ export interface ModelConfig {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: string;
+  interface: 'langchain' | 'openrouter' | 'manual';
 }
 
 interface ModelConfigPanelProps {
@@ -134,6 +134,7 @@ export const ModelConfigPanel: React.FC<ModelConfigPanelProps> = ({
           >
             <option value="langchain">LangChain</option>
             <option value="openrouter">OpenRouter</option>
+            <option value="manual">Manual</option>
           </select>
         </div>
       </div>
