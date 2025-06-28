@@ -7,9 +7,10 @@ interface DiffViewerProps {
   originalCode: string;
   currentCode: string;
   title: string;
+  hideHeader?: boolean;
 }
 
-export const DiffViewer: React.FC<DiffViewerProps> = ({ originalCode, currentCode, title }) => {
+export const DiffViewer: React.FC<DiffViewerProps> = ({ originalCode, currentCode, title, hideHeader = false }) => {
   const diff = diffLines(originalCode, currentCode);
   
   const renderDiffLine = (part: any, index: number) => {
@@ -34,15 +35,15 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ originalCode, currentCod
 
   return (
     <div className="h-full flex flex-col bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-slate-600 rounded-2xl overflow-hidden shadow-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 border-b border-slate-300 dark:border-slate-600 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm"></div>
-          <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></div>
-          <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
+      {/* Header - conditionally rendered */}
+      {!hideHeader && (
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 border-b border-slate-300 dark:border-slate-600 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            {/* Window controls removed for cleaner interface */}
+          </div>
+          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">{title}</div>
         </div>
-        <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">{title}</div>
-      </div>
+      )}
 
       {/* Diff Content */}
       <div className="flex-1 overflow-auto">
