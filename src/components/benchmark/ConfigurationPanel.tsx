@@ -18,6 +18,7 @@ interface ConfigurationPanelProps {
   replicateCount: number;
   expandedPrompts: Set<string>;
   isRunning: boolean;
+  finishedTemplates?: Array<[string, any]>;
   onAddAnsweringModel: () => void;
   onAddParsingModel: () => void;
   onRemoveAnsweringModel: (id: string) => void;
@@ -36,6 +37,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   replicateCount,
   expandedPrompts,
   isRunning,
+  finishedTemplates,
   onAddAnsweringModel,
   onAddParsingModel,
   onRemoveAnsweringModel,
@@ -122,104 +124,112 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       </div>
 
-      {/* Provider Selection */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Provider
-        </label>
-        <select
-          value={model.model_provider}
-          onChange={(e) => {
-            const update = { model_provider: e.target.value };
-            isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
-          }}
-          disabled={isRunning}
-          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-        >
-          <option value="google_genai">Google GenAI</option>
-          <option value="openai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
-          <option value="openrouter">OpenRouter</option>
-        </select>
-      </div>
-
-      {/* Model Name */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Model Name
-        </label>
-        <input
-          type="text"
-          value={model.model_name}
-          onChange={(e) => {
-            const update = { model_name: e.target.value };
-            isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
-          }}
-          disabled={isRunning}
-          className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-          placeholder="e.g., gpt-4, claude-3-opus, gemini-pro"
-        />
-      </div>
-
-      {/* Temperature */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Temperature: {model.temperature}
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.1"
-          value={model.temperature}
-          onChange={(e) => {
-            const update = { temperature: parseFloat(e.target.value) };
-            isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
-          }}
-          disabled={isRunning}
-          className="w-full"
-        />
-      </div>
-
-      {/* System Prompt */}
-      <div className="mb-2">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            System Prompt
+      {/* Provider Selection - Hide for manual interface */}
+      {model.interface !== 'manual' && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Provider
           </label>
-          <button
-            type="button"
-            onClick={() => onTogglePromptExpanded(model.id)}
-            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            {expandedPrompts.has(model.id) ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </button>
-        </div>
-
-        {expandedPrompts.has(model.id) && (
-          <textarea
-            value={model.system_prompt}
+          <select
+            value={model.model_provider}
             onChange={(e) => {
-              const update = { system_prompt: e.target.value };
+              const update = { model_provider: e.target.value };
               isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
             }}
             disabled={isRunning}
-            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-xs"
-            rows={3}
-            placeholder="Define the model's role and behavior..."
-          />
-        )}
+            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+          >
+            <option value="google_genai">Google GenAI</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="openrouter">OpenRouter</option>
+          </select>
+        </div>
+      )}
 
-        {!expandedPrompts.has(model.id) && (
-          <div className="text-xs text-slate-500 dark:text-slate-400 p-2 bg-slate-50 dark:bg-slate-700/30 rounded border border-slate-200 dark:border-slate-600">
-            {model.system_prompt.length > 60 ? model.system_prompt.substring(0, 60) + '...' : model.system_prompt}
+      {/* Model Name - Hide for manual interface */}
+      {model.interface !== 'manual' && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Model Name
+          </label>
+          <input
+            type="text"
+            value={model.model_name}
+            onChange={(e) => {
+              const update = { model_name: e.target.value };
+              isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+            }}
+            disabled={isRunning}
+            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            placeholder="e.g., gpt-4, claude-3-opus, gemini-pro"
+          />
+        </div>
+      )}
+
+      {/* Temperature - Hide for manual interface */}
+      {model.interface !== 'manual' && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            Temperature: {model.temperature}
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="2"
+            step="0.1"
+            value={model.temperature}
+            onChange={(e) => {
+              const update = { temperature: parseFloat(e.target.value) };
+              isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+            }}
+            disabled={isRunning}
+            className="w-full"
+          />
+        </div>
+      )}
+
+      {/* System Prompt - Hide for manual interface */}
+      {model.interface !== 'manual' && (
+        <div className="mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              System Prompt
+            </label>
+            <button
+              type="button"
+              onClick={() => onTogglePromptExpanded(model.id)}
+              className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              {expandedPrompts.has(model.id) ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
           </div>
-        )}
-      </div>
+
+          {expandedPrompts.has(model.id) && (
+            <textarea
+              value={model.system_prompt}
+              onChange={(e) => {
+                const update = { system_prompt: e.target.value };
+                isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+              }}
+              disabled={isRunning}
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-xs"
+              rows={3}
+              placeholder="Define the model's role and behavior..."
+            />
+          )}
+
+          {!expandedPrompts.has(model.id) && (
+            <div className="text-xs text-slate-500 dark:text-slate-400 p-2 bg-slate-50 dark:bg-slate-700/30 rounded border border-slate-200 dark:border-slate-600">
+              {model.system_prompt.length > 60 ? model.system_prompt.substring(0, 60) + '...' : model.system_prompt}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Manual Trace Upload - Show only for answering models with manual interface */}
       {isAnswering && model.interface === 'manual' && (
@@ -228,6 +238,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             onUploadSuccess={onManualTraceUploadSuccess}
             onUploadError={onManualTraceUploadError}
             className="text-sm"
+            finishedTemplates={finishedTemplates}
           />
         </div>
       )}

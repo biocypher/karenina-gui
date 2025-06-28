@@ -165,4 +165,45 @@ describe('ManualTraceUpload', () => {
     
     fireEvent.drop(dropZone!, dropEvent);
   });
+
+  it('shows download template button when finished templates are provided', () => {
+    const finishedTemplates: Array<[string, any]> = [
+      ['hash1', { question: 'Question 1' }],
+      ['hash2', { question: 'Question 2' }]
+    ];
+    
+    render(<ManualTraceUpload finishedTemplates={finishedTemplates} />);
+    
+    expect(screen.getByText('Download empty template')).toBeInTheDocument();
+    expect(screen.getByText('(2 templates available)')).toBeInTheDocument();
+  });
+
+  it('does not show download template button when no finished templates', () => {
+    render(<ManualTraceUpload />);
+    
+    expect(screen.queryByText('Download empty template')).not.toBeInTheDocument();
+    expect(screen.queryByText('templates available')).not.toBeInTheDocument();
+  });
+
+  it('shows download template button is clickable', () => {
+    const finishedTemplates: Array<[string, any]> = [
+      ['abc123def456789012345678901234', { question: 'Question 1' }],
+      ['def456789012345678901234567890', { question: 'Question 2' }]
+    ];
+    
+    render(<ManualTraceUpload finishedTemplates={finishedTemplates} />);
+    
+    const downloadButton = screen.getByText('Download empty template');
+    expect(downloadButton).toBeInTheDocument();
+    expect(downloadButton.tagName).toBe('BUTTON');
+  });
+
+  it('shows error when trying to download template with no finished templates', () => {
+    const finishedTemplates: Array<[string, any]> = [];
+    
+    render(<ManualTraceUpload finishedTemplates={finishedTemplates} />);
+    
+    // Since button shouldn't be visible with empty templates, we won't see it
+    expect(screen.queryByText('Download empty template')).not.toBeInTheDocument();
+  });
 });

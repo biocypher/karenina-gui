@@ -5,6 +5,7 @@ interface ManualTraceUploadProps {
   onUploadSuccess?: (traceCount: number) => void;
   onUploadError?: (error: string) => void;
   className?: string;
+  finishedTemplates?: Array<[string, any]>;
 }
 
 interface UploadStatus {
@@ -16,7 +17,8 @@ interface UploadStatus {
 export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
   onUploadSuccess,
   onUploadError,
-  className = ''
+  className = '',
+  finishedTemplates
 }) => {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
     status: 'idle',
@@ -97,6 +99,53 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
   const clearStatus = useCallback(() => {
     setUploadStatus({ status: 'idle', message: '' });
   }, []);
+
+  const handleDownloadTemplate = useCallback(() => {
+    if (!finishedTemplates?.length) {
+      setUploadStatus({
+        status: 'error',
+        message: 'No finished templates available'
+      });
+      return;
+    }
+
+    try {
+      // Create empty template JSON with question hashes as keys
+      const emptyTemplate = finishedTemplates.reduce((acc, [questionHash]) => {
+        acc[questionHash] = "";
+        return acc;
+      }, {} as Record<string, string>);
+
+      // Download JSON file
+      const blob = new Blob([JSON.stringify(emptyTemplate, null, 2)], {
+        type: 'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `manual-traces-template-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Show success message briefly
+      setUploadStatus({
+        status: 'success',
+        message: `Downloaded template with ${finishedTemplates.length} question hashes`
+      });
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setUploadStatus({ status: 'idle', message: '' });
+      }, 3000);
+    } catch (error) {
+      setUploadStatus({
+        status: 'error',
+        message: 'Failed to generate template file'
+      });
+    }
+  }, [finishedTemplates]);
 
   const getStatusIcon = () => {
     switch (uploadStatus.status) {
@@ -194,9 +243,19 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
 
       {/* Help Text */}
       <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded">
-        <h5 className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-          Expected JSON Format:
-        </h5>
+        <div className="flex items-center justify-between mb-1">
+          <h5 className="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Expected JSON Format:
+          </h5>
+          {finishedTemplates?.length > 0 && (
+            <button
+              onClick={handleDownloadTemplate}
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline hover:no-underline transition-all"
+            >
+              Download empty template
+            </button>
+          )}
+        </div>
         <pre className="text-xs text-slate-600 dark:text-slate-400 font-mono bg-white dark:bg-slate-900 p-2 rounded border overflow-x-auto">
 {`{
   "abc123...": "Answer trace 1...",
@@ -205,6 +264,11 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
         </pre>
         <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
           Keys: 32-char MD5 hashes. Values: non-empty traces.
+          {finishedTemplates?.length > 0 && (
+            <span className="ml-1 text-indigo-600 dark:text-indigo-400">
+              ({finishedTemplates.length} templates available)
+            </span>
+          )}
         </p>
       </div>
     </div>
