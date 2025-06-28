@@ -147,6 +147,57 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
     }
   }, [finishedTemplates]);
 
+  const handleDownloadCsvMapper = useCallback(() => {
+    if (!finishedTemplates?.length) {
+      setUploadStatus({
+        status: 'error',
+        message: 'No finished templates available'
+      });
+      return;
+    }
+
+    try {
+      // Create CSV content with headers
+      const csvHeader = 'Question Hash,Raw Question\n';
+      const csvRows = finishedTemplates.map(([questionHash, templateData]) => {
+        // Escape quotes in the question text and wrap in quotes
+        const escapedQuestion = (templateData.question || '').replace(/"/g, '""');
+        return `"${questionHash}","${escapedQuestion}"`;
+      }).join('\n');
+      
+      const csvContent = csvHeader + csvRows;
+
+      // Download CSV file
+      const blob = new Blob([csvContent], {
+        type: 'text/csv;charset=utf-8;'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `question-hash-mapper-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Show success message briefly
+      setUploadStatus({
+        status: 'success',
+        message: `Downloaded CSV mapper with ${finishedTemplates.length} questions`
+      });
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setUploadStatus({ status: 'idle', message: '' });
+      }, 3000);
+    } catch (error) {
+      setUploadStatus({
+        status: 'error',
+        message: 'Failed to generate CSV mapper file'
+      });
+    }
+  }, [finishedTemplates]);
+
   const getStatusIcon = () => {
     switch (uploadStatus.status) {
       case 'uploading':
@@ -248,12 +299,21 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
             Expected JSON Format:
           </h5>
           {finishedTemplates?.length > 0 && (
-            <button
-              onClick={handleDownloadTemplate}
-              className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline hover:no-underline transition-all"
-            >
-              Download empty template
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDownloadTemplate}
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline hover:no-underline transition-all"
+              >
+                Download empty template
+              </button>
+              <span className="text-xs text-slate-400">|</span>
+              <button
+                onClick={handleDownloadCsvMapper}
+                className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline hover:no-underline transition-all"
+              >
+                Download CSV mapper
+              </button>
+            </div>
           )}
         </div>
         <pre className="text-xs text-slate-600 dark:text-slate-400 font-mono bg-white dark:bg-slate-900 p-2 rounded border overflow-x-auto">
@@ -270,6 +330,13 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
             </span>
           )}
         </p>
+        {finishedTemplates?.length > 0 && (
+          <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded border border-emerald-200 dark:border-emerald-800">
+            <p className="text-xs text-emerald-700 dark:text-emerald-300">
+              <strong>CSV Mapper:</strong> Download a reference file that maps question hashes to their original text for easy identification when creating manual traces.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

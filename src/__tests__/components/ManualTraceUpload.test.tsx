@@ -175,13 +175,15 @@ describe('ManualTraceUpload', () => {
     render(<ManualTraceUpload finishedTemplates={finishedTemplates} />);
     
     expect(screen.getByText('Download empty template')).toBeInTheDocument();
+    expect(screen.getByText('Download CSV mapper')).toBeInTheDocument();
     expect(screen.getByText('(2 templates available)')).toBeInTheDocument();
   });
 
-  it('does not show download template button when no finished templates', () => {
+  it('does not show download buttons when no finished templates', () => {
     render(<ManualTraceUpload />);
     
     expect(screen.queryByText('Download empty template')).not.toBeInTheDocument();
+    expect(screen.queryByText('Download CSV mapper')).not.toBeInTheDocument();
     expect(screen.queryByText('templates available')).not.toBeInTheDocument();
   });
 
@@ -205,5 +207,36 @@ describe('ManualTraceUpload', () => {
     
     // Since button shouldn't be visible with empty templates, we won't see it
     expect(screen.queryByText('Download empty template')).not.toBeInTheDocument();
+    expect(screen.queryByText('Download CSV mapper')).not.toBeInTheDocument();
+  });
+
+  it('shows CSV mapper button is clickable', () => {
+    const finishedTemplates: Array<[string, any]> = [
+      ['abc123def456789012345678901234', { question: 'What is the capital of France?' }],
+      ['def456789012345678901234567890', { question: 'What is 2 + 2?' }]
+    ];
+    
+    render(<ManualTraceUpload finishedTemplates={finishedTemplates} />);
+    
+    const csvButton = screen.getByText('Download CSV mapper');
+    expect(csvButton).toBeInTheDocument();
+    expect(csvButton.tagName).toBe('BUTTON');
+  });
+
+  it('shows CSV mapper description when templates are available', () => {
+    const finishedTemplates: Array<[string, any]> = [
+      ['hash1', { question: 'Test question' }]
+    ];
+    
+    render(<ManualTraceUpload finishedTemplates={finishedTemplates} />);
+    
+    expect(screen.getByText(/CSV Mapper:/)).toBeInTheDocument();
+    expect(screen.getByText(/Download a reference file that maps question hashes/)).toBeInTheDocument();
+  });
+
+  it('does not show CSV mapper description when no templates', () => {
+    render(<ManualTraceUpload />);
+    
+    expect(screen.queryByText(/CSV Mapper:/)).not.toBeInTheDocument();
   });
 });
