@@ -309,7 +309,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
               <span className="text-xs text-slate-400">|</span>
               <button
                 onClick={handleDownloadCsvMapper}
-                className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline hover:no-underline transition-all"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline hover:no-underline transition-all"
               >
                 Download CSV mapper
               </button>
