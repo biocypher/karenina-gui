@@ -331,11 +331,9 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
           )}
         </p>
         {finishedTemplates?.length > 0 && (
-          <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded border border-emerald-200 dark:border-emerald-800">
-            <p className="text-xs text-emerald-700 dark:text-emerald-300">
-              <strong>CSV Mapper:</strong> Download a reference file that maps question hashes to their original text for easy identification when creating manual traces.
-            </p>
-          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+            CSV Mapper: reference file mapping hashes to question text.
+          </p>
         )}
       </div>
     </div>

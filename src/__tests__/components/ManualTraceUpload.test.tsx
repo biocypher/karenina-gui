@@ -230,8 +230,7 @@ describe('ManualTraceUpload', () => {
     
     render(<ManualTraceUpload finishedTemplates={finishedTemplates} />);
     
-    expect(screen.getByText(/CSV Mapper:/)).toBeInTheDocument();
-    expect(screen.getByText(/Download a reference file that maps question hashes/)).toBeInTheDocument();
+    expect(screen.getByText(/CSV Mapper: reference file mapping hashes to question text/)).toBeInTheDocument();
   });
 
   it('does not show CSV mapper description when no templates', () => {
