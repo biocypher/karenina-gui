@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GitCompare, Code } from 'lucide-react';
+import { GitCompare, Code, Undo2 } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-python';
 import 'prismjs/themes/prism-tomorrow.css';
@@ -120,6 +120,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     setDiffMode(mode);
   };
 
+  const handleRevert = (type: 'original' | 'saved') => {
+    if (type === 'original' && hasOriginal) {
+      onChange(originalCode);
+    } else if (type === 'saved' && hasSaved) {
+      onChange(savedCode);
+    }
+  };
+
+  const revertToOriginal = () => handleRevert('original');
+  const revertToSaved = () => handleRevert('saved');
+
   // Update scroll info when content changes
   useEffect(() => {
     const updateScrollInfo = () => {
@@ -140,6 +151,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   // Determine if diff button should be shown
   const canShowDiff = hasChangesFromOriginal || hasChangesFromSaved;
+  
+  // Determine if revert button should be shown and what options are available
+  const canRevert = hasChangesFromOriginal || hasChangesFromSaved;
+  const revertOptions = {
+    canRevertToOriginal: hasChangesFromOriginal,
+    canRevertToSaved: hasChangesFromSaved,
+    hasMultipleOptions: hasChangesFromOriginal && hasChangesFromSaved
+  };
 
   if (showDiff) {
     const compareCode = diffMode === 'saved' ? savedCode : originalCode;
@@ -194,6 +213,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             originalCode={compareCode}
             currentCode={value}
             title={compareTitle}
+            hideHeader={true}
           />
         </div>
       </div>
@@ -205,9 +225,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm"></div>
-          <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></div>
-          <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
+          {/* Window controls removed for cleaner interface */}
         </div>
         
         <div className="flex items-center gap-3">
@@ -220,6 +238,41 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               Show Diff
             </button>
           )}
+          
+          {canRevert && (
+            <div className="relative">
+              {revertOptions.hasMultipleOptions ? (
+                <div className="flex bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden shadow-sm">
+                  <button
+                    onClick={revertToOriginal}
+                    className="px-3 py-2 text-xs font-medium bg-slate-600 text-white hover:bg-slate-700 transition-colors flex items-center gap-1.5"
+                    title="Revert to original template"
+                  >
+                    <Undo2 className="w-3 h-3" />
+                    Revert to Original
+                  </button>
+                  <button
+                    onClick={revertToSaved}
+                    className="px-3 py-2 text-xs font-medium bg-slate-600 text-white hover:bg-slate-700 transition-colors flex items-center gap-1.5 border-l border-slate-500"
+                    title="Revert to last saved version"
+                  >
+                    <Undo2 className="w-3 h-3" />
+                    Revert to Saved
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={revertOptions.canRevertToSaved ? revertToSaved : revertToOriginal}
+                  className="px-4 py-2 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  title={revertOptions.canRevertToSaved ? "Revert to last saved version" : "Revert to original template"}
+                >
+                  <Undo2 className="w-4 h-4" />
+                  Revert
+                </button>
+              )}
+            </div>
+          )}
+          
           <div className="text-xs text-slate-400 font-mono font-semibold">Python</div>
         </div>
       </div>
