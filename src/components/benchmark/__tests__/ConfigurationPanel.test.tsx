@@ -104,18 +104,25 @@ describe('ConfigurationPanel', () => {
     expect(addButtons[0]).toBeDisabled();
     expect(addButtons[1]).toBeDisabled();
 
-    // Check that select elements are disabled
-    const selects = screen.getAllByRole('combobox');
-    selects.forEach(select => {
-      expect(select).toBeDisabled();
+    // Check that provider text inputs are disabled (langchain interface)
+    const providerInputs = screen.getAllByPlaceholderText(/e\.g\., google_genai/);
+    providerInputs.forEach(input => {
+      expect(input).toBeDisabled();
+    });
+
+    // Check that model name inputs are disabled
+    const modelNameInputs = screen.getAllByPlaceholderText(/e\.g\., gpt-4/);
+    modelNameInputs.forEach(input => {
+      expect(input).toBeDisabled();
     });
   });
 
-  it('handles model configuration updates', () => {
+  it('handles model configuration updates for langchain interface', () => {
     render(<ConfigurationPanel {...defaultProps} />);
 
-    const providerSelects = screen.getAllByRole('combobox');
-    fireEvent.change(providerSelects[0], { target: { value: 'openai' } });
+    // Provider field should be a text input for langchain interface
+    const providerInputs = screen.getAllByPlaceholderText(/e\.g\., google_genai/);
+    fireEvent.change(providerInputs[0], { target: { value: 'openai' } });
 
     expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
       'answering-1',
@@ -254,5 +261,130 @@ describe('ConfigurationPanel', () => {
       'answering-1',
       { interface: 'manual' }
     );
+  });
+
+  describe('Field visibility based on interface type', () => {
+    it('shows provider text input and model name for langchain interface', () => {
+      render(<ConfigurationPanel {...defaultProps} />);
+
+      // Provider should be a text input for langchain
+      expect(screen.getAllByPlaceholderText(/e\.g\., google_genai/)).toHaveLength(2); // answering + parsing
+      
+      // Model name should be visible
+      expect(screen.getAllByPlaceholderText(/e\.g\., gpt-4/)).toHaveLength(2); // answering + parsing
+    });
+
+    it('hides provider field and shows model name for openrouter interface', () => {
+      const openrouterAnsweringModel = {
+        ...mockAnsweringModel,
+        interface: 'openrouter' as const,
+        model_provider: '' // Should be empty for openrouter
+      };
+      const openrouterParsingModel = {
+        ...mockParsingModel,
+        interface: 'openrouter' as const,
+        model_provider: '' // Should be empty for openrouter
+      };
+
+      const props = {
+        ...defaultProps,
+        answeringModels: [openrouterAnsweringModel],
+        parsingModels: [openrouterParsingModel],
+      };
+
+      render(<ConfigurationPanel {...props} />);
+
+      // Provider field should not be visible
+      expect(screen.queryByPlaceholderText(/e\.g\., google_genai/)).not.toBeInTheDocument();
+      
+      // Model name should be visible
+      expect(screen.getAllByPlaceholderText(/e\.g\., gpt-4/)).toHaveLength(2); // answering + parsing
+    });
+
+    it('hides both provider and model name fields for manual interface', () => {
+      const manualAnsweringModel = {
+        ...mockAnsweringModel,
+        interface: 'manual' as const,
+        model_provider: '', // Should be empty for manual
+        model_name: '' // Should be empty for manual
+      };
+
+      const props = {
+        ...defaultProps,
+        answeringModels: [manualAnsweringModel],
+      };
+
+      render(<ConfigurationPanel {...props} />);
+
+      // Provider field should still be visible for parsing model (langchain interface)
+      expect(screen.getAllByPlaceholderText(/e\.g\., google_genai/)).toHaveLength(1); // Only parsing model
+      
+      // Model name should not be visible for answering model in manual mode
+      const modelNameInputs = screen.queryAllByPlaceholderText(/e\.g\., gpt-4/);
+      expect(modelNameInputs).toHaveLength(1); // Only parsing model should show model name
+    });
+
+    it('shows temperature and system prompt only for non-manual interfaces', () => {
+      render(<ConfigurationPanel {...defaultProps} />);
+
+      // Temperature sliders should be visible for langchain
+      expect(screen.getAllByRole('slider')).toHaveLength(2); // answering + parsing
+
+      // System prompt sections should be visible
+      expect(screen.getAllByText('System Prompt')).toHaveLength(2); // answering + parsing
+    });
+
+    it('hides temperature and system prompt for manual interface', () => {
+      const manualAnsweringModel = {
+        ...mockAnsweringModel,
+        interface: 'manual' as const,
+        model_provider: '',
+        model_name: ''
+      };
+
+      const props = {
+        ...defaultProps,
+        answeringModels: [manualAnsweringModel],
+      };
+
+      render(<ConfigurationPanel {...props} />);
+
+      // Should only have 1 temperature slider (for parsing model)
+      expect(screen.getAllByRole('slider')).toHaveLength(1);
+
+      // Should only have 1 system prompt section (for parsing model)
+      expect(screen.getAllByText('System Prompt')).toHaveLength(1);
+    });
+  });
+
+  describe('Interface switching behavior', () => {
+    it('switches from langchain to openrouter interface', () => {
+      render(<ConfigurationPanel {...defaultProps} />);
+
+      // Initially should show provider field
+      expect(screen.getAllByPlaceholderText(/e\.g\., google_genai/)).toHaveLength(2);
+
+      // Switch to openrouter
+      const openRouterRadios = screen.getAllByLabelText('OpenRouter');
+      fireEvent.click(openRouterRadios[0]); // Switch answering model
+
+      expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
+        'answering-1',
+        { interface: 'openrouter' }
+      );
+    });
+
+    it('switches from langchain to manual interface for answering models', () => {
+      render(<ConfigurationPanel {...defaultProps} />);
+
+      // Switch to manual
+      const manualRadio = screen.getByLabelText('Manual');
+      fireEvent.click(manualRadio);
+
+      expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
+        'answering-1',
+        { interface: 'manual' }
+      );
+    });
   });
 });

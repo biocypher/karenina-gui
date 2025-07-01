@@ -74,15 +74,67 @@ export const useBenchmarkConfiguration = () => {
   };
 
   const updateAnsweringModel = (id: string, updates: Partial<ModelConfiguration>) => {
-    setAnsweringModels(answeringModels.map(model => 
-      model.id === id ? { ...model, ...updates } : model
-    ));
+    setAnsweringModels(answeringModels.map(model => {
+      if (model.id === id) {
+        const updatedModel = { ...model, ...updates };
+        
+        // Handle interface switching - clear non-relevant fields and set defaults
+        if (updates.interface) {
+          switch (updates.interface) {
+            case 'langchain':
+              // Ensure provider has a default value for langchain
+              if (!updatedModel.model_provider) {
+                updatedModel.model_provider = 'google_genai';
+              }
+              break;
+            case 'openrouter':
+              // Clear provider field for openrouter (not needed)
+              updatedModel.model_provider = '';
+              break;
+            case 'manual':
+              // Clear both provider and model_name for manual
+              updatedModel.model_provider = '';
+              updatedModel.model_name = '';
+              break;
+          }
+        }
+        
+        return updatedModel;
+      }
+      return model;
+    }));
   };
 
   const updateParsingModel = (id: string, updates: Partial<ModelConfiguration>) => {
-    setParsingModels(parsingModels.map(model => 
-      model.id === id ? { ...model, ...updates } : model
-    ));
+    setParsingModels(parsingModels.map(model => {
+      if (model.id === id) {
+        const updatedModel = { ...model, ...updates };
+        
+        // Handle interface switching - clear non-relevant fields and set defaults
+        if (updates.interface) {
+          switch (updates.interface) {
+            case 'langchain':
+              // Ensure provider has a default value for langchain
+              if (!updatedModel.model_provider) {
+                updatedModel.model_provider = 'google_genai';
+              }
+              break;
+            case 'openrouter':
+              // Clear provider field for openrouter (not needed)
+              updatedModel.model_provider = '';
+              break;
+            case 'manual':
+              // For parsing models, manual interface should behave like openrouter
+              // (parsing models don't support manual interface according to the UI)
+              updatedModel.model_provider = '';
+              break;
+          }
+        }
+        
+        return updatedModel;
+      }
+      return model;
+    }));
   };
 
   const togglePromptExpanded = (modelId: string) => {

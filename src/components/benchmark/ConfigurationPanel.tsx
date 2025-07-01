@@ -126,13 +126,14 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       </div>
 
-      {/* Provider Selection - Hide for manual interface */}
-      {model.interface !== 'manual' && (
+      {/* Provider Selection - Show only for LangChain interface */}
+      {model.interface === 'langchain' && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Provider
           </label>
-          <select
+          <input
+            type="text"
             value={model.model_provider}
             onChange={(e) => {
               const update = { model_provider: e.target.value };
@@ -140,17 +141,13 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             }}
             disabled={isRunning}
             className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-          >
-            <option value="google_genai">Google GenAI</option>
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="openrouter">OpenRouter</option>
-          </select>
+            placeholder="e.g., google_genai, openai, anthropic"
+          />
         </div>
       )}
 
-      {/* Model Name - Hide for manual interface */}
-      {model.interface !== 'manual' && (
+      {/* Model Name - Show for LangChain and OpenRouter interfaces */}
+      {(model.interface === 'langchain' || model.interface === 'openrouter') && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Model Name
@@ -169,8 +166,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* Temperature - Hide for manual interface */}
-      {model.interface !== 'manual' && (
+      {/* Temperature - Show for LangChain and OpenRouter interfaces */}
+      {(model.interface === 'langchain' || model.interface === 'openrouter') && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Temperature: {model.temperature}
@@ -191,8 +188,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* System Prompt - Hide for manual interface */}
-      {model.interface !== 'manual' && (
+      {/* System Prompt - Show for LangChain and OpenRouter interfaces */}
+      {(model.interface === 'langchain' || model.interface === 'openrouter') && (
         <div className="mb-2">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
