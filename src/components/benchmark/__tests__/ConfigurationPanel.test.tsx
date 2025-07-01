@@ -216,4 +216,43 @@ describe('ConfigurationPanel', () => {
       );
     }
   });
+
+  it('shows manual option only for answering models', () => {
+    render(<ConfigurationPanel {...defaultProps} />);
+
+    // Check that Manual radio buttons exist
+    const manualRadios = screen.getAllByLabelText('Manual');
+    
+    // Should only find Manual option in answering models section (1 instance)
+    expect(manualRadios).toHaveLength(1);
+    
+    // Verify all radio options are present for answering models
+    const answeringSection = screen.getByText(/Answering Models \(1\)/).closest('div');
+    expect(answeringSection).toBeInTheDocument();
+    
+    // Find all radio buttons within the answering models section
+    const allAnsweringRadios = screen.getAllByRole('radio');
+    const langchainRadios = screen.getAllByLabelText('LangChain');
+    const openrouterRadios = screen.getAllByLabelText('OpenRouter');
+    
+    // Should have 3 radio options per model (LangChain, OpenRouter, Manual) for answering
+    // and 2 radio options per model (LangChain, OpenRouter) for parsing
+    // Total: 3 + 2 = 5 radio buttons
+    expect(allAnsweringRadios).toHaveLength(5);
+    expect(langchainRadios).toHaveLength(2); // One for answering, one for parsing
+    expect(openrouterRadios).toHaveLength(2); // One for answering, one for parsing
+    expect(manualRadios).toHaveLength(1); // Only for answering models
+  });
+
+  it('handles manual interface selection for answering models', () => {
+    render(<ConfigurationPanel {...defaultProps} />);
+
+    const manualRadio = screen.getByLabelText('Manual');
+    fireEvent.click(manualRadio);
+
+    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
+      'answering-1',
+      { interface: 'manual' }
+    );
+  });
 });

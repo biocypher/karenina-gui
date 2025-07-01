@@ -40,7 +40,7 @@ export interface TemplateGenerationConfig {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter';
+  interface: 'langchain' | 'openrouter' | 'manual';
 }
 
 export interface TemplateGenerationProgress {
@@ -93,7 +93,7 @@ export interface ModelConfiguration {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter';
+  interface: 'langchain' | 'openrouter' | 'manual';
   system_prompt: string;
 }
 
