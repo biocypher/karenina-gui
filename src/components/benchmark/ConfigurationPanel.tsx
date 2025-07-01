@@ -106,21 +106,23 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             />
             OpenRouter
           </label>
-          <label className="flex items-center text-slate-900 dark:text-white">
-            <input
-              type="radio"
-              name={`${model.id}-interface`}
-              value="manual"
-              checked={model.interface === 'manual'}
-              onChange={(e) => {
-                const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
-                isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
-              }}
-              disabled={isRunning}
-              className="mr-2"
-            />
-            Manual
-          </label>
+          {isAnswering && (
+            <label className="flex items-center text-slate-900 dark:text-white">
+              <input
+                type="radio"
+                name={`${model.id}-interface`}
+                value="manual"
+                checked={model.interface === 'manual'}
+                onChange={(e) => {
+                  const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
+                  isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+                }}
+                disabled={isRunning}
+                className="mr-2"
+              />
+              Manual
+            </label>
+          )}
         </div>
       </div>
 
