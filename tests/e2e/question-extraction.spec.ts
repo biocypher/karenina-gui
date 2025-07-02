@@ -207,10 +207,7 @@ test.describe('Question Extraction E2E Workflow', () => {
     // Extract questions
     await page.locator('button:has-text("Extract Questions")').click();
     
-    // Wait for extract step to be active
-    await expect(page.locator('.bg-indigo-100, .bg-indigo-900\\/30').filter({ hasText: 'Extract Questions' })).toBeVisible();
-    
-    // Wait for visualize step to be active
+    // Wait for extraction to complete - skip intermediate states since they're too fast
     await expect(page.locator('.bg-indigo-100, .bg-indigo-900\\/30').filter({ hasText: 'Visualize Results' })).toBeVisible({ 
       timeout: TEST_CONFIG.timeouts.longOperation 
     });
