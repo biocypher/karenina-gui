@@ -155,5 +155,72 @@ export const handlers = [
   // Delete session endpoint
   http.delete('/api/sessions/:sessionId', () => {
     return HttpResponse.json({ success: true });
+  }),
+
+  // Rubric trait generation endpoint
+  http.post('/api/generate-rubric-traits', () => {
+    return HttpResponse.json({
+      traits: [
+        {
+          name: 'accuracy',
+          description: 'Is the response factually accurate?',
+          kind: 'boolean',
+          min_score: null,
+          max_score: null
+        },
+        {
+          name: 'completeness',
+          description: 'How complete is the response?',
+          kind: 'score',
+          min_score: 1,
+          max_score: 5
+        },
+        {
+          name: 'clarity',
+          description: 'Is the response clear and well-written?',
+          kind: 'boolean',
+          min_score: null,
+          max_score: null
+        }
+      ]
+    });
+  }),
+
+  // Get current rubric endpoint
+  http.get('/api/rubric', () => {
+    return HttpResponse.json({
+      title: 'Test Rubric',
+      traits: [
+        {
+          name: 'accuracy',
+          description: 'Is the response factually accurate?',
+          kind: 'boolean',
+          min_score: null,
+          max_score: null
+        },
+        {
+          name: 'completeness',
+          description: 'How complete is the response?',
+          kind: 'score',
+          min_score: 1,
+          max_score: 5
+        }
+      ]
+    });
+  }),
+
+  // Create/update rubric endpoint
+  http.post('/api/rubric', () => {
+    return HttpResponse.json({
+      message: 'Rubric saved successfully',
+      title: 'Test Rubric'
+    });
+  }),
+
+  // Delete rubric endpoint
+  http.delete('/api/rubric', () => {
+    return HttpResponse.json({
+      message: 'Rubric deleted successfully'
+    });
   })
 ]; 
