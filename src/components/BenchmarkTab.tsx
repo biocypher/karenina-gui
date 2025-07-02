@@ -29,8 +29,12 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     replicateCount,
     expandedPrompts,
     runName,
+    rubricEnabled,
+    correctnessEnabled,
     setReplicateCount,
     setRunName,
+    setRubricEnabled,
+    setCorrectnessEnabled,
     addAnsweringModel,
     addParsingModel,
     removeAnsweringModel,
@@ -365,6 +369,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             expandedPrompts={expandedPrompts}
             isRunning={isRunning}
             finishedTemplates={finishedTemplates}
+            rubricEnabled={rubricEnabled}
+            correctnessEnabled={correctnessEnabled}
             onAddAnsweringModel={addAnsweringModel}
             onAddParsingModel={addParsingModel}
             onRemoveAnsweringModel={removeAnsweringModel}
@@ -373,6 +379,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onUpdateParsingModel={updateParsingModel}
             onTogglePromptExpanded={togglePromptExpanded}
             onReplicateCountChange={setReplicateCount}
+            onRubricEnabledChange={setRubricEnabled}
+            onCorrectnessEnabledChange={setCorrectnessEnabled}
             onManualTraceUploadSuccess={(traceCount) => {
               setError(null);
               console.log(`Successfully loaded ${traceCount} manual traces`);
