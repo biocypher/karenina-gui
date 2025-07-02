@@ -1,5 +1,6 @@
 import { Page } from '@playwright/test';
-import { SELECTORS, TIMEOUTS } from '../fixtures/test-data';
+import { SELECTORS } from '../fixtures/test-data';
+import { TEST_CONFIG } from '../test-config';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -25,12 +26,12 @@ export class TestHelpers {
   async waitForAppLoad() {
     // Wait for the main header with Karenina title to be visible
     await this.page.waitForSelector('h1:has-text("Karenina")', { 
-      timeout: TIMEOUTS.medium 
+      timeout: TEST_CONFIG.timeouts.mediumOperation 
     });
     
     // Also wait for the tab navigation to be visible
     await this.page.waitForSelector('button:has-text("Question Extractor")', {
-      timeout: TIMEOUTS.short
+      timeout: TEST_CONFIG.timeouts.shortOperation
     });
   }
 
@@ -39,7 +40,7 @@ export class TestHelpers {
    */
   async elementExists(selector: string): Promise<boolean> {
     try {
-      await this.page.waitForSelector(selector, { timeout: TIMEOUTS.short });
+      await this.page.waitForSelector(selector, { timeout: TEST_CONFIG.timeouts.shortOperation });
       return true;
     } catch {
       return false;
