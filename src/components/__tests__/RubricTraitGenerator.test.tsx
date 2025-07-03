@@ -1,443 +1,306 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, userEvent, waitFor } from '../../test-utils/test-helpers';
-import { RubricTraitGenerator } from '../RubricTraitGenerator';
+import { render, screen, fireEvent } from '@testing-library/react';
+import RubricTraitGenerator from '../RubricTraitGenerator';
 import { useRubricStore } from '../../stores/useRubricStore';
-import { useQuestionStore } from '../../stores/useQuestionStore';
-import { server } from '../../test-utils/mocks/server';
-import { http, HttpResponse } from 'msw';
-import { API_ENDPOINTS } from '../../constants/api';
+import { QuestionData } from '../../types';
 
-// Mock the stores
+// Mock the useRubricStore
 vi.mock('../../stores/useRubricStore');
-vi.mock('../../stores/useQuestionStore');
-
-const mockUseRubricStore = vi.mocked(useRubricStore);
-const mockUseQuestionStore = vi.mocked(useQuestionStore);
 
 describe('RubricTraitGenerator', () => {
-  const mockSetGeneratedTraits = vi.fn();
-  const mockSetIsGeneratingTraits = vi.fn();
-  const mockSetTraitGenerationError = vi.fn();
+  const mockGenerateTraits = vi.fn();
+  const mockApplyGeneratedTraits = vi.fn();
+  const mockClearError = vi.fn();
+  const mockOnTraitsGenerated = vi.fn();
 
-  const mockQuestionData = {
+  const mockQuestions: QuestionData = {
     'q1': {
       question: 'What is the capital of France?',
       raw_answer: 'Paris',
-      answer_template: 'class Answer(BaseModel): capital: str'
+      answer_template: ''
     },
     'q2': {
-      question: 'Explain photosynthesis.',
-      raw_answer: 'Photosynthesis is...',
-      answer_template: 'class Answer(BaseModel): explanation: str'
+      question: 'What is the largest planet in our solar system?',
+      raw_answer: 'Jupiter',
+      answer_template: ''
+    },
+    'q3': {
+      question: 'Who wrote Romeo and Juliet?',
+      raw_answer: 'William Shakespeare',
+      answer_template: ''
     }
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Mock useRubricStore
-    mockUseRubricStore.mockReturnValue({
+    // Mock the store with the actual interface
+    (useRubricStore as any).mockReturnValue({
       currentRubric: null,
-      generatedTraits: [],
+      generatedSuggestions: [],
       isGeneratingTraits: false,
-      traitGenerationError: null,
+      isLoadingRubric: false,
+      isSavingRubric: false,
+      lastError: null,
       setCurrentRubric: vi.fn(),
-      clearCurrentRubric: vi.fn(),
-      setGeneratedTraits: mockSetGeneratedTraits,
-      clearGeneratedTraits: vi.fn(),
-      setIsGeneratingTraits: mockSetIsGeneratingTraits,
-      setTraitGenerationError: mockSetTraitGenerationError,
-      resetRubricState: vi.fn(),
-    });
-
-    // Mock useQuestionStore
-    mockUseQuestionStore.mockReturnValue({
-      questionData: mockQuestionData,
-      selectedQuestions: ['q1', 'q2'],
-      setQuestionData: vi.fn(),
-      setSelectedQuestions: vi.fn(),
-      clearQuestionData: vi.fn(),
-      resetQuestionState: vi.fn(),
+      updateRubricTitle: vi.fn(),
+      addTrait: vi.fn(),
+      updateTrait: vi.fn(),
+      removeTrait: vi.fn(),
+      reorderTraits: vi.fn(),
+      generateTraits: mockGenerateTraits,
+      loadRubric: vi.fn(),
+      saveRubric: vi.fn(),
+      deleteRubric: vi.fn(),
+      clearError: mockClearError,
+      reset: vi.fn(),
+      applyGeneratedTraits: mockApplyGeneratedTraits
     });
   });
 
-  describe('Initial Rendering', () => {
-    it('should render with default state', () => {
-      render(<RubricTraitGenerator />);
-      
-      expect(screen.getByText('Generate Rubric Traits')).toBeInTheDocument();
-      expect(screen.getByText('System Prompt')).toBeInTheDocument();
-      expect(screen.getByText('Questions to Analyze')).toBeInTheDocument();
-      expect(screen.getByText('Your Suggestions')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /generate traits/i })).toBeInTheDocument();
-    });
+  it('renders the component with collapsed state by default', () => {
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    expect(screen.getByText('Rubric trait generator')).toBeInTheDocument();
+    expect(screen.queryByText('System prompt')).not.toBeInTheDocument();
+  });
 
-    it('should show default system prompt', () => {
-      render(<RubricTraitGenerator />);
-      
-      const systemPromptTextarea = screen.getByDisplayValue(/You are an expert in educational assessment/);
-      expect(systemPromptTextarea).toBeInTheDocument();
-    });
+  it('expands when header is clicked', () => {
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    expect(screen.getByText('System prompt')).toBeInTheDocument();
+    expect(screen.getByText('Context question - Answer pairs')).toBeInTheDocument();
+  });
 
-    it('should show selected questions from store', () => {
-      render(<RubricTraitGenerator />);
-      
-      expect(screen.getByText('What is the capital of France?')).toBeInTheDocument();
-      expect(screen.getByText('Explain photosynthesis.')).toBeInTheDocument();
-    });
+  it('displays questions in table format with actual content', () => {
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    // Expand the component
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    // Check table headers
+    expect(screen.getByText('Question')).toBeInTheDocument();
+    expect(screen.getByText('Answer')).toBeInTheDocument();
+    expect(screen.getByText('ID')).toBeInTheDocument();
+    
+    // Check actual question content is displayed
+    expect(screen.getByText('What is the capital of France?')).toBeInTheDocument();
+    expect(screen.getByText('Paris')).toBeInTheDocument();
+    expect(screen.getByText('What is the largest planet in our solar system?')).toBeInTheDocument();
+    expect(screen.getByText('Jupiter')).toBeInTheDocument();
+  });
 
-    it('should display question count', () => {
-      render(<RubricTraitGenerator />);
-      
-      expect(screen.getByText('2 questions selected')).toBeInTheDocument();
+  it('selects all questions by default', () => {
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    const checkboxes = screen.getAllByRole('checkbox');
+    // First checkbox is the "select all" checkbox, rest are individual questions
+    expect(checkboxes).toHaveLength(4); // 1 header + 3 questions
+    
+    // All checkboxes should be checked
+    checkboxes.forEach(checkbox => {
+      expect(checkbox).toBeChecked();
     });
   });
 
-  describe('User Interactions', () => {
-    it('should update system prompt', async () => {
-      const user = userEvent.setup();
-      render(<RubricTraitGenerator />);
-      
-      const systemPromptTextarea = screen.getByDisplayValue(/You are an expert in educational assessment/);
-      
-      await user.clear(systemPromptTextarea);
-      await user.type(systemPromptTextarea, 'Custom system prompt');
-      
-      expect(systemPromptTextarea).toHaveValue('Custom system prompt');
-    });
+  it('handles Select All and Select None buttons', () => {
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    // Check that Select All and Select None buttons exist
+    expect(screen.getByRole('button', { name: /Select All/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Select None/i })).toBeInTheDocument();
+  });
 
-    it('should add user suggestions', async () => {
-      const user = userEvent.setup();
-      render(<RubricTraitGenerator />);
-      
-      const suggestionsInput = screen.getByPlaceholderText(/clarity, accuracy, relevance/);
-      
-      await user.type(suggestionsInput, 'clarity, depth, relevance');
-      
-      expect(suggestionsInput).toHaveValue('clarity, depth, relevance');
-    });
+  it('handles individual question selection', () => {
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    // Find the checkbox for the first question (skip the header checkbox)
+    const checkboxes = screen.getAllByRole('checkbox');
+    const firstQuestionCheckbox = checkboxes[1];
+    
+    // Uncheck it
+    fireEvent.click(firstQuestionCheckbox);
+    expect(firstQuestionCheckbox).not.toBeChecked();
+    
+    // Check it again
+    fireEvent.click(firstQuestionCheckbox);
+    expect(firstQuestionCheckbox).toBeChecked();
+  });
 
-    it('should update model configuration', async () => {
-      const user = userEvent.setup();
-      render(<RubricTraitGenerator />);
-      
-      // Change model provider
-      const providerSelect = screen.getByDisplayValue('openai');
-      await user.selectOptions(providerSelect, 'google_genai');
-      expect(providerSelect).toHaveValue('google_genai');
-      
-      // Change model name
-      const modelSelect = screen.getByDisplayValue('gpt-3.5-turbo');
-      await user.selectOptions(modelSelect, 'gpt-4');
-      expect(modelSelect).toHaveValue('gpt-4');
-      
-      // Change temperature
-      const temperatureInput = screen.getByDisplayValue('0.1');
-      await user.clear(temperatureInput);
-      await user.type(temperatureInput, '0.3');
-      expect(temperatureInput).toHaveValue('0.3');
+  it('generates traits with selected questions and passes correct data', async () => {
+    render(<RubricTraitGenerator questions={mockQuestions} onTraitsGenerated={mockOnTraitsGenerated} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    // Enter system prompt
+    const systemPromptInput = screen.getByPlaceholderText(/the system prompt here/i);
+    fireEvent.change(systemPromptInput, { target: { value: 'Test system prompt' } });
+    
+    // Enter user suggestions
+    const suggestionsInput = screen.getByPlaceholderText(/clarity, conciseness/i);
+    fireEvent.change(suggestionsInput, { target: { value: 'clarity, accuracy' } });
+    
+    // Click generate
+    const generateButton = screen.getByRole('button', { name: /Generate traits/i });
+    fireEvent.click(generateButton);
+    
+    // Verify the generateTraits was called with correct data
+    expect(mockGenerateTraits).toHaveBeenCalledWith({
+      questions: mockQuestions,
+      system_prompt: 'Test system prompt',
+      user_suggestions: ['clarity', 'accuracy'],
+      model_provider: 'google_genai',
+      model_name: 'gemini-2.0-flash',
+      temperature: 0.1
     });
   });
 
-  describe('Trait Generation', () => {
-    beforeEach(() => {
-      // Mock successful API response
-      server.use(
-        http.post(API_ENDPOINTS.GENERATE_RUBRIC_TRAITS, () => {
-          return HttpResponse.json({
-            traits: [
-              {
-                name: 'accuracy',
-                description: 'Is the response factually accurate?',
-                kind: 'boolean',
-                min_score: null,
-                max_score: null
-              },
-              {
-                name: 'completeness',
-                description: 'How complete is the response?',
-                kind: 'score',
-                min_score: 1,
-                max_score: 5
-              }
-            ]
-          });
-        })
-      );
-    });
-
-    it('should generate traits successfully', async () => {
-      const user = userEvent.setup();
-      render(<RubricTraitGenerator />);
-      
-      const generateButton = screen.getByRole('button', { name: /generate traits/i });
-      await user.click(generateButton);
-      
-      expect(mockSetIsGeneratingTraits).toHaveBeenCalledWith(true);
-      
-      await waitFor(() => {
-        expect(mockSetGeneratedTraits).toHaveBeenCalledWith([
-          {
-            name: 'accuracy',
-            description: 'Is the response factually accurate?',
-            kind: 'boolean',
-            min_score: null,
-            max_score: null
-          },
-          {
-            name: 'completeness',
-            description: 'How complete is the response?',
-            kind: 'score',
-            min_score: 1,
-            max_score: 5
-          }
-        ]);
-      });
-      
-      expect(mockSetIsGeneratingTraits).toHaveBeenCalledWith(false);
-      expect(mockSetTraitGenerationError).toHaveBeenCalledWith(null);
-    });
-
-    it('should send correct request payload', async () => {
-      const user = userEvent.setup();
-      let requestBody: any;
-      
-      server.use(
-        http.post(API_ENDPOINTS.GENERATE_RUBRIC_TRAITS, async ({ request }) => {
-          requestBody = await request.json();
-          return HttpResponse.json({ traits: [] });
-        })
-      );
-      
-      render(<RubricTraitGenerator />);
-      
-      // Add user suggestions
-      const suggestionsInput = screen.getByPlaceholderText(/clarity, accuracy, relevance/);
-      await user.type(suggestionsInput, 'clarity, depth');
-      
-      // Generate traits
-      const generateButton = screen.getByRole('button', { name: /generate traits/i });
-      await user.click(generateButton);
-      
-      await waitFor(() => {
-        expect(requestBody).toEqual({
-          questions: [
-            { id: 'q1', text: 'What is the capital of France?' },
-            { id: 'q2', text: 'Explain photosynthesis.' }
-          ],
-          system_prompt: expect.stringContaining('You are an expert in educational assessment'),
-          user_suggestions: ['clarity', 'depth'],
-          model_provider: 'openai',
-          model_name: 'gpt-3.5-turbo',
-          temperature: 0.1
-        });
-      });
-    });
-
-    it('should disable button during generation', async () => {
-      const user = userEvent.setup();
-      
-      // Mock store to show generating state
-      mockUseRubricStore.mockReturnValue({
-        currentRubric: null,
-        generatedTraits: [],
-        isGeneratingTraits: true,
-        traitGenerationError: null,
-        setCurrentRubric: vi.fn(),
-        clearCurrentRubric: vi.fn(),
-        setGeneratedTraits: mockSetGeneratedTraits,
-        clearGeneratedTraits: vi.fn(),
-        setIsGeneratingTraits: mockSetIsGeneratingTraits,
-        setTraitGenerationError: mockSetTraitGenerationError,
-        resetRubricState: vi.fn(),
-      });
-      
-      render(<RubricTraitGenerator />);
-      
-      const generateButton = screen.getByRole('button', { name: /generating/i });
-      expect(generateButton).toBeDisabled();
-    });
+  it('truncates long question and answer text', () => {
+    const longQuestions: QuestionData = {
+      'long1': {
+        question: 'This is a very long question that should be truncated because it exceeds the maximum length allowed for display in the table',
+        raw_answer: 'This is a very long answer that should also be truncated when displayed',
+        answer_template: ''
+      }
+    };
+    
+    render(<RubricTraitGenerator questions={longQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    // Check that text is truncated (ends with ...)
+    const questionText = screen.getByText(/This is a very long question.*\.\.\./);
+    const answerText = screen.getByText(/This is a very long answer.*\.\.\./);
+    
+    expect(questionText).toBeInTheDocument();
+    expect(answerText).toBeInTheDocument();
   });
 
-  describe('Error Handling', () => {
-    it('should handle API errors', async () => {
-      const user = userEvent.setup();
-      
-      server.use(
-        http.post(API_ENDPOINTS.GENERATE_RUBRIC_TRAITS, () => {
-          return HttpResponse.json(
-            { detail: 'Generation failed' },
-            { status: 500 }
-          );
-        })
-      );
-      
-      render(<RubricTraitGenerator />);
-      
-      const generateButton = screen.getByRole('button', { name: /generate traits/i });
-      await user.click(generateButton);
-      
-      await waitFor(() => {
-        expect(mockSetTraitGenerationError).toHaveBeenCalledWith('Generation failed');
-      });
-      
-      expect(mockSetIsGeneratingTraits).toHaveBeenCalledWith(false);
+  it('displays error message when present', () => {
+    (useRubricStore as any).mockReturnValue({
+      currentRubric: null,
+      generatedSuggestions: [],
+      isGeneratingTraits: false,
+      isLoadingRubric: false,
+      isSavingRubric: false,
+      lastError: 'Failed to generate traits',
+      setCurrentRubric: vi.fn(),
+      updateRubricTitle: vi.fn(),
+      addTrait: vi.fn(),
+      updateTrait: vi.fn(),
+      removeTrait: vi.fn(),
+      reorderTraits: vi.fn(),
+      generateTraits: mockGenerateTraits,
+      loadRubric: vi.fn(),
+      saveRubric: vi.fn(),
+      deleteRubric: vi.fn(),
+      clearError: mockClearError,
+      reset: vi.fn(),
+      applyGeneratedTraits: mockApplyGeneratedTraits
     });
-
-    it('should handle network errors', async () => {
-      const user = userEvent.setup();
-      
-      server.use(
-        http.post(API_ENDPOINTS.GENERATE_RUBRIC_TRAITS, () => {
-          return HttpResponse.error();
-        })
-      );
-      
-      render(<RubricTraitGenerator />);
-      
-      const generateButton = screen.getByRole('button', { name: /generate traits/i });
-      await user.click(generateButton);
-      
-      await waitFor(() => {
-        expect(mockSetTraitGenerationError).toHaveBeenCalledWith(
-          expect.stringContaining('Failed to generate traits')
-        );
-      });
-    });
-
-    it('should show error message when present', () => {
-      mockUseRubricStore.mockReturnValue({
-        currentRubric: null,
-        generatedTraits: [],
-        isGeneratingTraits: false,
-        traitGenerationError: 'Test error message',
-        setCurrentRubric: vi.fn(),
-        clearCurrentRubric: vi.fn(),
-        setGeneratedTraits: mockSetGeneratedTraits,
-        clearGeneratedTraits: vi.fn(),
-        setIsGeneratingTraits: mockSetIsGeneratingTraits,
-        setTraitGenerationError: mockSetTraitGenerationError,
-        resetRubricState: vi.fn(),
-      });
-      
-      render(<RubricTraitGenerator />);
-      
-      expect(screen.getByText('Test error message')).toBeInTheDocument();
-    });
+    
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    expect(screen.getByText('Failed to generate traits')).toBeInTheDocument();
+    
+    // Click dismiss
+    const dismissButton = screen.getByRole('button', { name: /Dismiss/i });
+    fireEvent.click(dismissButton);
+    
+    expect(mockClearError).toHaveBeenCalled();
   });
 
-  describe('Edge Cases', () => {
-    it('should handle empty question data', () => {
-      mockUseQuestionStore.mockReturnValue({
-        questionData: {},
-        selectedQuestions: [],
-        setQuestionData: vi.fn(),
-        setSelectedQuestions: vi.fn(),
-        clearQuestionData: vi.fn(),
-        resetQuestionState: vi.fn(),
-      });
-      
-      render(<RubricTraitGenerator />);
-      
-      expect(screen.getByText('0 questions selected')).toBeInTheDocument();
-      expect(screen.getByText('No questions selected')).toBeInTheDocument();
+  it('displays and applies generated traits', () => {
+    const mockTraits = [
+      { name: 'clarity', kind: 'binary', description: 'Is the answer clear?' },
+      { name: 'accuracy', kind: 'scale', description: 'How accurate is the answer?' }
+    ];
+    
+    (useRubricStore as any).mockReturnValue({
+      currentRubric: null,
+      generatedSuggestions: mockTraits,
+      isGeneratingTraits: false,
+      isLoadingRubric: false,
+      isSavingRubric: false,
+      lastError: null,
+      setCurrentRubric: vi.fn(),
+      updateRubricTitle: vi.fn(),
+      addTrait: vi.fn(),
+      updateTrait: vi.fn(),
+      removeTrait: vi.fn(),
+      reorderTraits: vi.fn(),
+      generateTraits: mockGenerateTraits,
+      loadRubric: vi.fn(),
+      saveRubric: vi.fn(),
+      deleteRubric: vi.fn(),
+      clearError: mockClearError,
+      reset: vi.fn(),
+      applyGeneratedTraits: mockApplyGeneratedTraits
     });
-
-    it('should handle questions without selection', () => {
-      mockUseQuestionStore.mockReturnValue({
-        questionData: mockQuestionData,
-        selectedQuestions: [],
-        setQuestionData: vi.fn(),
-        setSelectedQuestions: vi.fn(),
-        clearQuestionData: vi.fn(),
-        resetQuestionState: vi.fn(),
-      });
-      
-      render(<RubricTraitGenerator />);
-      
-      expect(screen.getByText('0 questions selected')).toBeInTheDocument();
-      expect(screen.getByText('No questions selected')).toBeInTheDocument();
-    });
-
-    it('should prevent generation with no questions', async () => {
-      const user = userEvent.setup();
-      
-      mockUseQuestionStore.mockReturnValue({
-        questionData: {},
-        selectedQuestions: [],
-        setQuestionData: vi.fn(),
-        setSelectedQuestions: vi.fn(),
-        clearQuestionData: vi.fn(),
-        resetQuestionState: vi.fn(),
-      });
-      
-      render(<RubricTraitGenerator />);
-      
-      const generateButton = screen.getByRole('button', { name: /generate traits/i });
-      expect(generateButton).toBeDisabled();
-    });
-
-    it('should handle very long system prompts', async () => {
-      const user = userEvent.setup();
-      render(<RubricTraitGenerator />);
-      
-      const systemPromptTextarea = screen.getByDisplayValue(/You are an expert in educational assessment/);
-      const longPrompt = 'A'.repeat(5000);
-      
-      await user.clear(systemPromptTextarea);
-      await user.type(systemPromptTextarea, longPrompt);
-      
-      expect(systemPromptTextarea).toHaveValue(longPrompt);
-    });
-
-    it('should handle special characters in suggestions', async () => {
-      const user = userEvent.setup();
-      render(<RubricTraitGenerator />);
-      
-      const suggestionsInput = screen.getByPlaceholderText(/clarity, accuracy, relevance/);
-      const specialChars = 'trait-1, trait_2, trait@3, trait#4';
-      
-      await user.type(suggestionsInput, specialChars);
-      
-      expect(suggestionsInput).toHaveValue(specialChars);
-    });
+    
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    // Check generated traits are displayed
+    expect(screen.getByText('Generated Traits (2)')).toBeInTheDocument();
+    expect(screen.getByText('clarity')).toBeInTheDocument();
+    expect(screen.getByText('accuracy')).toBeInTheDocument();
+    
+    // Click apply traits
+    const applyButton = screen.getByRole('button', { name: /Apply Traits/i });
+    fireEvent.click(applyButton);
+    
+    expect(mockApplyGeneratedTraits).toHaveBeenCalledWith(mockTraits);
   });
 
-  describe('Accessibility', () => {
-    it('should have proper form labels', () => {
-      render(<RubricTraitGenerator />);
-      
-      expect(screen.getByLabelText(/system prompt/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/your suggestions/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/model provider/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/model name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/temperature/i)).toBeInTheDocument();
+  it('shows loading state during generation', () => {
+    (useRubricStore as any).mockReturnValue({
+      currentRubric: null,
+      generatedSuggestions: [],
+      isGeneratingTraits: true,
+      isLoadingRubric: false,
+      isSavingRubric: false,
+      lastError: null,
+      setCurrentRubric: vi.fn(),
+      updateRubricTitle: vi.fn(),
+      addTrait: vi.fn(),
+      updateTrait: vi.fn(),
+      removeTrait: vi.fn(),
+      reorderTraits: vi.fn(),
+      generateTraits: mockGenerateTraits,
+      loadRubric: vi.fn(),
+      saveRubric: vi.fn(),
+      deleteRubric: vi.fn(),
+      clearError: mockClearError,
+      reset: vi.fn(),
+      applyGeneratedTraits: mockApplyGeneratedTraits
     });
-
-    it('should support keyboard navigation', async () => {
-      const user = userEvent.setup();
-      render(<RubricTraitGenerator />);
-      
-      // Tab through interactive elements
-      await user.tab();
-      expect(screen.getByDisplayValue(/You are an expert in educational assessment/)).toHaveFocus();
-      
-      await user.tab();
-      expect(screen.getByPlaceholderText(/clarity, accuracy, relevance/)).toHaveFocus();
-      
-      await user.tab();
-      expect(screen.getByDisplayValue('openai')).toHaveFocus();
-    });
-
-    it('should have proper ARIA attributes', () => {
-      render(<RubricTraitGenerator />);
-      
-      const generateButton = screen.getByRole('button', { name: /generate traits/i });
-      expect(generateButton).toHaveAttribute('type', 'button');
-      
-      // Check for proper form structure
-      const form = generateButton.closest('form');
-      expect(form).toBeInTheDocument();
-    });
+    
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    fireEvent.click(header);
+    
+    expect(screen.getByText('Generating traits...')).toBeInTheDocument();
   });
 });

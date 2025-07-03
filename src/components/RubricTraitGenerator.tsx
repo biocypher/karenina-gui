@@ -64,6 +64,17 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
       }
     });
     
+    // Log selected questions data for verification
+    console.log('Selected questions for trait generation:', {
+      count: Object.keys(selectedQuestionsData).length,
+      ids: Object.keys(selectedQuestionsData),
+      sample: Object.entries(selectedQuestionsData).slice(0, 2).map(([id, q]) => ({
+        id,
+        question: q.question,
+        answer: q.raw_answer
+      }))
+    });
+    
     // Parse user suggestions
     const suggestions = userSuggestions
       .split(',')
@@ -79,6 +90,13 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
       temperature: 0.1
     };
     
+    console.log('Trait generation request:', {
+      questionCount: Object.keys(request.questions).length,
+      hasSystemPrompt: !!request.system_prompt,
+      suggestionsCount: request.user_suggestions?.length || 0,
+      model: `${request.model_provider}/${request.model_name}`
+    });
+    
     await generateTraits(request);
     
     if (onTraitsGenerated && generatedSuggestions.length > 0) {
@@ -90,6 +108,11 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
     if (generatedSuggestions.length > 0) {
       applyGeneratedTraits(generatedSuggestions);
     }
+  };
+  
+  const truncateText = (text: string, maxLength: number = 80) => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
   
   return (
@@ -150,28 +173,64 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
               </div>
             </div>
             
-            <div className="border border-blue-300 dark:border-blue-600 rounded-md p-3 bg-blue-50/30 dark:bg-blue-900/20 max-h-40 overflow-y-auto">
-              {hasQuestions ? (
-                <div className="space-y-2">
-                  {questionIds.map((questionId, index) => (
-                    <label key={questionId} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedQuestions.has(questionId)}
-                        onChange={() => handleQuestionToggle(questionId)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                      />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">
-                        Question answer pair {index + 1}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                  No questions available. Generate answer templates first.
-                </p>
-              )}
+            <div className="border border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden shadow-inner">
+              <div className="max-h-64 overflow-y-auto">
+                {hasQuestions ? (
+                  <table className="w-full">
+                    <thead className="bg-slate-50 dark:bg-slate-700 sticky top-0">
+                      <tr>
+                        <th className="w-12 px-4 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={selectedQuestions.size === questionIds.length && questionIds.length > 0}
+                            onChange={selectedQuestions.size === questionIds.length ? handleSelectNone : handleSelectAll}
+                            className="rounded border-slate-300 dark:border-slate-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Question</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Answer</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">ID</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
+                      {questionIds.map((questionId) => {
+                        const question = questions[questionId];
+                        return (
+                          <tr key={questionId} className="hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+                            <td className="px-4 py-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedQuestions.has(questionId)}
+                                onChange={() => handleQuestionToggle(questionId)}
+                                className="rounded border-slate-300 dark:border-slate-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
+                              <div className="max-w-xs line-clamp-2" title={question?.question || questionId}>
+                                {truncateText(question?.question || questionId)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                              <div className="max-w-xs line-clamp-1" title={question?.raw_answer || ''}>
+                                {truncateText(question?.raw_answer || '', 50)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400 font-mono">
+                              {questionId.substring(0, 8)}...
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 italic">
+                      No questions available. Generate answer templates first.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
