@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Rubric, RubricTrait, QuestionData, RubricTraitGenerationRequest, RubricTraitGenerationResponse } from '../types';
+import { Rubric, RubricTrait, QuestionData, RubricTraitGenerationRequest, RubricTraitGenerationResponse, RubricTraitGenerationConfig } from '../types';
 
 interface RubricState {
   // Current rubric being edited
@@ -7,6 +7,9 @@ interface RubricState {
   
   // Generated trait suggestions from LLM
   generatedSuggestions: RubricTrait[];
+  
+  // Model configuration
+  config: RubricTraitGenerationConfig;
   
   // UI state
   isGeneratingTraits: boolean;
@@ -22,6 +25,9 @@ interface RubricState {
   updateTrait: (index: number, trait: RubricTrait) => void;
   removeTrait: (index: number) => void;
   reorderTraits: (startIndex: number, endIndex: number) => void;
+  
+  // Configuration actions
+  setConfig: (config: RubricTraitGenerationConfig) => void;
   
   // API actions
   generateTraits: (request: RubricTraitGenerationRequest) => Promise<void>;
@@ -43,6 +49,12 @@ export const useRubricStore = create<RubricState>((set, get) => ({
   // Initial state
   currentRubric: null,
   generatedSuggestions: [],
+  config: {
+    model_provider: 'google_genai',
+    model_name: 'gemini-2.0-flash',
+    temperature: 0.1,
+    interface: 'langchain'
+  },
   isGeneratingTraits: false,
   isLoadingRubric: false,
   isSavingRubric: false,
@@ -125,6 +137,11 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       currentRubric: { ...currentRubric, traits },
       lastError: null 
     });
+  },
+  
+  // Configuration actions
+  setConfig: (config: RubricTraitGenerationConfig) => {
+    set({ config });
   },
   
   // API actions
@@ -272,6 +289,12 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     set({
       currentRubric: null,
       generatedSuggestions: [],
+      config: {
+        model_provider: 'google_genai',
+        model_name: 'gemini-2.0-flash',
+        temperature: 0.1,
+        interface: 'langchain'
+      },
       isGeneratingTraits: false,
       isLoadingRubric: false,
       isSavingRubric: false,

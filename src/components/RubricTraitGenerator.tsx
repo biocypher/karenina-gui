@@ -3,6 +3,7 @@ import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Search, Check, Square } from 'lucide-react';
 import { useRubricStore } from '../stores/useRubricStore';
 import { QuestionData, RubricTrait } from '../types';
+import { ModelSelector } from './ModelSelector';
 
 interface RubricTraitGeneratorProps {
   questions: QuestionData;
@@ -23,9 +24,11 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
     generatedSuggestions,
     isGeneratingTraits,
     lastError,
+    config,
     generateTraits,
     clearError,
-    applyGeneratedTraits
+    applyGeneratedTraits,
+    setConfig
   } = useRubricStore();
   
   const questionIds = Object.keys(questions);
@@ -157,16 +160,14 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
       questions: selectedQuestionsData,
       system_prompt: systemPrompt || undefined,
       user_suggestions: suggestions.length > 0 ? suggestions : undefined,
-      model_provider: 'google_genai',
-      model_name: 'gemini-2.0-flash',
-      temperature: 0.1
+      config
     };
     
     console.log('Trait generation request:', {
       questionCount: Object.keys(request.questions).length,
       hasSystemPrompt: !!request.system_prompt,
       suggestionsCount: request.user_suggestions?.length || 0,
-      model: `${request.model_provider}/${request.model_name}`
+      config: request.config
     });
     
     await generateTraits(request);
@@ -232,6 +233,18 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                          placeholder-slate-400 dark:placeholder-slate-500
                          disabled:opacity-50 disabled:cursor-not-allowed"
               rows={8}
+            />
+          </div>
+          
+          {/* Model Configuration */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              Model Configuration
+            </label>
+            <ModelSelector
+              config={config}
+              onConfigChange={setConfig}
+              disabled={isGeneratingTraits}
             />
           </div>
           

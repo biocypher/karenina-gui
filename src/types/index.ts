@@ -158,13 +158,19 @@ export interface Rubric {
   traits: RubricTrait[];
 }
 
+// Rubric Trait Generation Configuration
+export interface RubricTraitGenerationConfig {
+  model_provider: string;
+  model_name: string;
+  temperature: number;
+  interface: 'langchain' | 'openrouter' | 'manual';
+}
+
 export interface RubricTraitGenerationRequest {
   questions: QuestionData;
   system_prompt?: string;
   user_suggestions?: string[];
-  model_provider?: string;
-  model_name?: string;
-  temperature?: number;
+  config: RubricTraitGenerationConfig;
 }
 
 export interface RubricTraitGenerationResponse {
