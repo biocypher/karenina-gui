@@ -233,19 +233,6 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
         />
       )}
 
-      {/* Rubric Components */}
-      {hasQuestions && (
-        <>
-          <RubricTraitGenerator 
-            questions={questions}
-            onTraitsGenerated={(traits) => {
-              console.log('Generated traits:', traits);
-            }}
-          />
-          <RubricTraitEditor />
-        </>
-      )}
-
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">Answer Template Generation</h2>
         <p className="text-slate-600 dark:text-slate-300 mb-6">
@@ -420,6 +407,19 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
           </div>
           <p className="text-red-700 dark:text-red-300 mt-2">{error}</p>
         </div>
+      )}
+
+      {/* Rubric Components */}
+      {hasQuestions && (
+        <>
+          <RubricTraitGenerator 
+            questions={questions}
+            onTraitsGenerated={(traits) => {
+              console.log('Generated traits:', traits);
+            }}
+          />
+          <RubricTraitEditor />
+        </>
       )}
     </div>
   );
