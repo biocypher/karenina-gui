@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import RubricTraitGenerator from '../RubricTraitGenerator';
 import { useRubricStore } from '../../stores/useRubricStore';
 import { QuestionData } from '../../types';
+import { mockFetchSuccess } from '../../test-utils/test-helpers';
 
 // Mock the useRubricStore
 vi.mock('../../stores/useRubricStore');
@@ -34,6 +35,11 @@ describe('RubricTraitGenerator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
+    // Mock the default system prompt API call
+    mockFetchSuccess({
+      prompt: 'You are an expert in rubric design. Test prompt for testing purposes.'
+    });
+    
     // Mock the store with the actual interface
     (useRubricStore as any).mockReturnValue({
       currentRubric: null,
@@ -43,7 +49,6 @@ describe('RubricTraitGenerator', () => {
       isSavingRubric: false,
       lastError: null,
       setCurrentRubric: vi.fn(),
-      updateRubricTitle: vi.fn(),
       addTrait: vi.fn(),
       updateTrait: vi.fn(),
       removeTrait: vi.fn(),
@@ -200,7 +205,6 @@ describe('RubricTraitGenerator', () => {
       isSavingRubric: false,
       lastError: 'Failed to generate traits',
       setCurrentRubric: vi.fn(),
-      updateRubricTitle: vi.fn(),
       addTrait: vi.fn(),
       updateTrait: vi.fn(),
       removeTrait: vi.fn(),
@@ -242,7 +246,6 @@ describe('RubricTraitGenerator', () => {
       isSavingRubric: false,
       lastError: null,
       setCurrentRubric: vi.fn(),
-      updateRubricTitle: vi.fn(),
       addTrait: vi.fn(),
       updateTrait: vi.fn(),
       removeTrait: vi.fn(),
@@ -282,7 +285,6 @@ describe('RubricTraitGenerator', () => {
       isSavingRubric: false,
       lastError: null,
       setCurrentRubric: vi.fn(),
-      updateRubricTitle: vi.fn(),
       addTrait: vi.fn(),
       updateTrait: vi.fn(),
       removeTrait: vi.fn(),
@@ -313,7 +315,6 @@ describe('RubricTraitGenerator', () => {
       isSavingRubric: false,
       lastError: null,
       setCurrentRubric: vi.fn(),
-      updateRubricTitle: vi.fn(),
       addTrait: vi.fn(),
       updateTrait: vi.fn(),
       removeTrait: vi.fn(),
@@ -364,7 +365,6 @@ describe('RubricTraitGenerator', () => {
       isSavingRubric: false,
       lastError: null,
       setCurrentRubric: vi.fn(),
-      updateRubricTitle: vi.fn(),
       addTrait: vi.fn(),
       updateTrait: vi.fn(),
       removeTrait: vi.fn(),

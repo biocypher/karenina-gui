@@ -12,6 +12,8 @@ interface RubricTraitGeneratorProps {
 export default function RubricTraitGenerator({ questions, onTraitsGenerated }: RubricTraitGeneratorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('');
+  const [defaultSystemPrompt, setDefaultSystemPrompt] = useState('');
+  const [isLoadingPrompt, setIsLoadingPrompt] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
   const [userSuggestions, setUserSuggestions] = useState('');
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -52,6 +54,32 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   const filteredQuestionIds = Object.keys(filteredQuestions);
   const totalQuestions = Object.keys(questions).length;
   const selectedCount = selectedQuestions.size;
+  
+  // Load default system prompt
+  useEffect(() => {
+    const loadDefaultPrompt = async () => {
+      try {
+        setIsLoadingPrompt(true);
+        const response = await fetch('/api/rubric/default-system-prompt');
+        if (response.ok) {
+          const data = await response.json();
+          const prompt = data.prompt;
+          setDefaultSystemPrompt(prompt);
+          setSystemPrompt(prompt); // Set as initial value
+        } else {
+          console.error('Failed to load default system prompt');
+          setDefaultSystemPrompt('');
+        }
+      } catch (error) {
+        console.error('Error loading default system prompt:', error);
+        setDefaultSystemPrompt('');
+      } finally {
+        setIsLoadingPrompt(false);
+      }
+    };
+    
+    loadDefaultPrompt();
+  }, []);
   
   // Initialize with all questions selected by default (only on first load)
   useEffect(() => {
@@ -180,18 +208,30 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
         <div className="mt-4 space-y-4">
           {/* System Prompt */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              System prompt
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                System prompt
+              </label>
+              <button
+                onClick={() => setSystemPrompt(defaultSystemPrompt)}
+                disabled={!defaultSystemPrompt || isLoadingPrompt}
+                className="px-2 py-1 text-xs bg-slate-600 dark:bg-slate-500 text-white rounded hover:bg-slate-700 dark:hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Reset to default system prompt"
+              >
+                {isLoadingPrompt ? 'Loading...' : 'Reset to Default'}
+              </button>
+            </div>
             <textarea
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder=".... the system prompt here ...."
+              placeholder={isLoadingPrompt ? "Loading default system prompt..." : "Enter custom system prompt or use the default..."}
+              disabled={isLoadingPrompt}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md 
                          bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
                          focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400
-                         placeholder-slate-400 dark:placeholder-slate-500"
-              rows={3}
+                         placeholder-slate-400 dark:placeholder-slate-500
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+              rows={8}
             />
           </div>
           
