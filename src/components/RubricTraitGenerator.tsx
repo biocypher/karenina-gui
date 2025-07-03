@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { Search, Check, Square } from 'lucide-react';
+import { Search, Check, Square, Upload } from 'lucide-react';
 import { useRubricStore } from '../stores/useRubricStore';
 import { QuestionData, RubricTrait } from '../types';
 import { ModelSelector } from './ModelSelector';
@@ -19,6 +19,9 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   const [userSuggestions, setUserSuggestions] = useState('');
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // File upload state (session-only, no persistence)
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const {
     generatedSuggestions,
@@ -183,6 +186,30 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
     }
   };
   
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.txt') && !file.name.endsWith('.md') && file.type !== 'text/plain') {
+      alert('Please upload a text file (.txt or .md)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (content) {
+        setSystemPrompt(content);
+      }
+    };
+    reader.readAsText(file);
+    
+    // Clear the input so the same file can be uploaded again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
   const truncateText = (text: string, maxLength: number = 80) => {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
@@ -213,14 +240,37 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 System prompt
               </label>
-              <button
-                onClick={() => setSystemPrompt(defaultSystemPrompt)}
-                disabled={!defaultSystemPrompt || isLoadingPrompt}
-                className="px-2 py-1 text-xs bg-slate-600 dark:bg-slate-500 text-white rounded hover:bg-slate-700 dark:hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Reset to default system prompt"
-              >
-                {isLoadingPrompt ? 'Loading...' : 'Reset to Default'}
-              </button>
+              <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt,.md"
+                  onChange={handleFileUpload}
+                  disabled={isGeneratingTraits}
+                  className="hidden"
+                  id="prompt-upload"
+                />
+                <label
+                  htmlFor="prompt-upload"
+                  className={`px-2 py-1 text-xs text-white rounded transition-colors ${
+                    isGeneratingTraits 
+                      ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-50' 
+                      : 'bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-400 cursor-pointer'
+                  }`}
+                  title="Upload system prompt from file"
+                >
+                  <Upload className="w-3 h-3 inline mr-1" />
+                  Upload
+                </label>
+                <button
+                  onClick={() => setSystemPrompt(defaultSystemPrompt)}
+                  disabled={!defaultSystemPrompt || isLoadingPrompt}
+                  className="px-2 py-1 text-xs bg-slate-600 dark:bg-slate-500 text-white rounded hover:bg-slate-700 dark:hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Reset to default system prompt"
+                >
+                  {isLoadingPrompt ? 'Loading...' : 'Reset to Default'}
+                </button>
+              </div>
             </div>
             <textarea
               value={systemPrompt}
