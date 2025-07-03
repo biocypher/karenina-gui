@@ -24,7 +24,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: [
         {
           name: 'accuracy',
@@ -48,7 +47,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: []
     };
     
@@ -65,30 +63,11 @@ describe('useRubricStore', () => {
     expect(result.current.currentRubric).toBeNull();
   });
 
-  it('should update rubric title', () => {
-    const { result } = renderHook(() => useRubricStore());
-    
-    const mockRubric = {
-      title: 'Original Title',
-      traits: []
-    };
-    
-    act(() => {
-      result.current.setCurrentRubric(mockRubric);
-    });
-    
-    act(() => {
-      result.current.updateRubricTitle('Updated Title');
-    });
-    
-    expect(result.current.currentRubric?.title).toBe('Updated Title');
-  });
 
   it('should add new trait', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: []
     };
     
@@ -116,7 +95,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: [
         {
           name: 'accuracy',
@@ -152,7 +130,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: [
         {
           name: 'accuracy',
@@ -187,7 +164,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: [
         {
           name: 'accuracy',
@@ -222,7 +198,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: [
         {
           name: 'accuracy',
@@ -257,7 +232,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: [
         {
           name: 'existing',
@@ -328,7 +302,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
     
     const mockRubric = {
-      title: 'Test Rubric',
       traits: []
     };
     
@@ -377,15 +350,4 @@ describe('useRubricStore', () => {
     expect(result.current.lastError).toContain('Invalid trait index');
   });
 
-  it('should handle title updates when no rubric exists', () => {
-    const { result } = renderHook(() => useRubricStore());
-    
-    // Try to update title when no rubric is set
-    act(() => {
-      result.current.updateRubricTitle('New Title');
-    });
-    
-    // Should not crash and rubric should remain null
-    expect(result.current.currentRubric).toBeNull();
-  });
 });

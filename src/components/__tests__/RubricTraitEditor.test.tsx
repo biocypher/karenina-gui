@@ -67,7 +67,6 @@ describe('RubricTraitEditor', () => {
       render(<RubricTraitEditor />);
       
       expect(screen.getByText('Edit Rubric')).toBeInTheDocument();
-      expect(screen.getByLabelText(/rubric title/i)).toBeInTheDocument();
       expect(screen.getByText('accuracy')).toBeInTheDocument();
       expect(screen.getByText('completeness')).toBeInTheDocument();
     });
@@ -305,10 +304,6 @@ describe('RubricTraitEditor', () => {
       const nameInput = screen.getByDisplayValue('accuracy');
       await user.clear(nameInput);
       
-      // Enter title and try to save
-      const titleInput = screen.getByLabelText(/rubric title/i);
-      await user.type(titleInput, 'Test Rubric');
-      
       const saveButton = screen.getByRole('button', { name: /save rubric/i });
       await user.click(saveButton);
       
@@ -325,10 +320,6 @@ describe('RubricTraitEditor', () => {
       await user.clear(nameInputs[1]);
       await user.type(nameInputs[1], 'accuracy'); // Same as first trait
       
-      // Enter title and try to save
-      const titleInput = screen.getByLabelText(/rubric title/i);
-      await user.type(titleInput, 'Test Rubric');
-      
       const saveButton = screen.getByRole('button', { name: /save rubric/i });
       await user.click(saveButton);
       
@@ -342,7 +333,6 @@ describe('RubricTraitEditor', () => {
       // Mock store with existing rubric
       mockUseRubricStore.mockReturnValue({
         currentRubric: {
-          title: 'Existing Rubric',
           traits: mockGeneratedTraits
         },
         generatedTraits: [],
@@ -383,9 +373,6 @@ describe('RubricTraitEditor', () => {
       
       render(<RubricTraitEditor />);
       
-      const titleInput = screen.getByLabelText(/rubric title/i);
-      await user.type(titleInput, 'Test Rubric');
-      
       const saveButton = screen.getByRole('button', { name: /save rubric/i });
       await user.click(saveButton);
       
@@ -409,7 +396,6 @@ describe('RubricTraitEditor', () => {
       // Mock store with existing rubric
       mockUseRubricStore.mockReturnValue({
         currentRubric: {
-          title: 'Existing Rubric',
           traits: mockGeneratedTraits
         },
         generatedTraits: [],
@@ -445,9 +431,6 @@ describe('RubricTraitEditor', () => {
       
       render(<RubricTraitEditor />);
       
-      const titleInput = screen.getByLabelText(/rubric title/i);
-      await user.type(titleInput, 'Test Rubric');
-      
       const saveButton = screen.getByRole('button', { name: /save rubric/i });
       await user.click(saveButton);
       
@@ -461,7 +444,6 @@ describe('RubricTraitEditor', () => {
     it('should have proper form labels', () => {
       render(<RubricTraitEditor />);
       
-      expect(screen.getByLabelText(/rubric title/i)).toBeInTheDocument();
       
       // Check trait form labels
       expect(screen.getByText('Trait Name')).toBeInTheDocument();
@@ -474,8 +456,6 @@ describe('RubricTraitEditor', () => {
       render(<RubricTraitEditor />);
       
       // Tab through form elements
-      await user.tab();
-      expect(screen.getByLabelText(/rubric title/i)).toHaveFocus();
       
       await user.tab();
       expect(screen.getByDisplayValue('accuracy')).toHaveFocus();
@@ -511,9 +491,6 @@ describe('RubricTraitEditor', () => {
       await user.type(newTraitDesc, 'How relevant is the response to the question?');
       
       // Save the rubric
-      const titleInput = screen.getByLabelText(/rubric title/i);
-      await user.type(titleInput, 'Comprehensive Rubric');
-      
       const saveButton = screen.getByRole('button', { name: /save rubric/i });
       await user.click(saveButton);
       

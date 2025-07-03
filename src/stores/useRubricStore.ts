@@ -18,7 +18,6 @@ interface RubricState {
   
   // Actions
   setCurrentRubric: (rubric: Rubric | null) => void;
-  updateRubricTitle: (title: string) => void;
   addTrait: (trait: RubricTrait) => void;
   updateTrait: (index: number, trait: RubricTrait) => void;
   removeTrait: (index: number) => void;
@@ -37,7 +36,6 @@ interface RubricState {
 }
 
 const defaultRubric: Rubric = {
-  title: 'New Rubric',
   traits: []
 };
 
@@ -53,16 +51,6 @@ export const useRubricStore = create<RubricState>((set, get) => ({
   // Basic rubric manipulation
   setCurrentRubric: (rubric) => {
     set({ currentRubric: rubric, lastError: null });
-  },
-  
-  updateRubricTitle: (title) => {
-    const { currentRubric } = get();
-    if (currentRubric) {
-      set({ 
-        currentRubric: { ...currentRubric, title },
-        lastError: null 
-      });
-    }
   },
   
   addTrait: (trait) => {

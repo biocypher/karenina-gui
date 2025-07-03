@@ -155,7 +155,6 @@ export interface RubricTrait {
 }
 
 export interface Rubric {
-  title: string;
   traits: RubricTrait[];
 }
 
@@ -174,6 +173,5 @@ export interface RubricTraitGenerationResponse {
 }
 
 export interface RubricEvaluation {
-  rubric_title: string;
   trait_scores: Record<string, number | boolean>;
 }

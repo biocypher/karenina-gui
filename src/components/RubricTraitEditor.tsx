@@ -8,7 +8,6 @@ export default function RubricTraitEditor() {
     currentRubric,
     isSavingRubric,
     lastError,
-    updateRubricTitle,
     addTrait,
     updateTrait,
     removeTrait,
@@ -23,7 +22,6 @@ export default function RubricTraitEditor() {
   useEffect(() => {
     if (!currentRubric) {
       setCurrentRubric({
-        title: 'New Rubric',
         traits: []
       });
     }
@@ -62,10 +60,6 @@ export default function RubricTraitEditor() {
     if (!currentRubric) return;
     
     // Validate rubric before saving
-    if (!currentRubric.title.trim()) {
-      return;
-    }
-    
     if (currentRubric.traits.length === 0) {
       return;
     }
@@ -90,22 +84,6 @@ export default function RubricTraitEditor() {
         <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
           Rubric Trait Editor
         </h3>
-      </div>
-      
-      {/* Rubric Title */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Rubric Title
-        </label>
-        <input
-          type="text"
-          value={currentRubric.title}
-          onChange={(e) => updateRubricTitle(e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md 
-                     bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                     focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400"
-          placeholder="Enter rubric title"
-        />
       </div>
       
       {/* Traits List */}
@@ -240,7 +218,7 @@ export default function RubricTraitEditor() {
       <div className="flex justify-end space-x-3">
         <button
           onClick={handleSaveRubric}
-          disabled={isSavingRubric || !currentRubric.title.trim() || currentRubric.traits.length === 0}
+          disabled={isSavingRubric || currentRubric.traits.length === 0}
           className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-md hover:bg-slate-900 dark:hover:bg-slate-600 
                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
@@ -255,7 +233,6 @@ export default function RubricTraitEditor() {
             Rubric Summary
           </h4>
           <div className="text-sm text-slate-600 dark:text-slate-400">
-            <p><strong>Title:</strong> {currentRubric.title}</p>
             <p><strong>Traits:</strong> {currentRubric.traits.length}</p>
             <div className="mt-1">
               <strong>Types:</strong>
