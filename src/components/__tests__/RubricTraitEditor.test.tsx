@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, userEvent, waitFor } from '../../test-utils/test-helpers';
-import { RubricTraitEditor } from '../RubricTraitEditor';
+import RubricTraitEditor from '../RubricTraitEditor';
 import { useRubricStore } from '../../stores/useRubricStore';
 import { server } from '../../test-utils/mocks/server';
 import { http, HttpResponse } from 'msw';

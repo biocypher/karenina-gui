@@ -69,7 +69,7 @@ export default function RubricTraitEditor() {
   
   if (!currentRubric) {
     return (
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+      <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-lg">
         <div className="text-center text-slate-500 dark:text-slate-400">
           Loading rubric editor...
         </div>
@@ -78,9 +78,9 @@ export default function RubricTraitEditor() {
   }
   
   return (
-    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+    <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
           Rubric Trait Editor
         </h3>
@@ -89,30 +89,42 @@ export default function RubricTraitEditor() {
       {/* Traits List */}
       <div className="space-y-3 mb-4">
         {currentRubric.traits.map((trait, index) => (
-          <div key={index} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-4">
-            <div className="grid grid-cols-12 gap-3 items-start">
+          <div key={index} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="grid grid-cols-12 gap-4 items-start">
               {/* Trait Name */}
               <div className="col-span-3">
+                <label htmlFor={`trait-name-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Trait Name
+                </label>
                 <input
+                  id={`trait-name-${index}`}
                   type="text"
                   value={trait.name}
                   onChange={(e) => handleTraitChange(index, 'name', e.target.value)}
-                  className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded 
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
                              bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Trait name"
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                             hover:border-slate-400 dark:hover:border-slate-500"
+                  placeholder="e.g., Clarity"
+                  aria-label="Trait name"
                 />
               </div>
               
               {/* Trait Kind Selector */}
               <div className="col-span-2">
+                <label htmlFor={`trait-type-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Trait Type
+                </label>
                 <div className="relative">
                   <select
+                    id={`trait-type-${index}`}
                     value={trait.kind}
                     onChange={(e) => handleTraitChange(index, 'kind', e.target.value as TraitKind)}
-                    className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded 
+                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
                                bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                               focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8"
+                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8
+                               hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
+                    aria-label="Trait type"
                   >
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
@@ -122,58 +134,76 @@ export default function RubricTraitEditor() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  
-                  {/* Kind label indicator */}
-                  <div className="absolute -top-2 left-1 bg-purple-100 dark:bg-purple-900 px-1 text-xs text-purple-600 dark:text-purple-300 rounded">
-                    Label
-                  </div>
                 </div>
                 
                 {/* Score range inputs for score traits */}
                 {trait.kind === 'score' && (
-                  <div className="flex space-x-1 mt-1">
-                    <input
-                      type="number"
-                      value={trait.min_score || 1}
-                      onChange={(e) => handleTraitChange(index, 'min_score', parseInt(e.target.value) || 1)}
-                      className="w-12 px-1 py-0.5 text-xs border border-slate-300 dark:border-slate-600 rounded 
-                                 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                      min="1"
-                      max="10"
-                    />
-                    <span className="text-xs text-slate-500 self-center">-</span>
-                    <input
-                      type="number"
-                      value={trait.max_score || 5}
-                      onChange={(e) => handleTraitChange(index, 'max_score', parseInt(e.target.value) || 5)}
-                      className="w-12 px-1 py-0.5 text-xs border border-slate-300 dark:border-slate-600 rounded 
-                                 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                      min="1"
-                      max="10"
-                    />
+                  <div className="mt-2">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Score Range
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        id={`min-score-${index}`}
+                        type="number"
+                        value={trait.min_score || 1}
+                        onChange={(e) => handleTraitChange(index, 'min_score', parseInt(e.target.value) || 1)}
+                        className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
+                                   bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                                   hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
+                        min="1"
+                        max="10"
+                        aria-label="Minimum score"
+                        title="Minimum score"
+                      />
+                      <span className="text-sm text-slate-500 font-medium">to</span>
+                      <input
+                        id={`max-score-${index}`}
+                        type="number"
+                        value={trait.max_score || 5}
+                        onChange={(e) => handleTraitChange(index, 'max_score', parseInt(e.target.value) || 5)}
+                        className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
+                                   bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                                   hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
+                        min="1"
+                        max="10"
+                        aria-label="Maximum score"
+                        title="Maximum score"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
               
               {/* Description */}
               <div className="col-span-6">
+                <label htmlFor={`trait-description-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Trait Description
+                </label>
                 <input
+                  id={`trait-description-${index}`}
                   type="text"
                   value={trait.description || ''}
                   onChange={(e) => handleTraitChange(index, 'description', e.target.value)}
-                  className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded 
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
                              bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Field description..."
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                             hover:border-slate-400 dark:hover:border-slate-500"
+                  placeholder="What should be evaluated for this trait?"
+                  aria-label="Trait description"
                 />
               </div>
               
               {/* Delete Button */}
-              <div className="col-span-1 flex justify-end">
+              <div className="col-span-1 flex justify-end mt-6">
                 <button
                   onClick={() => removeTrait(index)}
-                  className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
+                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                   title="Delete trait"
+                  aria-label={`Delete ${trait.name} trait`}
                 >
                   <TrashIcon className="h-4 w-4" />
                 </button>
@@ -185,9 +215,9 @@ export default function RubricTraitEditor() {
         {/* Add Trait Button */}
         <button
           onClick={handleAddTrait}
-          className="flex items-center justify-center w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 
-                     rounded-lg text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 
-                     hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+          className="flex items-center justify-center w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-600 
+                     rounded-lg text-slate-600 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500 
+                     hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           Add trait
@@ -228,20 +258,32 @@ export default function RubricTraitEditor() {
       
       {/* Rubric Summary */}
       {currentRubric.traits.length > 0 && (
-        <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-md">
-          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+          <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
+            <svg className="w-4 h-4 mr-2 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
             Rubric Summary
           </h4>
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            <p><strong>Traits:</strong> {currentRubric.traits.length}</p>
-            <div className="mt-1">
-              <strong>Types:</strong>
-              <span className="ml-2">
-                {currentRubric.traits.filter(t => t.kind === 'boolean').length} boolean,
-              </span>
-              <span className="ml-1">
-                {currentRubric.traits.filter(t => t.kind === 'score').length} score
-              </span>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="flex items-center">
+              <span className="text-slate-600 dark:text-slate-400 font-medium">Total Traits:</span>
+              <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">{currentRubric.traits.length}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="text-slate-600 dark:text-slate-400 font-medium">Types:</span>
+              <div className="ml-2 flex space-x-3">
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{currentRubric.traits.filter(t => t.kind === 'boolean').length}</span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">binary</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{currentRubric.traits.filter(t => t.kind === 'score').length}</span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
