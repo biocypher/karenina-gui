@@ -303,4 +303,91 @@ describe('RubricTraitGenerator', () => {
     
     expect(screen.getByText('Generating traits...')).toBeInTheDocument();
   });
+
+  it('filters questions based on search term', () => {
+    (useRubricStore as any).mockReturnValue({
+      currentRubric: null,
+      generatedSuggestions: [],
+      isGeneratingTraits: false,
+      isLoadingRubric: false,
+      isSavingRubric: false,
+      lastError: null,
+      setCurrentRubric: vi.fn(),
+      updateRubricTitle: vi.fn(),
+      addTrait: vi.fn(),
+      updateTrait: vi.fn(),
+      removeTrait: vi.fn(),
+      reorderTraits: vi.fn(),
+      generateTraits: mockGenerateTraits,
+      loadRubric: vi.fn(),
+      saveRubric: vi.fn(),
+      deleteRubric: vi.fn(),
+      clearError: mockClearError,
+      reset: vi.fn(),
+      applyGeneratedTraits: mockApplyGeneratedTraits
+    });
+    
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
+    fireEvent.click(header);
+    
+    // Initially all questions should be visible
+    expect(screen.getByText('What is the capital of France?')).toBeInTheDocument();
+    expect(screen.getByText('What is the largest planet in our solar system?')).toBeInTheDocument();
+    expect(screen.getByText('Who wrote Romeo and Juliet?')).toBeInTheDocument();
+    
+    // Search for 'France'
+    const searchInput = screen.getByPlaceholderText('Search questions, answers, or IDs...');
+    fireEvent.change(searchInput, { target: { value: 'France' } });
+    
+    // Should only show the France question
+    expect(screen.getByText('What is the capital of France?')).toBeInTheDocument();
+    expect(screen.queryByText('What is the largest planet in our solar system?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Who wrote Romeo and Juliet?')).not.toBeInTheDocument();
+    
+    // Clear search
+    fireEvent.change(searchInput, { target: { value: '' } });
+    
+    // All questions should be visible again
+    expect(screen.getByText('What is the capital of France?')).toBeInTheDocument();
+    expect(screen.getByText('What is the largest planet in our solar system?')).toBeInTheDocument();
+    expect(screen.getByText('Who wrote Romeo and Juliet?')).toBeInTheDocument();
+  });
+
+  it('shows no results message when search has no matches', () => {
+    (useRubricStore as any).mockReturnValue({
+      currentRubric: null,
+      generatedSuggestions: [],
+      isGeneratingTraits: false,
+      isLoadingRubric: false,
+      isSavingRubric: false,
+      lastError: null,
+      setCurrentRubric: vi.fn(),
+      updateRubricTitle: vi.fn(),
+      addTrait: vi.fn(),
+      updateTrait: vi.fn(),
+      removeTrait: vi.fn(),
+      reorderTraits: vi.fn(),
+      generateTraits: mockGenerateTraits,
+      loadRubric: vi.fn(),
+      saveRubric: vi.fn(),
+      deleteRubric: vi.fn(),
+      clearError: mockClearError,
+      reset: vi.fn(),
+      applyGeneratedTraits: mockApplyGeneratedTraits
+    });
+    
+    render(<RubricTraitGenerator questions={mockQuestions} />);
+    
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
+    fireEvent.click(header);
+    
+    // Search for something that doesn't exist
+    const searchInput = screen.getByPlaceholderText('Search questions, answers, or IDs...');
+    fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
+    
+    // Should show no results message
+    expect(screen.getByText('No questions match your search criteria.')).toBeInTheDocument();
+  });
 });

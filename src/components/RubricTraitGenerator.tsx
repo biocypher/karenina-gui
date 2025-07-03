@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { Search, Check, Square } from 'lucide-react';
 import { useRubricStore } from '../stores/useRubricStore';
 import { QuestionData, RubricTrait } from '../types';
 
@@ -14,6 +15,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
   const [userSuggestions, setUserSuggestions] = useState('');
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const {
     generatedSuggestions,
@@ -27,6 +29,30 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   const questionIds = Object.keys(questions);
   const hasQuestions = questionIds.length > 0;
   
+  // Filter questions based on search term
+  const filteredQuestions = useMemo(() => {
+    if (!searchTerm.trim()) return questions;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const filtered: QuestionData = {};
+    
+    Object.entries(questions).forEach(([id, question]) => {
+      if (
+        question.question.toLowerCase().includes(searchLower) ||
+        question.raw_answer.toLowerCase().includes(searchLower) ||
+        id.toLowerCase().includes(searchLower)
+      ) {
+        filtered[id] = question;
+      }
+    });
+    
+    return filtered;
+  }, [questions, searchTerm]);
+  
+  const filteredQuestionIds = Object.keys(filteredQuestions);
+  const totalQuestions = Object.keys(questions).length;
+  const selectedCount = selectedQuestions.size;
+  
   // Initialize with all questions selected by default (only on first load)
   useEffect(() => {
     if (hasQuestions && selectedQuestions.size === 0 && !hasUserInteracted) {
@@ -36,10 +62,24 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   
   const handleSelectAll = () => {
     setHasUserInteracted(true);
-    setSelectedQuestions(new Set(questionIds));
+    const newSelected = new Set(selectedQuestions);
+    filteredQuestionIds.forEach(id => newSelected.add(id));
+    setSelectedQuestions(newSelected);
   };
   
   const handleSelectNone = () => {
+    setHasUserInteracted(true);
+    const newSelected = new Set(selectedQuestions);
+    filteredQuestionIds.forEach(id => newSelected.delete(id));
+    setSelectedQuestions(newSelected);
+  };
+  
+  const handleSelectAllQuestions = () => {
+    setHasUserInteracted(true);
+    setSelectedQuestions(new Set(questionIds));
+  };
+  
+  const handleSelectNoQuestions = () => {
     setHasUserInteracted(true);
     setSelectedQuestions(new Set());
   };
@@ -157,28 +197,47 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
           
           {/* Question Selection */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-4">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Context question - Answer pairs
               </label>
-              <div className="flex space-x-2">
+              <div className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-1 rounded-lg">
+                {selectedCount} of {totalQuestions} selected
+              </div>
+            </div>
+            
+            {/* Search and Selection Controls */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search questions, answers, or IDs..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
+                />
+              </div>
+              <div className="flex gap-2">
                 <button
-                  onClick={handleSelectAll}
-                  className="px-3 py-1 text-sm bg-slate-700 dark:bg-slate-600 text-white rounded hover:bg-slate-800 dark:hover:bg-slate-500"
+                  onClick={handleSelectAllQuestions}
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
-                  Select All
+                  <Check className="w-4 h-4" />
+                  Select All ({totalQuestions})
                 </button>
                 <button
-                  onClick={handleSelectNone}
-                  className="px-3 py-1 text-sm bg-slate-500 text-white rounded hover:bg-slate-600"
+                  onClick={handleSelectNoQuestions}
+                  className="px-4 py-2 bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-400 transition-colors flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
+                  <Square className="w-4 h-4" />
                   Select None
                 </button>
               </div>
             </div>
             
             <div className="border border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden shadow-inner">
-              <div className="max-h-64 overflow-y-auto">
+              <div className="max-h-80 overflow-y-auto">
                 {hasQuestions ? (
                   <table className="w-full">
                     <thead className="bg-slate-50 dark:bg-slate-700 sticky top-0">
@@ -186,16 +245,16 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                         <th className="w-12 px-4 py-3 text-left">
                           <input
                             type="checkbox"
-                            checked={selectedQuestions.size === questionIds.length && questionIds.length > 0}
+                            checked={filteredQuestionIds.length > 0 && filteredQuestionIds.every(id => selectedQuestions.has(id))}
                             onChange={() => {
                               setHasUserInteracted(true);
-                              if (selectedQuestions.size === questionIds.length) {
+                              if (filteredQuestionIds.every(id => selectedQuestions.has(id))) {
                                 handleSelectNone();
                               } else {
                                 handleSelectAll();
                               }
                             }}
-                            className="rounded border-slate-300 dark:border-slate-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                           />
                         </th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Question</th>
@@ -204,8 +263,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
-                      {questionIds.map((questionId) => {
-                        const question = questions[questionId];
+                      {Object.entries(filteredQuestions).map(([questionId, question]) => {
                         return (
                           <tr key={questionId} className="hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
                             <td className="px-4 py-3">
@@ -213,7 +271,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                                 type="checkbox"
                                 checked={selectedQuestions.has(questionId)}
                                 onChange={() => handleQuestionToggle(questionId)}
-                                className="rounded border-slate-300 dark:border-slate-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                               />
                             </td>
                             <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
@@ -243,6 +301,14 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                 )}
               </div>
             </div>
+            
+            {/* No search results message */}
+            {Object.keys(filteredQuestions).length === 0 && searchTerm.trim() && (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No questions match your search criteria.</p>
+              </div>
+            )}
           </div>
           
           {/* User Suggestions */}
