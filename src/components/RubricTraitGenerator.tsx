@@ -13,6 +13,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   const [systemPrompt, setSystemPrompt] = useState('');
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
   const [userSuggestions, setUserSuggestions] = useState('');
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   
   const {
     generatedSuggestions,
@@ -26,22 +27,25 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   const questionIds = Object.keys(questions);
   const hasQuestions = questionIds.length > 0;
   
-  // Initialize with all questions selected by default
+  // Initialize with all questions selected by default (only on first load)
   useEffect(() => {
-    if (hasQuestions && selectedQuestions.size === 0) {
+    if (hasQuestions && selectedQuestions.size === 0 && !hasUserInteracted) {
       setSelectedQuestions(new Set(questionIds));
     }
-  }, [questionIds, hasQuestions, selectedQuestions.size]);
+  }, [questionIds, hasQuestions, selectedQuestions.size, hasUserInteracted]);
   
   const handleSelectAll = () => {
+    setHasUserInteracted(true);
     setSelectedQuestions(new Set(questionIds));
   };
   
   const handleSelectNone = () => {
+    setHasUserInteracted(true);
     setSelectedQuestions(new Set());
   };
   
   const handleQuestionToggle = (questionId: string) => {
+    setHasUserInteracted(true);
     const newSelected = new Set(selectedQuestions);
     if (newSelected.has(questionId)) {
       newSelected.delete(questionId);
@@ -183,7 +187,14 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                           <input
                             type="checkbox"
                             checked={selectedQuestions.size === questionIds.length && questionIds.length > 0}
-                            onChange={selectedQuestions.size === questionIds.length ? handleSelectNone : handleSelectAll}
+                            onChange={() => {
+                              setHasUserInteracted(true);
+                              if (selectedQuestions.size === questionIds.length) {
+                                handleSelectNone();
+                              } else {
+                                handleSelectAll();
+                              }
+                            }}
                             className="rounded border-slate-300 dark:border-slate-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
                           />
                         </th>
