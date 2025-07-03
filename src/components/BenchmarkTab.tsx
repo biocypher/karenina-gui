@@ -237,7 +237,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         question_preview: getQuestionPreview(item.question),
         template_code: item.answer_template,
         last_modified: item.last_modified,
-        finished: true
+        finished: true,
+        question_rubric: item.question_rubric || null
       }));
 
       const requestPayload = {

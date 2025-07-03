@@ -11,6 +11,7 @@ import { QuestionExtractor } from './components/QuestionExtractor';
 import { AnswerTemplateGenerator } from './components/AnswerTemplateGenerator';
 import { BenchmarkTab } from './components/BenchmarkTab';
 import { ThemeToggle } from './components/ThemeToggle';
+import QuestionRubricEditor from './components/QuestionRubricEditor';
 import { formatTimestamp, forceResetAllData } from './utils/dataLoader';
 
 // VerificationResult interface now imported from types
@@ -487,6 +488,11 @@ function App() {
                   <strong>Tip:</strong> Edit the Pydantic class above to match the expected answer format. 
                   Use proper Python syntax with type hints and Field descriptions. Click "Show Diff\" to compare changes.
                 </p>
+              </div>
+              
+              {/* Question Rubric Editor */}
+              <div className="mt-8">
+                <QuestionRubricEditor questionId={selectedQuestionId} />
               </div>
             </div>
           </div>

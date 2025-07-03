@@ -18,6 +18,9 @@ export interface CheckpointItem {
   answer_template: string;
   last_modified: string;
   finished: boolean;
+  
+  // Question-specific rubric
+  question_rubric?: Rubric;
 }
 
 export interface Checkpoint {
