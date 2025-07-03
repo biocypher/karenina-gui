@@ -88,7 +88,7 @@ export default function RubricTraitEditor() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-          Rubric Trait editor
+          Rubric Trait Editor
         </h3>
       </div>
       
@@ -244,7 +244,7 @@ export default function RubricTraitEditor() {
           className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-md hover:bg-slate-900 dark:hover:bg-slate-600 
                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {isSavingRubric ? 'Saving...' : 'Set traits'}
+          {isSavingRubric ? 'Saving...' : 'Set Traits'}
         </button>
       </div>
       

@@ -128,7 +128,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
           ) : (
             <ChevronRightIcon className="h-5 w-5 mr-2" />
           )}
-          Rubric trait generator
+          Rubric Trait Generator
         </h3>
       </button>
       

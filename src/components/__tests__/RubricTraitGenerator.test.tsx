@@ -61,14 +61,14 @@ describe('RubricTraitGenerator', () => {
   it('renders the component with collapsed state by default', () => {
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
-    expect(screen.getByText('Rubric trait generator')).toBeInTheDocument();
+    expect(screen.getByText('Rubric Trait Generator')).toBeInTheDocument();
     expect(screen.queryByText('System prompt')).not.toBeInTheDocument();
   });
 
   it('expands when header is clicked', () => {
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     expect(screen.getByText('System prompt')).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('RubricTraitGenerator', () => {
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
     // Expand the component
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     // Check table headers
@@ -97,7 +97,7 @@ describe('RubricTraitGenerator', () => {
   it('selects all questions by default', () => {
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     const checkboxes = screen.getAllByRole('checkbox');
@@ -113,7 +113,7 @@ describe('RubricTraitGenerator', () => {
   it('handles Select All and Select None buttons', () => {
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     // Check that Select All and Select None buttons exist
@@ -124,7 +124,7 @@ describe('RubricTraitGenerator', () => {
   it('handles individual question selection', () => {
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     // Find the checkbox for the first question (skip the header checkbox)
@@ -143,7 +143,7 @@ describe('RubricTraitGenerator', () => {
   it('generates traits with selected questions and passes correct data', async () => {
     render(<RubricTraitGenerator questions={mockQuestions} onTraitsGenerated={mockOnTraitsGenerated} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     // Enter system prompt
@@ -180,7 +180,7 @@ describe('RubricTraitGenerator', () => {
     
     render(<RubricTraitGenerator questions={longQuestions} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     // Check that text is truncated (ends with ...)
@@ -216,7 +216,7 @@ describe('RubricTraitGenerator', () => {
     
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     expect(screen.getByText('Failed to generate traits')).toBeInTheDocument();
@@ -258,7 +258,7 @@ describe('RubricTraitGenerator', () => {
     
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     // Check generated traits are displayed
@@ -298,7 +298,7 @@ describe('RubricTraitGenerator', () => {
     
     render(<RubricTraitGenerator questions={mockQuestions} />);
     
-    const header = screen.getByRole('button', { name: /Rubric trait generator/i });
+    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
     fireEvent.click(header);
     
     expect(screen.getByText('Generating traits...')).toBeInTheDocument();
