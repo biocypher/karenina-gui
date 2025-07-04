@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Save, FileText, Clock, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
-import { QuestionData, Checkpoint, LegacyCheckpoint, VerificationResult } from './types';
+import { QuestionData, Checkpoint, UnifiedCheckpoint, VerificationResult } from './types';
 import { CodeEditor } from './components/CodeEditor';
 import { StatusBadge } from './components/StatusBadge';
 import { FileManager } from './components/FileManager';
@@ -109,7 +109,7 @@ function App() {
     }
   };
 
-  const handleLoadCheckpoint = (loadedCheckpoint: Checkpoint | LegacyCheckpoint) => {
+  const handleLoadCheckpoint = (loadedCheckpoint: UnifiedCheckpoint) => {
     // Delegate to the question store
     loadCheckpoint(loadedCheckpoint);
   };

@@ -2,7 +2,7 @@ import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import { QuestionData, Checkpoint } from '../types';
+import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
 import { ThemeProvider } from '../components/ThemeProvider';
 
 // Custom render function that includes providers if needed
@@ -36,37 +36,50 @@ export const createMockQuestionData = (count: number = 2): QuestionData => {
   return mockData;
 };
 
-export const createMockCheckpoint = (questionData?: any): any => {
-  const checkpoint: any = {};
+export const createMockCheckpoint = (questionData?: QuestionData): Checkpoint => {
+  const checkpoint: Checkpoint = {};
   const now = new Date().toISOString();
   
-  // Handle null/undefined questionData
-  if (!questionData) {
-    return {
-      session_id: 'test-session-123',
-      timestamp: now,
-      questions_completed: 0,
-      total_questions: 0,
-      answers: {}
-    };
+  if (questionData) {
+    Object.entries(questionData).forEach(([id, question]) => {
+      checkpoint[id] = {
+        question: question.question,
+        raw_answer: question.raw_answer,
+        original_answer_template: question.answer_template,
+        answer_template: question.answer_template + ' // Modified',
+        last_modified: now,
+        finished: false,
+        question_rubric: undefined
+      };
+    });
   }
   
-  Object.entries(questionData).forEach(([id, question]: [string, any]) => {
-    checkpoint[id] = {
-      question: question.question,
-      answer: question.answer || 'Sample answer',
-      status: 'completed',
-      timestamp: now
-    };
-  });
+  return checkpoint;
+};
 
+export const createMockUnifiedCheckpoint = (
+  questionData?: QuestionData, 
+  rubric?: Rubric | null
+): UnifiedCheckpoint => {
   return {
-    session_id: 'test-session-123',
-    timestamp: now,
-    questions_completed: Object.keys(checkpoint).length,
-    total_questions: Object.keys(checkpoint).length,
-    answers: checkpoint
+    version: "2.0",
+    global_rubric: rubric || null,
+    checkpoint: createMockCheckpoint(questionData)
   };
+};
+
+export const createMockRubric = (traitCount: number = 2): Rubric => {
+  const traits = [];
+  for (let i = 1; i <= traitCount; i++) {
+    traits.push({
+      name: `Trait ${i}`,
+      description: `Description for trait ${i}`,
+      kind: i % 2 === 0 ? 'score' as const : 'boolean' as const,
+      min_score: i % 2 === 0 ? 0 : undefined,
+      max_score: i % 2 === 0 ? 5 : undefined
+    });
+  }
+  return { traits };
 };
 
 // File mock helpers

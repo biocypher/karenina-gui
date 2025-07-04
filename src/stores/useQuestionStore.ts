@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { QuestionData, Checkpoint, LegacyCheckpoint, Rubric } from '../types';
+import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
 
 // Define the question store state interface
 interface QuestionState {
@@ -19,7 +19,7 @@ interface QuestionState {
   
   // Complex operations
   loadQuestionData: (data: QuestionData) => void;
-  loadCheckpoint: (checkpoint: Checkpoint | LegacyCheckpoint) => void;
+  loadCheckpoint: (unifiedCheckpoint: UnifiedCheckpoint) => void;
   saveCurrentTemplate: () => void;
   toggleFinished: () => void;
   navigateToQuestion: (questionId: string) => void;
@@ -40,33 +40,6 @@ interface QuestionState {
   getSavedCode: () => string;
 }
 
-// Helper function to detect if checkpoint is legacy format
-const isLegacyCheckpoint = (checkpoint: unknown): checkpoint is LegacyCheckpoint => {
-  const firstItem = Object.values(checkpoint as Record<string, unknown>)[0] as Record<string, unknown>;
-  return firstItem && !firstItem.question && !firstItem.raw_answer;
-};
-
-// Helper function to convert legacy checkpoint to new format
-const convertLegacyCheckpoint = (legacyCheckpoint: LegacyCheckpoint, questionData: QuestionData): Checkpoint => {
-  const newCheckpoint: Checkpoint = {};
-  
-  Object.entries(legacyCheckpoint).forEach(([questionId, legacyItem]) => {
-    const originalQuestion = questionData[questionId];
-    if (originalQuestion) {
-      newCheckpoint[questionId] = {
-        question: originalQuestion.question,
-        raw_answer: originalQuestion.raw_answer,
-        original_answer_template: originalQuestion.answer_template,
-        answer_template: legacyItem.answer_template,
-        last_modified: legacyItem.last_modified,
-        finished: legacyItem.finished,
-        question_rubric: undefined
-      };
-    }
-  });
-  
-  return newCheckpoint;
-};
 
 // Create the store
 export const useQuestionStore = create<QuestionState>((set, get) => ({
@@ -180,87 +153,43 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     }
   },
   
-  loadCheckpoint: (loadedCheckpoint: Checkpoint | LegacyCheckpoint) => {
-    const state = get();
-    
-    console.log('🔄 Loading checkpoint...', { 
-      isLegacy: isLegacyCheckpoint(loadedCheckpoint),
-      itemCount: Object.keys(loadedCheckpoint).length,
-      currentQuestionDataCount: Object.keys(state.questionData).length
+  loadCheckpoint: (unifiedCheckpoint: UnifiedCheckpoint) => {
+    console.log('🔄 Loading unified checkpoint...', { 
+      version: unifiedCheckpoint.version,
+      itemCount: Object.keys(unifiedCheckpoint.checkpoint).length,
+      hasGlobalRubric: !!unifiedCheckpoint.global_rubric
     });
     
-    // Check if this is a new self-contained checkpoint
-    if (!isLegacyCheckpoint(loadedCheckpoint)) {
-      const newCheckpoint = loadedCheckpoint as Checkpoint;
-      
-      // Extract question data from checkpoint
-      const restoredQuestionData: QuestionData = {};
-      Object.entries(newCheckpoint).forEach(([questionId, checkpointItem]) => {
-        restoredQuestionData[questionId] = {
-          question: checkpointItem.question,
-          raw_answer: checkpointItem.raw_answer,
-          answer_template: checkpointItem.original_answer_template
-        };
-      });
-      
-      // Set all the state in the correct order
+    // Extract checkpoint data
+    const checkpoint = unifiedCheckpoint.checkpoint;
+    
+    // Extract question data from checkpoint
+    const restoredQuestionData: QuestionData = {};
+    Object.entries(checkpoint).forEach(([questionId, checkpointItem]) => {
+      restoredQuestionData[questionId] = {
+        question: checkpointItem.question,
+        raw_answer: checkpointItem.raw_answer,
+        answer_template: checkpointItem.original_answer_template
+      };
+    });
+    
+    // Set all the state in the correct order
+    set(() => ({
+      checkpoint: checkpoint,
+      questionData: restoredQuestionData,
+      dataSource: 'uploaded'
+    }));
+    
+    // Select first question and load its current template
+    const firstQuestionId = Object.keys(checkpoint)[0];
+    if (firstQuestionId) {
       set(() => ({
-        checkpoint: newCheckpoint,
-        questionData: restoredQuestionData,
-        dataSource: 'uploaded'
+        selectedQuestionId: firstQuestionId,
+        currentTemplate: checkpoint[firstQuestionId].answer_template
       }));
-      
-      // Select first question and load its current template
-      const firstQuestionId = Object.keys(newCheckpoint)[0];
-      if (firstQuestionId) {
-        set(() => ({
-          selectedQuestionId: firstQuestionId,
-          currentTemplate: newCheckpoint[firstQuestionId].answer_template
-        }));
-      }
-      
-      console.log(`✅ Self-contained checkpoint loaded with ${Object.keys(newCheckpoint).length} questions!`);
-      return;
     }
     
-    // Legacy format - needs question data
-    const legacyCheckpoint = loadedCheckpoint as LegacyCheckpoint;
-    const questionIds = Object.keys(state.questionData);
-    const checkpointIds = Object.keys(legacyCheckpoint);
-    
-    if (questionIds.length > 0) {
-      // Convert legacy checkpoint using existing question data
-      const convertedCheckpoint = convertLegacyCheckpoint(legacyCheckpoint, state.questionData);
-      set(() => ({ checkpoint: convertedCheckpoint }));
-      
-      const matchingIds = checkpointIds.filter(id => questionIds.includes(id));
-      console.log(`✅ Legacy checkpoint converted and synced with ${matchingIds.length} loaded questions!`);
-      
-      // Select first matching question
-      if (matchingIds.length > 0) {
-        const firstMatchingId = matchingIds[0];
-        set(() => ({
-          selectedQuestionId: firstMatchingId,
-          currentTemplate: convertedCheckpoint[firstMatchingId].answer_template
-        }));
-      }
-    } else {
-      // No question data available
-      console.warn('⚠️ Legacy checkpoint loaded but no question data available');
-      const emptyCheckpoint: Checkpoint = {};
-      Object.entries(legacyCheckpoint).forEach(([questionId, legacyItem]) => {
-        emptyCheckpoint[questionId] = {
-          question: '',
-          raw_answer: '',
-          original_answer_template: '',
-          answer_template: legacyItem.answer_template,
-          last_modified: legacyItem.last_modified,
-          finished: legacyItem.finished,
-          question_rubric: undefined
-        };
-      });
-      set(() => ({ checkpoint: emptyCheckpoint }));
-    }
+    console.log(`✅ Unified checkpoint loaded with ${Object.keys(checkpoint).length} questions!`);
   },
   
   saveCurrentTemplate: () => {

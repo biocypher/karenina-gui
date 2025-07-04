@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useQuestionStore } from '../useQuestionStore';
 import { act, renderHook } from '@testing-library/react';
-import { QuestionData, Checkpoint, LegacyCheckpoint } from '../../types';
+import { QuestionData, Checkpoint, UnifiedCheckpoint } from '../../types';
 
 // Mock alert and console methods
 const mockAlert = vi.fn();
@@ -49,12 +49,10 @@ describe('useQuestionStore', () => {
     }
   };
 
-  const mockLegacyCheckpoint: LegacyCheckpoint = {
-    'q1': {
-      answer_template: 'class Answer(BaseAnswer):\n    capital: str = Field(description="The capital city - legacy")',
-      last_modified: '2024-01-01T00:00:00Z',
-      finished: true
-    }
+  const mockUnifiedCheckpoint: UnifiedCheckpoint = {
+    version: "2.0",
+    global_rubric: null,
+    checkpoint: mockCheckpoint
   };
 
   describe('Initial State', () => {
@@ -184,46 +182,41 @@ describe('useQuestionStore', () => {
   });
 
   describe('Load Checkpoint', () => {
-    it('should load self-contained checkpoint', () => {
+    it('should load unified checkpoint', () => {
       const { result } = renderHook(() => useQuestionStore());
       
       act(() => {
-        result.current.loadCheckpoint(mockCheckpoint);
+        result.current.loadCheckpoint(mockUnifiedCheckpoint);
       });
       
       expect(result.current.checkpoint).toEqual(mockCheckpoint);
       expect(result.current.questionData['q1'].question).toBe('What is the capital of France?');
       expect(result.current.selectedQuestionId).toBe('q1');
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Self-contained checkpoint loaded'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Unified checkpoint loaded'));
     });
 
-    it('should convert legacy checkpoint when question data is available', () => {
-      const { result } = renderHook(() => useQuestionStore());
-      
-      // Set up question data first
-      act(() => {
-        result.current.setQuestionData(mockQuestionData);
-      });
-      
-      // Load legacy checkpoint
-      act(() => {
-        result.current.loadCheckpoint(mockLegacyCheckpoint);
-      });
-      
-      expect(result.current.checkpoint['q1'].finished).toBe(true);
-      expect(result.current.checkpoint['q1'].question).toBe('What is the capital of France?');
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Legacy checkpoint converted'));
-    });
-
-    it('should handle legacy checkpoint without question data', () => {
+    it('should extract question data from unified checkpoint', () => {
       const { result } = renderHook(() => useQuestionStore());
       
       act(() => {
-        result.current.loadCheckpoint(mockLegacyCheckpoint);
+        result.current.loadCheckpoint(mockUnifiedCheckpoint);
       });
       
-      expect(result.current.checkpoint['q1'].question).toBe('');
-      expect(result.current.checkpoint['q1'].finished).toBe(true);
+      expect(result.current.questionData['q1'].question).toBe('What is the capital of France?');
+      expect(result.current.questionData['q1'].raw_answer).toBe('Paris');
+      expect(result.current.questionData['q1'].answer_template).toBe(mockCheckpoint['q1'].original_answer_template);
+      expect(result.current.dataSource).toBe('uploaded');
+    });
+
+    it('should set current template from checkpoint', () => {
+      const { result } = renderHook(() => useQuestionStore());
+      
+      act(() => {
+        result.current.loadCheckpoint(mockUnifiedCheckpoint);
+      });
+      
+      expect(result.current.currentTemplate).toBe(mockCheckpoint['q1'].answer_template);
+      expect(result.current.selectedQuestionId).toBe('q1');
     });
   });
 
