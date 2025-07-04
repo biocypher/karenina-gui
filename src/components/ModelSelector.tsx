@@ -15,7 +15,17 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
   className = ''
 }) => {
   const handleInterfaceChange = (interface_type: 'langchain' | 'openrouter') => {
-    onConfigChange({ ...config, interface: interface_type });
+    const updatedConfig = { ...config, interface: interface_type };
+    
+    // Clear model_provider when switching to OpenRouter
+    if (interface_type === 'openrouter') {
+      updatedConfig.model_provider = '';
+    } else if (interface_type === 'langchain' && !config.model_provider) {
+      // Set default provider for langchain if not already set
+      updatedConfig.model_provider = 'google_genai';
+    }
+    
+    onConfigChange(updatedConfig);
   };
 
   const handleProviderChange = (provider: string) => {
