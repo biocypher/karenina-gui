@@ -7,6 +7,8 @@ export interface BenchmarkConfiguration {
   replicateCount: number;
   expandedPrompts: Set<string>;
   runName: string;
+  rubricEnabled: boolean;
+  correctnessEnabled: boolean;
 }
 
 export const useBenchmarkConfiguration = () => {
@@ -35,6 +37,8 @@ export const useBenchmarkConfiguration = () => {
   const [replicateCount, setReplicateCount] = useState<number>(1);
   const [expandedPrompts, setExpandedPrompts] = useState<Set<string>>(new Set());
   const [runName, setRunName] = useState<string>('');
+  const [rubricEnabled, setRubricEnabled] = useState<boolean>(false);
+  const [correctnessEnabled, setCorrectnessEnabled] = useState<boolean>(true);
 
   // Model management functions
   const addAnsweringModel = () => {
@@ -151,7 +155,8 @@ export const useBenchmarkConfiguration = () => {
   const getVerificationConfig = () => ({
     answering_models: answeringModels,
     parsing_models: parsingModels,
-    replicate_count: replicateCount
+    replicate_count: replicateCount,
+    rubric_enabled: rubricEnabled
   });
 
   return {
@@ -161,10 +166,14 @@ export const useBenchmarkConfiguration = () => {
     replicateCount,
     expandedPrompts,
     runName,
+    rubricEnabled,
+    correctnessEnabled,
     
     // Setters
     setReplicateCount,
     setRunName,
+    setRubricEnabled,
+    setCorrectnessEnabled,
     
     // Model management functions
     addAnsweringModel,

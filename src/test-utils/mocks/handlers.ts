@@ -155,5 +155,116 @@ export const handlers = [
   // Delete session endpoint
   http.delete('/api/sessions/:sessionId', () => {
     return HttpResponse.json({ success: true });
+  }),
+
+  // Rubric trait generation endpoint
+  http.post('/api/generate-rubric-traits', () => {
+    return HttpResponse.json({
+      traits: [
+        {
+          name: 'accuracy',
+          description: 'Is the response factually accurate?',
+          kind: 'boolean',
+          min_score: null,
+          max_score: null
+        },
+        {
+          name: 'completeness',
+          description: 'How complete is the response?',
+          kind: 'score',
+          min_score: 1,
+          max_score: 5
+        },
+        {
+          name: 'clarity',
+          description: 'Is the response clear and well-written?',
+          kind: 'boolean',
+          min_score: null,
+          max_score: null
+        }
+      ]
+    });
+  }),
+
+  // Get current rubric endpoint
+  http.get('/api/rubric', () => {
+    return HttpResponse.json({
+      title: 'Test Rubric',
+      traits: [
+        {
+          name: 'accuracy',
+          description: 'Is the response factually accurate?',
+          kind: 'boolean',
+          min_score: null,
+          max_score: null
+        },
+        {
+          name: 'completeness',
+          description: 'How complete is the response?',
+          kind: 'score',
+          min_score: 1,
+          max_score: 5
+        }
+      ]
+    });
+  }),
+
+  // Create/update rubric endpoint
+  http.post('/api/rubric', () => {
+    return HttpResponse.json({
+      message: 'Rubric saved successfully',
+      title: 'Test Rubric'
+    });
+  }),
+
+  // Delete rubric endpoint
+  http.delete('/api/rubric', () => {
+    return HttpResponse.json({
+      message: 'Rubric deleted successfully'
+    });
+  }),
+
+  // Get default system prompt endpoint
+  http.get('/api/rubric/default-system-prompt', () => {
+    return HttpResponse.json({
+      prompt: `You are an expert in rubric design. Your task is to analyze question-answer pairs and suggest appropriate evaluation criteria (traits) that can be used to assess the quality of responses.
+
+<important>
+Generate traits that evaluate QUALITATIVE aspects of how the answer is presented, NOT the factual accuracy or correctness of the content. The traits should be assessable by someone who doesn't know the actual answer to the question.
+</important>
+
+<trait_requirements>
+- Specific and measurable
+- Relevant to the question domain and response style
+- Independent of each other (minimal overlap)
+- Useful for distinguishing between well-structured and poorly-structured responses
+- Focus on HOW information is presented, not WHETHER it's correct
+</trait_requirements>
+
+<output_format>
+For each trait, provide:
+<trait>
+  <name>Short, descriptive identifier (2-4 words)</name>
+  <description>Clear explanation of what aspect of presentation quality is being evaluated</description>
+  <type>Either "boolean" (true/false) or "score" (1-5 scale)</type>
+  <evaluation_guidance>Brief guidance on how to assess this trait without domain expertise</evaluation_guidance>
+</trait>
+</output_format>
+
+<example_traits>
+Consider qualitative aspects such as:
+- Response structure and organization
+- Clarity of explanations
+- Level of detail provided
+- Presence and quality of examples
+- Use of technical language (when appropriate)
+- Conciseness vs. comprehensiveness
+- Presence of code snippets or diagrams
+- Step-by-step breakdowns
+- Acknowledgment of assumptions or limitations
+- Tone appropriateness (formal, casual, technical)
+- Use of formatting (lists, headers, emphasis)
+</example_traits>`
+    });
   })
 ]; 

@@ -9,6 +9,8 @@ import { ConfigurationPanel } from './benchmark/ConfigurationPanel';
 import { ProgressIndicator } from './benchmark/ProgressIndicator';
 import { BenchmarkTable } from './BenchmarkTable';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
+import { RubricResultsDisplay } from './RubricResultsDisplay';
+import { useRubricStore } from '../stores/useRubricStore';
 
 
 // Interfaces now imported from types
@@ -29,8 +31,12 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     replicateCount,
     expandedPrompts,
     runName,
+    rubricEnabled,
+    correctnessEnabled,
     setReplicateCount,
     setRunName,
+    setRubricEnabled,
+    setCorrectnessEnabled,
     addAnsweringModel,
     addParsingModel,
     removeAnsweringModel,
@@ -40,6 +46,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     togglePromptExpanded,
     getVerificationConfig
   } = useBenchmarkConfiguration();
+
+  // Rubric store
+  const { currentRubric } = useRubricStore();
 
   // Verification state
   const [isRunning, setIsRunning] = useState(false);
@@ -228,7 +237,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         question_preview: getQuestionPreview(item.question),
         template_code: item.answer_template,
         last_modified: item.last_modified,
-        finished: true
+        finished: true,
+        question_rubric: item.question_rubric || null
       }));
 
       const requestPayload = {
@@ -365,6 +375,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             expandedPrompts={expandedPrompts}
             isRunning={isRunning}
             finishedTemplates={finishedTemplates}
+            rubricEnabled={rubricEnabled}
+            correctnessEnabled={correctnessEnabled}
             onAddAnsweringModel={addAnsweringModel}
             onAddParsingModel={addParsingModel}
             onRemoveAnsweringModel={removeAnsweringModel}
@@ -373,6 +385,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onUpdateParsingModel={updateParsingModel}
             onTogglePromptExpanded={togglePromptExpanded}
             onReplicateCountChange={setReplicateCount}
+            onRubricEnabledChange={setRubricEnabled}
+            onCorrectnessEnabledChange={setCorrectnessEnabled}
             onManualTraceUploadSuccess={(traceCount) => {
               setError(null);
               console.log(`Successfully loaded ${traceCount} manual traces`);
@@ -829,6 +843,17 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                   })()}
                                 </pre>
                               </div>
+                            </div>
+                          )}
+
+                          {/* Rubric Evaluation Results */}
+                          {selectedResult.verify_rubric && (
+                            <div>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Rubric Evaluation Results</h4>
+                              <RubricResultsDisplay
+                                rubricResults={selectedResult.verify_rubric}
+                                currentRubric={currentRubric}
+                              />
                             </div>
                           )}
 

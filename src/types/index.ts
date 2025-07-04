@@ -18,6 +18,9 @@ export interface CheckpointItem {
   answer_template: string;
   last_modified: string;
   finished: boolean;
+  
+  // Question-specific rubric
+  question_rubric?: Rubric;
 }
 
 export interface Checkpoint {
@@ -101,6 +104,8 @@ export interface VerificationConfig {
   answering_models: ModelConfiguration[];
   parsing_models: ModelConfiguration[];
   replicate_count: number;
+  rubric_enabled?: boolean;
+  rubric_trait_names?: string[];
 }
 
 export interface VerificationResult {
@@ -112,6 +117,7 @@ export interface VerificationResult {
   parsed_response?: unknown;
   verify_result?: unknown;
   verify_granular_result?: unknown;
+  verify_rubric?: Record<string, number | boolean>;
   answering_model: string;
   parsing_model: string;
   execution_time: number;
@@ -138,4 +144,43 @@ export interface VerificationProgress {
   estimated_time_remaining?: number;
   error?: string;
   results?: Record<string, VerificationResult>;
+}
+
+// Rubric Types
+export type TraitKind = "boolean" | "score";
+
+export interface RubricTrait {
+  name: string;
+  description?: string;
+  kind: TraitKind;
+  min_score?: number; // For score traits
+  max_score?: number; // For score traits
+}
+
+export interface Rubric {
+  traits: RubricTrait[];
+}
+
+// Rubric Trait Generation Configuration
+export interface RubricTraitGenerationConfig {
+  model_provider: string;
+  model_name: string;
+  temperature: number;
+  interface: 'langchain' | 'openrouter' | 'manual';
+}
+
+export interface RubricTraitGenerationRequest {
+  questions: QuestionData;
+  system_prompt?: string;
+  user_suggestions?: string[];
+  config: RubricTraitGenerationConfig;
+}
+
+export interface RubricTraitGenerationResponse {
+  traits: RubricTrait[];
+  job_id?: string;
+}
+
+export interface RubricEvaluation {
+  trait_scores: Record<string, number | boolean>;
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { QuestionData, Checkpoint, LegacyCheckpoint } from '../types';
+import { QuestionData, Checkpoint, LegacyCheckpoint, Rubric } from '../types';
 
 // Define the question store state interface
 interface QuestionState {
@@ -24,6 +24,11 @@ interface QuestionState {
   toggleFinished: () => void;
   navigateToQuestion: (questionId: string) => void;
   resetQuestionState: () => void;
+  
+  // Question rubric management
+  getQuestionRubric: (questionId: string) => Rubric | null;
+  setQuestionRubric: (questionId: string, rubric: Rubric) => void;
+  clearQuestionRubric: (questionId: string) => void;
   
   // Computed getters
   getQuestionIds: () => string[];
@@ -54,7 +59,8 @@ const convertLegacyCheckpoint = (legacyCheckpoint: LegacyCheckpoint, questionDat
         original_answer_template: originalQuestion.answer_template,
         answer_template: legacyItem.answer_template,
         last_modified: legacyItem.last_modified,
-        finished: legacyItem.finished
+        finished: legacyItem.finished,
+        question_rubric: undefined
       };
     }
   });
@@ -125,6 +131,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
           answer_template: existingCheckpointItem?.answer_template || question.answer_template,
           last_modified: existingCheckpointItem?.last_modified || new Date().toISOString(),
           finished: existingCheckpointItem?.finished || false,
+          question_rubric: existingCheckpointItem?.question_rubric,
         };
       });
       
@@ -155,6 +162,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
           answer_template: question.answer_template,
           last_modified: now,
           finished: false,
+          question_rubric: undefined,
         };
       });
       
@@ -247,7 +255,8 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
           original_answer_template: '',
           answer_template: legacyItem.answer_template,
           last_modified: legacyItem.last_modified,
-          finished: legacyItem.finished
+          finished: legacyItem.finished,
+          question_rubric: undefined
         };
       });
       set(() => ({ checkpoint: emptyCheckpoint }));
@@ -274,6 +283,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         answer_template: isCurrentQuestion ? state.currentTemplate : (existingCheckpointItem?.answer_template || question.answer_template),
         last_modified: isCurrentQuestion ? now : (existingCheckpointItem?.last_modified || now),
         finished: existingCheckpointItem?.finished || false,
+        question_rubric: existingCheckpointItem?.question_rubric,
       };
     });
 
@@ -300,6 +310,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         answer_template: existingCheckpointItem?.answer_template || question.answer_template,
         last_modified: isCurrentQuestion ? now : (existingCheckpointItem?.last_modified || now),
         finished: isCurrentQuestion ? !(existingCheckpointItem?.finished || false) : (existingCheckpointItem?.finished || false),
+        question_rubric: existingCheckpointItem?.question_rubric,
       };
     });
 
@@ -370,5 +381,47 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     const checkpointItem = state.selectedQuestionId ? state.checkpoint[state.selectedQuestionId] : null;
     
     return checkpointItem?.answer_template || '';
+  },
+  
+  // Question rubric management
+  getQuestionRubric: (questionId: string) => {
+    const state = get();
+    return state.checkpoint[questionId]?.question_rubric || null;
+  },
+  
+  setQuestionRubric: (questionId: string, rubric: Rubric) => {
+    const state = get();
+    const existingCheckpointItem = state.checkpoint[questionId];
+    
+    if (existingCheckpointItem) {
+      const updatedCheckpoint = {
+        ...state.checkpoint,
+        [questionId]: {
+          ...existingCheckpointItem,
+          question_rubric: rubric,
+          last_modified: new Date().toISOString()
+        }
+      };
+      
+      set(() => ({ checkpoint: updatedCheckpoint }));
+    }
+  },
+  
+  clearQuestionRubric: (questionId: string) => {
+    const state = get();
+    const existingCheckpointItem = state.checkpoint[questionId];
+    
+    if (existingCheckpointItem) {
+      const updatedCheckpoint = {
+        ...state.checkpoint,
+        [questionId]: {
+          ...existingCheckpointItem,
+          question_rubric: undefined,
+          last_modified: new Date().toISOString()
+        }
+      };
+      
+      set(() => ({ checkpoint: updatedCheckpoint }));
+    }
   },
 }));

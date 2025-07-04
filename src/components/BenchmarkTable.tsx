@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { Eye, AlertCircle } from 'lucide-react';
+import { Eye, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { VerificationResult } from '../types';
 import { 
   useReactTable, 
@@ -29,6 +29,64 @@ interface BenchmarkTableProps {
 }
 
 const columnHelper = createColumnHelper<VerificationResult>();
+
+const RubricCell: React.FC<{ rubricResult: Record<string, number | boolean> | null }> = ({ rubricResult }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!rubricResult) {
+    return (
+      <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+        N/A
+      </span>
+    );
+  }
+
+  const traits = Object.entries(rubricResult);
+  const passedTraits = traits.filter(([_, value]) => 
+    typeof value === 'boolean' ? value : value && value >= 3
+  ).length;
+  const totalTraits = traits.length;
+  
+  const summary = `${passedTraits}/${totalTraits}`;
+  const hasGoodResults = passedTraits >= totalTraits * 0.5;
+
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+          hasGoodResults
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200'
+        } hover:opacity-80`}
+      >
+        {isExpanded ? (
+          <ChevronDown className="w-3 h-3 mr-1" />
+        ) : (
+          <ChevronRight className="w-3 h-3 mr-1" />
+        )}
+        {summary}
+      </button>
+      
+      {isExpanded && (
+        <div className="mt-1 space-y-1 text-xs">
+          {traits.map(([name, value]) => (
+            <div key={name} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded">
+              <span className="font-medium text-slate-700 dark:text-slate-300">{name}:</span>
+              <span className={`font-semibold ${
+                typeof value === 'boolean' 
+                  ? (value ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')
+                  : (value && value >= 3 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400')
+              }`}>
+                {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value || 'N/A'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const MultiSelectFilter: React.FC<{
   options: string[];
@@ -177,6 +235,25 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         </span>
       ),
       filterFn: 'equals',
+    }),
+    columnHelper.accessor('verify_rubric', {
+      header: 'Rubric',
+      cell: info => <RubricCell rubricResult={info.getValue()} />,
+      filterFn: (row, columnId, value) => {
+        const rubricResult = row.getValue(columnId) as Record<string, number | boolean> | null;
+        if (!rubricResult) return value === 'none';
+        
+        const traits = Object.entries(rubricResult);
+        const passedTraits = traits.filter(([_, val]) => 
+          typeof val === 'boolean' ? val : val && val >= 3
+        ).length;
+        const successRate = passedTraits / traits.length;
+        
+        if (value === 'passed') return successRate >= 0.5;
+        if (value === 'failed') return successRate < 0.5;
+        if (value === 'none') return false;
+        return true;
+      },
     }),
     columnHelper.accessor('execution_time', {
       header: 'Time',

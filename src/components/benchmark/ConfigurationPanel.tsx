@@ -19,6 +19,8 @@ interface ConfigurationPanelProps {
   expandedPrompts: Set<string>;
   isRunning: boolean;
   finishedTemplates?: Array<[string, any]>;
+  rubricEnabled: boolean;
+  correctnessEnabled: boolean;
   onAddAnsweringModel: () => void;
   onAddParsingModel: () => void;
   onRemoveAnsweringModel: (id: string) => void;
@@ -27,6 +29,8 @@ interface ConfigurationPanelProps {
   onUpdateParsingModel: (id: string, updates: Partial<ModelConfiguration>) => void;
   onTogglePromptExpanded: (modelId: string) => void;
   onReplicateCountChange: (count: number) => void;
+  onRubricEnabledChange: (enabled: boolean) => void;
+  onCorrectnessEnabledChange: (enabled: boolean) => void;
   onManualTraceUploadSuccess?: (traceCount: number) => void;
   onManualTraceUploadError?: (error: string) => void;
 }
@@ -38,6 +42,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   expandedPrompts,
   isRunning,
   finishedTemplates,
+  rubricEnabled,
+  correctnessEnabled,
   onAddAnsweringModel,
   onAddParsingModel,
   onRemoveAnsweringModel,
@@ -46,6 +52,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onUpdateParsingModel,
   onTogglePromptExpanded,
   onReplicateCountChange,
+  onRubricEnabledChange,
+  onCorrectnessEnabledChange,
   onManualTraceUploadSuccess,
   onManualTraceUploadError,
 }) => {
@@ -302,6 +310,55 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           </div>
         </Card>
       </div>
+
+      {/* Evaluation Configuration */}
+      <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+            Evaluation Settings
+          </h3>
+          
+          <div className="space-y-3">
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={correctnessEnabled}
+                onChange={(e) => onCorrectnessEnabledChange(e.target.checked)}
+                disabled={isRunning}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+              />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                ☑ Correctness
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                (Basic answer validation and parsing)
+              </span>
+            </label>
+            
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={rubricEnabled}
+                onChange={(e) => onRubricEnabledChange(e.target.checked)}
+                disabled={isRunning}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+              />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                ☑ Rubric
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                (Qualitative evaluation using defined traits)
+              </span>
+            </label>
+          </div>
+          
+          {!correctnessEnabled && !rubricEnabled && (
+            <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-sm text-amber-800 dark:text-amber-200">
+              ⚠ At least one evaluation method should be enabled
+            </div>
+          )}
+        </div>
+      </Card>
 
       {/* Model Combinations Info */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
