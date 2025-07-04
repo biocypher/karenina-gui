@@ -101,9 +101,18 @@ export const FileManager: React.FC<FileManagerProps> = ({
         
         // Load global rubric into rubric store if present
         if (unifiedCheckpoint.global_rubric) {
-          const { setCurrentRubric } = useRubricStore.getState();
+          const { setCurrentRubric, saveRubric } = useRubricStore.getState();
           setCurrentRubric(unifiedCheckpoint.global_rubric);
           console.log('✅ Loaded global rubric with', unifiedCheckpoint.global_rubric.traits.length, 'traits');
+          
+          // Sync the rubric to the backend so verification can access it
+          console.log('🔄 Syncing global rubric to backend...');
+          saveRubric().then(() => {
+            console.log('✅ Global rubric synced to backend successfully');
+          }).catch((error) => {
+            console.error('❌ Failed to sync global rubric to backend:', error);
+            alert('Warning: Global rubric loaded but failed to sync to backend. Verification may not use global rubric traits.');
+          });
         }
         
         alert(`Successfully loaded unified checkpoint v2.0 with ${Object.keys(unifiedCheckpoint.checkpoint).length} items${unifiedCheckpoint.global_rubric ? ` and global rubric with ${unifiedCheckpoint.global_rubric.traits.length} traits` : ''}.\n\n✅ Your complete session has been restored!`);
