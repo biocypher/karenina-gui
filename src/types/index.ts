@@ -27,15 +27,11 @@ export interface Checkpoint {
   [key: string]: CheckpointItem;
 }
 
-// Legacy checkpoint structure for backward compatibility
-export interface LegacyCheckpointItem {
-  answer_template: string;
-  last_modified: string;
-  finished: boolean;
-}
-
-export interface LegacyCheckpoint {
-  [key: string]: LegacyCheckpointItem;
+// Unified checkpoint structure that includes global rubric
+export interface UnifiedCheckpoint {
+  version: "2.0";
+  global_rubric: Rubric | null;
+  checkpoint: Checkpoint;
 }
 
 // Template Generation Types

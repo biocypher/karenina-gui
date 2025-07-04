@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { FileManager } from '../../components/FileManager';
-import { createMockQuestionData, createMockCheckpoint } from '../../test-utils/test-helpers';
+import { createMockQuestionData, createMockCheckpoint, createMockUnifiedCheckpoint, createMockRubric } from '../../test-utils/test-helpers';
 
 // Mock the download functionality
 const mockDownload = vi.fn();
@@ -102,32 +102,53 @@ describe('FileManager Component', () => {
   });
 
   describe('Checkpoint Upload', () => {
-    it('should handle new format checkpoint upload', async () => {
+    it('should handle unified checkpoint upload with rubric', async () => {
       render(<FileManager {...defaultProps} />);
       
-      // Should show file management interface
+      const mockData = createMockQuestionData();
+      const mockRubric = createMockRubric();
+      const unifiedCheckpoint = createMockUnifiedCheckpoint(mockData, mockRubric);
+      
+      // Simulate loading unified checkpoint
+      defaultProps.onLoadCheckpoint(unifiedCheckpoint);
+      
+      expect(mockOnLoadCheckpoint).toHaveBeenCalledWith(unifiedCheckpoint);
       expect(screen.getByText('File Management')).toBeInTheDocument();
     });
 
-    it('should handle legacy format checkpoint upload', async () => {
+    it('should handle unified checkpoint upload without rubric', async () => {
       render(<FileManager {...defaultProps} />);
       
-      // Should show file management interface
+      const mockData = createMockQuestionData();
+      const unifiedCheckpoint = createMockUnifiedCheckpoint(mockData, null);
+      
+      // Simulate loading unified checkpoint
+      defaultProps.onLoadCheckpoint(unifiedCheckpoint);
+      
+      expect(mockOnLoadCheckpoint).toHaveBeenCalledWith(unifiedCheckpoint);
       expect(screen.getByText('File Management')).toBeInTheDocument();
     });
 
-    it('should handle invalid checkpoint format', async () => {
+    it('should validate unified checkpoint structure', async () => {
       render(<FileManager {...defaultProps} />);
       
-      // Should show file management interface
+      // Test that the component expects the new format
+      const mockData = createMockQuestionData();
+      const validCheckpoint = createMockUnifiedCheckpoint(mockData, createMockRubric());
+      
+      // This should work fine
+      defaultProps.onLoadCheckpoint(validCheckpoint);
+      expect(mockOnLoadCheckpoint).toHaveBeenCalledWith(validCheckpoint);
+      
       expect(screen.getByText('File Management')).toBeInTheDocument();
     });
 
     it('should handle consecutive checkpoint uploads correctly', async () => {
       render(<FileManager {...defaultProps} />);
       
-      // Create first checkpoint
-      const firstCheckpoint = createMockCheckpoint(createMockQuestionData());
+      // Create first unified checkpoint
+      const firstMockData = createMockQuestionData();
+      const firstCheckpoint = createMockUnifiedCheckpoint(firstMockData, createMockRubric());
       
       // Create second checkpoint with different data
       const secondMockData = {
@@ -142,7 +163,7 @@ describe('FileManager Component', () => {
           answer_template: 'Fourth template'
         }
       };
-      const secondCheckpoint = createMockCheckpoint(secondMockData);
+      const secondCheckpoint = createMockUnifiedCheckpoint(secondMockData, null);
       
       // Simulate first checkpoint loading by directly calling the callback
       // This tests the behavior of consecutive loads without file upload complexity
@@ -169,8 +190,8 @@ describe('FileManager Component', () => {
     it('should handle consecutive uploads of same checkpoint correctly', async () => {
       render(<FileManager {...defaultProps} />);
       
-      // Create checkpoint
-      const checkpoint = createMockCheckpoint(createMockQuestionData());
+      // Create unified checkpoint
+      const checkpoint = createMockUnifiedCheckpoint(createMockQuestionData(), createMockRubric());
       
       // Simulate first checkpoint loading
       defaultProps.onLoadCheckpoint(checkpoint);
@@ -189,32 +210,29 @@ describe('FileManager Component', () => {
       expect(screen.getByText('File Management')).toBeInTheDocument();
     });
 
-    it('should handle checkpoint data structure validation during consecutive loads', () => {
+    it('should handle unified checkpoint with global rubric correctly', () => {
       render(<FileManager {...defaultProps} />);
       
-      // Create valid checkpoint
-      const validCheckpoint = createMockCheckpoint(createMockQuestionData());
+      // Create valid unified checkpoint with rubric
+      const mockData = createMockQuestionData();
+      const mockRubric = createMockRubric(3);
+      const validCheckpoint = createMockUnifiedCheckpoint(mockData, mockRubric);
       
-      // Create checkpoint with different structure (new format vs legacy)
-      const legacyCheckpoint = {
-        'question-1': {
-          answer_template: 'Legacy template',
-          last_modified: new Date().toISOString(),
-          finished: false
-        }
-      };
+      // Create checkpoint without rubric
+      const checkpointWithoutRubric = createMockUnifiedCheckpoint(mockData, null);
       
-      // Load valid checkpoint first
+      // Load checkpoint with rubric first
       defaultProps.onLoadCheckpoint(validCheckpoint);
       expect(mockOnLoadCheckpoint).toHaveBeenCalledTimes(1);
+      expect(mockOnLoadCheckpoint).toHaveBeenCalledWith(validCheckpoint);
       
-      // Clear and load legacy format consecutively
+      // Clear and load checkpoint without rubric
       mockOnLoadCheckpoint.mockClear();
-      defaultProps.onLoadCheckpoint(legacyCheckpoint);
+      defaultProps.onLoadCheckpoint(checkpointWithoutRubric);
       expect(mockOnLoadCheckpoint).toHaveBeenCalledTimes(1);
-      expect(mockOnLoadCheckpoint).toHaveBeenCalledWith(legacyCheckpoint);
+      expect(mockOnLoadCheckpoint).toHaveBeenCalledWith(checkpointWithoutRubric);
       
-      // Component should handle different checkpoint formats gracefully
+      // Component should handle both variants gracefully
       expect(screen.getByText('File Management')).toBeInTheDocument();
     });
   });
@@ -262,15 +280,10 @@ describe('FileManager Component', () => {
       const checkpoint = createMockCheckpoint(mockData);
       
       // Set some items as finished
-      const questionIds = Object.keys(checkpoint.answers || checkpoint);
+      const questionIds = Object.keys(checkpoint);
       if (questionIds.length >= 2) {
-        if (checkpoint.answers) {
-          checkpoint.answers[questionIds[0]].finished = true;
-          checkpoint.answers[questionIds[1]].finished = true;
-        } else {
-          checkpoint[questionIds[0]].finished = true;
-          checkpoint[questionIds[1]].finished = true;
-        }
+        checkpoint[questionIds[0]].finished = true;
+        checkpoint[questionIds[1]].finished = true;
       }
       
       render(

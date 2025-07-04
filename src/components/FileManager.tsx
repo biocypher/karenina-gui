@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
 import { Upload, Download, FileText, Database, RotateCcw, CheckCircle } from 'lucide-react';
-import { QuestionData, Checkpoint, LegacyCheckpoint } from '../types';
+import { QuestionData, Checkpoint, UnifiedCheckpoint } from '../types';
+import { useRubricStore } from '../stores/useRubricStore';
 
 interface FileManagerProps {
   onLoadQuestionData: (data: QuestionData) => void;
-  onLoadCheckpoint: (checkpoint: Checkpoint | LegacyCheckpoint) => void;
+  onLoadCheckpoint: (checkpoint: UnifiedCheckpoint) => void;
   onResetAllData: () => void;
   checkpoint: Checkpoint;
   questionData: QuestionData;
@@ -19,6 +20,9 @@ export const FileManager: React.FC<FileManagerProps> = ({
 }) => {
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
   const checkpointFileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get current rubric from store
+  const { currentRubric } = useRubricStore();
 
   const handleJsonUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -68,65 +72,42 @@ export const FileManager: React.FC<FileManagerProps> = ({
         const content = e.target?.result as string;
         const data = JSON.parse(content);
         
-        // Detect checkpoint format
-        const firstItem = Object.values(data)[0] as Record<string, unknown>;
-        const isNewFormat = firstItem && firstItem.question && firstItem.raw_answer;
-        
-        if (isNewFormat) {
-          // New self-contained format
-          const newCheckpoint = data as Checkpoint;
-          
-          // Validate new format structure
-          const isValidNewCheckpoint = Object.values(newCheckpoint).every(item => 
-            item && 
-            typeof item.question === 'string' &&
-            typeof item.raw_answer === 'string' &&
-            typeof item.original_answer_template === 'string' &&
-            typeof item.answer_template === 'string' && 
-            typeof item.last_modified === 'string' && 
-            typeof item.finished === 'boolean'
-          );
-
-          if (!isValidNewCheckpoint) {
-            alert('Invalid new checkpoint format. Please ensure the file contains valid checkpoint data.');
-            return;
-          }
-
-          onLoadCheckpoint(newCheckpoint);
-          alert(`Successfully loaded self-contained checkpoint with ${Object.keys(newCheckpoint).length} items.\n\n✅ This checkpoint contains all necessary data and is ready to use in the Template Curator!`);
-          
-        } else {
-          // Legacy format
-          const legacyCheckpoint = data as LegacyCheckpoint;
-          
-          // Validate legacy format structure
-          const isValidLegacyCheckpoint = Object.values(legacyCheckpoint).every(item => 
-            item && 
-            typeof item.answer_template === 'string' && 
-            typeof item.last_modified === 'string' && 
-            typeof item.finished === 'boolean'
-          );
-
-          if (!isValidLegacyCheckpoint) {
-            alert('Invalid legacy checkpoint format. Please ensure the file contains valid checkpoint data.');
-            return;
-          }
-
-          onLoadCheckpoint(legacyCheckpoint);
-          
-          // Check if we have corresponding question data for legacy format
-          const checkpointQuestionIds = Object.keys(legacyCheckpoint);
-          const currentQuestionIds = Object.keys(questionData);
-          const hasMatchingQuestions = checkpointQuestionIds.some(id => currentQuestionIds.includes(id));
-          
-          if (!hasMatchingQuestions && currentQuestionIds.length === 0) {
-            alert(`Successfully loaded legacy checkpoint with ${Object.keys(legacyCheckpoint).length} items.\n\n⚠️ IMPORTANT: This is a legacy checkpoint format that requires question data. To use this checkpoint in the Template Curator, you need to:\n\n1. Upload the corresponding Question Data JSON file, OR\n2. Extract questions using the Question Extractor tab, OR\n3. Generate templates using the Template Generator tab\n\nThe checkpoint contains your progress and modifications, but the original questions and answers are needed to display them in the curator.`);
-          } else if (!hasMatchingQuestions && currentQuestionIds.length > 0) {
-            alert(`Successfully loaded legacy checkpoint with ${Object.keys(legacyCheckpoint).length} items.\n\n⚠️ WARNING: The loaded checkpoint doesn't match the currently loaded questions. The checkpoint question IDs don't match the current question data.\n\nPlease load the correct Question Data JSON file that corresponds to this checkpoint.`);
-          } else {
-            alert(`Successfully loaded legacy checkpoint with ${Object.keys(legacyCheckpoint).length} items.\n\n✅ Checkpoint matches ${checkpointQuestionIds.filter(id => currentQuestionIds.includes(id)).length} of your current questions and is ready to use in the Template Curator.`);
-          }
+        // Validate it's a unified checkpoint
+        if (!data.version || data.version !== "2.0" || !data.checkpoint) {
+          alert('Invalid checkpoint format. Please ensure the file is a valid v2.0 unified checkpoint.');
+          return;
         }
+        
+        const unifiedCheckpoint = data as UnifiedCheckpoint;
+        
+        // Validate checkpoint structure
+        const isValidCheckpoint = Object.values(unifiedCheckpoint.checkpoint).every(item => 
+          item && 
+          typeof item.question === 'string' &&
+          typeof item.raw_answer === 'string' &&
+          typeof item.original_answer_template === 'string' &&
+          typeof item.answer_template === 'string' && 
+          typeof item.last_modified === 'string' && 
+          typeof item.finished === 'boolean'
+        );
+
+        if (!isValidCheckpoint) {
+          alert('Invalid checkpoint data structure. Please ensure the file contains valid checkpoint data.');
+          return;
+        }
+
+        // Load checkpoint into question store
+        onLoadCheckpoint(unifiedCheckpoint);
+        
+        // Load global rubric into rubric store if present
+        if (unifiedCheckpoint.global_rubric) {
+          const { setCurrentRubric } = useRubricStore.getState();
+          setCurrentRubric(unifiedCheckpoint.global_rubric);
+          console.log('✅ Loaded global rubric with', unifiedCheckpoint.global_rubric.traits.length, 'traits');
+        }
+        
+        alert(`Successfully loaded unified checkpoint v2.0 with ${Object.keys(unifiedCheckpoint.checkpoint).length} items${unifiedCheckpoint.global_rubric ? ` and global rubric with ${unifiedCheckpoint.global_rubric.traits.length} traits` : ''}.\n\n✅ Your complete session has been restored!`);
+        
       } catch (error) {
         console.error('Error parsing checkpoint:', error);
         alert('Error parsing checkpoint file. Please check the file format.');
@@ -146,7 +127,14 @@ export const FileManager: React.FC<FileManagerProps> = ({
       return;
     }
 
-    const dataStr = JSON.stringify(checkpoint, null, 2);
+    // Create unified checkpoint with global rubric
+    const unifiedCheckpoint: UnifiedCheckpoint = {
+      version: "2.0",
+      global_rubric: currentRubric,
+      checkpoint: checkpoint
+    };
+
+    const dataStr = JSON.stringify(unifiedCheckpoint, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     
@@ -337,11 +325,10 @@ export const FileManager: React.FC<FileManagerProps> = ({
         <h5 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2">File Format Information</h5>
         <div className="text-xs text-indigo-800 dark:text-indigo-300 space-y-1 font-medium">
           <p><strong>Question Data JSON:</strong> Contains questions extracted from the Question Extractor tab or previously saved data</p>
-          <p><strong>Checkpoint JSON (New Format):</strong> Self-contained file with questions, progress, modifications, and completion status</p>
-          <p><strong>Checkpoint JSON (Legacy):</strong> Contains only progress data - requires corresponding Question Data JSON</p>
+          <p><strong>Unified Checkpoint (v2.0):</strong> Complete session snapshot including questions, progress, modifications, completion status, and global rubric</p>
           <p><strong>Finished Items JSON:</strong> Contains only completed questions with updated answer templates</p>
-          <p><strong>✅ New Workflow:</strong> Just upload a single Checkpoint JSON file to restore your complete session!</p>
-          <p><strong>🔄 Legacy Support:</strong> Old checkpoint files still work but require Question Data JSON to be loaded first</p>
+          <p><strong>✅ What's Saved:</strong> Question data, answer templates, progress status, per-question rubrics, and the global rubric</p>
+          <p><strong>📦 Single File Restore:</strong> Upload a checkpoint file to restore your complete session including all rubrics</p>
           <p><strong>Tip:</strong> Always backup your checkpoint before uploading new data or starting from scratch</p>
         </div>
       </div>
