@@ -19,6 +19,7 @@ const customRender = (
   return render(ui, { wrapper: Wrapper, ...options });
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export * from '@testing-library/react';
 export { customRender as render };
 export { userEvent };
