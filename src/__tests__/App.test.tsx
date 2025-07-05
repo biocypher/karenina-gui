@@ -8,6 +8,7 @@ import {
   mockLocalStorage,
   mockSessionStorage,
 } from '../test-utils/test-helpers';
+import { useAppStore } from '../stores/useAppStore';
 
 // Mock the data loader utility
 vi.mock('../utils/dataLoader', () => ({
@@ -28,6 +29,9 @@ describe('App Component', () => {
 
     Object.defineProperty(window, 'localStorage', { value: mockLocalStorageImpl });
     Object.defineProperty(window, 'sessionStorage', { value: mockSessionStorageImpl });
+
+    // Reset app store to ensure clean state between tests
+    useAppStore.getState().resetAppState();
 
     vi.clearAllMocks();
   });

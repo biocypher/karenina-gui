@@ -162,16 +162,34 @@ describe('BenchmarkTab', () => {
 
     renderBenchmarkTab();
 
-    // Expand system prompt sections first
-    const systemPromptButtons = screen.getAllByText('System Prompt');
-    fireEvent.click(systemPromptButtons[0]); // Expand answering model system prompt
-    fireEvent.click(systemPromptButtons[1]); // Expand parsing model system prompt
+    // Expand system prompt sections by clicking the chevron buttons next to "System Prompt" labels
+    const chevronButtons = screen.getAllByRole('button').filter((button) => {
+      const svg = button.querySelector('svg');
+      return svg && (svg.classList.contains('lucide-chevron-down') || svg.classList.contains('lucide-chevron-up'));
+    });
+    fireEvent.click(chevronButtons[0]); // Expand answering model system prompt
+    fireEvent.click(chevronButtons[1]); // Expand parsing model system prompt
 
-    // Wait for system prompt textareas to appear after expansion
-    const answeringSystemPrompt = await screen.findByDisplayValue(
+    // Wait for the textareas to appear after expansion
+    await waitFor(() => {
+      expect(
+        screen.getByDisplayValue('You are an expert assistant. Answer the question accurately and concisely.')
+      ).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByDisplayValue(
+          'You are a validation assistant. Parse and validate responses against the given Pydantic template.'
+        )
+      ).toBeInTheDocument();
+    });
+
+    // Get the textareas for interaction
+    const answeringSystemPrompt = screen.getByDisplayValue(
       'You are an expert assistant. Answer the question accurately and concisely.'
     );
-    const parsingSystemPrompt = await screen.findByDisplayValue(
+    const parsingSystemPrompt = screen.getByDisplayValue(
       'You are a validation assistant. Parse and validate responses against the given Pydantic template.'
     );
 
@@ -241,10 +259,13 @@ describe('BenchmarkTab', () => {
     // Check that system prompt buttons are present (collapsed by default)
     expect(screen.getAllByText('System Prompt')).toHaveLength(2);
 
-    // Expand the system prompt sections
-    const systemPromptButtons = screen.getAllByText('System Prompt');
-    fireEvent.click(systemPromptButtons[0]); // Expand answering model system prompt
-    fireEvent.click(systemPromptButtons[1]); // Expand parsing model system prompt
+    // Expand the system prompt sections by clicking the chevron buttons
+    const chevronButtons = screen.getAllByRole('button').filter((button) => {
+      const svg = button.querySelector('svg');
+      return svg && (svg.classList.contains('lucide-chevron-down') || svg.classList.contains('lucide-chevron-up'));
+    });
+    fireEvent.click(chevronButtons[0]); // Expand answering model system prompt
+    fireEvent.click(chevronButtons[1]); // Expand parsing model system prompt
 
     // Check that system prompt textareas are present with default values after expanding
     expect(
@@ -273,17 +294,20 @@ describe('BenchmarkTab', () => {
       )
     ).not.toBeInTheDocument();
 
-    // Expand first system prompt
-    const systemPromptButtons = screen.getAllByText('System Prompt');
-    fireEvent.click(systemPromptButtons[0]);
+    // Expand first system prompt by clicking the chevron button
+    const chevronButtons = screen.getAllByRole('button').filter((button) => {
+      const svg = button.querySelector('svg');
+      return svg && (svg.classList.contains('lucide-chevron-down') || svg.classList.contains('lucide-chevron-up'));
+    });
+    fireEvent.click(chevronButtons[0]);
 
     // Now the textarea should be visible
     expect(
       screen.getByDisplayValue('You are an expert assistant. Answer the question accurately and concisely.')
     ).toBeInTheDocument();
 
-    // Collapse it again
-    fireEvent.click(systemPromptButtons[0]);
+    // Collapse it again by clicking the chevron button again
+    fireEvent.click(chevronButtons[0]);
 
     // Textarea should be hidden again
     expect(

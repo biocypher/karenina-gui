@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ManualTraceUpload } from '../../components/ManualTraceUpload';
 
@@ -57,7 +57,9 @@ describe('ManualTraceUpload', () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
 
-    fireEvent.change(fileInput, { target: { files: [file] } });
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
 
     await waitFor(() => {
       expect(onUploadSuccess).toHaveBeenCalledWith(2);
@@ -83,7 +85,9 @@ describe('ManualTraceUpload', () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['invalid json'], 'test.json', { type: 'application/json' });
 
-    fireEvent.change(fileInput, { target: { files: [file] } });
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
 
     await waitFor(() => {
       expect(onUploadError).toHaveBeenCalledWith('Invalid JSON format');
@@ -105,14 +109,18 @@ describe('ManualTraceUpload', () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
 
-    fireEvent.change(fileInput, { target: { files: [file] } });
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
 
     expect(screen.getByText('Uploading manual traces...')).toBeInTheDocument();
 
     // Resolve the promise to complete the test
-    resolvePromise!({
-      ok: true,
-      json: () => Promise.resolve({ success: true, message: 'Success', trace_count: 1 }),
+    await act(async () => {
+      resolvePromise!({
+        ok: true,
+        json: () => Promise.resolve({ success: true, message: 'Success', trace_count: 1 }),
+      });
     });
   });
 
@@ -134,7 +142,9 @@ describe('ManualTraceUpload', () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
 
-    fireEvent.change(fileInput, { target: { files: [file] } });
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Successfully loaded 1 manual trace')).toBeInTheDocument();
@@ -142,24 +152,30 @@ describe('ManualTraceUpload', () => {
 
     // Click the clear button (X)
     const clearButton = screen.getByRole('button');
-    fireEvent.click(clearButton);
+    await act(async () => {
+      fireEvent.click(clearButton);
+    });
 
     expect(screen.getByText('Click to upload')).toBeInTheDocument();
     expect(screen.queryByText('Successfully loaded 1 manual trace')).not.toBeInTheDocument();
   });
 
-  it('handles drag and drop functionality', () => {
+  it('handles drag and drop functionality', async () => {
     render(<ManualTraceUpload />);
 
     const dropZone = screen.getByText('Click to upload').closest('div');
 
     // Simulate drag over
-    fireEvent.dragOver(dropZone!);
+    await act(async () => {
+      fireEvent.dragOver(dropZone!);
+    });
 
     // Should show visual feedback for drag over (this would be tested via CSS classes in a full implementation)
 
     // Simulate drag leave
-    fireEvent.dragLeave(dropZone!);
+    await act(async () => {
+      fireEvent.dragLeave(dropZone!);
+    });
 
     // Simulate drop
     const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
@@ -168,7 +184,9 @@ describe('ManualTraceUpload', () => {
       files: [file],
     } as DataTransfer;
 
-    fireEvent.drop(dropZone!, dropEvent);
+    await act(async () => {
+      fireEvent.drop(dropZone!, dropEvent);
+    });
   });
 
   it('shows download template button when finished templates are provided', () => {

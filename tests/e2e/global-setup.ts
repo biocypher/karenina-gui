@@ -127,12 +127,12 @@ except Exception as e:
     });
 
     // Set up process event handlers
-    frontendProcess.on('error', (error) => {
-      console.error('Frontend process error:', error);
+    frontendProcess.on('error', (processError) => {
+      console.error('❌ Frontend process error:', processError);
     });
 
-    backendProcess.on('error', (error) => {
-      console.error('Backend process error:', error);
+    backendProcess.on('error', (processError) => {
+      console.error('❌ Backend process error:', processError);
     });
 
     // Enhanced logging for debugging
@@ -199,7 +199,7 @@ except Exception as e:
       console.log('🧹 Running E2E teardown...');
       await cleanup();
     };
-  } catch {
+  } catch (error) {
     console.error('❌ E2E setup failed:', error);
     await cleanup(); // Clean up on failure
     throw error;
@@ -255,7 +255,7 @@ async function waitForServer(serverKey: keyof typeof TEST_CONFIG.servers, maxRet
           console.log(`${serverKey} health check failed with status ${response.status}. Could not read response.`);
         }
       }
-    } catch {
+    } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.log(`${serverKey} health check attempt ${i + 1} failed: ${errorMsg}`);
     }
@@ -276,7 +276,7 @@ async function storePids(pids: Record<string, number>) {
   try {
     await fs.writeFile(pidFilePath, JSON.stringify(pids, null, 2));
   } catch {
-    console.warn('Failed to store PIDs:', error);
+    console.warn('Failed to store PIDs');
   }
 }
 
@@ -346,7 +346,7 @@ async function cleanup() {
         await sleep(2000);
         process.kill(-frontendProcess.pid, 'SIGKILL');
       } catch {
-        console.log('Frontend cleanup error (expected if already dead):', error);
+        console.log('Frontend cleanup error (expected if already dead)');
       }
       frontendProcess = null;
     }
@@ -359,7 +359,7 @@ async function cleanup() {
         await sleep(2000);
         process.kill(-backendProcess.pid, 'SIGKILL');
       } catch {
-        console.log('Backend cleanup error (expected if already dead):', error);
+        console.log('Backend cleanup error (expected if already dead)');
       }
       backendProcess = null;
     }
@@ -382,7 +382,7 @@ async function cleanup() {
 
     console.log('✅ Cleanup completed');
   } catch {
-    console.error('❌ Cleanup error:', error);
+    console.error('❌ E2E setup failed');
   }
 }
 

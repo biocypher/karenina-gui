@@ -51,6 +51,7 @@ describe('ModelSelector', () => {
     expect(mockOnConfigChange).toHaveBeenCalledWith({
       ...defaultConfig,
       interface: 'openrouter',
+      model_provider: '', // OpenRouter clears provider field
     });
   });
 

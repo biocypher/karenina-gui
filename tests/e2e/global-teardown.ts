@@ -19,7 +19,7 @@ async function globalTeardown() {
 
     console.log('✅ E2E global teardown completed successfully');
   } catch {
-    console.error('❌ E2E teardown error:', error);
+    console.error('❌ E2E teardown error');
     // Don't throw error in teardown to avoid masking test failures
   }
 }
@@ -41,7 +41,7 @@ async function cleanupProcesses() {
         await sleep(1000);
         process.kill(-pids.frontend, 'SIGKILL');
       } catch {
-        console.log('Frontend process cleanup (expected if already terminated):', error);
+        console.log('Frontend process cleanup (expected if already terminated)');
       }
     }
 
@@ -53,7 +53,7 @@ async function cleanupProcesses() {
         await sleep(1000);
         process.kill(-pids.backend, 'SIGKILL');
       } catch {
-        console.log('Backend process cleanup (expected if already terminated):', error);
+        console.log('Backend process cleanup (expected if already terminated)');
       }
     }
 
@@ -65,7 +65,7 @@ async function cleanupProcesses() {
         await sleep(1000);
         process.kill(-pids.main, 'SIGKILL');
       } catch {
-        console.log('Legacy process cleanup (expected if already terminated):', error);
+        console.log('Legacy process cleanup (expected if already terminated)');
       }
     }
 
@@ -163,7 +163,7 @@ async function cleanupTempFiles() {
       }
     }
   } catch {
-    console.log('Temp file cleanup error:', error);
+    console.log('Temp file cleanup error');
   }
 }
 

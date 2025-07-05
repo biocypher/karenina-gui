@@ -52,7 +52,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
         });
 
         onUploadSuccess?.(result.trace_count);
-      } catch {
+      } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Upload failed';
         setUploadStatus({
           status: 'error',

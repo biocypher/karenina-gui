@@ -59,6 +59,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Add state for polling retry count
   const [, setRetryCount] = useState(0);
+
+  // Filter state for table results
+  const [filteredCount, setFilteredCount] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const MAX_RETRIES = 10;
 
   // Get finished templates from checkpoint
@@ -66,6 +70,12 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   const getQuestionPreview = (text: string) => {
     return text.length > 60 ? text.substring(0, 60) + '...' : text;
+  };
+
+  // Handle filtered count changes from table
+  const handleFilteredCountChange = (filtered: number, total: number) => {
+    setFilteredCount(filtered);
+    setTotalCount(total);
   };
 
   // Handle export filtered results - Fix the function to work with simple client-side export
@@ -668,7 +678,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  Test Results ({Object.keys(benchmarkResults).length})
+                  {filteredCount !== null && filteredCount !== totalCount
+                    ? `Test Results (${filteredCount} of ${totalCount})`
+                    : `Test Results (${Object.keys(benchmarkResults).length})`}
                 </h3>
               </div>
               <div className="flex items-center gap-2">
@@ -720,7 +732,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               </div>
             )}
 
-            <BenchmarkTable benchmarkResults={benchmarkResults} onViewResult={setSelectedResult} />
+            <BenchmarkTable
+              benchmarkResults={benchmarkResults}
+              onViewResult={setSelectedResult}
+              onFilteredCountChange={handleFilteredCountChange}
+            />
           </Card>
 
           {/* Results Modal */}

@@ -13,7 +13,7 @@ describe('useAppStore', () => {
 
     expect(result.current.activeTab).toBe('extractor');
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.sessionId).toMatch(/^otarbench_\d+_[a-z0-9]+$/);
+    expect(result.current.sessionId).toMatch(/^karenina_\d+_[a-z0-9]+$/);
   });
 
   it('should update active tab', () => {
@@ -69,7 +69,7 @@ describe('useAppStore', () => {
     const sessionId2 = result1.current.sessionId;
 
     expect(sessionId1).not.toBe(sessionId2);
-    expect(sessionId1).toMatch(/^otarbench_\d+_[a-z0-9]+$/);
-    expect(sessionId2).toMatch(/^otarbench_\d+_[a-z0-9]+$/);
+    expect(sessionId1).toMatch(/^karenina_\d+_[a-z0-9]+$/);
+    expect(sessionId2).toMatch(/^karenina_\d+_[a-z0-9]+$/);
   });
 });

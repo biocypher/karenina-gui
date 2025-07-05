@@ -26,6 +26,7 @@ declare module '@tanstack/react-table' {
 interface BenchmarkTableProps {
   benchmarkResults: Record<string, VerificationResult>;
   onViewResult: (result: VerificationResult) => void;
+  onFilteredCountChange?: (filteredCount: number, totalCount: number) => void;
 }
 
 const columnHelper = createColumnHelper<VerificationResult>();
@@ -145,7 +146,11 @@ const SortIndicator = ({ column }: { column: { getIsSorted: () => false | 'asc' 
   return <span className="text-indigo-600 dark:text-indigo-400 ml-1">{sorted === 'asc' ? '↑' : '↓'}</span>;
 };
 
-export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({ benchmarkResults, onViewResult }) => {
+export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
+  benchmarkResults,
+  onViewResult,
+  onFilteredCountChange,
+}) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [questionSearchText, setQuestionSearchText] = useState('');
@@ -333,6 +338,15 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({ benchmarkResults
       questionColumn.setFilterValue(debouncedQuestionSearch || undefined);
     }
   }, [debouncedQuestionSearch, table]);
+
+  // Report filtered count changes to parent
+  useEffect(() => {
+    if (onFilteredCountChange) {
+      const filteredCount = table.getFilteredRowModel().rows.length;
+      const totalCount = data.length;
+      onFilteredCountChange(filteredCount, totalCount);
+    }
+  }, [table, data.length, onFilteredCountChange]);
 
   // Get unique values for filter options
   const getUniqueModels = () => {

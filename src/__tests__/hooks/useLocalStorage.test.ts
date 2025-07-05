@@ -17,6 +17,10 @@ Object.defineProperty(window, 'localStorage', {
 describe('useLocalStorage Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock implementations to default behavior
+    mockLocalStorage.getItem.mockImplementation(() => null);
+    mockLocalStorage.setItem.mockImplementation(() => {});
+    mockLocalStorage.removeItem.mockImplementation(() => {});
   });
 
   describe('Initial Value Handling', () => {
