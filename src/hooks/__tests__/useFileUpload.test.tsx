@@ -66,7 +66,7 @@ describe('useFileUpload', () => {
   });
 
   it('should handle validation errors', async () => {
-    (validateFile as any).mockReturnValue({ 
+    (validateFile as ReturnType<typeof vi.fn>).mockReturnValue({ 
       isValid: false, 
       error: 'File too large' 
     });
@@ -92,7 +92,7 @@ describe('useFileUpload', () => {
   });
 
   it('should handle JSON parsing errors', async () => {
-    (parseJSONFile as any).mockRejectedValue(new Error('Invalid JSON'));
+    (parseJSONFile as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Invalid JSON'));
 
     const { result } = renderHook(() => 
       useFileUpload({
@@ -114,7 +114,7 @@ describe('useFileUpload', () => {
 
   it('should handle non-JSON files with validator', async () => {
     const mockData = { name: 'test' };
-    (readFileAsText as any).mockResolvedValue('{"name": "test"}');
+    (readFileAsText as ReturnType<typeof vi.fn>).mockResolvedValue('{"name": "test"}');
 
     const validator = vi.fn().mockReturnValue(true);
 
@@ -137,7 +137,7 @@ describe('useFileUpload', () => {
   });
 
   it('should handle validator rejection', async () => {
-    (readFileAsText as any).mockResolvedValue('{"invalid": "data"}');
+    (readFileAsText as ReturnType<typeof vi.fn>).mockResolvedValue('{"invalid": "data"}');
 
     const validator = vi.fn().mockReturnValue(false);
 
@@ -245,7 +245,7 @@ describe('useJSONFileUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (validateFile as ReturnType<typeof vi.fn>).mockReturnValue({ isValid: true });
-    (parseJSONFile as any).mockResolvedValue({ test: 'data' });
+    (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue({ test: 'data' });
   });
 
   it('should configure validation for JSON files', () => {
@@ -282,7 +282,7 @@ describe('useSpreadsheetUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (validateFile as ReturnType<typeof vi.fn>).mockReturnValue({ isValid: true });
-    (readFileAsText as any).mockResolvedValue('spreadsheet content');
+    (readFileAsText as ReturnType<typeof vi.fn>).mockResolvedValue('spreadsheet content');
   });
 
   it('should handle spreadsheet file uploads', async () => {

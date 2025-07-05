@@ -181,7 +181,7 @@ global.FileReader = class FileReader extends EventTarget {
     }, 10); // Small delay to simulate async behavior
   }
 
-  readAsDataURL(_file: Blob): void {
+  readAsDataURL(): void {
     setTimeout(() => {
       this.result = 'data:application/octet-stream;base64,dGVzdA==';
       this.readyState = 2;
@@ -191,7 +191,7 @@ global.FileReader = class FileReader extends EventTarget {
     }, 10);
   }
 
-  readAsArrayBuffer(_file: Blob): void {
+  readAsArrayBuffer(): void {
     setTimeout(() => {
       this.result = new ArrayBuffer(8);
       this.readyState = 2;
