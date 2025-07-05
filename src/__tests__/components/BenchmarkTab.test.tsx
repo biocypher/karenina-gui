@@ -131,8 +131,13 @@ describe('BenchmarkTab', () => {
     renderBenchmarkTab();
 
     // First select a test by clicking the checkbox
-    const checkbox = screen.getAllByRole('checkbox')[1]; // First test checkbox (index 0 is select all)
+    const checkbox = screen.getAllByRole('checkbox')[3]; // First test checkbox (indexes 0,1=evaluation, 2=select all, 3=first test)
     fireEvent.click(checkbox);
+
+    // Wait for the button text to update after checkbox selection
+    await waitFor(() => {
+      expect(screen.getByText('Run Selected (1 × 1 = 1)')).toBeInTheDocument();
+    });
 
     const runSelectedButton = screen.getByText('Run Selected (1 × 1 = 1)');
     fireEvent.click(runSelectedButton);
@@ -162,11 +167,11 @@ describe('BenchmarkTab', () => {
     fireEvent.click(systemPromptButtons[0]); // Expand answering model system prompt
     fireEvent.click(systemPromptButtons[1]); // Expand parsing model system prompt
 
-    // Modify system prompts to custom values
-    const answeringSystemPrompt = screen.getByDisplayValue(
+    // Wait for system prompt textareas to appear after expansion
+    const answeringSystemPrompt = await screen.findByDisplayValue(
       'You are an expert assistant. Answer the question accurately and concisely.'
     );
-    const parsingSystemPrompt = screen.getByDisplayValue(
+    const parsingSystemPrompt = await screen.findByDisplayValue(
       'You are a validation assistant. Parse and validate responses against the given Pydantic template.'
     );
 
@@ -327,7 +332,7 @@ describe('BenchmarkTab', () => {
     );
   });
 
-  it('handles test selection with checkboxes', () => {
+  it('handles test selection with checkboxes', async () => {
     renderBenchmarkTab();
 
     // Check select all/none buttons are present
@@ -336,22 +341,28 @@ describe('BenchmarkTab', () => {
 
     // Check individual checkboxes are present
     const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(3); // 1 select all + 2 individual tests
+    expect(checkboxes).toHaveLength(5); // 2 evaluation settings + 1 select all + 2 individual tests
 
     // Initially nothing selected
     expect(screen.getByText('Run Selected (0 × 1 = 0)')).toBeInTheDocument();
 
     // Select first test
-    fireEvent.click(checkboxes[1]);
-    expect(screen.getByText('Run Selected (1 × 1 = 1)')).toBeInTheDocument();
+    fireEvent.click(checkboxes[3]); // First test checkbox (indexes 0,1=evaluation, 2=select all, 3=first test)
+    await waitFor(() => {
+      expect(screen.getByText('Run Selected (1 × 1 = 1)')).toBeInTheDocument();
+    });
 
     // Select all tests via select all button
     fireEvent.click(screen.getByText('Select All'));
-    expect(screen.getByText('Run Selected (2 × 1 = 2)')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Run Selected (2 × 1 = 2)')).toBeInTheDocument();
+    });
 
     // Deselect all via select none
     fireEvent.click(screen.getByText('Select None'));
-    expect(screen.getByText('Run Selected (0 × 1 = 0)')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Run Selected (0 × 1 = 0)')).toBeInTheDocument();
+    });
   });
 
   it('shows test results table when results are available', () => {

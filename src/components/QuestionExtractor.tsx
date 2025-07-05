@@ -50,6 +50,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
   const [selectedAnswerColumn, setSelectedAnswerColumn] = useState<string>('');
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [, setIsPreviewing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'configure' | 'extract' | 'visualize'>(
