@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Rubric, RubricTrait, QuestionData, RubricTraitGenerationRequest, RubricTraitGenerationResponse, RubricTraitGenerationConfig } from '../types';
+import { Rubric, RubricTrait, RubricTraitGenerationRequest, RubricTraitGenerationResponse, RubricTraitGenerationConfig } from '../types';
 
 interface RubricState {
   // Current rubric being edited

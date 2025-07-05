@@ -129,7 +129,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 checked={model.interface === 'manual'}
                 onChange={(e) => {
                   const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
-                  isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+                  if (isAnswering) {
+                    onUpdateAnsweringModel(model.id, update);
+                  } else {
+                    onUpdateParsingModel(model.id, update);
+                  }
                 }}
                 disabled={isRunning}
                 className="mr-2"
@@ -151,7 +155,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             value={model.model_provider}
             onChange={(e) => {
               const update = { model_provider: e.target.value };
-              isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+              if (isAnswering) {
+                onUpdateAnsweringModel(model.id, update);
+              } else {
+                onUpdateParsingModel(model.id, update);
+              }
             }}
             disabled={isRunning}
             className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
@@ -171,7 +179,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             value={model.model_name}
             onChange={(e) => {
               const update = { model_name: e.target.value };
-              isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+              if (isAnswering) {
+                onUpdateAnsweringModel(model.id, update);
+              } else {
+                onUpdateParsingModel(model.id, update);
+              }
             }}
             disabled={isRunning}
             className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
@@ -194,7 +206,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             value={model.temperature}
             onChange={(e) => {
               const update = { temperature: parseFloat(e.target.value) };
-              isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+              if (isAnswering) {
+                onUpdateAnsweringModel(model.id, update);
+              } else {
+                onUpdateParsingModel(model.id, update);
+              }
             }}
             disabled={isRunning}
             className="w-full"
@@ -227,7 +243,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               value={model.system_prompt}
               onChange={(e) => {
                 const update = { system_prompt: e.target.value };
-                isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+                if (isAnswering) {
+                onUpdateAnsweringModel(model.id, update);
+              } else {
+                onUpdateParsingModel(model.id, update);
+              }
               }}
               disabled={isRunning}
               className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-xs"

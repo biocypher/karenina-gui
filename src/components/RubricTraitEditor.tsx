@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
 import { RubricTrait, TraitKind } from '../types';
