@@ -45,12 +45,12 @@ describe('useFileUpload', () => {
 
   it('should handle successful file upload', async () => {
     const mockData = { name: 'test' };
-    (parseJSONFile as any).mockResolvedValue(mockData);
+    (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
     const { result } = renderHook(() => 
       useFileUpload({
         onSuccess: mockOnSuccess,
-        validator: (data: any): data is typeof mockData => true,
+        validator: (data: unknown): data is typeof mockData => true,
       })
     );
 
@@ -161,7 +161,7 @@ describe('useFileUpload', () => {
 
   it('should handle file input change events', async () => {
     const mockData = { name: 'test' };
-    (parseJSONFile as any).mockResolvedValue(mockData);
+    (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
     const { result } = renderHook(() => 
       useFileUpload({
@@ -218,7 +218,7 @@ describe('useFileUpload', () => {
 
   it('should not reset file input when resetOnSuccess is false', async () => {
     const mockData = { name: 'test' };
-    (parseJSONFile as any).mockResolvedValue(mockData);
+    (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
     const { result } = renderHook(() => 
       useFileUpload({
@@ -258,7 +258,7 @@ describe('useJSONFileUpload', () => {
 
   it('should call validator with JSON data', async () => {
     const mockData = { test: 'data' };
-    (parseJSONFile as any).mockResolvedValue(mockData);
+    (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
     const { result } = renderHook(() => 
       useJSONFileUpload(mockValidator, mockOnSuccess, mockOnError)
