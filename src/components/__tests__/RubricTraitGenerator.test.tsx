@@ -138,10 +138,14 @@ describe('RubricTraitGenerator', () => {
   });
 
   it('handles Select All and Select None buttons', () => {
-    render(<RubricTraitGenerator questions={mockQuestions} />);
+    act(() => {
+      render(<RubricTraitGenerator questions={mockQuestions} />);
+    });
 
-    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
-    fireEvent.click(header);
+    act(() => {
+      const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
+      fireEvent.click(header);
+    });
 
     // Check that Select All and Select None buttons exist
     expect(screen.getByRole('button', { name: /Select All/i })).toBeInTheDocument();
@@ -149,41 +153,59 @@ describe('RubricTraitGenerator', () => {
   });
 
   it('handles individual question selection', () => {
-    render(<RubricTraitGenerator questions={mockQuestions} />);
+    act(() => {
+      render(<RubricTraitGenerator questions={mockQuestions} />);
+    });
 
-    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
-    fireEvent.click(header);
+    act(() => {
+      const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
+      fireEvent.click(header);
+    });
 
     // Find the checkbox for the first question (skip the header checkbox)
     const checkboxes = screen.getAllByRole('checkbox');
     const firstQuestionCheckbox = checkboxes[1];
 
     // Uncheck it
-    fireEvent.click(firstQuestionCheckbox);
+    act(() => {
+      fireEvent.click(firstQuestionCheckbox);
+    });
     expect(firstQuestionCheckbox).not.toBeChecked();
 
     // Check it again
-    fireEvent.click(firstQuestionCheckbox);
+    act(() => {
+      fireEvent.click(firstQuestionCheckbox);
+    });
     expect(firstQuestionCheckbox).toBeChecked();
   });
 
   it('generates traits with selected questions and passes correct data', async () => {
-    render(<RubricTraitGenerator questions={mockQuestions} onTraitsGenerated={mockOnTraitsGenerated} />);
+    act(() => {
+      render(<RubricTraitGenerator questions={mockQuestions} onTraitsGenerated={mockOnTraitsGenerated} />);
+    });
 
-    const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
-    fireEvent.click(header);
+    act(() => {
+      const header = screen.getByRole('button', { name: /Rubric Trait Generator/i });
+      fireEvent.click(header);
+    });
 
     // Enter system prompt
-    const systemPromptInput = screen.getByPlaceholderText(/the system prompt here/i);
-    fireEvent.change(systemPromptInput, { target: { value: 'Test system prompt' } });
+    act(() => {
+      const systemPromptInput = screen.getByPlaceholderText(/the system prompt here/i);
+      fireEvent.change(systemPromptInput, { target: { value: 'Test system prompt' } });
+    });
 
     // Enter user suggestions
-    const suggestionsInput = screen.getByPlaceholderText(/clarity, conciseness/i);
-    fireEvent.change(suggestionsInput, { target: { value: 'clarity, accuracy' } });
+    act(() => {
+      const suggestionsInput = screen.getByPlaceholderText(/clarity, conciseness/i);
+      fireEvent.change(suggestionsInput, { target: { value: 'clarity, accuracy' } });
+    });
 
     // Click generate
-    const generateButton = screen.getByRole('button', { name: /Generate traits/i });
-    fireEvent.click(generateButton);
+    act(() => {
+      const generateButton = screen.getByRole('button', { name: /Generate traits/i });
+      fireEvent.click(generateButton);
+    });
 
     // Verify the generateTraits was called with correct data
     expect(mockGenerateTraits).toHaveBeenCalledWith({
