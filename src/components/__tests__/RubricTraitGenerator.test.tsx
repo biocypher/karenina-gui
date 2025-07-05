@@ -41,7 +41,7 @@ describe('RubricTraitGenerator', () => {
     });
     
     // Mock the store with the actual interface
-    (useRubricStore as any).mockReturnValue({
+    (useRubricStore as ReturnType<typeof vi.fn>).mockReturnValue({
       currentRubric: null,
       generatedSuggestions: [],
       isGeneratingTraits: false,
@@ -197,7 +197,7 @@ describe('RubricTraitGenerator', () => {
   });
 
   it('displays error message when present', () => {
-    (useRubricStore as any).mockReturnValue({
+    (useRubricStore as ReturnType<typeof vi.fn>).mockReturnValue({
       currentRubric: null,
       generatedSuggestions: [],
       isGeneratingTraits: false,
@@ -238,7 +238,7 @@ describe('RubricTraitGenerator', () => {
       { name: 'accuracy', kind: 'scale', description: 'How accurate is the answer?' }
     ];
     
-    (useRubricStore as any).mockReturnValue({
+    (useRubricStore as ReturnType<typeof vi.fn>).mockReturnValue({
       currentRubric: null,
       generatedSuggestions: mockTraits,
       isGeneratingTraits: false,
@@ -277,7 +277,7 @@ describe('RubricTraitGenerator', () => {
   });
 
   it('shows loading state during generation', () => {
-    (useRubricStore as any).mockReturnValue({
+    (useRubricStore as ReturnType<typeof vi.fn>).mockReturnValue({
       currentRubric: null,
       generatedSuggestions: [],
       isGeneratingTraits: true,
@@ -307,7 +307,7 @@ describe('RubricTraitGenerator', () => {
   });
 
   it('filters questions based on search term', () => {
-    (useRubricStore as any).mockReturnValue({
+    (useRubricStore as ReturnType<typeof vi.fn>).mockReturnValue({
       currentRubric: null,
       generatedSuggestions: [],
       isGeneratingTraits: false,
@@ -357,7 +357,7 @@ describe('RubricTraitGenerator', () => {
   });
 
   it('shows no results message when search has no matches', () => {
-    (useRubricStore as any).mockReturnValue({
+    (useRubricStore as ReturnType<typeof vi.fn>).mockReturnValue({
       currentRubric: null,
       generatedSuggestions: [],
       isGeneratingTraits: false,

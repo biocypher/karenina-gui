@@ -24,7 +24,7 @@ describe('useFileUpload', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (validateFile as any).mockReturnValue({ isValid: true });
+    (validateFile as ReturnType<typeof vi.fn>).mockReturnValue({ isValid: true });
   });
 
   afterEach(() => {
@@ -244,7 +244,7 @@ describe('useJSONFileUpload', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (validateFile as any).mockReturnValue({ isValid: true });
+    (validateFile as ReturnType<typeof vi.fn>).mockReturnValue({ isValid: true });
     (parseJSONFile as any).mockResolvedValue({ test: 'data' });
   });
 
@@ -281,7 +281,7 @@ describe('useSpreadsheetUpload', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (validateFile as any).mockReturnValue({ isValid: true });
+    (validateFile as ReturnType<typeof vi.fn>).mockReturnValue({ isValid: true });
     (readFileAsText as any).mockResolvedValue('spreadsheet content');
   });
 

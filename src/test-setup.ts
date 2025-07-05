@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { beforeAll, afterEach, afterAll, beforeEach } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { vi } from 'vitest';
 
@@ -127,8 +127,7 @@ global.FileReader = class FileReader extends EventTarget {
         // For our tests, we'll extract content from the file name or use the file content
         if (file instanceof File) {
           // Try to parse the file content if it's JSON
-          const reader = new FileReader();
-          const originalReadAsText = FileReader.prototype.readAsText;
+          // Removed unused variables for linting
           
           // Use a real FileReader for actual content reading in tests
           const realReader = Object.create(FileReader.prototype);
@@ -136,7 +135,7 @@ global.FileReader = class FileReader extends EventTarget {
             this.result = e.target.result;
             this.readyState = 2; // DONE
             if (this.onload) {
-              this.onload.call(this, { target: this } as any);
+              this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
             }
           };
           
@@ -154,7 +153,7 @@ global.FileReader = class FileReader extends EventTarget {
               this.result = text;
               this.readyState = 2; // DONE
               if (this.onload) {
-                this.onload.call(this, { target: this } as any);
+                this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
               }
             }).catch(error => {
               this.error = error;
@@ -168,7 +167,7 @@ global.FileReader = class FileReader extends EventTarget {
             this.result = '';
             this.readyState = 2; // DONE
             if (this.onload) {
-              this.onload.call(this, { target: this } as any);
+              this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
             }
           }
         }
@@ -182,12 +181,12 @@ global.FileReader = class FileReader extends EventTarget {
     }, 10); // Small delay to simulate async behavior
   }
 
-  readAsDataURL(file: Blob): void {
+  readAsDataURL(_file: Blob): void {
     setTimeout(() => {
       this.result = 'data:application/octet-stream;base64,dGVzdA==';
       this.readyState = 2;
       if (this.onload) {
-        this.onload.call(this, { target: this } as any);
+        this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
       }
     }, 10);
   }
@@ -197,7 +196,7 @@ global.FileReader = class FileReader extends EventTarget {
       this.result = new ArrayBuffer(8);
       this.readyState = 2;
       if (this.onload) {
-        this.onload.call(this, { target: this } as any);
+        this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
       }
     }, 10);
   }

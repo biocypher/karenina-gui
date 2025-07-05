@@ -61,9 +61,9 @@ describe('Export Utils', () => {
           href: '',
           download: '',
           click: vi.fn(),
-        } as any;
+        } as HTMLAnchorElement;
       }
-      return {} as any;
+      return {} as HTMLElement;
     });
     
     document.body.appendChild = vi.fn();
@@ -100,7 +100,7 @@ describe('Export Utils', () => {
         blob: vi.fn().mockResolvedValue(mockBlob)
       };
       
-      (global.fetch as any).mockResolvedValue(mockResponse);
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       await exportFromServer('job-123', 'json');
 
@@ -110,13 +110,13 @@ describe('Export Utils', () => {
 
     it('should throw error when server request fails', async () => {
       const mockResponse = { ok: false };
-      (global.fetch as any).mockResolvedValue(mockResponse);
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       await expect(exportFromServer('job-123', 'json')).rejects.toThrow('Failed to export results');
     });
 
     it('should handle network errors', async () => {
-      (global.fetch as any).mockRejectedValue(new Error('Network error'));
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
 
       await expect(exportFromServer('job-123', 'json')).rejects.toThrow('Failed to export results');
     });
@@ -237,7 +237,7 @@ describe('Export Utils', () => {
     it('should handle export errors with custom error handler', () => {
       const onError = vi.fn();
       // Mock window.URL.createObjectURL to throw
-      (window.URL.createObjectURL as any).mockImplementation(() => {
+      (window.URL.createObjectURL as ReturnType<typeof vi.fn>).mockImplementation(() => {
         throw new Error('Mock error');
       });
 

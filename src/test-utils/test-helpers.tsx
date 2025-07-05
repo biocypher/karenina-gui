@@ -167,7 +167,7 @@ export const simulateDragAndDrop = async (element: HTMLElement, file: File) => {
   const dropEvent = new DragEvent('drop', {
     bubbles: true,
     cancelable: true,
-    dataTransfer: dataTransfer as any,
+    dataTransfer: dataTransfer as DataTransfer,
   });
   
   element.dispatchEvent(dropEvent);
@@ -194,15 +194,15 @@ export const expectElementToHaveText = (element: HTMLElement | null, text: strin
 };
 
 // Mock fetch responses
-export const mockFetchSuccess = (data: any) => {
-  (global.fetch as any).mockResolvedValueOnce({
+export const mockFetchSuccess = (data: unknown) => {
+  (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
     ok: true,
     json: async () => data,
   });
 };
 
 export const mockFetchError = (error: string) => {
-  (global.fetch as any).mockRejectedValueOnce(new Error(error));
+  (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error(error));
 };
 
 // Prism.js mock for syntax highlighting tests

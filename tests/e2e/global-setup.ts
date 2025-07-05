@@ -33,7 +33,7 @@ async function globalSetup() {
     try {
       await fs.access(startupScriptPath);
       console.log(`✓ Found startup script: ${startupScriptPath}`);
-    } catch (error) {
+    } catch (_error) {
       throw new Error(`Startup script not found: ${startupScriptPath}`);
     }
 
@@ -245,11 +245,11 @@ async function waitForServer(serverKey: keyof typeof TEST_CONFIG.servers, maxRet
         try {
           const responseText = await response.text();
           console.log(`${serverKey} health check failed with status ${response.status}. Response: ${responseText.substring(0, 200)}`);
-        } catch (e) {
+        } catch (_e) {
           console.log(`${serverKey} health check failed with status ${response.status}. Could not read response.`);
         }
       }
-    } catch (error) {
+    } catch (_error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.log(`${serverKey} health check attempt ${i + 1} failed: ${errorMsg}`);
     }
@@ -266,7 +266,7 @@ async function waitForServer(serverKey: keyof typeof TEST_CONFIG.servers, maxRet
 /**
  * Store process PIDs for cleanup
  */
-async function storePids(pids: any) {
+async function storePids(pids: Record<string, number>) {
   try {
     await fs.writeFile(pidFilePath, JSON.stringify(pids, null, 2));
   } catch (error) {
@@ -289,7 +289,7 @@ async function cleanupExistingProcesses() {
         process.kill(-pids.frontend, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.frontend, 'SIGKILL');
-      } catch (error) {
+      } catch (_error) {
         console.log('Frontend process cleanup (expected if already dead)');
       }
     }
@@ -301,7 +301,7 @@ async function cleanupExistingProcesses() {
         process.kill(-pids.backend, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.backend, 'SIGKILL');
-      } catch (error) {
+      } catch (_error) {
         console.log('Backend process cleanup (expected if already dead)');
       }
     }
@@ -313,7 +313,7 @@ async function cleanupExistingProcesses() {
         process.kill(-pids.main, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.main, 'SIGKILL');
-      } catch (error) {
+      } catch (_error) {
         console.log('Legacy process cleanup (expected if already dead)');
       }
     }
@@ -339,7 +339,7 @@ async function cleanup() {
         process.kill(-frontendProcess.pid, 'SIGTERM');
         await sleep(2000);
         process.kill(-frontendProcess.pid, 'SIGKILL');
-      } catch (error) {
+      } catch (_error) {
         console.log('Frontend cleanup error (expected if already dead):', error);
       }
       frontendProcess = null;
@@ -352,7 +352,7 @@ async function cleanup() {
         process.kill(-backendProcess.pid, 'SIGTERM');
         await sleep(2000);
         process.kill(-backendProcess.pid, 'SIGKILL');
-      } catch (error) {
+      } catch (_error) {
         console.log('Backend cleanup error (expected if already dead):', error);
       }
       backendProcess = null;
@@ -361,7 +361,7 @@ async function cleanup() {
     // Clean up PID file
     try {
       await fs.unlink(pidFilePath);
-    } catch (error) {
+    } catch (_error) {
       // File might not exist, ignore
     }
 
@@ -370,7 +370,7 @@ async function cleanup() {
       const tempScriptPath = path.join(process.cwd().replace('/karenina-gui', ''), 'temp-start-backend.py');
       await fs.unlink(tempScriptPath);
       console.log('✓ Cleaned up temporary Python script');
-    } catch (error) {
+    } catch (_error) {
       // File might not exist, ignore
     }
 
@@ -405,7 +405,7 @@ async function killProcessesOnPorts(ports: number[]) {
               try {
                 console.log(`🧹 Killing process ${pid} on port ${port}`);
                 process.kill(parseInt(pid), 'SIGTERM');
-              } catch (error) {
+              } catch (_error) {
                 // Process might already be dead
               }
             });
@@ -413,7 +413,7 @@ async function killProcessesOnPorts(ports: number[]) {
           resolve();
         });
       });
-    } catch (error) {
+    } catch (_error) {
       // lsof might not be available or no processes found
       console.log(`No cleanup needed for port ${port}`);
     }

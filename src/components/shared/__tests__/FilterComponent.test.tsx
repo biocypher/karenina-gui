@@ -4,13 +4,13 @@ import { describe, it, expect, vi } from 'vitest';
 import { FilterComponent } from '../FilterComponent';
 
 describe('FilterComponent', () => {
-  const createMockColumn = (filterValue: any = '') => ({
+  const createMockColumn = (filterValue: unknown = '') => ({
     id: 'testColumn',
     getFilterValue: vi.fn(() => filterValue),
     setFilterValue: vi.fn(),
   });
 
-  const createMockTable = (firstValue: any = 'string value') => ({
+  const createMockTable = (firstValue: unknown = 'string value') => ({
     getPreFilteredRowModel: vi.fn(() => ({
       flatRows: [{
         getValue: vi.fn(() => firstValue),
@@ -22,7 +22,7 @@ describe('FilterComponent', () => {
     const mockColumn = createMockColumn('test filter');
     const mockTable = createMockTable('string value');
 
-    render(<FilterComponent column={mockColumn as any} table={mockTable as any} />);
+    render(<FilterComponent column={mockColumn as never} table={mockTable as never} />);
 
     const input = screen.getByPlaceholderText('Search...');
     expect(input).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe('FilterComponent', () => {
     const mockColumn = createMockColumn([10, 20]);
     const mockTable = createMockTable(42);
 
-    render(<FilterComponent column={mockColumn as any} table={mockTable as any} />);
+    render(<FilterComponent column={mockColumn as never} table={mockTable as never} />);
 
     const minInput = screen.getByPlaceholderText('Min');
     const maxInput = screen.getByPlaceholderText('Max');
@@ -48,7 +48,7 @@ describe('FilterComponent', () => {
     const mockColumn = createMockColumn('');
     const mockTable = createMockTable('string');
 
-    render(<FilterComponent column={mockColumn as any} table={mockTable as any} />);
+    render(<FilterComponent column={mockColumn as never} table={mockTable as never} />);
 
     const input = screen.getByPlaceholderText('Search...');
     fireEvent.change(input, { target: { value: 'new filter' } });
@@ -60,7 +60,7 @@ describe('FilterComponent', () => {
     const mockColumn = createMockColumn([null, null]);
     const mockTable = createMockTable(100);
 
-    render(<FilterComponent column={mockColumn as any} table={mockTable as any} />);
+    render(<FilterComponent column={mockColumn as never} table={mockTable as never} />);
 
     const minInput = screen.getByPlaceholderText('Min');
     const maxInput = screen.getByPlaceholderText('Max');
@@ -88,7 +88,7 @@ describe('FilterComponent', () => {
       })),
     };
 
-    render(<FilterComponent column={mockColumn as any} table={mockTable as any} />);
+    render(<FilterComponent column={mockColumn as never} table={mockTable as never} />);
 
     // Should default to text input when no data to determine type
     const input = screen.getByPlaceholderText('Search...');
