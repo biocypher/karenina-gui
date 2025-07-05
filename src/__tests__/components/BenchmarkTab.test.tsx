@@ -17,7 +17,7 @@ global.Blob = vi.fn().mockImplementation((content, options) => ({
   options,
   size: content[0] ? content[0].length : 0,
   type: options?.type || ''
-})) as any;
+})) as unknown as typeof Blob;
 
 const mockCheckpoint: Checkpoint = {
   'test-question-1': {

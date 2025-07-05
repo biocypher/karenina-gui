@@ -21,7 +21,7 @@ const originalCreateElement = document.createElement;
 
 vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
   if (tagName === 'a') {
-    return mockAnchorElement as any;
+    return mockAnchorElement as HTMLAnchorElement;
   }
   return originalCreateElement.call(document, tagName);
 });

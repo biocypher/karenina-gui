@@ -28,7 +28,7 @@ global.fetch = vi.fn(() =>
     ok: true,
     json: () => Promise.resolve({ prompt: 'Default system prompt' }),
   })
-) as any;
+) as ReturnType<typeof vi.fn>;
 
 describe('RubricTraitGenerator Upload Functionality', () => {
   const mockQuestions: QuestionData = {
@@ -98,17 +98,17 @@ describe('RubricTraitGenerator Upload Functionality', () => {
       const mockFileReader = {
         readAsText: vi.fn(),
         result: 'Custom system prompt content',
-        onload: null as any
+        onload: null as ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null
       };
       
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+      global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
       
       // Trigger file change
       fireEvent.change(fileInput, { target: { files: [file] } });
       
       // Simulate FileReader onload
       if (mockFileReader.onload) {
-        mockFileReader.onload({ target: { result: 'Custom system prompt content' } } as any);
+        mockFileReader.onload!({ target: { result: 'Custom system prompt content' } } as ProgressEvent<FileReader>);
       }
 
       expect(mockFileReader.readAsText).toHaveBeenCalledWith(file);

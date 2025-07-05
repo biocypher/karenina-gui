@@ -15,7 +15,7 @@ global.Blob = vi.fn().mockImplementation((content, options) => ({
   options,
   size: content[0] ? content[0].length : 0,
   type: options?.type || ''
-})) as any;
+})) as unknown as typeof Blob;
 
 const mockCheckpoint: Checkpoint = {
   'q1': {
@@ -97,7 +97,7 @@ describe('BenchmarkTab Filters and Export', () => {
       options,
       size: content[0] ? content[0].length : 0,
       type: options?.type || ''
-    })) as any;
+    })) as unknown as typeof Blob;
   });
 
   describe('Filter Visibility and Controls', () => {
@@ -295,7 +295,7 @@ describe('BenchmarkTab Filters and Export', () => {
     });
 
     it('handles empty results gracefully', () => {
-      const emptyResults: any[] = [];
+      const emptyResults: unknown[] = [];
       const jsonContent = JSON.stringify(emptyResults, null, 2);
       const csvContent = 'question_id,question_text,answering_model,parsing_model,success,verify_result,execution_time,timestamp\n';
       

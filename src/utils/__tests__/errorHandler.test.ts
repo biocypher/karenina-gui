@@ -10,9 +10,9 @@ import {
 } from '../errorHandler';
 
 describe('errorHandler', () => {
-  let consoleErrorSpy: any;
-  let consoleWarnSpy: any;
-  let alertSpy: any;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+  let alertSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

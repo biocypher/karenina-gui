@@ -14,7 +14,7 @@ describe('QuestionExtractor Component', () => {
     vi.clearAllMocks();
     
     // Setup default successful mock for all fetch calls
-    (global.fetch as any).mockResolvedValue({
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({
         file_id: 'test-123',
@@ -220,7 +220,7 @@ describe('QuestionExtractor Component', () => {
         const user = userEvent.setup();
         
         // Mock Python export API
-        (global.fetch as any).mockImplementationOnce(() =>
+        (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
           Promise.resolve({
             ok: true,
             blob: () => Promise.resolve(new Blob(['# Python code'], { type: 'text/plain' }))
@@ -254,7 +254,7 @@ describe('QuestionExtractor Component', () => {
         const user = userEvent.setup();
         
         // Mock failed Python export
-        (global.fetch as any).mockImplementationOnce(() =>
+        (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
           Promise.resolve({
             ok: false,
             status: 500

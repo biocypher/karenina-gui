@@ -47,7 +47,7 @@ describe('ManualTraceUpload', () => {
       })
     };
     
-    (global.fetch as any).mockResolvedValueOnce(mockResponse);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
     
     render(<ManualTraceUpload onUploadSuccess={onUploadSuccess} />);
     
@@ -72,7 +72,7 @@ describe('ManualTraceUpload', () => {
       })
     };
     
-    (global.fetch as any).mockResolvedValueOnce(mockResponse);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
     
     render(<ManualTraceUpload onUploadError={onUploadError} />);
     
@@ -89,12 +89,12 @@ describe('ManualTraceUpload', () => {
   });
 
   it('shows uploading state during upload', async () => {
-    let resolvePromise: (value: any) => void;
+    let resolvePromise: (value: unknown) => void;
     const uploadPromise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
     
-    (global.fetch as any).mockReturnValueOnce(uploadPromise);
+    (global.fetch as ReturnType<typeof vi.fn>).mockReturnValueOnce(uploadPromise);
     
     render(<ManualTraceUpload />);
     
@@ -122,7 +122,7 @@ describe('ManualTraceUpload', () => {
       })
     };
     
-    (global.fetch as any).mockResolvedValueOnce(mockResponse);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
     
     render(<ManualTraceUpload />);
     
@@ -158,16 +158,16 @@ describe('ManualTraceUpload', () => {
     
     // Simulate drop
     const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
-    const dropEvent = new Event('drop') as any;
+    const dropEvent = new Event('drop') as DragEvent;
     dropEvent.dataTransfer = {
       files: [file]
-    };
+    } as DataTransfer;
     
     fireEvent.drop(dropZone!, dropEvent);
   });
 
   it('shows download template button when finished templates are provided', () => {
-    const finishedTemplates: Array<[string, any]> = [
+    const finishedTemplates: Array<[string, unknown]> = [
       ['hash1', { question: 'Question 1' }],
       ['hash2', { question: 'Question 2' }]
     ];
@@ -188,7 +188,7 @@ describe('ManualTraceUpload', () => {
   });
 
   it('shows download template button is clickable', () => {
-    const finishedTemplates: Array<[string, any]> = [
+    const finishedTemplates: Array<[string, unknown]> = [
       ['abc123def456789012345678901234', { question: 'Question 1' }],
       ['def456789012345678901234567890', { question: 'Question 2' }]
     ];
@@ -201,7 +201,7 @@ describe('ManualTraceUpload', () => {
   });
 
   it('shows error when trying to download template with no finished templates', () => {
-    const finishedTemplates: Array<[string, any]> = [];
+    const finishedTemplates: Array<[string, unknown]> = [];
     
     render(<ManualTraceUpload finishedTemplates={finishedTemplates} />);
     
@@ -211,7 +211,7 @@ describe('ManualTraceUpload', () => {
   });
 
   it('shows CSV mapper button is clickable', () => {
-    const finishedTemplates: Array<[string, any]> = [
+    const finishedTemplates: Array<[string, unknown]> = [
       ['abc123def456789012345678901234', { question: 'What is the capital of France?' }],
       ['def456789012345678901234567890', { question: 'What is 2 + 2?' }]
     ];
@@ -224,7 +224,7 @@ describe('ManualTraceUpload', () => {
   });
 
   it('shows CSV mapper description when templates are available', () => {
-    const finishedTemplates: Array<[string, any]> = [
+    const finishedTemplates: Array<[string, unknown]> = [
       ['hash1', { question: 'Test question' }]
     ];
     
