@@ -5,7 +5,7 @@ interface ManualTraceUploadProps {
   onUploadSuccess?: (traceCount: number) => void;
   onUploadError?: (error: string) => void;
   className?: string;
-  finishedTemplates?: Array<[string, any]>;
+  finishedTemplates?: Array<[string, unknown]>;
 }
 
 interface UploadStatus {
@@ -51,7 +51,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
       });
 
       onUploadSuccess?.(result.trace_count);
-    } catch (error) {
+    } catch {
       const errorMessage = error instanceof Error ? error.message : 'Upload failed';
       setUploadStatus({
         status: 'error',
@@ -139,7 +139,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
       setTimeout(() => {
         setUploadStatus({ status: 'idle', message: '' });
       }, 3000);
-    } catch (error) {
+    } catch {
       setUploadStatus({
         status: 'error',
         message: 'Failed to generate template file'
@@ -190,7 +190,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
       setTimeout(() => {
         setUploadStatus({ status: 'idle', message: '' });
       }, 3000);
-    } catch (error) {
+    } catch {
       setUploadStatus({
         status: 'error',
         message: 'Failed to generate CSV mapper file'

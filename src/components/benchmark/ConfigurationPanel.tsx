@@ -18,7 +18,7 @@ interface ConfigurationPanelProps {
   replicateCount: number;
   expandedPrompts: Set<string>;
   isRunning: boolean;
-  finishedTemplates?: Array<[string, any]>;
+  finishedTemplates?: Array<[string, unknown]>;
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
   onAddAnsweringModel: () => void;
@@ -28,7 +28,6 @@ interface ConfigurationPanelProps {
   onUpdateAnsweringModel: (id: string, updates: Partial<ModelConfiguration>) => void;
   onUpdateParsingModel: (id: string, updates: Partial<ModelConfiguration>) => void;
   onTogglePromptExpanded: (modelId: string) => void;
-  onReplicateCountChange: (count: number) => void;
   onRubricEnabledChange: (enabled: boolean) => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
   onManualTraceUploadSuccess?: (traceCount: number) => void;
@@ -51,7 +50,6 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onUpdateAnsweringModel,
   onUpdateParsingModel,
   onTogglePromptExpanded,
-  onReplicateCountChange,
   onRubricEnabledChange,
   onCorrectnessEnabledChange,
   onManualTraceUploadSuccess,
@@ -92,7 +90,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               checked={model.interface === 'langchain'}
               onChange={(e) => {
                 const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
-                isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
               }}
               disabled={isRunning}
               className="mr-2"
@@ -107,7 +109,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               checked={model.interface === 'openrouter'}
               onChange={(e) => {
                 const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
-                isAnswering ? onUpdateAnsweringModel(model.id, update) : onUpdateParsingModel(model.id, update);
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
               }}
               disabled={isRunning}
               className="mr-2"

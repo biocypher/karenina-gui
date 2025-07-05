@@ -36,11 +36,7 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   }, [questions, searchTerm]);
 
   const filteredQuestionIds = Object.keys(filteredQuestions);
-  const filteredCount = filteredQuestionIds.length;
-  const filteredSelectedCount = filteredQuestionIds.filter(id => selectedQuestions.has(id)).length;
 
-  // Selection state for the current filtered view
-  const isAllFilteredSelected = filteredCount > 0 && filteredSelectedCount === filteredCount;
 
   const handleSelectAll = () => {
     const newSelected = new Set(selectedQuestions);

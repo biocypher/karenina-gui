@@ -8,10 +8,16 @@ interface DiffViewerProps {
   hideHeader?: boolean;
 }
 
+interface DiffPart {
+  added?: boolean;
+  removed?: boolean;
+  value: string;
+}
+
 export const DiffViewer: React.FC<DiffViewerProps> = ({ originalCode, currentCode, title, hideHeader = false }) => {
   const diff = diffLines(originalCode, currentCode);
   
-  const renderDiffLine = (part: any, index: number) => {
+  const renderDiffLine = (part: DiffPart, index: number) => {
     const lineClass = part.added 
       ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-l-4 border-emerald-500 dark:border-emerald-400 text-emerald-900 dark:text-emerald-300' 
       : part.removed 

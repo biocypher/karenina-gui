@@ -16,7 +16,6 @@ export default function RubricTraitEditor() {
     setCurrentRubric
   } = useRubricStore();
   
-  const [isExpanded, setIsExpanded] = useState(true);
   
   // Initialize with default rubric if none exists
   useEffect(() => {

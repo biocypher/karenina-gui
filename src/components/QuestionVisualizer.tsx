@@ -16,7 +16,6 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const questionEntries = Object.entries(questions);
   
