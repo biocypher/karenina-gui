@@ -4,10 +4,7 @@ import {
   MessageCircle, 
   Trash2, 
   Settings, 
-  AlertCircle,
-  CheckCircle,
   Loader2,
-  Download,
   Bot,
   User
 } from 'lucide-react';
@@ -171,7 +168,7 @@ export const ChatInterface: React.FC = () => {
         setSessionId(data.session_id);
         setModel(data.model);
         setProvider(data.provider);
-        setMessages(data.messages.map((msg: any) => ({
+        setMessages(data.messages.map((msg: ChatMessage) => ({
           type: msg.type,
           content: msg.content
         })));

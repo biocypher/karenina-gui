@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, CheckSquare, Square, Minus, Check, FileText } from 'lucide-react';
+import { Search, Square, Check, FileText } from 'lucide-react';
 import { QuestionData } from '../types';
 
 interface QuestionSelectorProps {
@@ -36,14 +36,11 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   }, [questions, searchTerm]);
 
   const filteredQuestionIds = Object.keys(filteredQuestions);
-  const totalQuestions = Object.keys(questions).length;
   const filteredCount = filteredQuestionIds.length;
-  const selectedCount = selectedQuestions.size;
   const filteredSelectedCount = filteredQuestionIds.filter(id => selectedQuestions.has(id)).length;
 
   // Selection state for the current filtered view
   const isAllFilteredSelected = filteredCount > 0 && filteredSelectedCount === filteredCount;
-  const isPartiallySelected = filteredSelectedCount > 0 && filteredSelectedCount < filteredCount;
 
   const handleSelectAll = () => {
     const newSelected = new Set(selectedQuestions);
@@ -75,13 +72,6 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
     onSelectionChange(newSelected);
   };
 
-  const handleHeaderCheckboxClick = () => {
-    if (isAllFilteredSelected) {
-      handleSelectNone();
-    } else {
-      handleSelectAll();
-    }
-  };
 
   const truncateText = (text: string, maxLength: number = 80) => {
     if (text.length <= maxLength) return text;

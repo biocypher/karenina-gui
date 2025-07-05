@@ -46,35 +46,7 @@ const mockCheckpoint: Checkpoint = {
   }
 };
 
-// Mock verification results for filter testing
-const mockResults = {
-  'test-question-1': {
-    question_id: 'test-question-1',
-    success: true,
-    question_text: 'What is 2+2?',
-    raw_llm_response: 'The answer is 4',
-    parsed_response: { response: '4' },
-    verify_result: true,
-    verify_granular_result: { score: 1.0 },
-    answering_model: 'google_genai/gemini-2.0-flash',
-    parsing_model: 'google_genai/gemini-2.0-flash',
-    execution_time: 1.23,
-    timestamp: '2023-12-01T15:00:00Z'
-  },
-  'test-question-2': {
-    question_id: 'test-question-2',
-    success: false,
-    question_text: 'What is the capital of France?',
-    raw_llm_response: 'Paris is the capital',
-    parsed_response: null,
-    verify_result: false,
-    verify_granular_result: null,
-    answering_model: 'openai/gpt-4',
-    parsing_model: 'openai/gpt-4',
-    execution_time: 2.45,
-    timestamp: '2023-12-02T10:00:00Z'
-  }
-};
+// Mock verification results for filter testing - removed unused variable
 
 // Add mock benchmark results data and setter function
 const mockBenchmarkResults = {};

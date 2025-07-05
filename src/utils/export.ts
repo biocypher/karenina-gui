@@ -122,7 +122,7 @@ export function exportToCSV(results: ExportableResult[]): string {
     let rubricSummary = '';
     if (result.verify_rubric) {
       const traits = Object.entries(result.verify_rubric);
-      const passedTraits = traits.filter(([_, value]) => 
+      const passedTraits = traits.filter(([, value]) => 
         typeof value === 'boolean' ? value : value && value >= 3
       ).length;
       rubricSummary = `${passedTraits}/${traits.length}`;

@@ -10,7 +10,7 @@ import { handleFileError, type ErrorHandlerOptions } from '../utils/errorHandler
 
 export interface UseFileUploadOptions<T> extends ErrorHandlerOptions {
   validationOptions?: FileValidationOptions;
-  validator?: (data: any) => data is T;
+  validator?: (data: unknown) => data is T;
   onSuccess: (data: T, file: File) => void;
   onError?: (error: string) => void;
   resetOnSuccess?: boolean;
@@ -138,7 +138,7 @@ export function useFileUpload<T>(options: UseFileUploadOptions<T>) {
  * Simplified hook for JSON file uploads
  */
 export function useJSONFileUpload<T>(
-  validator: (data: any) => data is T,
+  validator: (data: unknown) => data is T,
   onSuccess: (data: T, file: File) => void,
   onError?: (error: string) => void
 ) {

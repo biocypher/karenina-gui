@@ -42,7 +42,7 @@ const RubricCell: React.FC<{ rubricResult: Record<string, number | boolean> | nu
   }
 
   const traits = Object.entries(rubricResult);
-  const passedTraits = traits.filter(([_, value]) => 
+  const passedTraits = traits.filter(([, value]) => 
     typeof value === 'boolean' ? value : value && value >= 3
   ).length;
   const totalTraits = traits.length;
@@ -131,7 +131,7 @@ const MultiSelectFilter: React.FC<{
   );
 };
 
-const SortIndicator = ({ column }: { column: any }) => {
+const SortIndicator = ({ column }: { column: { getIsSorted: () => false | 'asc' | 'desc' } }) => {
   const sorted = column.getIsSorted();
   if (!sorted) {
     return <span className="text-slate-400 ml-1">↕</span>;
@@ -244,7 +244,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         if (!rubricResult) return value === 'none';
         
         const traits = Object.entries(rubricResult);
-        const passedTraits = traits.filter(([_, val]) => 
+        const passedTraits = traits.filter(([, val]) => 
           typeof val === 'boolean' ? val : val && val >= 3
         ).length;
         const successRate = passedTraits / traits.length;

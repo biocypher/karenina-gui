@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Settings, Eye, EyeOff, CheckCircle, AlertTriangle, Upload, Download, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Settings, Eye, EyeOff, Upload } from 'lucide-react';
 import { QuestionData } from '../types';
 import { CodeEditor } from './CodeEditor';
 
@@ -47,7 +47,6 @@ Your task:
   const [examples, setExamples] = useState<PromptExample[]>([]);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
   const [isPromptActive, setIsPromptActive] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [uploadedPrompt, setUploadedPrompt] = useState<string>('');
   const [isUsingUploadedPrompt, setIsUsingUploadedPrompt] = useState(false);
@@ -56,10 +55,9 @@ Your task:
   // Track changes to mark unsaved state
   useEffect(() => {
     if (isPromptActive) {
-      setHasUnsavedChanges(true);
       setIsPromptActive(false);
     }
-  }, [instructions, examples]);
+  }, [isPromptActive]);
 
   const addExample = () => {
     const newExample: PromptExample = {
@@ -138,15 +136,11 @@ Your task:
     }
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
 
   const switchToCustomComposer = () => {
     setIsUsingUploadedPrompt(false);
     setUploadedPrompt('');
     setIsPromptActive(false);
-    setHasUnsavedChanges(true);
   };
 
   const generateAndSetPrompt = () => {

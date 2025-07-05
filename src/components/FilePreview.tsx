@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, AlertCircle, Info, FileText, Grid } from 'lucide-react';
+import { Info, FileText, Grid } from 'lucide-react';
 
 interface PreviewData {
   success: boolean;
@@ -77,7 +77,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ data }) => {
                   <td className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-400">
                     {rowIndex + 1}
                   </td>
-                  {data.columns.map((column, colIndex) => (
+                  {data.columns.map((column) => (
                     <td key={`${rowIndex}-${column}`} className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
                       <div className="max-w-xs truncate" title={row[column] || ''}>
                         {row[column] || (

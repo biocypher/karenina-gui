@@ -255,7 +255,6 @@ describe('BenchmarkTab Filters and Export', () => {
 
   describe('Export Functionality', () => {
     it('creates correct JSON export format', () => {
-      const headers = ['question_id', 'question_text', 'answering_model', 'parsing_model', 'success', 'verify_result', 'execution_time', 'timestamp'];
       const jsonData = JSON.stringify(Object.values(mockVerificationResults), null, 2);
       
       expect(jsonData).toContain('question_id');

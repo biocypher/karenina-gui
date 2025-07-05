@@ -128,12 +128,11 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
 
 
   // Add the store getters we need
-  const { getSelectedCount, getGeneratedCount, getSuccessfulTemplates } = useTemplateStore();
+  const { getGeneratedCount, getSuccessfulTemplates } = useTemplateStore();
   
   const totalQuestions = Object.keys(questions).length;
   const pendingQuestionsCount = Object.keys(pendingQuestions).length;
   const generatedCount = getGeneratedCount();
-  const selectedCount = getSelectedCount();
   const successfulTemplates = getSuccessfulTemplates();
   const successfulCount = Object.keys(successfulTemplates).length;
   const hasQuestions = totalQuestions > 0;

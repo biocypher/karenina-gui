@@ -251,7 +251,7 @@ describe('CustomPromptComposer Component', () => {
       // Mock FileReader to work correctly in tests
       const originalFileReader = global.FileReader;
       const mockFileReader = vi.fn().mockImplementation(() => ({
-        readAsText: vi.fn().mockImplementation(function(file) {
+        readAsText: vi.fn().mockImplementation(function() {
           // Simulate successful file reading
           setTimeout(() => {
             this.result = fileContent;
@@ -298,7 +298,7 @@ describe('CustomPromptComposer Component', () => {
       // Mock FileReader
       const originalFileReader = global.FileReader;
       const mockFileReader = vi.fn().mockImplementation(() => ({
-        readAsText: vi.fn().mockImplementation(function(file) {
+        readAsText: vi.fn().mockImplementation(function() {
           setTimeout(() => {
             this.result = fileContent;
             if (this.onload) {
@@ -343,7 +343,7 @@ describe('CustomPromptComposer Component', () => {
       // Mock FileReader
       const originalFileReader = global.FileReader;
       const mockFileReader = vi.fn().mockImplementation(() => ({
-        readAsText: vi.fn().mockImplementation(function(file) {
+        readAsText: vi.fn().mockImplementation(function() {
           setTimeout(() => {
             this.result = fileContent;
             if (this.onload) {
@@ -380,8 +380,6 @@ describe('CustomPromptComposer Component', () => {
     });
 
     it('should reject non-text files', async () => {
-      const user = userEvent.setup();
-      
       // Clear any previous calls to the global alert mock
       vi.clearAllMocks();
       
@@ -417,7 +415,7 @@ describe('CustomPromptComposer Component', () => {
       // Mock FileReader
       const originalFileReader = global.FileReader;
       const mockFileReader = vi.fn().mockImplementation(() => ({
-        readAsText: vi.fn().mockImplementation(function(file) {
+        readAsText: vi.fn().mockImplementation(function() {
           setTimeout(() => {
             this.result = fileContent;
             if (this.onload) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Save, FileText, Clock, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
-import { QuestionData, Checkpoint, UnifiedCheckpoint, VerificationResult } from './types';
+import { QuestionData, UnifiedCheckpoint, VerificationResult } from './types';
 import { CodeEditor } from './components/CodeEditor';
 import { StatusBadge } from './components/StatusBadge';
 import { FileManager } from './components/FileManager';

@@ -1,7 +1,5 @@
 import React from 'react';
 import { diffLines } from 'diff';
-import Prism from 'prismjs';
-import 'prismjs/components/prism-python';
 
 interface DiffViewerProps {
   originalCode: string;

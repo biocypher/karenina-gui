@@ -307,7 +307,6 @@ describe('useLocalStorage Hook', () => {
       const { result, rerender } = renderHook(() => useLocalStorage('test-key', 'initial'));
       
       const initialValue = result.current[0];
-      const initialSetter = result.current[1];
       
       // Re-render without changing props
       rerender();
