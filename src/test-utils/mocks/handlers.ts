@@ -3,22 +3,22 @@ import { QuestionData, TemplateGenerationProgress, TemplateGenerationResult } fr
 
 // Mock data
 const mockQuestionData: QuestionData = {
-  'q1': {
+  q1: {
     question: 'What is the capital of France?',
     raw_answer: 'Paris is the capital of France.',
-    answer_template: 'class Answer(BaseModel):\n    capital: str = Field(description="The capital city")'
+    answer_template: 'class Answer(BaseModel):\n    capital: str = Field(description="The capital city")',
   },
-  'q2': {
+  q2: {
     question: 'What is 2 + 2?',
     raw_answer: 'Two plus two equals four.',
-    answer_template: 'class Answer(BaseModel):\n    result: int = Field(description="The mathematical result")'
-  }
+    answer_template: 'class Answer(BaseModel):\n    result: int = Field(description="The mathematical result")',
+  },
 };
 
 const mockFileInfo = {
   file_id: 'test-file-123',
   filename: 'test-questions.xlsx',
-  size: 1024
+  size: 1024,
 };
 
 const mockPreviewData = {
@@ -28,8 +28,8 @@ const mockPreviewData = {
   preview_rows: 5,
   data: [
     { Question: 'Sample question 1', Answer: 'Sample answer 1', Category: 'Math' },
-    { Question: 'Sample question 2', Answer: 'Sample answer 2', Category: 'Science' }
-  ]
+    { Question: 'Sample question 2', Answer: 'Sample answer 2', Category: 'Science' },
+  ],
 };
 
 export const handlers = [
@@ -48,7 +48,7 @@ export const handlers = [
     return HttpResponse.json({
       success: true,
       questions_count: Object.keys(mockQuestionData).length,
-      questions_data: mockQuestionData
+      questions_data: mockQuestionData,
     });
   }),
 
@@ -57,15 +57,15 @@ export const handlers = [
     return new HttpResponse('# Generated Python file\nprint("Hello World")', {
       headers: {
         'Content-Type': 'text/plain',
-        'Content-Disposition': 'attachment; filename="questions.py"'
-      }
+        'Content-Disposition': 'attachment; filename="questions.py"',
+      },
     });
   }),
 
   // Template generation endpoint
   http.post('/api/generate-answer-templates', () => {
     return HttpResponse.json({
-      job_id: 'job-123'
+      job_id: 'job-123',
     });
   }),
 
@@ -80,18 +80,18 @@ export const handlers = [
       total_count: 2,
       result: {
         templates: {
-          'q1': {
+          q1: {
             question_id: 'q1',
             template_code: 'class Answer(BaseModel):\n    capital: str = Field(description="Capital city")',
             generation_time: 1500,
-            success: true
+            success: true,
           },
-          'q2': {
+          q2: {
             question_id: 'q2',
             template_code: 'class Answer(BaseModel):\n    result: int = Field(description="Math result")',
             generation_time: 1200,
-            success: true
-          }
+            success: true,
+          },
         },
         total_templates: 2,
         successful_generations: 2,
@@ -100,9 +100,9 @@ export const handlers = [
         model_info: {
           name: 'gemini-2.0-flash',
           provider: 'google_genai',
-          temperature: 0.1
-        }
-      } as TemplateGenerationResult
+          temperature: 0.1,
+        },
+      } as TemplateGenerationResult,
     };
     return HttpResponse.json(progress);
   }),
@@ -119,7 +119,7 @@ export const handlers = [
       message: 'This is a mock response from the LLM.',
       model: 'gemini-2.0-flash',
       provider: 'google_genai',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }),
 
@@ -133,9 +133,9 @@ export const handlers = [
           provider: 'google_genai',
           created_at: '2024-12-19T10:00:00Z',
           last_used: '2024-12-19T10:30:00Z',
-          message_count: 5
-        }
-      ]
+          message_count: 5,
+        },
+      ],
     });
   }),
 
@@ -147,8 +147,8 @@ export const handlers = [
       provider: 'google_genai',
       messages: [
         { type: 'human', content: 'Hello' },
-        { type: 'ai', content: 'Hi there! How can I help you?' }
-      ]
+        { type: 'ai', content: 'Hi there! How can I help you?' },
+      ],
     });
   }),
 
@@ -166,23 +166,23 @@ export const handlers = [
           description: 'Is the response factually accurate?',
           kind: 'boolean',
           min_score: null,
-          max_score: null
+          max_score: null,
         },
         {
           name: 'completeness',
           description: 'How complete is the response?',
           kind: 'score',
           min_score: 1,
-          max_score: 5
+          max_score: 5,
         },
         {
           name: 'clarity',
           description: 'Is the response clear and well-written?',
           kind: 'boolean',
           min_score: null,
-          max_score: null
-        }
-      ]
+          max_score: null,
+        },
+      ],
     });
   }),
 
@@ -196,16 +196,16 @@ export const handlers = [
           description: 'Is the response factually accurate?',
           kind: 'boolean',
           min_score: null,
-          max_score: null
+          max_score: null,
         },
         {
           name: 'completeness',
           description: 'How complete is the response?',
           kind: 'score',
           min_score: 1,
-          max_score: 5
-        }
-      ]
+          max_score: 5,
+        },
+      ],
     });
   }),
 
@@ -213,14 +213,14 @@ export const handlers = [
   http.post('/api/rubric', () => {
     return HttpResponse.json({
       message: 'Rubric saved successfully',
-      title: 'Test Rubric'
+      title: 'Test Rubric',
     });
   }),
 
   // Delete rubric endpoint
   http.delete('/api/rubric', () => {
     return HttpResponse.json({
-      message: 'Rubric deleted successfully'
+      message: 'Rubric deleted successfully',
     });
   }),
 
@@ -264,7 +264,7 @@ Consider qualitative aspects such as:
 - Acknowledgment of assumptions or limitations
 - Tone appropriateness (formal, casual, technical)
 - Use of formatting (lists, headers, emphasis)
-</example_traits>`
+</example_traits>`,
     });
-  })
-]; 
+  }),
+];

@@ -83,10 +83,7 @@ describe('ConfigurationPanel', () => {
   it('shows remove button only when there are multiple models', () => {
     const props = {
       ...defaultProps,
-      answeringModels: [
-        mockAnsweringModel,
-        { ...mockAnsweringModel, id: 'answering-2' }
-      ],
+      answeringModels: [mockAnsweringModel, { ...mockAnsweringModel, id: 'answering-2' }],
     };
 
     const { container } = render(<ConfigurationPanel {...props} />);
@@ -106,13 +103,13 @@ describe('ConfigurationPanel', () => {
 
     // Check that provider text inputs are disabled (langchain interface)
     const providerInputs = screen.getAllByPlaceholderText(/e\.g\., google_genai/);
-    providerInputs.forEach(input => {
+    providerInputs.forEach((input) => {
       expect(input).toBeDisabled();
     });
 
     // Check that model name inputs are disabled
     const modelNameInputs = screen.getAllByPlaceholderText(/e\.g\., gpt-4/);
-    modelNameInputs.forEach(input => {
+    modelNameInputs.forEach((input) => {
       expect(input).toBeDisabled();
     });
   });
@@ -124,10 +121,7 @@ describe('ConfigurationPanel', () => {
     const providerInputs = screen.getAllByPlaceholderText(/e\.g\., google_genai/);
     fireEvent.change(providerInputs[0], { target: { value: 'openai' } });
 
-    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
-      'answering-1',
-      { model_provider: 'openai' }
-    );
+    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { model_provider: 'openai' });
   });
 
   it('handles interface selection changes', () => {
@@ -136,10 +130,7 @@ describe('ConfigurationPanel', () => {
     const openRouterRadios = screen.getAllByLabelText('OpenRouter');
     fireEvent.click(openRouterRadios[0]);
 
-    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
-      'answering-1',
-      { interface: 'openrouter' }
-    );
+    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { interface: 'openrouter' });
   });
 
   it('handles temperature slider changes', () => {
@@ -148,10 +139,7 @@ describe('ConfigurationPanel', () => {
     const temperatureSliders = screen.getAllByRole('slider');
     fireEvent.change(temperatureSliders[0], { target: { value: '0.5' } });
 
-    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
-      'answering-1',
-      { temperature: 0.5 }
-    );
+    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { temperature: 0.5 });
   });
 
   it('handles model name input changes', () => {
@@ -160,10 +148,7 @@ describe('ConfigurationPanel', () => {
     const modelNameInputs = screen.getAllByDisplayValue('gemini-2.0-flash');
     fireEvent.change(modelNameInputs[0], { target: { value: 'gpt-4' } });
 
-    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
-      'answering-1',
-      { model_name: 'gpt-4' }
-    );
+    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { model_name: 'gpt-4' });
   });
 
   it('toggles system prompt expansion', () => {
@@ -171,7 +156,7 @@ describe('ConfigurationPanel', () => {
 
     // Look for chevron down icons (collapse buttons)
     const chevronIcons = container.querySelectorAll('svg.lucide-chevron-down');
-    
+
     if (chevronIcons.length > 0) {
       fireEvent.click(chevronIcons[0].closest('button')!);
       expect(defaultProps.onTogglePromptExpanded).toHaveBeenCalledWith('answering-1');
@@ -187,10 +172,8 @@ describe('ConfigurationPanel', () => {
     render(<ConfigurationPanel {...props} />);
 
     const textareas = screen.getAllByRole('textbox');
-    const promptTextarea = textareas.find(textarea => 
-      textarea.getAttribute('rows') === '3'
-    );
-    
+    const promptTextarea = textareas.find((textarea) => textarea.getAttribute('rows') === '3');
+
     expect(promptTextarea).toBeInTheDocument();
     expect(promptTextarea).toHaveValue('You are an expert assistant.');
   });
@@ -211,16 +194,11 @@ describe('ConfigurationPanel', () => {
     render(<ConfigurationPanel {...props} />);
 
     const textareas = screen.getAllByRole('textbox');
-    const promptTextarea = textareas.find(textarea => 
-      textarea.getAttribute('rows') === '3'
-    );
+    const promptTextarea = textareas.find((textarea) => textarea.getAttribute('rows') === '3');
 
     if (promptTextarea) {
       fireEvent.change(promptTextarea, { target: { value: 'New prompt' } });
-      expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
-        'answering-1',
-        { system_prompt: 'New prompt' }
-      );
+      expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { system_prompt: 'New prompt' });
     }
   });
 
@@ -229,19 +207,19 @@ describe('ConfigurationPanel', () => {
 
     // Check that Manual radio buttons exist
     const manualRadios = screen.getAllByLabelText('Manual');
-    
+
     // Should only find Manual option in answering models section (1 instance)
     expect(manualRadios).toHaveLength(1);
-    
+
     // Verify all radio options are present for answering models
     const answeringSection = screen.getByText(/Answering Models \(1\)/).closest('div');
     expect(answeringSection).toBeInTheDocument();
-    
+
     // Find all radio buttons within the answering models section
     const allAnsweringRadios = screen.getAllByRole('radio');
     const langchainRadios = screen.getAllByLabelText('LangChain');
     const openrouterRadios = screen.getAllByLabelText('OpenRouter');
-    
+
     // Should have 3 radio options per model (LangChain, OpenRouter, Manual) for answering
     // and 2 radio options per model (LangChain, OpenRouter) for parsing
     // Total: 3 + 2 = 5 radio buttons
@@ -257,10 +235,7 @@ describe('ConfigurationPanel', () => {
     const manualRadio = screen.getByLabelText('Manual');
     fireEvent.click(manualRadio);
 
-    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
-      'answering-1',
-      { interface: 'manual' }
-    );
+    expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { interface: 'manual' });
   });
 
   describe('Field visibility based on interface type', () => {
@@ -269,7 +244,7 @@ describe('ConfigurationPanel', () => {
 
       // Provider should be a text input for langchain
       expect(screen.getAllByPlaceholderText(/e\.g\., google_genai/)).toHaveLength(2); // answering + parsing
-      
+
       // Model name should be visible
       expect(screen.getAllByPlaceholderText(/e\.g\., gpt-4/)).toHaveLength(2); // answering + parsing
     });
@@ -278,12 +253,12 @@ describe('ConfigurationPanel', () => {
       const openrouterAnsweringModel = {
         ...mockAnsweringModel,
         interface: 'openrouter' as const,
-        model_provider: '' // Should be empty for openrouter
+        model_provider: '', // Should be empty for openrouter
       };
       const openrouterParsingModel = {
         ...mockParsingModel,
         interface: 'openrouter' as const,
-        model_provider: '' // Should be empty for openrouter
+        model_provider: '', // Should be empty for openrouter
       };
 
       const props = {
@@ -296,7 +271,7 @@ describe('ConfigurationPanel', () => {
 
       // Provider field should not be visible
       expect(screen.queryByPlaceholderText(/e\.g\., google_genai/)).not.toBeInTheDocument();
-      
+
       // Model name should be visible
       expect(screen.getAllByPlaceholderText(/e\.g\., gpt-4/)).toHaveLength(2); // answering + parsing
     });
@@ -306,7 +281,7 @@ describe('ConfigurationPanel', () => {
         ...mockAnsweringModel,
         interface: 'manual' as const,
         model_provider: '', // Should be empty for manual
-        model_name: '' // Should be empty for manual
+        model_name: '', // Should be empty for manual
       };
 
       const props = {
@@ -318,7 +293,7 @@ describe('ConfigurationPanel', () => {
 
       // Provider field should still be visible for parsing model (langchain interface)
       expect(screen.getAllByPlaceholderText(/e\.g\., google_genai/)).toHaveLength(1); // Only parsing model
-      
+
       // Model name should not be visible for answering model in manual mode
       const modelNameInputs = screen.queryAllByPlaceholderText(/e\.g\., gpt-4/);
       expect(modelNameInputs).toHaveLength(1); // Only parsing model should show model name
@@ -339,7 +314,7 @@ describe('ConfigurationPanel', () => {
         ...mockAnsweringModel,
         interface: 'manual' as const,
         model_provider: '',
-        model_name: ''
+        model_name: '',
       };
 
       const props = {
@@ -368,10 +343,7 @@ describe('ConfigurationPanel', () => {
       const openRouterRadios = screen.getAllByLabelText('OpenRouter');
       fireEvent.click(openRouterRadios[0]); // Switch answering model
 
-      expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
-        'answering-1',
-        { interface: 'openrouter' }
-      );
+      expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { interface: 'openrouter' });
     });
 
     it('switches from langchain to manual interface for answering models', () => {
@@ -381,10 +353,7 @@ describe('ConfigurationPanel', () => {
       const manualRadio = screen.getByLabelText('Manual');
       fireEvent.click(manualRadio);
 
-      expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith(
-        'answering-1',
-        { interface: 'manual' }
-      );
+      expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { interface: 'manual' });
     });
   });
 });

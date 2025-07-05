@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
-import { 
-  validateFile, 
-  readFileAsText, 
-  parseJSONFile, 
+import {
+  validateFile,
+  readFileAsText,
+  parseJSONFile,
   resetFileInput,
-  type FileValidationOptions 
+  type FileValidationOptions,
 } from '../utils/fileOperations';
 import { handleFileError, type ErrorHandlerOptions } from '../utils/errorHandler';
 
@@ -26,14 +26,7 @@ export interface FileUploadState {
  * Hook for handling file uploads with validation and error handling
  */
 export function useFileUpload<T>(options: UseFileUploadOptions<T>) {
-  const {
-    validationOptions,
-    validator,
-    onSuccess,
-    onError,
-    resetOnSuccess = true,
-    ...errorHandlerOptions
-  } = options;
+  const { validationOptions, validator, onSuccess, onError, resetOnSuccess = true, ...errorHandlerOptions } = options;
 
   const [state, setState] = useState<FileUploadState>({
     isUploading: false,
@@ -42,76 +35,81 @@ export function useFileUpload<T>(options: UseFileUploadOptions<T>) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = useCallback(async (file: File) => {
-    setState(prev => ({ ...prev, isUploading: true, error: null }));
+  const handleUpload = useCallback(
+    async (file: File) => {
+      setState((prev) => ({ ...prev, isUploading: true, error: null }));
 
-    try {
-      // Validate file first
-      if (validationOptions) {
-        const validation = validateFile(file, validationOptions);
-        if (!validation.isValid) {
-          throw new Error(validation.error);
-        }
-      }
-
-      let data: T;
-
-      // Parse file based on type
-      if (file.type === 'application/json' || file.name.endsWith('.json')) {
-        data = await parseJSONFile(file, validator);
-      } else {
-        // For non-JSON files, read as text and let the validator handle it
-        const text = await readFileAsText(file);
-        if (validator) {
-          try {
-            const parsedData = JSON.parse(text);
-            if (!validator(parsedData)) {
-              throw new Error('Data does not match expected format');
-            }
-            data = parsedData;
-          } catch {
-            throw new Error('Invalid file format or content');
+      try {
+        // Validate file first
+        if (validationOptions) {
+          const validation = validateFile(file, validationOptions);
+          if (!validation.isValid) {
+            throw new Error(validation.error);
           }
-        } else {
-          data = text as unknown as T;
         }
+
+        let data: T;
+
+        // Parse file based on type
+        if (file.type === 'application/json' || file.name.endsWith('.json')) {
+          data = await parseJSONFile(file, validator);
+        } else {
+          // For non-JSON files, read as text and let the validator handle it
+          const text = await readFileAsText(file);
+          if (validator) {
+            try {
+              const parsedData = JSON.parse(text);
+              if (!validator(parsedData)) {
+                throw new Error('Data does not match expected format');
+              }
+              data = parsedData;
+            } catch {
+              throw new Error('Invalid file format or content');
+            }
+          } else {
+            data = text as unknown as T;
+          }
+        }
+
+        // Success
+        setState((prev) => ({ ...prev, isUploading: false }));
+        onSuccess(data, file);
+
+        // Reset file input if requested
+        if (resetOnSuccess) {
+          resetFileInput(fileInputRef);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+
+        setState((prev) => ({
+          ...prev,
+          isUploading: false,
+          error: errorMessage,
+        }));
+
+        // Handle error using centralized error handler
+        handleFileError(error, 'File upload', {
+          ...errorHandlerOptions,
+          setErrorState: onError,
+        });
       }
+    },
+    [validationOptions, validator, onSuccess, onError, resetOnSuccess, errorHandlerOptions]
+  );
 
-      // Success
-      setState(prev => ({ ...prev, isUploading: false }));
-      onSuccess(data, file);
-
-      // Reset file input if requested
-      if (resetOnSuccess) {
-        resetFileInput(fileInputRef);
+  const handleFileInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        handleUpload(file);
       }
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      
-      setState(prev => ({ 
-        ...prev, 
-        isUploading: false, 
-        error: errorMessage 
-      }));
-
-      // Handle error using centralized error handler
-      handleFileError(error, 'File upload', {
-        ...errorHandlerOptions,
-        setErrorState: onError,
-      });
-    }
-  }, [validationOptions, validator, onSuccess, onError, resetOnSuccess, errorHandlerOptions]);
-
-  const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleUpload(file);
-    }
-  }, [handleUpload]);
+    },
+    [handleUpload]
+  );
 
   const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   const reset = useCallback(() => {
@@ -122,13 +120,13 @@ export function useFileUpload<T>(options: UseFileUploadOptions<T>) {
   return {
     // State
     ...state,
-    
+
     // Actions
     handleUpload,
     handleFileInputChange,
     clearError,
     reset,
-    
+
     // Refs
     fileInputRef,
   };

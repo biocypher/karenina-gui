@@ -12,9 +12,11 @@ describe('FilterComponent', () => {
 
   const createMockTable = (firstValue: unknown = 'string value') => ({
     getPreFilteredRowModel: vi.fn(() => ({
-      flatRows: [{
-        getValue: vi.fn(() => firstValue),
-      }],
+      flatRows: [
+        {
+          getValue: vi.fn(() => firstValue),
+        },
+      ],
     })),
   });
 
@@ -37,7 +39,7 @@ describe('FilterComponent', () => {
 
     const minInput = screen.getByPlaceholderText('Min');
     const maxInput = screen.getByPlaceholderText('Max');
-    
+
     expect(minInput).toBeInTheDocument();
     expect(maxInput).toBeInTheDocument();
     expect(minInput).toHaveValue(10);

@@ -13,12 +13,12 @@ export interface CheckpointItem {
   question: string;
   raw_answer: string;
   original_answer_template: string;
-  
+
   // Progress data
   answer_template: string;
   last_modified: string;
   finished: boolean;
-  
+
   // Question-specific rubric
   question_rubric?: Rubric;
 }
@@ -29,7 +29,7 @@ export interface Checkpoint {
 
 // Unified checkpoint structure that includes global rubric
 export interface UnifiedCheckpoint {
-  version: "2.0";
+  version: '2.0';
   global_rubric: Rubric | null;
   checkpoint: Checkpoint;
 }
@@ -143,7 +143,7 @@ export interface VerificationProgress {
 }
 
 // Rubric Types
-export type TraitKind = "boolean" | "score";
+export type TraitKind = 'boolean' | 'score';
 
 export interface RubricTrait {
   name: string;

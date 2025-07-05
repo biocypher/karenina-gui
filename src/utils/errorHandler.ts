@@ -8,24 +8,12 @@ export interface ErrorHandlerOptions {
 /**
  * Standardized error handling for file operations
  */
-export function handleFileError(
-  error: unknown, 
-  context: string, 
-  options: ErrorHandlerOptions = {}
-): void {
-  const {
-    logToConsole = true,
-    setErrorState,
-    showAlert = false,
-    useToast = false
-  } = options;
+export function handleFileError(error: unknown, context: string, options: ErrorHandlerOptions = {}): void {
+  const { logToConsole = true, setErrorState, showAlert = false, useToast = false } = options;
 
   // Extract meaningful error message
-  const errorMessage = error instanceof Error 
-    ? error.message 
-    : typeof error === 'string' 
-      ? error 
-      : 'Unknown error occurred';
+  const errorMessage =
+    error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error occurred';
 
   const fullMessage = `${context}: ${errorMessage}`;
 
@@ -54,14 +42,10 @@ export function handleFileError(
 /**
  * Standardized error handling for API operations
  */
-export function handleApiError(
-  error: unknown,
-  context: string,
-  options: ErrorHandlerOptions = {}
-): void {
+export function handleApiError(error: unknown, context: string, options: ErrorHandlerOptions = {}): void {
   // Process the error first to get the right message
   let processedError: Error | string;
-  
+
   if (error instanceof Error) {
     processedError = error;
   } else if (typeof error === 'string') {
@@ -81,10 +65,7 @@ export function handleApiError(
 /**
  * Creates a standardized error handler for async operations
  */
-export function createAsyncErrorHandler(
-  context: string,
-  options: ErrorHandlerOptions = {}
-) {
+export function createAsyncErrorHandler(context: string, options: ErrorHandlerOptions = {}) {
   return (error: unknown) => {
     handleFileError(error, context, options);
   };
@@ -112,11 +93,12 @@ export function withErrorHandling<T extends unknown[], R>(
  * Type guard for checking if an error is a specific type
  */
 export function isNetworkError(error: unknown): boolean {
-  return error instanceof Error && (
-    error.message.includes('fetch') ||
-    error.message.includes('network') ||
-    error.message.includes('Failed to fetch') ||
-    error.name === 'NetworkError'
+  return (
+    error instanceof Error &&
+    (error.message.includes('fetch') ||
+      error.message.includes('network') ||
+      error.message.includes('Failed to fetch') ||
+      error.name === 'NetworkError')
   );
 }
 
@@ -124,11 +106,12 @@ export function isNetworkError(error: unknown): boolean {
  * Type guard for checking if an error is a validation error
  */
 export function isValidationError(error: unknown): boolean {
-  return error instanceof Error && (
-    error.message.includes('validation') ||
-    error.message.includes('invalid') ||
-    error.message.includes('not allowed') ||
-    error.message.includes('exceeds')
+  return (
+    error instanceof Error &&
+    (error.message.includes('validation') ||
+      error.message.includes('invalid') ||
+      error.message.includes('not allowed') ||
+      error.message.includes('exceeds'))
   );
 }
 

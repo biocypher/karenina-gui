@@ -12,11 +12,11 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
   config,
   onConfigChange,
   disabled = false,
-  className = ''
+  className = '',
 }) => {
   const handleInterfaceChange = (interface_type: 'langchain' | 'openrouter') => {
     const updatedConfig = { ...config, interface: interface_type };
-    
+
     // Clear model_provider when switching to OpenRouter
     if (interface_type === 'openrouter') {
       updatedConfig.model_provider = '';
@@ -24,7 +24,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       // Set default provider for langchain if not already set
       updatedConfig.model_provider = 'google_genai';
     }
-    
+
     onConfigChange(updatedConfig);
   };
 
@@ -44,9 +44,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
     <div className={`space-y-6 ${className}`}>
       {/* Interface Selection */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-          LLM Interface
-        </label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">LLM Interface</label>
         <div className="flex gap-4">
           <label className="flex items-center">
             <input
@@ -76,12 +74,12 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       </div>
 
       {/* Configuration */}
-      <div className={`grid grid-cols-1 ${config.interface === 'langchain' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
+      <div
+        className={`grid grid-cols-1 ${config.interface === 'langchain' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}
+      >
         {config.interface === 'langchain' && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Model Provider
-            </label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Model Provider</label>
             <input
               type="text"
               value={config.model_provider}
@@ -94,16 +92,18 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Model Name
-          </label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Model Name</label>
           <input
             type="text"
             value={config.model_name}
             onChange={(e) => handleModelNameChange(e.target.value)}
             className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             disabled={disabled}
-            placeholder={config.interface === 'langchain' ? 'e.g., gemini-2.0-flash, gpt-4' : 'e.g., meta-llama/llama-3.2-3b-instruct:free'}
+            placeholder={
+              config.interface === 'langchain'
+                ? 'e.g., gemini-2.0-flash, gpt-4'
+                : 'e.g., meta-llama/llama-3.2-3b-instruct:free'
+            }
           />
           {config.interface === 'openrouter' && (
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">

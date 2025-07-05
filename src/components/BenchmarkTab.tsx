@@ -12,16 +12,13 @@ import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
 import { RubricResultsDisplay } from './RubricResultsDisplay';
 import { useRubricStore } from '../stores/useRubricStore';
 
-
 // Interfaces now imported from types
-
 
 interface BenchmarkTabProps {
   checkpoint: Checkpoint;
   benchmarkResults: Record<string, VerificationResult>;
   setBenchmarkResults: React.Dispatch<React.SetStateAction<Record<string, VerificationResult>>>;
 }
-
 
 export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmarkResults, setBenchmarkResults }) => {
   // Configuration management
@@ -44,7 +41,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     updateAnsweringModel,
     updateParsingModel,
     togglePromptExpanded,
-    getVerificationConfig
+    getVerificationConfig,
   } = useBenchmarkConfiguration();
 
   // Rubric store
@@ -66,37 +63,35 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Get finished templates from checkpoint
   const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
-  
+
   const getQuestionPreview = (text: string) => {
     return text.length > 60 ? text.substring(0, 60) + '...' : text;
   };
-  
 
   // Handle export filtered results - Fix the function to work with simple client-side export
   const handleExportFilteredResults = async (format: 'json' | 'csv') => {
     const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
-    
+
     exportFilteredResults(filteredResults, format, (error) => {
       setError(error);
     });
   };
 
-
   // Poll for progress updates
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     let isMounted = true;
-    
+
     if (isRunning && jobId) {
       console.log(`Starting polling for job: ${jobId}`);
-      
+
       interval = setInterval(async () => {
         if (!isMounted || !isRunning) return;
-        
+
         try {
           console.log(`Polling progress for job: ${jobId}`);
           const response = await fetch(API_ENDPOINTS.VERIFICATION_PROGRESS(jobId));
-          
+
           if (!response.ok) {
             console.error(`Progress polling failed with status: ${response.status}`);
             if (response.status >= 400 && isMounted) {
@@ -105,14 +100,14 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               return;
             }
           }
-          
+
           const progressData = await response.json();
           console.log('Progress data received:', progressData);
-          
+
           // Validate progress data structure
           if (!progressData || typeof progressData !== 'object') {
             console.error('Invalid progress data received:', progressData);
-            setRetryCount(prev => {
+            setRetryCount((prev) => {
               const newCount = prev + 1;
               if (newCount >= MAX_RETRIES && isMounted) {
                 setIsRunning(false);
@@ -122,25 +117,25 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             });
             return;
           }
-          
+
           // Reset retry count on successful response
           if (isMounted) {
             setRetryCount(0);
-            
+
             // Safely update progress
             try {
-              setProgress(prev => {
+              setProgress((prev) => {
                 console.log('Updating progress from:', prev?.status, 'to:', progressData.status);
                 return progressData;
               });
             } catch (e) {
               console.error('Error setting progress:', e);
             }
-            
+
             if (progressData.status === 'completed') {
               console.log('Verification completed, cleaning up...');
               setIsRunning(false);
-              
+
               if (progressData.results && typeof progressData.results === 'object') {
                 console.log('Setting results:', Object.keys(progressData.results).length, 'items');
                 try {
@@ -159,10 +154,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                     count: Object.keys(sanitizedResults).length,
                     firstKey: Object.keys(sanitizedResults)[0],
                     firstValue: sanitizedResults[Object.keys(sanitizedResults)[0]],
-                    keys: Object.keys(sanitizedResults)
+                    keys: Object.keys(sanitizedResults),
                   });
                   // Accumulate results instead of replacing them
-                  setBenchmarkResults(prev => ({ ...prev, ...sanitizedResults }));
+                  setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
                   console.log('Results set successfully');
                 } catch (e) {
                   console.error('Error setting results:', e);
@@ -181,10 +176,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         } catch (err) {
           console.error('Error polling progress:', err);
           if (isMounted) {
-            setRetryCount(prev => {
+            setRetryCount((prev) => {
               const newCount = prev + 1;
               const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-              
+
               if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
                 console.warn(`Network error during polling (attempt ${newCount}/${MAX_RETRIES}), will retry...`);
                 if (newCount >= MAX_RETRIES) {
@@ -202,7 +197,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         }
       }, 1000);
     }
-    
+
     return () => {
       console.log('Cleaning up polling interval');
       isMounted = false;
@@ -214,7 +209,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   const handleStartVerification = async (questionIds?: string[]) => {
     const idsToRun = questionIds || Array.from(selectedTests);
-    
+
     if (idsToRun.length === 0) {
       setError('No tests selected for verification.');
       return;
@@ -225,7 +220,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     // DON'T clear existing results - we want to accumulate them
     setError(null);
     setRetryCount(0); // Reset retry count for new verification
-    
+
     try {
       // Prepare verification config
       const config: VerificationConfig = getVerificationConfig();
@@ -238,14 +233,14 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         template_code: item.answer_template,
         last_modified: item.last_modified,
         finished: true,
-        question_rubric: item.question_rubric || null
+        question_rubric: item.question_rubric || null,
       }));
 
       const requestPayload = {
         config,
         question_ids: idsToRun,
         finished_templates: templatesData,
-        run_name: runName.trim() || undefined // Send run name if provided
+        run_name: runName.trim() || undefined, // Send run name if provided
       };
 
       const response = await fetch(API_ENDPOINTS.START_VERIFICATION, {
@@ -253,11 +248,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         headers: HEADERS.CONTENT_TYPE_JSON,
         body: JSON.stringify(requestPayload),
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setJobId(data.job_id);
     } catch (err) {
@@ -268,10 +263,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   const handleCancelVerification = async () => {
     if (!jobId) return;
-    
+
     try {
       await fetch(API_ENDPOINTS.CANCEL_VERIFICATION(jobId), {
-        method: HTTP_METHODS.POST
+        method: HTTP_METHODS.POST,
       });
       setIsRunning(false);
       setProgress(null);
@@ -283,7 +278,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   const handleExportResults = async (format: 'json' | 'csv') => {
     if (!jobId) return;
-    
+
     try {
       await exportFromServer(jobId, format);
     } catch (err) {
@@ -291,8 +286,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       setError('Failed to export results. Please try again.');
     }
   };
-
-
 
   // Test selection functions
   const handleSelectAll = () => {
@@ -312,7 +305,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     }
     setSelectedTests(newSelected);
   };
-
 
   // Get all unfiltered results for statistics
   const getAllUnfilteredResults = () => {
@@ -347,7 +339,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     };
   }, [jobId]);
 
-
   // Safe rendering helper for results table
 
   // Debug logging for state changes
@@ -358,7 +349,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       hasResults: benchmarkResults ? Object.keys(benchmarkResults).length : 0,
       hasProgress: !!progress,
       progressStatus: progress?.status,
-      error
+      error,
     });
   }, [isRunning, jobId, benchmarkResults, progress, error]);
 
@@ -367,7 +358,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     try {
       return (
         <div className="space-y-6">
-
           <ConfigurationPanel
             answeringModels={answeringModels}
             parsingModels={parsingModels}
@@ -396,7 +386,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             }}
           />
 
-
           {/* Control Panel */}
           <Card>
             <div className="flex items-center justify-between mb-4">
@@ -404,7 +393,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 Verification Control
               </h3>
-              
+
               <div className="flex gap-3">
                 {isRunning && (
                   <button
@@ -415,7 +404,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                     Cancel
                   </button>
                 )}
-                
+
                 {progress && progress.status === 'completed' && (
                   <div className="flex gap-2">
                     <button
@@ -449,24 +438,28 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             {!isRunning && getAllUnfilteredResults().length > 0 && (
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{getAllUnfilteredResults().length}</div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {getAllUnfilteredResults().length}
+                  </div>
                   <div className="text-sm text-slate-600 dark:text-slate-300">Total Tests</div>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    {getAllUnfilteredResults().filter(r => r.success).length}
+                    {getAllUnfilteredResults().filter((r) => r.success).length}
                   </div>
                   <div className="text-sm text-green-600 dark:text-green-400">Successful</div>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                    {getAllUnfilteredResults().filter(r => !r.success).length}
+                    {getAllUnfilteredResults().filter((r) => !r.success).length}
                   </div>
                   <div className="text-sm text-red-600 dark:text-red-400">Failed</div>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    {getAllUnfilteredResults().length > 0 ? `${(getAllUnfilteredResults().reduce((sum, r) => sum + r.execution_time, 0) / getAllUnfilteredResults().length).toFixed(1)}s` : 'N/A'}
+                    {getAllUnfilteredResults().length > 0
+                      ? `${(getAllUnfilteredResults().reduce((sum, r) => sum + r.execution_time, 0) / getAllUnfilteredResults().length).toFixed(1)}s`
+                      : 'N/A'}
                   </div>
                   <div className="text-sm text-blue-600 dark:text-blue-400">Avg Time</div>
                 </div>
@@ -491,7 +484,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               Run Management
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -547,7 +540,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   <div className="text-sm text-emerald-600 dark:text-emerald-300">Parsing Models</div>
                 </div>
               </div>
-              
+
               <div className="flex items-end">
                 <div className="w-full bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -574,7 +567,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 Test Selection ({finishedTemplates.length} available)
               </h3>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={handleSelectAll}
@@ -596,11 +589,12 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
                 >
                   <Play className="w-4 h-4" />
-                  Run Selected ({selectedTests.size} × {answeringModels.length * parsingModels.length * replicateCount} = {selectedTests.size * answeringModels.length * parsingModels.length * replicateCount})
+                  Run Selected ({selectedTests.size} × {answeringModels.length * parsingModels.length * replicateCount}{' '}
+                  = {selectedTests.size * answeringModels.length * parsingModels.length * replicateCount})
                 </button>
               </div>
             </div>
-            
+
             {finishedTemplates.length === 0 ? (
               <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 No finished templates available. Complete some templates in the curator first.
@@ -614,19 +608,26 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                         <input
                           type="checkbox"
                           checked={selectedTests.size === finishedTemplates.length && finishedTemplates.length > 0}
-                          onChange={selectedTests.size === finishedTemplates.length ? handleSelectNone : handleSelectAll}
+                          onChange={
+                            selectedTests.size === finishedTemplates.length ? handleSelectNone : handleSelectAll
+                          }
                           disabled={isRunning}
                           className="rounded border-slate-300 dark:border-slate-600"
                         />
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-slate-700 dark:text-slate-300">Question</th>
-                      <th className="text-left py-3 px-4 font-medium text-slate-700 dark:text-slate-300">Last Modified</th>
+                      <th className="text-left py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
+                        Last Modified
+                      </th>
                       <th className="text-left py-3 px-4 font-medium text-slate-700 dark:text-slate-300">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {finishedTemplates.map(([questionId, item]) => (
-                      <tr key={questionId} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                      <tr
+                        key={questionId}
+                        className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                      >
                         <td className="py-3 px-4">
                           <input
                             type="checkbox"
@@ -712,14 +713,14 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   <Filter className="w-4 h-4" />
                   <span className="font-medium">Interactive Filters & Sorting</span>
                 </div>
-                <p>Use the filters in each column header to narrow down results. Click column headers to sort. Filters persist across tab switches but reset on page reload.</p>
+                <p>
+                  Use the filters in each column header to narrow down results. Click column headers to sort. Filters
+                  persist across tab switches but reset on page reload.
+                </p>
               </div>
             )}
-            
-            <BenchmarkTable 
-              benchmarkResults={benchmarkResults} 
-              onViewResult={setSelectedResult}
-            />
+
+            <BenchmarkTable benchmarkResults={benchmarkResults} onViewResult={setSelectedResult} />
           </Card>
 
           {/* Results Modal */}
@@ -739,7 +740,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                   {(() => {
                     try {
@@ -748,12 +749,18 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                           {/* Status */}
                           <div>
                             <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Status</h4>
-                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                              selectedResult.success 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                            }`}>
-                              {selectedResult.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                            <div
+                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                                selectedResult.success
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                              }`}
+                            >
+                              {selectedResult.success ? (
+                                <CheckCircle className="w-4 h-4" />
+                              ) : (
+                                <AlertCircle className="w-4 h-4" />
+                              )}
                               {selectedResult.success ? 'Success' : 'Failed'}
                             </div>
                             {selectedResult.error && (
@@ -765,13 +772,17 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                           <div>
                             <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Raw Question</h4>
                             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                              <p className="text-slate-800 dark:text-slate-200">{selectedResult.question_text || 'N/A'}</p>
+                              <p className="text-slate-800 dark:text-slate-200">
+                                {selectedResult.question_text || 'N/A'}
+                              </p>
                             </div>
                           </div>
 
                           {/* Raw Answer (Expected) */}
                           <div>
-                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Raw Answer (Expected)</h4>
+                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                              Raw Answer (Expected)
+                            </h4>
                             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                               <p className="text-slate-800 dark:text-slate-200">
                                 {checkpoint[selectedResult.question_id]?.raw_answer || 'N/A'}
@@ -781,7 +792,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
                           {/* Raw LLM Response (Generated) */}
                           <div>
-                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Raw LLM Response (Generated)</h4>
+                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                              Raw LLM Response (Generated)
+                            </h4>
                             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                               <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
                                 {selectedResult.raw_llm_response || 'N/A'}
@@ -815,8 +828,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                 <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
                                   {(() => {
                                     try {
-                                      return typeof selectedResult.verify_result === 'string' 
-                                        ? selectedResult.verify_result 
+                                      return typeof selectedResult.verify_result === 'string'
+                                        ? selectedResult.verify_result
                                         : JSON.stringify(selectedResult.verify_result, null, 2);
                                     } catch {
                                       return String(selectedResult.verify_result);
@@ -829,13 +842,15 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
                           {selectedResult.verify_granular_result && (
                             <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Granular Verify Result</h4>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                Granular Verify Result
+                              </h4>
                               <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                                 <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
                                   {(() => {
                                     try {
-                                      return typeof selectedResult.verify_granular_result === 'string' 
-                                        ? selectedResult.verify_granular_result 
+                                      return typeof selectedResult.verify_granular_result === 'string'
+                                        ? selectedResult.verify_granular_result
                                         : JSON.stringify(selectedResult.verify_granular_result, null, 2);
                                     } catch {
                                       return String(selectedResult.verify_granular_result);
@@ -849,7 +864,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                           {/* Rubric Evaluation Results */}
                           {selectedResult.verify_rubric && (
                             <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Rubric Evaluation Results</h4>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                Rubric Evaluation Results
+                              </h4>
                               <RubricResultsDisplay
                                 rubricResults={selectedResult.verify_rubric}
                                 currentRubric={currentRubric}
@@ -860,21 +877,31 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                           {/* System Prompts */}
                           {(selectedResult.answering_system_prompt || selectedResult.parsing_system_prompt) && (
                             <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">System Prompts Used</h4>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                System Prompts Used
+                              </h4>
                               <div className="space-y-3">
                                 {selectedResult.answering_system_prompt && (
                                   <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Answering Model System Prompt:</h5>
+                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                      Answering Model System Prompt:
+                                    </h5>
                                     <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                      <p className="text-slate-800 dark:text-slate-200 text-sm">{selectedResult.answering_system_prompt}</p>
+                                      <p className="text-slate-800 dark:text-slate-200 text-sm">
+                                        {selectedResult.answering_system_prompt}
+                                      </p>
                                     </div>
                                   </div>
                                 )}
                                 {selectedResult.parsing_system_prompt && (
                                   <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Parsing Model System Prompt:</h5>
+                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                      Parsing Model System Prompt:
+                                    </h5>
                                     <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                      <p className="text-slate-800 dark:text-slate-200 text-sm">{selectedResult.parsing_system_prompt}</p>
+                                      <p className="text-slate-800 dark:text-slate-200 text-sm">
+                                        {selectedResult.parsing_system_prompt}
+                                      </p>
                                     </div>
                                   </div>
                                 )}
@@ -888,23 +915,35 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                               <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                  <span className="font-medium text-slate-600 dark:text-slate-300">Answering Model:</span>
-                                  <p className="text-slate-800 dark:text-slate-200">{selectedResult.answering_model || 'N/A'}</p>
+                                  <span className="font-medium text-slate-600 dark:text-slate-300">
+                                    Answering Model:
+                                  </span>
+                                  <p className="text-slate-800 dark:text-slate-200">
+                                    {selectedResult.answering_model || 'N/A'}
+                                  </p>
                                 </div>
                                 <div>
                                   <span className="font-medium text-slate-600 dark:text-slate-300">Parsing Model:</span>
-                                  <p className="text-slate-800 dark:text-slate-200">{selectedResult.parsing_model || 'N/A'}</p>
+                                  <p className="text-slate-800 dark:text-slate-200">
+                                    {selectedResult.parsing_model || 'N/A'}
+                                  </p>
                                 </div>
                                 <div>
-                                  <span className="font-medium text-slate-600 dark:text-slate-300">Execution Time:</span>
+                                  <span className="font-medium text-slate-600 dark:text-slate-300">
+                                    Execution Time:
+                                  </span>
                                   <p className="text-slate-800 dark:text-slate-200">
-                                    {selectedResult.execution_time ? `${selectedResult.execution_time.toFixed(2)}s` : 'N/A'}
+                                    {selectedResult.execution_time
+                                      ? `${selectedResult.execution_time.toFixed(2)}s`
+                                      : 'N/A'}
                                   </p>
                                 </div>
                                 <div>
                                   <span className="font-medium text-slate-600 dark:text-slate-300">Timestamp:</span>
                                   <p className="text-slate-800 dark:text-slate-200">
-                                    {selectedResult.timestamp ? new Date(selectedResult.timestamp).toLocaleString() : 'N/A'}
+                                    {selectedResult.timestamp
+                                      ? new Date(selectedResult.timestamp).toLocaleString()
+                                      : 'N/A'}
                                   </p>
                                 </div>
                               </div>
@@ -941,10 +980,5 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     }
   };
 
-
-  return (
-    <ErrorBoundary>
-      {renderContent()}
-    </ErrorBoundary>
-  );
-}; 
+  return <ErrorBoundary>{renderContent()}</ErrorBoundary>;
+};

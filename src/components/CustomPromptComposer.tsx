@@ -16,10 +16,7 @@ interface CustomPromptComposerProps {
   onPromptGenerated?: (prompt: string) => void;
 }
 
-export const CustomPromptComposer: React.FC<CustomPromptComposerProps> = ({
-  questions,
-  onPromptGenerated
-}) => {
+export const CustomPromptComposer: React.FC<CustomPromptComposerProps> = ({ questions, onPromptGenerated }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [instructions, setInstructions] = useState<string>(`<goal>
 You are a helpful assistant that helps in automating the creation of a benchmark. You will receive from the user:
@@ -43,13 +40,14 @@ Your task:
 - The verify_granular method should return a float between 0 and 1, where 1 means the answer is completely correct and 0 means the answer is completely incorrect.
 - The verify_granular method adds 1 point to the score for each parameter that is correct and divides by the total number of parameters.
 </important_instructions>`);
-  
+
   const [examples, setExamples] = useState<PromptExample[]>([]);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
   const [isPromptActive, setIsPromptActive] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [uploadedPrompt, setUploadedPrompt] = useState<string>('');
   const [isUsingUploadedPrompt, setIsUsingUploadedPrompt] = useState(false);
+  const [, setHasUnsavedChanges] = useState(false); // Used for tracking changes
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Track changes to mark unsaved state
@@ -73,35 +71,37 @@ Your task:
         self.correct = ""
 
     def verify(self) -> bool:
-        return str(self.answer).strip().lower() == str(self.correct).strip().lower()`
+        return str(self.answer).strip().lower() == str(self.correct).strip().lower()`,
     };
-    setExamples(prev => [...prev, newExample]);
+    setExamples((prev) => [...prev, newExample]);
   };
 
   const removeExample = (exampleId: string) => {
-    setExamples(prev => prev.filter(ex => ex.id !== exampleId));
+    setExamples((prev) => prev.filter((ex) => ex.id !== exampleId));
   };
 
   const updateExample = (exampleId: string, field: keyof PromptExample, value: string) => {
-    setExamples(prev => prev.map(ex => {
-      if (ex.id === exampleId) {
-        const updated = { ...ex, [field]: value };
-        
-        // Auto-populate raw and JSON when question is selected
-        if (field === 'selectedQuestionId' && value && questions[value]) {
-          updated.rawQuestion = questions[value].question;
-          updated.jsonQuestion = JSON.stringify({
-            id: value,
-            question: questions[value].question,
-            raw_answer: questions[value].raw_answer,
-            tags: []
-          });
+    setExamples((prev) =>
+      prev.map((ex) => {
+        if (ex.id === exampleId) {
+          const updated = { ...ex, [field]: value };
+
+          // Auto-populate raw and JSON when question is selected
+          if (field === 'selectedQuestionId' && value && questions[value]) {
+            updated.rawQuestion = questions[value].question;
+            updated.jsonQuestion = JSON.stringify({
+              id: value,
+              question: questions[value].question,
+              raw_answer: questions[value].raw_answer,
+              tags: [],
+            });
+          }
+
+          return updated;
         }
-        
-        return updated;
-      }
-      return ex;
-    }));
+        return ex;
+      })
+    );
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,7 +121,7 @@ Your task:
         setIsUsingUploadedPrompt(true);
         setIsPromptActive(true);
         setHasUnsavedChanges(false);
-        
+
         // Notify parent component
         if (onPromptGenerated) {
           onPromptGenerated(content);
@@ -129,13 +129,12 @@ Your task:
       }
     };
     reader.readAsText(file);
-    
+
     // Clear the input so the same file can be uploaded again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
-
 
   const switchToCustomComposer = () => {
     setIsUsingUploadedPrompt(false);
@@ -146,10 +145,10 @@ Your task:
   const generateAndSetPrompt = () => {
     // Build the complete prompt
     let prompt = instructions.trim();
-    
+
     if (examples.length > 0) {
       prompt += '\n\n<examples>\n';
-      
+
       examples.forEach((example, index) => {
         const exampleNum = index + 1;
         prompt += `\n<example_${exampleNum}>`;
@@ -161,15 +160,15 @@ Your task:
         prompt += '\n```';
         prompt += `\n</example_${exampleNum}>\n`;
       });
-      
+
       prompt += '\n</examples>';
     }
-    
+
     setGeneratedPrompt(prompt);
     setIsPromptActive(true);
     setHasUnsavedChanges(false);
     setIsUsingUploadedPrompt(false);
-    
+
     // Notify parent component
     if (onPromptGenerated) {
       onPromptGenerated(prompt);
@@ -214,8 +213,8 @@ Your task:
         </div>
 
         <p className="text-slate-600 dark:text-slate-300 mb-6">
-          Create custom system prompts with your own instructions and examples to guide template generation.
-          The prompt will be used when generating answer templates for the selected questions.
+          Create custom system prompts with your own instructions and examples to guide template generation. The prompt
+          will be used when generating answer templates for the selected questions.
         </p>
       </div>
     );
@@ -254,8 +253,8 @@ Your task:
       </div>
 
       <p className="text-slate-600 dark:text-slate-300 mb-6">
-        Create custom system prompts with your own instructions and examples to guide template generation.
-        The prompt will be used when generating answer templates for the selected questions.
+        Create custom system prompts with your own instructions and examples to guide template generation. The prompt
+        will be used when generating answer templates for the selected questions.
       </p>
 
       {/* Uploaded Prompt Display */}
@@ -289,7 +288,9 @@ Your task:
             <div>
               <h5 className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">Uploaded Prompt Preview</h5>
               <div className="bg-white dark:bg-slate-800 border border-green-200 dark:border-green-700 rounded-md p-3 max-h-60 overflow-y-auto">
-                <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">{uploadedPrompt}</pre>
+                <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
+                  {uploadedPrompt}
+                </pre>
               </div>
             </div>
           )}
@@ -301,7 +302,10 @@ Your task:
         <>
           {/* Instructions Editor */}
           <div className="mb-6">
-            <label htmlFor="instructions-textarea" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label
+              htmlFor="instructions-textarea"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+            >
               Free-text Instructions
             </label>
             <textarea
@@ -331,12 +335,17 @@ Your task:
 
             {examples.length === 0 ? (
               <div className="text-center py-8 bg-slate-50 dark:bg-slate-700 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600">
-                <p className="text-slate-500 dark:text-slate-400">No examples yet. Click "Add Example" to get started.</p>
+                <p className="text-slate-500 dark:text-slate-400">
+                  No examples yet. Click "Add Example" to get started.
+                </p>
               </div>
             ) : (
               <div className="space-y-6">
                 {examples.map((example, index) => (
-                  <div key={example.id} className="border border-slate-200 dark:border-slate-600 rounded-lg p-4 bg-slate-50 dark:bg-slate-700">
+                  <div
+                    key={example.id}
+                    className="border border-slate-200 dark:border-slate-600 rounded-lg p-4 bg-slate-50 dark:bg-slate-700"
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <h5 className="font-medium text-slate-700 dark:text-slate-300">Example {index + 1}</h5>
                       <button
@@ -353,7 +362,10 @@ Your task:
                       <div className="space-y-4">
                         {/* Question Selector */}
                         <div>
-                          <label htmlFor={`question-selector-${example.id}`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                          <label
+                            htmlFor={`question-selector-${example.id}`}
+                            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                          >
                             Question Selector
                           </label>
                           <select
@@ -374,7 +386,10 @@ Your task:
 
                         {/* Raw Question */}
                         <div>
-                          <label htmlFor={`raw-question-${example.id}`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                          <label
+                            htmlFor={`raw-question-${example.id}`}
+                            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                          >
                             Raw Question
                           </label>
                           <textarea
@@ -388,7 +403,10 @@ Your task:
 
                         {/* JSON Question */}
                         <div>
-                          <label htmlFor={`json-question-${example.id}`} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                          <label
+                            htmlFor={`json-question-${example.id}`}
+                            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+                          >
                             JSON Question
                           </label>
                           <textarea
@@ -431,7 +449,7 @@ Your task:
                 <Settings className="w-4 h-4" />
                 Generate & Set Prompt
               </button>
-              
+
               {generatedPrompt && !isUsingUploadedPrompt && (
                 <button
                   onClick={() => setShowPreview(!showPreview)}
@@ -442,7 +460,7 @@ Your task:
                 </button>
               )}
             </div>
-            
+
             <div className="text-sm text-slate-600 dark:text-slate-400">
               {examples.length} example{examples.length !== 1 ? 's' : ''} configured
             </div>
@@ -464,4 +482,4 @@ Your task:
       )}
     </div>
   );
-}; 
+};

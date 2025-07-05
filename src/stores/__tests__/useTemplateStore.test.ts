@@ -1,21 +1,27 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { useTemplateStore } from '../useTemplateStore';
-import { QuestionData, TemplateGenerationConfig, TemplateGenerationProgress, TemplateGenerationResult, GeneratedTemplate } from '../../types';
+import {
+  QuestionData,
+  TemplateGenerationConfig,
+  TemplateGenerationProgress,
+  TemplateGenerationResult,
+  GeneratedTemplate,
+} from '../../types';
 
 // Mock logger and error handler
 vi.mock('../../utils/logger', () => ({
   logger: {
     data: {
-      templatesGenerated: vi.fn()
+      templatesGenerated: vi.fn(),
     },
     warn: {
-      noGeneratedTemplates: vi.fn()
-    }
-  }
+      noGeneratedTemplates: vi.fn(),
+    },
+  },
 }));
 
 vi.mock('../../utils/errorHandler', () => ({
-  handleApiError: vi.fn()
+  handleApiError: vi.fn(),
 }));
 
 // Mock fetch
@@ -30,8 +36,8 @@ const mockSetAttribute = vi.fn();
 Object.defineProperty(document, 'createElement', {
   value: mockCreateElement.mockReturnValue({
     setAttribute: mockSetAttribute,
-    click: mockClick
-  })
+    click: mockClick,
+  }),
 });
 
 describe('useTemplateStore', () => {
@@ -47,23 +53,23 @@ describe('useTemplateStore', () => {
 
   // Mock data
   const mockQuestions: QuestionData = {
-    'q1': {
+    q1: {
       question: 'What is the capital of France?',
       raw_answer: 'Paris',
-      answer_template: 'placeholder template'
+      answer_template: 'placeholder template',
     },
-    'q2': {
+    q2: {
       question: 'What is 2+2?',
       raw_answer: '4',
-      answer_template: 'placeholder template'
-    }
+      answer_template: 'placeholder template',
+    },
   };
 
   const mockConfig: TemplateGenerationConfig = {
     model_provider: 'openai',
     model_name: 'gpt-4',
     temperature: 0.2,
-    interface: 'langchain'
+    interface: 'langchain',
   };
 
   const mockGeneratedTemplate: GeneratedTemplate = {
@@ -72,14 +78,14 @@ describe('useTemplateStore', () => {
     error: null,
     metadata: {
       processing_time: 1.5,
-      model_used: 'gpt-4'
-    }
+      model_used: 'gpt-4',
+    },
   };
 
   describe('Initial State', () => {
     it('should initialize with default values', () => {
       const store = useTemplateStore.getState();
-      
+
       expect(store.config.model_provider).toBe('google_genai');
       expect(store.config.model_name).toBe('gemini-2.0-flash');
       expect(store.customSystemPrompt).toBe(null);
@@ -93,17 +99,17 @@ describe('useTemplateStore', () => {
   describe('Configuration Management', () => {
     it('should update configuration', () => {
       const store = useTemplateStore.getState();
-      
+
       store.setConfig(mockConfig);
-      
+
       expect(useTemplateStore.getState().config).toEqual(mockConfig);
     });
 
     it('should update custom system prompt', () => {
       const store = useTemplateStore.getState();
-      
+
       store.setCustomSystemPrompt('Custom prompt');
-      
+
       expect(useTemplateStore.getState().customSystemPrompt).toBe('Custom prompt');
     });
   });
@@ -112,17 +118,17 @@ describe('useTemplateStore', () => {
     it('should set selected questions', () => {
       const store = useTemplateStore.getState();
       const selectedSet = new Set(['q1', 'q2']);
-      
+
       store.setSelectedQuestions(selectedSet);
-      
+
       expect(useTemplateStore.getState().selectedQuestions).toEqual(selectedSet);
     });
 
     it('should initialize selection with pending questions', () => {
       const store = useTemplateStore.getState();
-      
+
       store.initializeSelection(mockQuestions);
-      
+
       const state = useTemplateStore.getState();
       expect(state.selectedQuestions.has('q1')).toBe(true);
       expect(state.selectedQuestions.has('q2')).toBe(true);
@@ -133,16 +139,16 @@ describe('useTemplateStore', () => {
   describe('Generation Process', () => {
     it('should start generation successfully', async () => {
       const store = useTemplateStore.getState();
-      
+
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ job_id: 'job123' })
+        json: () => Promise.resolve({ job_id: 'job123' }),
       });
-      
+
       store.setSelectedQuestions(new Set(['q1']));
-      
+
       await store.startGeneration(mockQuestions);
-      
+
       const state = useTemplateStore.getState();
       expect(state.isGenerating).toBe(true);
       expect(state.jobId).toBe('job123');
@@ -151,9 +157,9 @@ describe('useTemplateStore', () => {
 
     it('should require selected questions to start generation', async () => {
       const store = useTemplateStore.getState();
-      
+
       await store.startGeneration(mockQuestions);
-      
+
       const state = useTemplateStore.getState();
       expect(state.error).toBe('Please select at least one question to generate templates for.');
       expect(state.isGenerating).toBe(false);
@@ -169,11 +175,11 @@ describe('useTemplateStore', () => {
         completed_questions: ['q1'],
         total_questions: 2,
         progress_percentage: 50,
-        estimated_time_remaining: 30
+        estimated_time_remaining: 30,
       };
-      
+
       store.updateProgress(mockProgress);
-      
+
       expect(useTemplateStore.getState().progress).toEqual(mockProgress);
     });
 
@@ -181,18 +187,18 @@ describe('useTemplateStore', () => {
       const store = useTemplateStore.getState();
       const mockResult: TemplateGenerationResult = {
         templates: {
-          'q1': mockGeneratedTemplate
+          q1: mockGeneratedTemplate,
         },
         summary: {
           total_questions: 1,
           successful_generations: 1,
           failed_generations: 0,
-          total_processing_time: 1.5
-        }
+          total_processing_time: 1.5,
+        },
       };
-      
+
       store.completeGeneration(mockResult);
-      
+
       const state = useTemplateStore.getState();
       expect(state.isGenerating).toBe(false);
       expect(state.result).toEqual(mockResult);
@@ -201,9 +207,9 @@ describe('useTemplateStore', () => {
 
     it('should fail generation', () => {
       const store = useTemplateStore.getState();
-      
+
       store.failGeneration('Custom error');
-      
+
       const state = useTemplateStore.getState();
       expect(state.isGenerating).toBe(false);
       expect(state.error).toBe('Custom error');
@@ -213,17 +219,17 @@ describe('useTemplateStore', () => {
   describe('Template Management', () => {
     it('should remove generated template', () => {
       const store = useTemplateStore.getState();
-      
+
       // Set up templates
       useTemplateStore.setState({
         generatedTemplates: {
-          'q1': mockGeneratedTemplate,
-          'q2': { ...mockGeneratedTemplate, success: false }
-        }
+          q1: mockGeneratedTemplate,
+          q2: { ...mockGeneratedTemplate, success: false },
+        },
       });
-      
+
       store.removeGeneratedTemplate('q1');
-      
+
       const state = useTemplateStore.getState();
       expect(state.generatedTemplates['q1']).toBeUndefined();
       expect(state.generatedTemplates['q2']).toBeDefined();
@@ -233,52 +239,52 @@ describe('useTemplateStore', () => {
   describe('Computed Getters', () => {
     it('should get pending questions', () => {
       const store = useTemplateStore.getState();
-      
+
       // Set up some generated templates
       useTemplateStore.setState({
         generatedTemplates: {
-          'q1': mockGeneratedTemplate // q1 is successfully generated
-        }
+          q1: mockGeneratedTemplate, // q1 is successfully generated
+        },
       });
-      
+
       const pending = store.getPendingQuestions(mockQuestions);
-      
+
       expect(Object.keys(pending)).toEqual(['q2']); // only q2 is pending
     });
 
     it('should get selected count', () => {
       const store = useTemplateStore.getState();
-      
+
       store.setSelectedQuestions(new Set(['q1', 'q2']));
-      
+
       expect(store.getSelectedCount()).toBe(2);
     });
 
     it('should get generated count', () => {
       const store = useTemplateStore.getState();
-      
+
       useTemplateStore.setState({
         generatedTemplates: {
-          'q1': mockGeneratedTemplate,
-          'q2': { ...mockGeneratedTemplate, success: false }
-        }
+          q1: mockGeneratedTemplate,
+          q2: { ...mockGeneratedTemplate, success: false },
+        },
       });
-      
+
       expect(store.getGeneratedCount()).toBe(2);
     });
 
     it('should get successful templates', () => {
       const store = useTemplateStore.getState();
-      
+
       useTemplateStore.setState({
         generatedTemplates: {
-          'q1': mockGeneratedTemplate,
-          'q2': { ...mockGeneratedTemplate, success: false }
-        }
+          q1: mockGeneratedTemplate,
+          q2: { ...mockGeneratedTemplate, success: false },
+        },
       });
-      
+
       const successful = store.getSuccessfulTemplates();
-      
+
       expect(Object.keys(successful)).toEqual(['q1']);
       expect(successful['q1']).toEqual(mockGeneratedTemplate);
     });
@@ -289,21 +295,21 @@ describe('useTemplateStore', () => {
       const store = useTemplateStore.getState();
       const onTemplatesGenerated = vi.fn();
       const onSwitchToCurator = vi.fn();
-      
+
       useTemplateStore.setState({
         generatedTemplates: {
-          'q1': mockGeneratedTemplate,
-          'q2': { ...mockGeneratedTemplate, success: false }
-        }
+          q1: mockGeneratedTemplate,
+          q2: { ...mockGeneratedTemplate, success: false },
+        },
       });
-      
+
       store.addToCuration(mockQuestions, onTemplatesGenerated, onSwitchToCurator);
-      
+
       expect(onTemplatesGenerated).toHaveBeenCalledWith({
-        'q1': {
+        q1: {
           ...mockQuestions['q1'],
-          answer_template: mockGeneratedTemplate.template_code
-        }
+          answer_template: mockGeneratedTemplate.template_code,
+        },
       });
       expect(onSwitchToCurator).toHaveBeenCalled();
     });
@@ -312,19 +318,19 @@ describe('useTemplateStore', () => {
   describe('Reset State', () => {
     it('should reset all template state', () => {
       const store = useTemplateStore.getState();
-      
+
       // Set up some state
       store.setConfig(mockConfig);
       store.setSelectedQuestions(new Set(['q1']));
       store.setCustomSystemPrompt('test');
       useTemplateStore.setState({
         isGenerating: true,
-        generatedTemplates: { 'q1': mockGeneratedTemplate }
+        generatedTemplates: { q1: mockGeneratedTemplate },
       });
-      
+
       // Reset
       store.resetTemplateState();
-      
+
       const state = useTemplateStore.getState();
       expect(state.config.model_provider).toBe('google_genai');
       expect(state.selectedQuestions.size).toBe(0);

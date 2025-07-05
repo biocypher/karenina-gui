@@ -2,7 +2,7 @@
 export const API_ENDPOINTS = {
   // Server info
   TIMESTAMP: '/api/timestamp',
-  
+
   // Verification endpoints
   START_VERIFICATION: '/api/start-verification',
   VERIFICATION_PROGRESS: (jobId: string) => `/api/verification-progress/${jobId}`,

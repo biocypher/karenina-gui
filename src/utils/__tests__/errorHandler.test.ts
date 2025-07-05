@@ -6,7 +6,7 @@ import {
   withErrorHandling,
   isNetworkError,
   isValidationError,
-  ERROR_MESSAGES
+  ERROR_MESSAGES,
 } from '../errorHandler';
 
 describe('errorHandler', () => {
@@ -27,54 +27,54 @@ describe('errorHandler', () => {
   describe('handleFileError', () => {
     it('should log error to console by default', () => {
       const error = new Error('Test error');
-      
+
       handleFileError(error, 'File upload');
-      
+
       expect(consoleErrorSpy).toHaveBeenCalledWith('File upload: Test error', error);
     });
 
     it('should not log to console when disabled', () => {
       const error = new Error('Test error');
-      
+
       handleFileError(error, 'File upload', { logToConsole: false });
-      
+
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
     it('should call setErrorState when provided', () => {
       const setErrorState = vi.fn();
       const error = new Error('Test error');
-      
+
       handleFileError(error, 'File upload', { setErrorState });
-      
+
       expect(setErrorState).toHaveBeenCalledWith('File upload: Test error');
     });
 
     it('should show alert when requested', () => {
       const error = new Error('Test error');
-      
+
       handleFileError(error, 'File upload', { showAlert: true });
-      
+
       expect(alertSpy).toHaveBeenCalledWith('File upload: Test error');
     });
 
     it('should handle string errors', () => {
       handleFileError('String error', 'File upload');
-      
+
       expect(consoleErrorSpy).toHaveBeenCalledWith('File upload: String error', 'String error');
     });
 
     it('should handle unknown error types', () => {
       handleFileError({ unknown: 'error' }, 'File upload');
-      
+
       expect(consoleErrorSpy).toHaveBeenCalledWith('File upload: Unknown error occurred', { unknown: 'error' });
     });
 
     it('should warn about unimplemented toast', () => {
       const error = new Error('Test error');
-      
+
       handleFileError(error, 'File upload', { useToast: true });
-      
+
       expect(consoleWarnSpy).toHaveBeenCalledWith('Toast notifications not yet implemented, falling back to console');
       expect(consoleErrorSpy).toHaveBeenCalledWith('File upload: Test error');
     });
@@ -83,26 +83,29 @@ describe('errorHandler', () => {
   describe('handleApiError', () => {
     it('should handle API errors with context', () => {
       const error = new Error('API failed');
-      
+
       handleApiError(error, 'Fetch data');
-      
+
       expect(consoleErrorSpy).toHaveBeenCalledWith('API Error - Fetch data: API failed', error);
     });
 
     it('should always log to console for API errors', () => {
       const error = new Error('API failed');
-      
+
       handleApiError(error, 'Fetch data', { logToConsole: false });
-      
+
       expect(consoleErrorSpy).toHaveBeenCalled(); // Should still log despite logToConsole: false
     });
 
     it('should handle non-Error objects with message property', () => {
       const error = { message: 'Custom error object' };
-      
+
       handleApiError(error, 'Fetch data');
-      
-      expect(consoleErrorSpy).toHaveBeenCalledWith('API Error - Fetch data: Custom error object', 'Custom error object');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'API Error - Fetch data: Custom error object',
+        'Custom error object'
+      );
     });
   });
 
@@ -110,10 +113,10 @@ describe('errorHandler', () => {
     it('should create a function that handles errors', () => {
       const setErrorState = vi.fn();
       const errorHandler = createAsyncErrorHandler('Upload file', { setErrorState });
-      
+
       const error = new Error('Upload failed');
       errorHandler(error);
-      
+
       expect(setErrorState).toHaveBeenCalledWith('Upload file: Upload failed');
     });
   });
@@ -122,9 +125,9 @@ describe('errorHandler', () => {
     it('should return result when function succeeds', async () => {
       const successFn = vi.fn().mockResolvedValue('success');
       const wrappedFn = withErrorHandling(successFn, 'Test operation');
-      
+
       const result = await wrappedFn('arg1', 'arg2');
-      
+
       expect(result).toBe('success');
       expect(successFn).toHaveBeenCalledWith('arg1', 'arg2');
     });
@@ -133,9 +136,9 @@ describe('errorHandler', () => {
       const failingFn = vi.fn().mockRejectedValue(new Error('Function failed'));
       const setErrorState = vi.fn();
       const wrappedFn = withErrorHandling(failingFn, 'Test operation', { setErrorState });
-      
+
       const result = await wrappedFn('arg1');
-      
+
       expect(result).toBeNull();
       expect(setErrorState).toHaveBeenCalledWith('Test operation: Function failed');
     });
@@ -144,10 +147,10 @@ describe('errorHandler', () => {
       const typedFn = async (str: string, num: number): Promise<string> => {
         return `${str}-${num}`;
       };
-      
+
       const wrappedFn = withErrorHandling(typedFn, 'Test');
       const result = await wrappedFn('test', 42);
-      
+
       expect(result).toBe('test-42');
     });
   });
@@ -157,7 +160,7 @@ describe('errorHandler', () => {
       expect(isNetworkError(new Error('Failed to fetch'))).toBe(true);
       expect(isNetworkError(new Error('network timeout'))).toBe(true);
       expect(isNetworkError(new Error('fetch error'))).toBe(true);
-      
+
       const networkError = new Error('Connection failed');
       networkError.name = 'NetworkError';
       expect(isNetworkError(networkError)).toBe(true);

@@ -6,16 +6,9 @@ import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
 import { ThemeProvider } from '../components/ThemeProvider';
 
 // Custom render function that includes providers if needed
-const customRender = (
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
-) => {
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <ThemeProvider>
-      {children}
-    </ThemeProvider>
-  );
-  
+const customRender = (ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) => {
+  const Wrapper = ({ children }: { children: React.ReactNode }) => <ThemeProvider>{children}</ThemeProvider>;
+
   return render(ui, { wrapper: Wrapper, ...options });
 };
 
@@ -31,7 +24,7 @@ export const createMockQuestionData = (count: number = 2): QuestionData => {
     mockData[`q${i}`] = {
       question: `Sample question ${i}?`,
       raw_answer: `This is the raw answer for question ${i}.`,
-      answer_template: `class Answer${i}(BaseModel):\n    field${i}: str = Field(description="Description ${i}")`
+      answer_template: `class Answer${i}(BaseModel):\n    field${i}: str = Field(description="Description ${i}")`,
     };
   }
   return mockData;
@@ -40,7 +33,7 @@ export const createMockQuestionData = (count: number = 2): QuestionData => {
 export const createMockCheckpoint = (questionData?: QuestionData): Checkpoint => {
   const checkpoint: Checkpoint = {};
   const now = new Date().toISOString();
-  
+
   if (questionData) {
     Object.entries(questionData).forEach(([id, question]) => {
       checkpoint[id] = {
@@ -50,22 +43,19 @@ export const createMockCheckpoint = (questionData?: QuestionData): Checkpoint =>
         answer_template: question.answer_template + ' // Modified',
         last_modified: now,
         finished: false,
-        question_rubric: undefined
+        question_rubric: undefined,
       };
     });
   }
-  
+
   return checkpoint;
 };
 
-export const createMockUnifiedCheckpoint = (
-  questionData?: QuestionData, 
-  rubric?: Rubric | null
-): UnifiedCheckpoint => {
+export const createMockUnifiedCheckpoint = (questionData?: QuestionData, rubric?: Rubric | null): UnifiedCheckpoint => {
   return {
-    version: "2.0",
+    version: '2.0',
     global_rubric: rubric || null,
-    checkpoint: createMockCheckpoint(questionData)
+    checkpoint: createMockCheckpoint(questionData),
   };
 };
 
@@ -75,9 +65,9 @@ export const createMockRubric = (traitCount: number = 2): Rubric => {
     traits.push({
       name: `Trait ${i}`,
       description: `Description for trait ${i}`,
-      kind: i % 2 === 0 ? 'score' as const : 'boolean' as const,
+      kind: i % 2 === 0 ? ('score' as const) : ('boolean' as const),
       min_score: i % 2 === 0 ? 0 : undefined,
-      max_score: i % 2 === 0 ? 5 : undefined
+      max_score: i % 2 === 0 ? 5 : undefined,
     });
   }
   return { traits };
@@ -100,7 +90,7 @@ export const createMockFile = (
 // Storage mock helpers
 export const mockLocalStorage = () => {
   const store: { [key: string]: string } = {};
-  
+
   return {
     getItem: vi.fn((key: string) => store[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -110,14 +100,14 @@ export const mockLocalStorage = () => {
       delete store[key];
     }),
     clear: vi.fn(() => {
-      Object.keys(store).forEach(key => delete store[key]);
+      Object.keys(store).forEach((key) => delete store[key]);
     }),
   };
 };
 
 export const mockSessionStorage = () => {
   const store: { [key: string]: string } = {};
-  
+
   return {
     getItem: vi.fn((key: string) => store[key] || null),
     setItem: vi.fn((key: string, value: string) => {
@@ -127,14 +117,14 @@ export const mockSessionStorage = () => {
       delete store[key];
     }),
     clear: vi.fn(() => {
-      Object.keys(store).forEach(key => delete store[key]);
+      Object.keys(store).forEach((key) => delete store[key]);
     }),
   };
 };
 
 // Async helpers
 export const waitForLoadingToFinish = () => {
-  return new Promise(resolve => setTimeout(resolve, 0));
+  return new Promise((resolve) => setTimeout(resolve, 0));
 };
 
 // Event simulation helpers
@@ -145,7 +135,7 @@ export const simulateFileUpload = async (input: HTMLElement, file: File) => {
 
 export const simulateDragAndDrop = async (element: HTMLElement, file: File) => {
   const user = userEvent.setup();
-  
+
   // Create data transfer object
   const dataTransfer = {
     files: [file],
@@ -170,7 +160,7 @@ export const simulateDragAndDrop = async (element: HTMLElement, file: File) => {
     cancelable: true,
     dataTransfer: dataTransfer as DataTransfer,
   });
-  
+
   element.dispatchEvent(dropEvent);
 };
 
@@ -214,4 +204,4 @@ export const mockPrism = () => {
       python: {},
     },
   };
-}; 
+};

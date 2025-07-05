@@ -1,13 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Send, 
-  MessageCircle, 
-  Trash2, 
-  Settings, 
-  Loader2,
-  Bot,
-  User
-} from 'lucide-react';
+import { Send, MessageCircle, Trash2, Settings, Loader2, Bot, User } from 'lucide-react';
 
 interface ChatMessage {
   type: 'human' | 'ai' | 'system';
@@ -39,13 +31,13 @@ export const ChatInterface: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [showSettings, setShowSettings] = useState(false);
-  
+
   // Model configuration
   const [model, setModel] = useState('gemini-2.0-flash');
   const [provider, setProvider] = useState('google_genai');
   const [temperature, setTemperature] = useState(0.7);
   const [systemMessage, setSystemMessage] = useState('');
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -78,10 +70,10 @@ export const ChatInterface: React.FC = () => {
 
     const userMessage: ChatMessage = {
       type: 'human',
-      content: inputMessage.trim()
+      content: inputMessage.trim(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
 
@@ -97,7 +89,7 @@ export const ChatInterface: React.FC = () => {
           message: userMessage.content,
           session_id: sessionId,
           system_message: systemMessage || undefined,
-          temperature
+          temperature,
         }),
       });
 
@@ -106,7 +98,7 @@ export const ChatInterface: React.FC = () => {
       }
 
       const data: ChatResponse = await response.json();
-      
+
       // Update session ID if this is a new conversation
       if (!sessionId) {
         setSessionId(data.session_id);
@@ -115,18 +107,18 @@ export const ChatInterface: React.FC = () => {
       const aiMessage: ChatMessage = {
         type: 'ai',
         content: data.message,
-        timestamp: data.timestamp
+        timestamp: data.timestamp,
       };
 
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, aiMessage]);
       loadSessions(); // Refresh sessions list
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: ChatMessage = {
         type: 'ai',
-        content: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`
+        content: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`,
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -168,10 +160,12 @@ export const ChatInterface: React.FC = () => {
         setSessionId(data.session_id);
         setModel(data.model);
         setProvider(data.provider);
-        setMessages(data.messages.map((msg: ChatMessage) => ({
-          type: msg.type,
-          content: msg.content
-        })));
+        setMessages(
+          data.messages.map((msg: ChatMessage) => ({
+            type: msg.type,
+            content: msg.content,
+          }))
+        );
       }
     } catch (error) {
       console.error('Failed to load session:', error);
@@ -224,9 +218,7 @@ export const ChatInterface: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  Model Name
-                </label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Model Name</label>
                 <input
                   type="text"
                   value={model}
@@ -251,7 +243,9 @@ export const ChatInterface: React.FC = () => {
               </div>
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">System Message</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                System Message
+              </label>
               <textarea
                 value={systemMessage}
                 onChange={(e) => setSystemMessage(e.target.value)}
@@ -275,27 +269,16 @@ export const ChatInterface: React.FC = () => {
             </div>
           ) : (
             messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex gap-3 ${
-                  message.type === 'human' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div
-                  className={`flex gap-3 max-w-[80%] ${
-                    message.type === 'human' ? 'flex-row-reverse' : 'flex-row'
-                  }`}
-                >
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    message.type === 'human' 
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                      : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                  }`}>
-                    {message.type === 'human' ? (
-                      <User className="w-4 h-4" />
-                    ) : (
-                      <Bot className="w-4 h-4" />
-                    )}
+              <div key={index} className={`flex gap-3 ${message.type === 'human' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex gap-3 max-w-[80%] ${message.type === 'human' ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      message.type === 'human'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                    }`}
+                  >
+                    {message.type === 'human' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
                   <div
                     className={`px-4 py-3 rounded-2xl ${
@@ -304,13 +287,13 @@ export const ChatInterface: React.FC = () => {
                         : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {message.content}
-                    </div>
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
                     {message.timestamp && (
-                      <div className={`text-xs mt-2 opacity-70 ${
-                        message.type === 'human' ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
-                      }`}>
+                      <div
+                        className={`text-xs mt-2 opacity-70 ${
+                          message.type === 'human' ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
                         {new Date(message.timestamp).toLocaleTimeString()}
                       </div>
                     )}
@@ -319,7 +302,7 @@ export const ChatInterface: React.FC = () => {
               </div>
             ))
           )}
-          
+
           {isLoading && (
             <div className="flex gap-3 justify-start">
               <div className="flex gap-3 max-w-[80%]">
@@ -402,4 +385,4 @@ export const ChatInterface: React.FC = () => {
       )}
     </div>
   );
-}; 
+};

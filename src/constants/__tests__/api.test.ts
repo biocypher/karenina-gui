@@ -10,7 +10,7 @@ describe('API Constants', () => {
 
     it('should generate dynamic endpoint paths correctly', () => {
       const testJobId = 'test-job-123';
-      
+
       expect(API_ENDPOINTS.VERIFICATION_PROGRESS(testJobId)).toBe('/api/verification-progress/test-job-123');
       expect(API_ENDPOINTS.CANCEL_VERIFICATION(testJobId)).toBe('/api/cancel-verification/test-job-123');
     });
@@ -18,13 +18,15 @@ describe('API Constants', () => {
     it('should generate export endpoint with format parameter', () => {
       const testJobId = 'test-job-123';
       const format = 'csv';
-      
-      expect(API_ENDPOINTS.EXPORT_VERIFICATION(testJobId, format)).toBe('/api/export-verification/test-job-123?fmt=csv');
+
+      expect(API_ENDPOINTS.EXPORT_VERIFICATION(testJobId, format)).toBe(
+        '/api/export-verification/test-job-123?fmt=csv'
+      );
     });
 
     it('should handle special characters in parameters', () => {
       const jobIdWithSpecial = 'job-with-spaces and symbols!@#';
-      
+
       // Function should work (encoding is handled by fetch/browser)
       expect(() => API_ENDPOINTS.VERIFICATION_PROGRESS(jobIdWithSpecial)).not.toThrow();
       expect(API_ENDPOINTS.VERIFICATION_PROGRESS(jobIdWithSpecial)).toContain(jobIdWithSpecial);

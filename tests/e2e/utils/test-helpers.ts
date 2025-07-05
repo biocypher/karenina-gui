@@ -25,13 +25,13 @@ export class TestHelpers {
    */
   async waitForAppLoad() {
     // Wait for the main header with Karenina title to be visible
-    await this.page.waitForSelector('h1:has-text("Karenina")', { 
-      timeout: TEST_CONFIG.timeouts.mediumOperation 
+    await this.page.waitForSelector('h1:has-text("Karenina")', {
+      timeout: TEST_CONFIG.timeouts.mediumOperation,
     });
-    
+
     // Also wait for the tab navigation to be visible
     await this.page.waitForSelector('button:has-text("Question Extractor")', {
-      timeout: TEST_CONFIG.timeouts.shortOperation
+      timeout: TEST_CONFIG.timeouts.shortOperation,
     });
   }
 
@@ -60,12 +60,12 @@ export class TestHelpers {
   async createTempFile(filename: string, content: string): Promise<string> {
     const tempDir = path.join(process.cwd(), 'tests/e2e/data');
     const filePath = path.join(tempDir, filename);
-    
+
     // Ensure directory exists
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
-    
+
     fs.writeFileSync(filePath, content);
     return filePath;
   }
@@ -75,7 +75,7 @@ export class TestHelpers {
    */
   async cleanupTempFiles() {
     const tempDir = path.join(process.cwd(), 'tests/e2e/data');
-    
+
     if (fs.existsSync(tempDir)) {
       const files = fs.readdirSync(tempDir);
       files.forEach((file: string) => {

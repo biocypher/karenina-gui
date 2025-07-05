@@ -17,21 +17,16 @@ export interface ValidationResult {
 /**
  * Downloads content as a file with consistent browser compatibility
  */
-export function downloadFile(
-  content: string | Blob, 
-  options: DownloadOptions
-): void {
+export function downloadFile(content: string | Blob, options: DownloadOptions): void {
   try {
-    const blob = content instanceof Blob 
-      ? content 
-      : new Blob([content], { type: options.mimeType || 'text/plain' });
-    
+    const blob = content instanceof Blob ? content : new Blob([content], { type: options.mimeType || 'text/plain' });
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = options.filename;
     link.style.display = 'none';
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -45,35 +40,32 @@ export function downloadFile(
 /**
  * Validates a file against specified criteria
  */
-export function validateFile(
-  file: File, 
-  options: FileValidationOptions = {}
-): ValidationResult {
+export function validateFile(file: File, options: FileValidationOptions = {}): ValidationResult {
   const {
     allowedExtensions = [],
     maxSizeBytes = 10 * 1024 * 1024, // 10MB default
-    allowedMimeTypes = []
+    allowedMimeTypes = [],
   } = options;
 
   // Check file size
   if (maxSizeBytes && file.size > maxSizeBytes) {
     return {
       isValid: false,
-      error: `File size (${Math.round(file.size / 1024 / 1024)}MB) exceeds maximum allowed size (${Math.round(maxSizeBytes / 1024 / 1024)}MB)`
+      error: `File size (${Math.round(file.size / 1024 / 1024)}MB) exceeds maximum allowed size (${Math.round(maxSizeBytes / 1024 / 1024)}MB)`,
     };
   }
 
   // Check file extension
   if (allowedExtensions.length > 0) {
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    const normalizedExtensions = allowedExtensions.map(ext => 
+    const normalizedExtensions = allowedExtensions.map((ext) =>
       ext.startsWith('.') ? ext.toLowerCase() : `.${ext.toLowerCase()}`
     );
-    
+
     if (!normalizedExtensions.includes(fileExtension)) {
       return {
         isValid: false,
-        error: `File type ${fileExtension} is not allowed. Allowed types: ${normalizedExtensions.join(', ')}`
+        error: `File type ${fileExtension} is not allowed. Allowed types: ${normalizedExtensions.join(', ')}`,
       };
     }
   }
@@ -82,7 +74,7 @@ export function validateFile(
   if (allowedMimeTypes.length > 0 && !allowedMimeTypes.includes(file.type)) {
     return {
       isValid: false,
-      error: `File MIME type ${file.type} is not allowed. Allowed types: ${allowedMimeTypes.join(', ')}`
+      error: `File MIME type ${file.type} is not allowed. Allowed types: ${allowedMimeTypes.join(', ')}`,
     };
   }
 
@@ -95,7 +87,7 @@ export function validateFile(
 export function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       const result = e.target?.result;
       if (typeof result === 'string') {
@@ -104,11 +96,11 @@ export function readFileAsText(file: File): Promise<string> {
         reject(new Error('Failed to read file as text'));
       }
     };
-    
+
     reader.onerror = () => {
       reject(new Error(`Failed to read file: ${file.name}`));
     };
-    
+
     reader.readAsText(file);
   });
 }
@@ -116,18 +108,15 @@ export function readFileAsText(file: File): Promise<string> {
 /**
  * Parses a JSON file with optional validation
  */
-export async function parseJSONFile<T>(
-  file: File,
-  validator?: (data: unknown) => data is T
-): Promise<T> {
+export async function parseJSONFile<T>(file: File, validator?: (data: unknown) => data is T): Promise<T> {
   try {
     const text = await readFileAsText(file);
     const data = JSON.parse(text);
-    
+
     if (validator && !validator(data)) {
       throw new Error('JSON data does not match expected format');
     }
-    
+
     return data as T;
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -151,11 +140,11 @@ export function resetFileInput(inputRef: React.RefObject<HTMLInputElement>): voi
  */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
@@ -166,7 +155,7 @@ export const FILE_VALIDATION_PRESETS = {
   JSON_ONLY: {
     allowedExtensions: ['.json'],
     allowedMimeTypes: ['application/json', 'text/plain'],
-    maxSizeBytes: 50 * 1024 * 1024 // 50MB
+    maxSizeBytes: 50 * 1024 * 1024, // 50MB
   },
   SPREADSHEET: {
     allowedExtensions: ['.xlsx', '.xls', '.csv', '.tsv'],
@@ -174,13 +163,13 @@ export const FILE_VALIDATION_PRESETS = {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
       'text/csv',
-      'text/tab-separated-values'
+      'text/tab-separated-values',
     ],
-    maxSizeBytes: 100 * 1024 * 1024 // 100MB
+    maxSizeBytes: 100 * 1024 * 1024, // 100MB
   },
   TEXT_FILES: {
     allowedExtensions: ['.txt', '.csv', '.tsv'],
     allowedMimeTypes: ['text/plain', 'text/csv', 'text/tab-separated-values'],
-    maxSizeBytes: 10 * 1024 * 1024 // 10MB
-  }
+    maxSizeBytes: 10 * 1024 * 1024, // 10MB
+  },
 } as const;

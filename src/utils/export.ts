@@ -45,7 +45,7 @@ export async function exportFromServer(jobId: string, format: 'json' | 'csv'): P
   try {
     const response = await fetch(API_ENDPOINTS.EXPORT_VERIFICATION(jobId, format));
     if (!response.ok) throw new Error('Export failed');
-    
+
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -68,7 +68,7 @@ export async function exportFromServer(jobId: string, format: 'json' | 'csv'): P
 export function exportToJSON(results: ExportableResult[]): string {
   const resultsWithIndex = results.map((result, index) => ({
     row_index: index + 1,
-    ...result
+    ...result,
   }));
   return JSON.stringify(resultsWithIndex, null, 2);
 }
@@ -91,43 +91,63 @@ function escapeCSVField(field: unknown): string {
 export function exportToCSV(results: ExportableResult[]): string {
   // Extract all unique rubric trait names from results to create dynamic columns
   const rubricTraitNames = new Set<string>();
-  results.forEach(result => {
+  results.forEach((result) => {
     if (result.verify_rubric) {
-      Object.keys(result.verify_rubric).forEach(traitName => {
+      Object.keys(result.verify_rubric).forEach((traitName) => {
         rubricTraitNames.add(traitName);
       });
     }
   });
-  
-  const rubricHeaders = Array.from(rubricTraitNames).sort().map(trait => `rubric_${trait}`);
-  
+
+  const rubricHeaders = Array.from(rubricTraitNames)
+    .sort()
+    .map((trait) => `rubric_${trait}`);
+
   const headers = [
-    'row_index', 'question_id', 'question_text', 'raw_llm_response', 'parsed_response', 
-    'verify_result', 'verify_granular_result', ...rubricHeaders, 'rubric_summary',
-    'answering_model', 'parsing_model', 'answering_replicate', 'parsing_replicate', 
-    'answering_system_prompt', 'parsing_system_prompt', 'success', 'error', 
-    'execution_time', 'timestamp', 'run_name', 'job_id'
+    'row_index',
+    'question_id',
+    'question_text',
+    'raw_llm_response',
+    'parsed_response',
+    'verify_result',
+    'verify_granular_result',
+    ...rubricHeaders,
+    'rubric_summary',
+    'answering_model',
+    'parsing_model',
+    'answering_replicate',
+    'parsing_replicate',
+    'answering_system_prompt',
+    'parsing_system_prompt',
+    'success',
+    'error',
+    'execution_time',
+    'timestamp',
+    'run_name',
+    'job_id',
   ];
-  
+
   const csvRows = [headers.join(',')];
-  
+
   results.forEach((result, index) => {
     // Extract rubric trait values in the same order as headers
-    const rubricValues = Array.from(rubricTraitNames).sort().map(traitName => {
-      const value = result.verify_rubric?.[traitName];
-      return escapeCSVField(value !== undefined ? value : '');
-    });
-    
+    const rubricValues = Array.from(rubricTraitNames)
+      .sort()
+      .map((traitName) => {
+        const value = result.verify_rubric?.[traitName];
+        return escapeCSVField(value !== undefined ? value : '');
+      });
+
     // Create rubric summary
     let rubricSummary = '';
     if (result.verify_rubric) {
       const traits = Object.entries(result.verify_rubric);
-      const passedTraits = traits.filter(([, value]) => 
+      const passedTraits = traits.filter(([, value]) =>
         typeof value === 'boolean' ? value : value && value >= 3
       ).length;
       rubricSummary = `${passedTraits}/${traits.length}`;
     }
-    
+
     const row = [
       index + 1, // row_index
       escapeCSVField(result.question_id),
@@ -135,7 +155,9 @@ export function exportToCSV(results: ExportableResult[]): string {
       escapeCSVField(result.raw_llm_response),
       escapeCSVField(result.parsed_response ? JSON.stringify(result.parsed_response) : ''),
       escapeCSVField(result.verify_result !== undefined ? JSON.stringify(result.verify_result) : 'N/A'),
-      escapeCSVField(result.verify_granular_result !== undefined ? JSON.stringify(result.verify_granular_result) : 'N/A'),
+      escapeCSVField(
+        result.verify_granular_result !== undefined ? JSON.stringify(result.verify_granular_result) : 'N/A'
+      ),
       ...rubricValues,
       escapeCSVField(rubricSummary),
       escapeCSVField(result.answering_model),
@@ -149,11 +171,11 @@ export function exportToCSV(results: ExportableResult[]): string {
       escapeCSVField(result.execution_time),
       escapeCSVField(result.timestamp),
       escapeCSVField(result.run_name || ''),
-      escapeCSVField(result.job_id || '')
+      escapeCSVField(result.job_id || ''),
     ];
     csvRows.push(row.join(','));
   });
-  
+
   return csvRows.join('\n');
 }
 
@@ -161,7 +183,7 @@ export function exportToCSV(results: ExportableResult[]): string {
  * Exports filtered results to the specified format
  */
 export function exportFilteredResults(
-  results: ExportableResult[], 
+  results: ExportableResult[],
   format: 'json' | 'csv',
   onError?: (error: string) => void
 ): void {
@@ -174,12 +196,12 @@ export function exportFilteredResults(
     }
     return;
   }
-  
+
   try {
     let content: string;
     let mimeType: string;
     let fileName: string;
-    
+
     if (format === 'json') {
       content = exportToJSON(results);
       mimeType = 'application/json';
@@ -189,7 +211,7 @@ export function exportFilteredResults(
       mimeType = 'text/csv';
       fileName = `filtered_results_${new Date().toISOString().split('T')[0]}.csv`;
     }
-    
+
     downloadFile(content, fileName, mimeType);
   } catch (err) {
     console.error('Error exporting filtered results:', err);

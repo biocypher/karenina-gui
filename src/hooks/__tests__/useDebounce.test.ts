@@ -17,10 +17,9 @@ describe('useDebounce', () => {
   });
 
   it('should debounce string values correctly', () => {
-    const { result, rerender } = renderHook(
-      ({ value, delay }) => useDebounce(value, delay),
-      { initialProps: { value: 'initial', delay: 300 } }
-    );
+    const { result, rerender } = renderHook(({ value, delay }) => useDebounce(value, delay), {
+      initialProps: { value: 'initial', delay: 300 },
+    });
 
     expect(result.current).toBe('initial');
 
@@ -42,20 +41,25 @@ describe('useDebounce', () => {
   });
 
   it('should reset timer when value changes rapidly', () => {
-    const { result, rerender } = renderHook(
-      ({ value }) => useDebounce(value, 300),
-      { initialProps: { value: 'initial' } }
-    );
+    const { result, rerender } = renderHook(({ value }) => useDebounce(value, 300), {
+      initialProps: { value: 'initial' },
+    });
 
     // Rapid changes
     rerender({ value: 'change1' });
-    act(() => { vi.advanceTimersByTime(100); });
-    
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+
     rerender({ value: 'change2' });
-    act(() => { vi.advanceTimersByTime(100); });
-    
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+
     rerender({ value: 'final' });
-    act(() => { vi.advanceTimersByTime(100); });
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
 
     // Should still be initial because timer keeps resetting
     expect(result.current).toBe('initial');
@@ -69,38 +73,41 @@ describe('useDebounce', () => {
 
   it('should work with different data types', () => {
     // Test with numbers
-    const { result: numberResult, rerender: numberRerender } = renderHook(
-      ({ value }) => useDebounce(value, 100),
-      { initialProps: { value: 42 } }
-    );
+    const { result: numberResult, rerender: numberRerender } = renderHook(({ value }) => useDebounce(value, 100), {
+      initialProps: { value: 42 },
+    });
 
     numberRerender({ value: 100 });
-    act(() => { vi.advanceTimersByTime(100); });
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
     expect(numberResult.current).toBe(100);
 
     // Test with objects
     const initialObj = { id: 1, name: 'test' };
     const updatedObj = { id: 2, name: 'updated' };
-    
-    const { result: objectResult, rerender: objectRerender } = renderHook(
-      ({ value }) => useDebounce(value, 100),
-      { initialProps: { value: initialObj } }
-    );
+
+    const { result: objectResult, rerender: objectRerender } = renderHook(({ value }) => useDebounce(value, 100), {
+      initialProps: { value: initialObj },
+    });
 
     objectRerender({ value: updatedObj });
-    act(() => { vi.advanceTimersByTime(100); });
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
     expect(objectResult.current).toBe(updatedObj);
   });
 
   it('should handle different delay values', () => {
-    const { result, rerender } = renderHook(
-      ({ delay }) => useDebounce('test', delay),
-      { initialProps: { delay: 500 } }
-    );
+    const { result, rerender } = renderHook(({ delay }) => useDebounce('test', delay), {
+      initialProps: { delay: 500 },
+    });
 
     rerender({ delay: 100 });
-    act(() => { vi.advanceTimersByTime(100); });
-    
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+
     // Should work with new delay
     expect(result.current).toBe('test');
   });
@@ -147,11 +154,11 @@ describe('useDebouncedCallback', () => {
     act(() => {
       result.current('call1');
     });
-    
+
     act(() => {
       vi.advanceTimersByTime(100);
     });
-    
+
     act(() => {
       result.current('call2');
     });

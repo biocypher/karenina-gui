@@ -9,14 +9,12 @@ describe('ModelSelector', () => {
     model_provider: 'google_genai',
     model_name: 'gemini-2.0-flash',
     temperature: 0.1,
-    interface: 'langchain'
+    interface: 'langchain',
   };
 
   it('clears model_provider when switching to OpenRouter', () => {
     const onConfigChange = vi.fn();
-    const { getByLabelText } = render(
-      <ModelSelector config={defaultConfig} onConfigChange={onConfigChange} />
-    );
+    const { getByLabelText } = render(<ModelSelector config={defaultConfig} onConfigChange={onConfigChange} />);
 
     // Switch to OpenRouter
     const openRouterRadio = getByLabelText('OpenRouter (no provider needed)');
@@ -26,7 +24,7 @@ describe('ModelSelector', () => {
     expect(onConfigChange).toHaveBeenCalledWith({
       ...defaultConfig,
       interface: 'openrouter',
-      model_provider: ''
+      model_provider: '',
     });
   });
 
@@ -36,12 +34,10 @@ describe('ModelSelector', () => {
       model_provider: '',
       model_name: 'openrouter/cypher-alpha:free',
       temperature: 0.1,
-      interface: 'openrouter'
+      interface: 'openrouter',
     };
-    
-    const { getByLabelText } = render(
-      <ModelSelector config={openRouterConfig} onConfigChange={onConfigChange} />
-    );
+
+    const { getByLabelText } = render(<ModelSelector config={openRouterConfig} onConfigChange={onConfigChange} />);
 
     // Switch to LangChain
     const langChainRadio = getByLabelText('LangChain (requires provider)');
@@ -51,7 +47,7 @@ describe('ModelSelector', () => {
     expect(onConfigChange).toHaveBeenCalledWith({
       ...openRouterConfig,
       interface: 'langchain',
-      model_provider: 'google_genai'
+      model_provider: 'google_genai',
     });
   });
 
@@ -60,12 +56,10 @@ describe('ModelSelector', () => {
       model_provider: '',
       model_name: 'openrouter/cypher-alpha:free',
       temperature: 0.1,
-      interface: 'openrouter'
+      interface: 'openrouter',
     };
-    
-    const { queryByPlaceholderText } = render(
-      <ModelSelector config={openRouterConfig} onConfigChange={vi.fn()} />
-    );
+
+    const { queryByPlaceholderText } = render(<ModelSelector config={openRouterConfig} onConfigChange={vi.fn()} />);
 
     // Model provider field should not be present
     const providerField = queryByPlaceholderText('e.g., google_genai, openai, anthropic, ollama');
@@ -73,9 +67,7 @@ describe('ModelSelector', () => {
   });
 
   it('shows model provider field for LangChain interface', () => {
-    const { getByPlaceholderText } = render(
-      <ModelSelector config={defaultConfig} onConfigChange={vi.fn()} />
-    );
+    const { getByPlaceholderText } = render(<ModelSelector config={defaultConfig} onConfigChange={vi.fn()} />);
 
     // Model provider field should be present
     const providerField = getByPlaceholderText('e.g., google_genai, openai, anthropic, ollama');
@@ -87,12 +79,10 @@ describe('ModelSelector', () => {
       model_provider: '',
       model_name: 'openrouter/cypher-alpha:free',
       temperature: 0.1,
-      interface: 'openrouter'
+      interface: 'openrouter',
     };
-    
-    const { getByPlaceholderText } = render(
-      <ModelSelector config={openRouterConfig} onConfigChange={vi.fn()} />
-    );
+
+    const { getByPlaceholderText } = render(<ModelSelector config={openRouterConfig} onConfigChange={vi.fn()} />);
 
     // Check for OpenRouter-specific placeholder
     const modelField = getByPlaceholderText('e.g., meta-llama/llama-3.2-3b-instruct:free');

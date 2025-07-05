@@ -55,19 +55,13 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onManualTraceUploadSuccess,
   onManualTraceUploadError,
 }) => {
-  const renderModelConfiguration = (
-    model: ModelConfiguration,
-    index: number,
-    isAnswering: boolean
-  ) => (
+  const renderModelConfiguration = (model: ModelConfiguration, index: number, isAnswering: boolean) => (
     <div key={model.id} className="border border-slate-200 dark:border-slate-600 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="font-medium text-slate-800 dark:text-slate-200">
-          Model {index + 1}
-        </h4>
+        <h4 className="font-medium text-slate-800 dark:text-slate-200">Model {index + 1}</h4>
         {((isAnswering && answeringModels.length > 1) || (!isAnswering && parsingModels.length > 1)) && (
           <button
-            onClick={() => isAnswering ? onRemoveAnsweringModel(model.id) : onRemoveParsingModel(model.id)}
+            onClick={() => (isAnswering ? onRemoveAnsweringModel(model.id) : onRemoveParsingModel(model.id))}
             disabled={isRunning}
             className="text-red-600 hover:text-red-700 disabled:text-slate-400"
           >
@@ -78,9 +72,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
       {/* Interface Selection */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Interface
-        </label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Interface</label>
         <div className="flex gap-4">
           <label className="flex items-center text-slate-900 dark:text-white">
             <input
@@ -147,9 +139,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {/* Provider Selection - Show only for LangChain interface */}
       {model.interface === 'langchain' && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Provider
-          </label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Provider</label>
           <input
             type="text"
             value={model.model_provider}
@@ -171,9 +161,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {/* Model Name - Show for LangChain and OpenRouter interfaces */}
       {(model.interface === 'langchain' || model.interface === 'openrouter') && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Model Name
-          </label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Model Name</label>
           <input
             type="text"
             value={model.model_name}
@@ -222,19 +210,13 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {(model.interface === 'langchain' || model.interface === 'openrouter') && (
         <div className="mb-2">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              System Prompt
-            </label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">System Prompt</label>
             <button
               type="button"
               onClick={() => onTogglePromptExpanded(model.id)}
               className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
             >
-              {expandedPrompts.has(model.id) ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
+              {expandedPrompts.has(model.id) ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           </div>
 
@@ -244,10 +226,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               onChange={(e) => {
                 const update = { system_prompt: e.target.value };
                 if (isAnswering) {
-                onUpdateAnsweringModel(model.id, update);
-              } else {
-                onUpdateParsingModel(model.id, update);
-              }
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
               }}
               disabled={isRunning}
               className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-xs"
@@ -303,9 +285,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           </p>
 
           <div className="space-y-4">
-            {answeringModels.map((model, index) => 
-              renderModelConfiguration(model, index, true)
-            )}
+            {answeringModels.map((model, index) => renderModelConfiguration(model, index, true))}
           </div>
         </Card>
 
@@ -330,9 +310,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           </p>
 
           <div className="space-y-4">
-            {parsingModels.map((model, index) => 
-              renderModelConfiguration(model, index, false)
-            )}
+            {parsingModels.map((model, index) => renderModelConfiguration(model, index, false))}
           </div>
         </Card>
       </div>
@@ -340,10 +318,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {/* Evaluation Configuration */}
       <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
         <div className="p-4">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-            Evaluation Settings
-          </h3>
-          
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Evaluation Settings</h3>
+
           <div className="space-y-3">
             <label className="flex items-center space-x-3">
               <input
@@ -353,14 +329,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 disabled={isRunning}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
               />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                ☑ Correctness
-              </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                (Basic answer validation and parsing)
-              </span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">☑ Correctness</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">(Basic answer validation and parsing)</span>
             </label>
-            
+
             <label className="flex items-center space-x-3">
               <input
                 type="checkbox"
@@ -369,15 +341,13 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 disabled={isRunning}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
               />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                ☑ Rubric
-              </span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">☑ Rubric</span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 (Qualitative evaluation using defined traits)
               </span>
             </label>
           </div>
-          
+
           {!correctnessEnabled && !rubricEnabled && (
             <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-sm text-amber-800 dark:text-amber-200">
               ⚠ At least one evaluation method should be enabled
@@ -393,8 +363,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           <span className="font-medium text-blue-900 dark:text-blue-100">Test Combinations</span>
         </div>
         <p className="text-blue-800 dark:text-blue-200 text-sm">
-          With {answeringModels.length} answering model(s), {parsingModels.length} parsing model(s), and {replicateCount} replicate(s), 
-          each selected test will run <span className="font-semibold">{answeringModels.length * parsingModels.length * replicateCount}</span> times 
+          With {answeringModels.length} answering model(s), {parsingModels.length} parsing model(s), and{' '}
+          {replicateCount} replicate(s), each selected test will run{' '}
+          <span className="font-semibold">{answeringModels.length * parsingModels.length * replicateCount}</span> times
           (one for each model combination × replicate).
         </p>
       </div>

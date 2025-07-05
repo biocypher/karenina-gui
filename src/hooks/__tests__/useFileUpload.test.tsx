@@ -32,7 +32,7 @@ describe('useFileUpload', () => {
   });
 
   it('should initialize with correct default state', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
       })
@@ -47,7 +47,7 @@ describe('useFileUpload', () => {
     const mockData = { name: 'test' };
     (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
         validator: (data: unknown): data is typeof mockData => true,
@@ -66,12 +66,12 @@ describe('useFileUpload', () => {
   });
 
   it('should handle validation errors', async () => {
-    (validateFile as ReturnType<typeof vi.fn>).mockReturnValue({ 
-      isValid: false, 
-      error: 'File too large' 
+    (validateFile as ReturnType<typeof vi.fn>).mockReturnValue({
+      isValid: false,
+      error: 'File too large',
     });
 
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
         onError: mockOnError,
@@ -94,7 +94,7 @@ describe('useFileUpload', () => {
   it('should handle JSON parsing errors', async () => {
     (parseJSONFile as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Invalid JSON'));
 
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
         onError: mockOnError,
@@ -118,7 +118,7 @@ describe('useFileUpload', () => {
 
     const validator = vi.fn().mockReturnValue(true);
 
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
         validator,
@@ -141,7 +141,7 @@ describe('useFileUpload', () => {
 
     const validator = vi.fn().mockReturnValue(false);
 
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
         onError: mockOnError,
@@ -163,7 +163,7 @@ describe('useFileUpload', () => {
     const mockData = { name: 'test' };
     (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
       })
@@ -171,7 +171,7 @@ describe('useFileUpload', () => {
 
     const file = new File(['{"name": "test"}'], 'test.json', { type: 'application/json' });
     const event = {
-      target: { files: [file] }
+      target: { files: [file] },
     } as React.ChangeEvent<HTMLInputElement>;
 
     await act(async () => {
@@ -182,7 +182,7 @@ describe('useFileUpload', () => {
   });
 
   it('should clear error state', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
       })
@@ -201,7 +201,7 @@ describe('useFileUpload', () => {
   });
 
   it('should reset state and file input', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
       })
@@ -220,7 +220,7 @@ describe('useFileUpload', () => {
     const mockData = { name: 'test' };
     (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useFileUpload({
         onSuccess: mockOnSuccess,
         resetOnSuccess: false,
@@ -249,9 +249,7 @@ describe('useJSONFileUpload', () => {
   });
 
   it('should configure validation for JSON files', () => {
-    const { result } = renderHook(() => 
-      useJSONFileUpload(mockValidator, mockOnSuccess, mockOnError)
-    );
+    const { result } = renderHook(() => useJSONFileUpload(mockValidator, mockOnSuccess, mockOnError));
 
     expect(result.current.fileInputRef).toBeDefined();
   });
@@ -260,9 +258,7 @@ describe('useJSONFileUpload', () => {
     const mockData = { test: 'data' };
     (parseJSONFile as ReturnType<typeof vi.fn>).mockResolvedValue(mockData);
 
-    const { result } = renderHook(() => 
-      useJSONFileUpload(mockValidator, mockOnSuccess, mockOnError)
-    );
+    const { result } = renderHook(() => useJSONFileUpload(mockValidator, mockOnSuccess, mockOnError));
 
     const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
 
@@ -286,9 +282,7 @@ describe('useSpreadsheetUpload', () => {
   });
 
   it('should handle spreadsheet file uploads', async () => {
-    const { result } = renderHook(() => 
-      useSpreadsheetUpload(mockOnSuccess, mockOnError)
-    );
+    const { result } = renderHook(() => useSpreadsheetUpload(mockOnSuccess, mockOnError));
 
     const file = new File(['csv,content'], 'test.csv', { type: 'text/csv' });
 
@@ -301,9 +295,7 @@ describe('useSpreadsheetUpload', () => {
   });
 
   it('should validate spreadsheet file types', () => {
-    const { result } = renderHook(() => 
-      useSpreadsheetUpload(mockOnSuccess, mockOnError)
-    );
+    const { result } = renderHook(() => useSpreadsheetUpload(mockOnSuccess, mockOnError));
 
     expect(result.current.fileInputRef).toBeDefined();
     // Validation options should be configured for spreadsheet files

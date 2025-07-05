@@ -28,23 +28,23 @@ export function useDebounce<T>(value: T, delay: number): T {
  * @param delay - The delay in milliseconds
  * @returns A debounced version of the callback
  */
-export function useDebouncedCallback<T extends (...args: unknown[]) => void>(
-  callback: T,
-  delay: number
-): T {
+export function useDebouncedCallback<T extends (...args: unknown[]) => void>(callback: T, delay: number): T {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const debouncedCallback = useCallback(((...args: Parameters<T>) => {
-    // Clear existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+  const debouncedCallback = useCallback(
+    ((...args: Parameters<T>) => {
+      // Clear existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
 
-    // Set new timeout
-    timeoutRef.current = setTimeout(() => {
-      callback(...args);
-    }, delay);
-  }) as T, [callback, delay]);
+      // Set new timeout
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    }) as T,
+    [callback, delay]
+  );
 
   // Clean up timeout on unmount
   useEffect(() => {

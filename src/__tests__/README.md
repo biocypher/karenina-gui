@@ -1,6 +1,6 @@
 # OtarBench Webapp Test Suite
 
-*Created: 2024-12-19*
+_Created: 2024-12-19_
 
 ## Overview
 
@@ -45,7 +45,9 @@ src/test-utils/
 ## Test Categories
 
 ### 1. Component Tests
+
 Each component has comprehensive tests covering:
+
 - **Initial Rendering**: Default states and props
 - **User Interactions**: Click, type, drag-drop, etc.
 - **State Management**: Internal state changes
@@ -54,7 +56,9 @@ Each component has comprehensive tests covering:
 - **Accessibility**: Keyboard navigation, ARIA attributes
 
 ### 2. Hook Tests
+
 Custom hooks are tested for:
+
 - **Initial Values**: Default behavior
 - **State Updates**: Functional and direct updates
 - **Error Handling**: Storage failures, invalid data
@@ -62,7 +66,9 @@ Custom hooks are tested for:
 - **Edge Cases**: Concurrent access, large data
 
 ### 3. Integration Tests
+
 Full workflow testing:
+
 - **Cross-Component Communication**: Data flow between components
 - **API Integration**: Real API interaction patterns
 - **Routing and Navigation**: Tab switching, state preservation
@@ -110,11 +116,7 @@ npm run test -- --reporter=verbose --run
 ### Mock Data Generators
 
 ```typescript
-import { 
-  createMockQuestionData, 
-  createMockCheckpoint, 
-  createMockFile 
-} from '../test-utils/test-helpers';
+import { createMockQuestionData, createMockCheckpoint, createMockFile } from '../test-utils/test-helpers';
 
 // Generate mock question data
 const questions = createMockQuestionData(5); // 5 questions
@@ -180,7 +182,7 @@ describe('MyComponent', () => {
     it('should handle click events', async () => {
       const user = userEvent.setup();
       render(<MyComponent {...mockProps} />);
-      
+
       await user.click(screen.getByRole('button'));
       expect(mockProps.onAction).toHaveBeenCalled();
     });
@@ -282,6 +284,7 @@ screen.getByRole('button', { name: /submit/i });
 ## CI/CD Integration
 
 Tests run automatically on:
+
 - Pull requests
 - Push to main branch
 - Nightly builds
@@ -318,4 +321,4 @@ When adding new components or features:
 - Check existing test patterns in similar components
 - Review React Testing Library documentation
 - Use `screen.debug()` to inspect DOM state
-- Check MSW handlers for API mock issues 
+- Check MSW handlers for API mock issues

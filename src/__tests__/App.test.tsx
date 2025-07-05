@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '../test-utils/test-helpers';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
-import { createMockQuestionData, createMockCheckpoint, mockLocalStorage, mockSessionStorage } from '../test-utils/test-helpers';
+import {
+  createMockQuestionData,
+  createMockCheckpoint,
+  mockLocalStorage,
+  mockSessionStorage,
+} from '../test-utils/test-helpers';
 
 // Mock the data loader utility
 vi.mock('../utils/dataLoader', () => ({
@@ -20,35 +25,35 @@ describe('App Component', () => {
     mockLocalStorageImpl = mockLocalStorage();
     mockSessionStorageImpl = mockSessionStorage();
     user = userEvent.setup();
-    
+
     Object.defineProperty(window, 'localStorage', { value: mockLocalStorageImpl });
     Object.defineProperty(window, 'sessionStorage', { value: mockSessionStorageImpl });
-    
+
     vi.clearAllMocks();
   });
 
   describe('Initial State and Rendering', () => {
     it('should render with default tab (extractor)', () => {
       render(<App />);
-      
+
       expect(screen.getByText('Karenina')).toBeInTheDocument();
       expect(screen.getByText('1. Question Extractor')).toBeInTheDocument();
     });
 
     it('should show loading state initially', () => {
       render(<App />);
-      
+
       // Should show the main interface elements
       expect(screen.getByText('A tool for benchmarking LLMs through structured templates')).toBeInTheDocument();
     });
 
     it('should initialize with empty state when no stored data', () => {
       render(<App />);
-      
+
       // Check for template generator empty state message
       const templateGeneratorTab = screen.getByText('2. Template Generator');
       fireEvent.click(templateGeneratorTab);
-      
+
       expect(screen.getByText(/Extract questions first using the Question Extractor tab/)).toBeInTheDocument();
     });
   });
@@ -79,11 +84,11 @@ describe('App Component', () => {
 
       // Switch to generator tab
       await user.click(screen.getByText('2. Template Generator'));
-      
+
       // Switch to another tab and back
       await user.click(screen.getByText('3. Template Curator'));
       await user.click(screen.getByText('2. Template Generator'));
-      
+
       // Should still be on generator tab
       expect(screen.getByText('Answer Template Generation')).toBeInTheDocument();
     });
@@ -92,14 +97,14 @@ describe('App Component', () => {
   describe('State Management', () => {
     it('should handle questionData state updates', async () => {
       render(<App />);
-      
+
       // Since we now use pure state, verify the UI state instead of localStorage calls
       expect(screen.queryByText('Sample question 1?')).not.toBeInTheDocument();
     });
 
     it('should handle checkpoint state management', () => {
       render(<App />);
-      
+
       // With pure state management, checkpoints start empty and are only populated through explicit loading
       // Verify the UI shows empty state initially
       expect(screen.getByText('Karenina')).toBeInTheDocument();
@@ -107,7 +112,7 @@ describe('App Component', () => {
 
     it('should handle extracted questions state', () => {
       render(<App />);
-      
+
       // With pure state, extracted questions start empty
       // Verify the UI shows the appropriate initial state
       expect(screen.getByText('Karenina')).toBeInTheDocument();
@@ -117,7 +122,7 @@ describe('App Component', () => {
   describe('Session Management', () => {
     it('should generate session ID on startup', () => {
       render(<App />);
-      
+
       // With pure state, we now generate a session ID and display it (not 'None')
       expect(screen.getByText(/Session ID: \w+/)).toBeInTheDocument();
     });
@@ -125,7 +130,7 @@ describe('App Component', () => {
     it('should not use sessionStorage for session detection', () => {
       // Mock a scenario where we're testing pure state behavior
       render(<App />);
-      
+
       // With pure state management, we don't rely on sessionStorage for session detection
       // Verify the app renders correctly without sessionStorage dependencies
       expect(screen.getByText('Karenina')).toBeInTheDocument();
@@ -134,7 +139,7 @@ describe('App Component', () => {
     it('should start with clean state on app initialization', () => {
       // With pure state management, the app always starts with clean state
       render(<App />);
-      
+
       // Verify clean initial state
       expect(screen.getByText('Karenina')).toBeInTheDocument();
       expect(screen.getByText(/Data: 0 questions, 0 checkpoint items, 0 extracted/)).toBeInTheDocument();
@@ -145,16 +150,16 @@ describe('App Component', () => {
 
       // Switch to curator tab to access reset functionality
       await user.click(screen.getByText('3. Template Curator'));
-      
+
       // Find and click reset button
       const resetButton = screen.getByText('Reset All Data');
       expect(resetButton).toBeInTheDocument();
-      
+
       // Mock window.confirm to return true
       window.confirm = vi.fn(() => true);
-      
+
       await user.click(resetButton);
-      
+
       expect(window.confirm).toHaveBeenCalledWith(
         'This will clear all data including extracted questions, templates, and progress. Are you sure?'
       );
@@ -164,11 +169,11 @@ describe('App Component', () => {
   describe('Question Navigation', () => {
     it('should handle empty question sets gracefully', () => {
       render(<App />);
-      
+
       // Navigate to Template Generator which shows empty state
       const templateGeneratorTab = screen.getByText('2. Template Generator');
       fireEvent.click(templateGeneratorTab);
-      
+
       // Should show appropriate message for empty state
       expect(screen.getByText(/Extract questions first using the Question Extractor tab/)).toBeInTheDocument();
     });
@@ -177,7 +182,7 @@ describe('App Component', () => {
       render(<App />);
 
       await user.click(screen.getByText('3. Template Curator'));
-      
+
       // Navigation buttons should not be present when no questions
       expect(screen.queryByText('Previous')).not.toBeInTheDocument();
       expect(screen.queryByText('Next')).not.toBeInTheDocument();
@@ -200,9 +205,9 @@ describe('App Component', () => {
 
     it('should handle missing data gracefully', () => {
       mockLocalStorageImpl.getItem.mockReturnValue(null);
-      
+
       render(<App />);
-      
+
       // Should render without errors
       expect(screen.getByText('Karenina')).toBeInTheDocument();
     });
@@ -223,61 +228,61 @@ describe('App Component', () => {
   describe('Data Loading and Integration', () => {
     it('should handle question data loading correctly', () => {
       render(<App />);
-      
+
       // Should show the main interface
       expect(screen.getByText('Karenina')).toBeInTheDocument();
     });
 
     it('should integrate checkpoint data with question data', () => {
       render(<App />);
-      
+
       // Should show the main interface
       expect(screen.getByText('Karenina')).toBeInTheDocument();
     });
 
     it('should handle consecutive checkpoint loading correctly', () => {
       render(<App />);
-      
+
       // Navigate to File Management tab - the app doesn't have a "File Manager" tab, it has "Template Curator"
       const curatorTab = screen.getByText('3. Template Curator');
       fireEvent.click(curatorTab);
-      
+
       // Verify Template Curator is rendered - it shows "File Management" as the content
       expect(screen.getByText('File Management')).toBeInTheDocument();
-      
+
       // Create mock checkpoints
       const firstCheckpoint = createMockCheckpoint(createMockQuestionData());
       const secondMockData = {
         'question-5': {
           question: 'Fifth question?',
           raw_answer: 'Fifth answer',
-          answer_template: 'Fifth template'
-        }
+          answer_template: 'Fifth template',
+        },
       };
       const secondCheckpoint = createMockCheckpoint(secondMockData);
-      
+
       // Test consecutive checkpoint loading by verifying the app handles state changes
       const firstCheckpointString = JSON.stringify(firstCheckpoint);
       const secondCheckpointString = JSON.stringify(secondCheckpoint);
-      
+
       // Simulate the first checkpoint being loaded into localStorage
       localStorage.setItem('checkpoint', firstCheckpointString);
-      
+
       // Trigger a re-render to pick up the localStorage change
       fireEvent.click(screen.getByText('1. Question Extractor'));
       fireEvent.click(screen.getByText('3. Template Curator'));
-      
+
       // Simulate the second checkpoint being loaded (consecutive load)
       localStorage.setItem('checkpoint', secondCheckpointString);
-      
+
       // Trigger another re-render
       fireEvent.click(screen.getByText('1. Question Extractor'));
       fireEvent.click(screen.getByText('3. Template Curator'));
-      
+
       // Verify the app remains stable after consecutive checkpoint loads
       expect(screen.getByText('File Management')).toBeInTheDocument();
       expect(screen.getByText('Karenina')).toBeInTheDocument();
-      
+
       // Verify that localStorage contains the latest checkpoint
       const storedData = localStorage.getItem('checkpoint');
       expect(storedData).toBe(secondCheckpointString);
@@ -285,17 +290,17 @@ describe('App Component', () => {
 
     it('should maintain state consistency during consecutive checkpoint loads', () => {
       render(<App />);
-      
+
       // Create different checkpoints to simulate consecutive loads
       const checkpoint1 = createMockCheckpoint(createMockQuestionData());
       const checkpoint2 = createMockCheckpoint({
         'different-question': {
           question: 'Different question?',
           raw_answer: 'Different answer',
-          answer_template: 'Different template'
-        }
+          answer_template: 'Different template',
+        },
       });
-      
+
       // Mock localStorage getItem to return first checkpoint
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => {
         if (key === 'checkpoint') {
@@ -303,14 +308,14 @@ describe('App Component', () => {
         }
         return null;
       });
-      
+
       // Navigate to Template Curator to trigger checkpoint usage
       const curatorTab = screen.getByText('3. Template Curator');
       fireEvent.click(curatorTab);
-      
+
       // Should handle the first checkpoint - Template Curator shows "File Management"
       expect(screen.getByText('File Management')).toBeInTheDocument();
-      
+
       // Now simulate loading second checkpoint consecutively
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => {
         if (key === 'checkpoint') {
@@ -318,11 +323,11 @@ describe('App Component', () => {
         }
         return null;
       });
-      
+
       // Navigate away and back to trigger re-loading
       fireEvent.click(screen.getByText('1. Question Extractor'));
       fireEvent.click(screen.getByText('3. Template Curator'));
-      
+
       // App should remain stable and functional
       expect(screen.getByText('File Management')).toBeInTheDocument();
       expect(screen.getByText('Karenina')).toBeInTheDocument();
@@ -338,7 +343,7 @@ describe('App Component', () => {
       });
 
       render(<App />);
-      
+
       // Should show development session status
       expect(screen.getByText(/Dev Mode:/)).toBeInTheDocument();
     });
@@ -350,7 +355,7 @@ describe('App Component', () => {
       });
 
       render(<App />);
-      
+
       const forceResetButton = screen.getByText('Force Reset & Reload');
       expect(forceResetButton).toBeInTheDocument();
     });
@@ -359,7 +364,7 @@ describe('App Component', () => {
   describe('Workflow Integration', () => {
     it('should provide clear workflow progression indicators', () => {
       render(<App />);
-      
+
       // Should show numbered tabs indicating workflow order
       expect(screen.getByText('1. Question Extractor')).toBeInTheDocument();
       expect(screen.getByText('2. Template Generator')).toBeInTheDocument();
@@ -387,10 +392,10 @@ describe('App Component', () => {
   describe('Performance and Memory', () => {
     it('should not cause memory leaks with state updates', () => {
       const { unmount } = render(<App />);
-      
+
       // Unmount component
       unmount();
-      
+
       // Should clean up without errors
       expect(true).toBe(true);
     });
@@ -399,8 +404,8 @@ describe('App Component', () => {
       // This would be tested with performance monitoring
       // For now, just verify it renders without issues
       render(<App />);
-      
+
       expect(screen.getByText('Karenina')).toBeInTheDocument();
     });
   });
-}); 
+});

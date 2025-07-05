@@ -10,7 +10,9 @@ export const loadQuestionData = async (): Promise<QuestionData> => {
 // DEPRECATED: Default data file has been removed
 // Use Question Extractor or File Manager to load data
 export const loadDefaultQuestionData = async (): Promise<QuestionData> => {
-  console.warn('DEPRECATED: Default graphical_data.json file has been removed. Use Question Extractor or File Manager to load data.');
+  console.warn(
+    'DEPRECATED: Default graphical_data.json file has been removed. Use Question Extractor or File Manager to load data.'
+  );
   return {};
 };
 
@@ -38,37 +40,28 @@ export const generateSessionId = (): string => {
  */
 export const forceResetAllData = (): void => {
   console.log('🧹 forceResetAllData: Clearing any lingering browser storage');
-  
+
   try {
     // Clear any localStorage items that might exist from previous versions
-    const keysToRemove = [
-      'extractedQuestions',
-      'generatedTemplates', 
-      'checkpoint',
-      'generated_templates_session'
-    ];
-    
-    keysToRemove.forEach(key => {
+    const keysToRemove = ['extractedQuestions', 'generatedTemplates', 'checkpoint', 'generated_templates_session'];
+
+    keysToRemove.forEach((key) => {
       if (localStorage.getItem(key)) {
         localStorage.removeItem(key);
         console.log(`  🗑️ Cleared localStorage: ${key}`);
       }
     });
-    
+
     // Clear any sessionStorage items
-    const sessionKeysToRemove = [
-      'generated_templates_session',
-      'karenina_session_active',
-      'karenina_current_session'
-    ];
-    
-    sessionKeysToRemove.forEach(key => {
+    const sessionKeysToRemove = ['generated_templates_session', 'karenina_session_active', 'karenina_current_session'];
+
+    sessionKeysToRemove.forEach((key) => {
       if (sessionStorage.getItem(key)) {
         sessionStorage.removeItem(key);
         console.log(`  🗑️ Cleared sessionStorage: ${key}`);
       }
     });
-    
+
     console.log('✅ Force reset complete - any lingering browser data cleared');
   } catch (error) {
     console.error('❌ Error during force reset:', error);

@@ -45,7 +45,7 @@ pre {
 
 /* Ensure proper text rendering in code editor */
 .language-python {
-  font-family: Monaco, Menlo, "Ubuntu Mono", "Consolas", "source-code-pro", monospace !important;
+  font-family: Monaco, Menlo, 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace !important;
 }
 
 /* Enhanced Prism theme for better Python syntax highlighting */

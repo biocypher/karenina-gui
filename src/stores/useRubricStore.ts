@@ -1,40 +1,46 @@
 import { create } from 'zustand';
-import { Rubric, RubricTrait, RubricTraitGenerationRequest, RubricTraitGenerationResponse, RubricTraitGenerationConfig } from '../types';
+import {
+  Rubric,
+  RubricTrait,
+  RubricTraitGenerationRequest,
+  RubricTraitGenerationResponse,
+  RubricTraitGenerationConfig,
+} from '../types';
 
 interface RubricState {
   // Current rubric being edited
   currentRubric: Rubric | null;
-  
+
   // Generated trait suggestions from LLM
   generatedSuggestions: RubricTrait[];
-  
+
   // Model configuration
   config: RubricTraitGenerationConfig;
-  
+
   // UI state
   isGeneratingTraits: boolean;
   isLoadingRubric: boolean;
   isSavingRubric: boolean;
-  
+
   // Error handling
   lastError: string | null;
-  
+
   // Actions
   setCurrentRubric: (rubric: Rubric | null) => void;
   addTrait: (trait: RubricTrait) => void;
   updateTrait: (index: number, trait: RubricTrait) => void;
   removeTrait: (index: number) => void;
   reorderTraits: (startIndex: number, endIndex: number) => void;
-  
+
   // Configuration actions
   setConfig: (config: RubricTraitGenerationConfig) => void;
-  
+
   // API actions
   generateTraits: (request: RubricTraitGenerationRequest) => Promise<void>;
   loadRubric: () => Promise<void>;
   saveRubric: () => Promise<void>;
   deleteRubric: () => Promise<void>;
-  
+
   // Utility actions
   clearError: () => void;
   reset: () => void;
@@ -42,7 +48,7 @@ interface RubricState {
 }
 
 const defaultRubric: Rubric = {
-  traits: []
+  traits: [],
 };
 
 export const useRubricStore = create<RubricState>((set, get) => ({
@@ -53,101 +59,101 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     model_provider: 'google_genai',
     model_name: 'gemini-2.0-flash',
     temperature: 0.1,
-    interface: 'langchain'
+    interface: 'langchain',
   },
   isGeneratingTraits: false,
   isLoadingRubric: false,
   isSavingRubric: false,
   lastError: null,
-  
+
   // Basic rubric manipulation
   setCurrentRubric: (rubric) => {
     set({ currentRubric: rubric, lastError: null });
   },
-  
+
   addTrait: (trait) => {
     const { currentRubric } = get();
     const rubric = currentRubric || defaultRubric;
-    
+
     // Check for duplicate names
-    const existingNames = rubric.traits.map(t => t.name.toLowerCase());
+    const existingNames = rubric.traits.map((t) => t.name.toLowerCase());
     if (existingNames.includes(trait.name.toLowerCase())) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
     }
-    
-    set({ 
+
+    set({
       currentRubric: {
         ...rubric,
-        traits: [...rubric.traits, trait]
+        traits: [...rubric.traits, trait],
       },
-      lastError: null 
+      lastError: null,
     });
   },
-  
+
   updateTrait: (index, trait) => {
     const { currentRubric } = get();
     if (!currentRubric || index < 0 || index >= currentRubric.traits.length) {
       set({ lastError: 'Invalid trait index' });
       return;
     }
-    
+
     // Check for duplicate names (excluding current trait)
     const existingNames = currentRubric.traits
-      .map((t, i) => i !== index ? t.name.toLowerCase() : null)
+      .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
       .filter(Boolean);
-    
+
     if (existingNames.includes(trait.name.toLowerCase())) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
     }
-    
+
     const updatedTraits = [...currentRubric.traits];
     updatedTraits[index] = trait;
-    
-    set({ 
+
+    set({
       currentRubric: { ...currentRubric, traits: updatedTraits },
-      lastError: null 
+      lastError: null,
     });
   },
-  
+
   removeTrait: (index) => {
     const { currentRubric } = get();
     if (!currentRubric || index < 0 || index >= currentRubric.traits.length) {
       set({ lastError: 'Invalid trait index' });
       return;
     }
-    
+
     const updatedTraits = currentRubric.traits.filter((_, i) => i !== index);
-    set({ 
+    set({
       currentRubric: { ...currentRubric, traits: updatedTraits },
-      lastError: null 
+      lastError: null,
     });
   },
-  
+
   reorderTraits: (startIndex, endIndex) => {
     const { currentRubric } = get();
     if (!currentRubric) return;
-    
+
     const traits = [...currentRubric.traits];
     const [reorderedItem] = traits.splice(startIndex, 1);
     traits.splice(endIndex, 0, reorderedItem);
-    
-    set({ 
+
+    set({
       currentRubric: { ...currentRubric, traits },
-      lastError: null 
+      lastError: null,
     });
   },
-  
+
   // Configuration actions
   setConfig: (config: RubricTraitGenerationConfig) => {
     set({ config });
   },
-  
+
   // API actions
   generateTraits: async (request) => {
     set({ isGeneratingTraits: true, lastError: null });
-    
+
     try {
       const response = await fetch('/api/generate-rubric-traits', {
         method: 'POST',
@@ -156,74 +162,72 @@ export const useRubricStore = create<RubricState>((set, get) => ({
         },
         body: JSON.stringify(request),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
         throw new Error(errorData.detail || `HTTP ${response.status}`);
       }
-      
+
       const data: RubricTraitGenerationResponse = await response.json();
-      set({ 
+      set({
         generatedSuggestions: data.traits,
         isGeneratingTraits: false,
-        lastError: null 
+        lastError: null,
       });
-      
     } catch (error) {
       console.error('Error generating traits:', error);
-      set({ 
+      set({
         isGeneratingTraits: false,
-        lastError: error instanceof Error ? error.message : 'Failed to generate traits'
+        lastError: error instanceof Error ? error.message : 'Failed to generate traits',
       });
     }
   },
-  
+
   loadRubric: async () => {
     set({ isLoadingRubric: true, lastError: null });
-    
+
     try {
       const response = await fetch('/api/rubric');
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           // No rubric exists yet
-          set({ 
+          set({
             currentRubric: null,
             isLoadingRubric: false,
-            lastError: null 
+            lastError: null,
           });
           return;
         }
-        
+
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
         throw new Error(errorData.detail || `HTTP ${response.status}`);
       }
-      
+
       const rubric: Rubric = await response.json();
-      set({ 
+      set({
         currentRubric: rubric,
         isLoadingRubric: false,
-        lastError: null 
+        lastError: null,
       });
-      
     } catch (error) {
       console.error('Error loading rubric:', error);
-      set({ 
+      set({
         isLoadingRubric: false,
-        lastError: error instanceof Error ? error.message : 'Failed to load rubric'
+        lastError: error instanceof Error ? error.message : 'Failed to load rubric',
       });
     }
   },
-  
+
   saveRubric: async () => {
     const { currentRubric } = get();
     if (!currentRubric) {
       set({ lastError: 'No rubric to save' });
       return;
     }
-    
+
     set({ isSavingRubric: true, lastError: null });
-    
+
     try {
       const response = await fetch('/api/rubric', {
         method: 'POST',
@@ -232,59 +236,57 @@ export const useRubricStore = create<RubricState>((set, get) => ({
         },
         body: JSON.stringify(currentRubric),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
         throw new Error(errorData.detail || `HTTP ${response.status}`);
       }
-      
-      set({ 
+
+      set({
         isSavingRubric: false,
-        lastError: null 
+        lastError: null,
       });
-      
     } catch (error) {
       console.error('Error saving rubric:', error);
-      set({ 
+      set({
         isSavingRubric: false,
-        lastError: error instanceof Error ? error.message : 'Failed to save rubric'
+        lastError: error instanceof Error ? error.message : 'Failed to save rubric',
       });
     }
   },
-  
+
   deleteRubric: async () => {
     set({ isSavingRubric: true, lastError: null });
-    
+
     try {
       const response = await fetch('/api/rubric', {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
         throw new Error(errorData.detail || `HTTP ${response.status}`);
       }
-      
-      set({ 
+
+      set({
         currentRubric: null,
         isSavingRubric: false,
-        lastError: null 
+        lastError: null,
       });
-      
     } catch (error) {
       console.error('Error deleting rubric:', error);
-      set({ 
+      set({
         isSavingRubric: false,
-        lastError: error instanceof Error ? error.message : 'Failed to delete rubric'
+        lastError: error instanceof Error ? error.message : 'Failed to delete rubric',
       });
     }
   },
-  
+
   // Utility actions
   clearError: () => {
     set({ lastError: null });
   },
-  
+
   reset: () => {
     set({
       currentRubric: null,
@@ -293,7 +295,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
         model_provider: 'google_genai',
         model_name: 'gemini-2.0-flash',
         temperature: 0.1,
-        interface: 'langchain'
+        interface: 'langchain',
       },
       isGeneratingTraits: false,
       isLoadingRubric: false,
@@ -301,18 +303,18 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       lastError: null,
     });
   },
-  
+
   applyGeneratedTraits: (traits) => {
     const { currentRubric } = get();
     const rubric = currentRubric || defaultRubric;
-    
-    set({ 
+
+    set({
       currentRubric: {
         ...rubric,
-        traits: [...rubric.traits, ...traits]
+        traits: [...rubric.traits, ...traits],
       },
       generatedSuggestions: [],
-      lastError: null 
+      lastError: null,
     });
   },
 }));

@@ -62,7 +62,7 @@ class Logger {
    * Application lifecycle events
    */
   lifecycle = {
-    appInit: (sessionId: string) => 
+    appInit: (sessionId: string) =>
       this.log({
         level: LogLevel.INFO,
         category: 'LIFECYCLE',
@@ -73,7 +73,7 @@ class Logger {
     dataReset: () =>
       this.log({
         level: LogLevel.INFO,
-        category: 'LIFECYCLE', 
+        category: 'LIFECYCLE',
         message: 'All data has been reset',
         timestamp: new Date(),
       }),

@@ -62,9 +62,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
               <div className="text-sm text-green-600 dark:text-green-400">Successful</div>
             </div>
             <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                {progress.failed_count || 0}
-              </div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{progress.failed_count || 0}</div>
               <div className="text-sm text-red-600 dark:text-red-400">Failed</div>
             </div>
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
@@ -75,7 +73,9 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
             </div>
           </div>
           <div className="flex justify-between text-sm text-slate-600 dark:text-slate-300 mb-2">
-            <span>Progress: {progress.processed_count || 0} / {progress.total_count || totalTests}</span>
+            <span>
+              Progress: {progress.processed_count || 0} / {progress.total_count || totalTests}
+            </span>
             <span>{Math.round(progress.percentage || 0)}%</span>
           </div>
           <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
@@ -85,9 +85,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
             />
           </div>
           {progress.current_question && (
-            <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
-              Current: {progress.current_question}
-            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Current: {progress.current_question}</p>
           )}
           {progress.estimated_time_remaining && progress.status !== 'completed' && (
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -100,9 +98,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
         <>
           <div className="grid grid-cols-4 gap-4 mb-4">
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                {totalTests}
-              </div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{totalTests}</div>
               <div className="text-sm text-slate-600 dark:text-slate-300">Total Tests</div>
             </div>
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
@@ -120,9 +116,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
               <div className="text-sm text-blue-600 dark:text-blue-400">Starting...</div>
             </div>
           </div>
-          <div className="text-center text-slate-600 dark:text-slate-300 mb-2">
-            Initializing verification...
-          </div>
+          <div className="text-center text-slate-600 dark:text-slate-300 mb-2">Initializing verification...</div>
           <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
             <div className="bg-indigo-600 h-2 rounded-full animate-pulse" style={{ width: '10%' }} />
           </div>

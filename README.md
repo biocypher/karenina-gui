@@ -95,6 +95,7 @@ src/
 ### Key Features
 
 #### Multi-Tab Interface
+
 - **Extractor**: Upload and process question files
 - **Generator**: Create answer templates using AI
 - **Curator**: Review and refine question sets
@@ -102,17 +103,21 @@ src/
 - **Chat**: Direct LLM interaction
 
 #### State Management
+
 Clean separation of concerns with Zustand stores:
+
 - `useAppStore`: Global application state and navigation
 - `useQuestionStore`: Question data and operations
 - `useTemplateStore`: Template generation and management
 
 #### API Integration
+
 - Relative API paths (`/api/*`) for flexible backend integration
 - WebSocket support for real-time progress updates
 - Comprehensive error handling and loading states
 
 #### Testing
+
 - **Unit Tests**: Component and utility testing
 - **Integration Tests**: Full workflow testing
 - **API Mocking**: MSW for realistic API simulation
@@ -197,23 +202,27 @@ server {
 ## Features in Detail
 
 ### File Upload & Processing
+
 - Drag-and-drop interface for Excel/CSV/TSV files
 - Real-time file validation and preview
 - Automatic question extraction and parsing
 
 ### Template Generation
+
 - AI-powered answer template creation
 - Multiple LLM provider support (OpenAI, Google, Anthropic)
 - Progress tracking with estimated completion times
 - Template validation and editing
 
 ### Benchmark Management
+
 - Configure multiple model comparisons
 - Real-time progress tracking
 - Detailed result analysis and visualization
 - Export capabilities for further analysis
 
 ### Responsive Design
+
 - Mobile-friendly interface
 - Dark/light theme support
 - Accessible design following WCAG guidelines
@@ -256,6 +265,7 @@ npm run lint
 ### Common Issues
 
 **Development server won't start**
+
 ```bash
 # Clear node_modules and reinstall
 rm -rf node_modules package-lock.json
@@ -263,11 +273,13 @@ npm install
 ```
 
 **API requests failing**
+
 - Ensure Karenina Server is running on correct port
 - Check CORS configuration in server
 - Verify API endpoint paths match server routes
 
 **Build errors**
+
 ```bash
 # Type check the project
 npx tsc --noEmit

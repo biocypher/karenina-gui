@@ -12,25 +12,22 @@ describe('QuestionExtractor Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup default successful mock for all fetch calls
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        file_id: 'test-123',
-        filename: 'test.xlsx',
-        size: 1024
-      })
+      json: () =>
+        Promise.resolve({
+          file_id: 'test-123',
+          filename: 'test.xlsx',
+          size: 1024,
+        }),
     });
   });
 
   describe('Initial Rendering', () => {
     it('should render upload interface by default', () => {
-      render(
-        <QuestionExtractor 
-          onQuestionsExtracted={mockOnQuestionsExtracted}
-        />
-      );
+      render(<QuestionExtractor onQuestionsExtracted={mockOnQuestionsExtracted} />);
 
       expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       expect(screen.getByText('Choose a file to upload')).toBeInTheDocument();
@@ -38,11 +35,7 @@ describe('QuestionExtractor Component', () => {
     });
 
     it('should show progress steps', () => {
-      render(
-        <QuestionExtractor 
-          onQuestionsExtracted={mockOnQuestionsExtracted}
-        />
-      );
+      render(<QuestionExtractor onQuestionsExtracted={mockOnQuestionsExtracted} />);
 
       expect(screen.getByText('Upload File')).toBeInTheDocument();
       expect(screen.getByText('Preview Data')).toBeInTheDocument();
@@ -53,7 +46,7 @@ describe('QuestionExtractor Component', () => {
 
     it('should render with extracted questions when provided', () => {
       render(
-        <QuestionExtractor 
+        <QuestionExtractor
           onQuestionsExtracted={mockOnQuestionsExtracted}
           extractedQuestions={mockExtractedQuestions}
         />
@@ -72,42 +65,45 @@ describe('QuestionExtractor Component', () => {
 
         const file = createMockFile('test.xlsx', 1024);
         const input = screen.getByLabelText(/select file/i);
-        
+
         await user.upload(input, file);
-        
+
         // Should show upload progress or success
-        expect(global.fetch).toHaveBeenCalledWith('/api/upload-file', expect.objectContaining({
-          method: 'POST',
-          body: expect.any(FormData)
-        }));
+        expect(global.fetch).toHaveBeenCalledWith(
+          '/api/upload-file',
+          expect.objectContaining({
+            method: 'POST',
+            body: expect.any(FormData),
+          })
+        );
       });
     });
 
     describe('File Validation', () => {
       it('should show upload interface initially', () => {
         render(<QuestionExtractor />);
-        
+
         // Should show upload interface
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       });
 
       it('should handle file upload', async () => {
         const user = userEvent.setup();
-        
+
         render(<QuestionExtractor />);
 
         const file = createMockFile('test.xlsx', 1024);
         const input = screen.getByLabelText(/select file/i);
-        
+
         await user.upload(input, file);
-        
+
         // Should call fetch for upload
         expect(global.fetch).toHaveBeenCalled();
       });
 
       it('should show upload interface for drag and drop', () => {
         render(<QuestionExtractor />);
-        
+
         // Should show upload interface
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
         expect(screen.getByText(/Drag and drop or click to select/)).toBeInTheDocument();
@@ -115,7 +111,7 @@ describe('QuestionExtractor Component', () => {
 
       it('should show upload interface with progress indication', () => {
         render(<QuestionExtractor />);
-        
+
         // Should show upload interface
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       });
@@ -124,28 +120,28 @@ describe('QuestionExtractor Component', () => {
     describe('File Preview', () => {
       it('should show upload interface initially', () => {
         render(<QuestionExtractor />);
-        
+
         // Should show upload interface
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       });
 
       it('should handle file upload', async () => {
         const user = userEvent.setup();
-        
+
         render(<QuestionExtractor />);
 
         const file = createMockFile('test.xlsx', 1024);
         const input = screen.getByLabelText(/select file/i);
-        
+
         await user.upload(input, file);
-        
+
         // Should call fetch for upload
         expect(global.fetch).toHaveBeenCalled();
       });
 
       it('should show error state when upload fails', () => {
         render(<QuestionExtractor />);
-        
+
         // Should show upload interface initially
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       });
@@ -154,7 +150,7 @@ describe('QuestionExtractor Component', () => {
     describe('Column Configuration', () => {
       it('should show initial upload state', () => {
         render(<QuestionExtractor />);
-        
+
         // Should show upload interface
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
         expect(screen.getByText('Choose a file to upload')).toBeInTheDocument();
@@ -164,31 +160,34 @@ describe('QuestionExtractor Component', () => {
     describe('Question Extraction', () => {
       it('should show extraction progress', async () => {
         const user = userEvent.setup();
-        
+
         render(<QuestionExtractor />);
 
         const file = createMockFile('test.xlsx', 1024);
         const input = screen.getByLabelText(/select file/i);
-        
+
         await user.upload(input, file);
-        
+
         // Should call fetch for upload
-        expect(global.fetch).toHaveBeenCalledWith('/api/upload-file', expect.objectContaining({
-          method: 'POST',
-          body: expect.any(FormData)
-        }));
+        expect(global.fetch).toHaveBeenCalledWith(
+          '/api/upload-file',
+          expect.objectContaining({
+            method: 'POST',
+            body: expect.any(FormData),
+          })
+        );
       });
 
       it('should complete extraction successfully', async () => {
         const user = userEvent.setup();
-        
+
         render(<QuestionExtractor />);
 
         const file = createMockFile('test.xlsx', 1024);
         const input = screen.getByLabelText(/select file/i);
-        
+
         await user.upload(input, file);
-        
+
         // Verify upload was attempted
         expect(global.fetch).toHaveBeenCalled();
       });
@@ -197,38 +196,38 @@ describe('QuestionExtractor Component', () => {
     describe('Export Functionality', () => {
       it('should show export is not available initially', () => {
         render(<QuestionExtractor />);
-        
+
         // Should show the main interface
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       });
 
       it('should download JSON export', async () => {
         render(<QuestionExtractor />);
-        
+
         // Should show the main interface
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       });
 
       it('should download CSV export', async () => {
         render(<QuestionExtractor />);
-        
+
         // Should show the main interface
         expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       });
 
       it('should download Python export', async () => {
         const user = userEvent.setup();
-        
+
         // Mock Python export API
         (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
           Promise.resolve({
             ok: true,
-            blob: () => Promise.resolve(new Blob(['# Python code'], { type: 'text/plain' }))
+            blob: () => Promise.resolve(new Blob(['# Python code'], { type: 'text/plain' })),
           })
         );
 
         render(
-          <QuestionExtractor 
+          <QuestionExtractor
             onQuestionsExtracted={mockOnQuestionsExtracted}
             extractedQuestions={mockExtractedQuestions}
           />
@@ -244,7 +243,7 @@ describe('QuestionExtractor Component', () => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              questions: mockExtractedQuestions
+              questions: mockExtractedQuestions,
             }),
           });
         });
@@ -252,17 +251,17 @@ describe('QuestionExtractor Component', () => {
 
       it('should handle export errors', async () => {
         const user = userEvent.setup();
-        
+
         // Mock failed Python export
         (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
           Promise.resolve({
             ok: false,
-            status: 500
+            status: 500,
           })
         );
 
         render(
-          <QuestionExtractor 
+          <QuestionExtractor
             onQuestionsExtracted={mockOnQuestionsExtracted}
             extractedQuestions={mockExtractedQuestions}
           />
@@ -280,7 +279,7 @@ describe('QuestionExtractor Component', () => {
     describe('Reset Functionality', () => {
       it('should show initial state', () => {
         render(<QuestionExtractor />);
-        
+
         // Should show upload interface
         expect(screen.getByText('Choose a file to upload')).toBeInTheDocument();
       });
@@ -289,7 +288,7 @@ describe('QuestionExtractor Component', () => {
     describe('UI State Management', () => {
       it('should progress through steps correctly', async () => {
         const user = userEvent.setup();
-        
+
         render(<QuestionExtractor />);
 
         // Step 1: Upload (active by default) - check the step indicator area
@@ -306,17 +305,17 @@ describe('QuestionExtractor Component', () => {
 
       it('should show appropriate loading states', async () => {
         const user = userEvent.setup();
-        
+
         render(<QuestionExtractor />);
 
         const file = createMockFile('test.xlsx', 1024);
         const input = screen.getByLabelText(/select file/i);
-        
+
         await user.upload(input, file);
-        
+
         // Should have initiated upload
         expect(global.fetch).toHaveBeenCalled();
       });
     });
   });
-}); 
+});

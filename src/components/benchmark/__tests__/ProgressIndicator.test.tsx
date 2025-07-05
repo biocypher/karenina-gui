@@ -25,10 +25,8 @@ const defaultProps = {
 
 describe('ProgressIndicator', () => {
   it('renders nothing when not running', () => {
-    const { container } = render(
-      <ProgressIndicator {...defaultProps} isRunning={false} />
-    );
-    
+    const { container } = render(<ProgressIndicator {...defaultProps} isRunning={false} />);
+
     expect(container.firstChild).toBeNull();
   });
 
@@ -73,23 +71,13 @@ describe('ProgressIndicator', () => {
       status: 'completed',
     };
 
-    render(
-      <ProgressIndicator 
-        {...defaultProps} 
-        progress={completedProgress} 
-      />
-    );
+    render(<ProgressIndicator {...defaultProps} progress={completedProgress} />);
 
     expect(screen.queryByText('Estimated time remaining: 2m 0s')).not.toBeInTheDocument();
   });
 
   it('displays initializing state when running without progress data', () => {
-    render(
-      <ProgressIndicator 
-        {...defaultProps} 
-        progress={null} 
-      />
-    );
+    render(<ProgressIndicator {...defaultProps} progress={null} />);
 
     expect(screen.getByText('2')).toBeInTheDocument(); // Calculated total tests (2 * 1 * 1)
     expect(screen.getByText('Total Tests')).toBeInTheDocument();
@@ -99,12 +87,7 @@ describe('ProgressIndicator', () => {
   });
 
   it('shows loading animation when initializing', () => {
-    const { container } = render(
-      <ProgressIndicator 
-        {...defaultProps} 
-        progress={null} 
-      />
-    );
+    const { container } = render(<ProgressIndicator {...defaultProps} progress={null} />);
 
     const loader = container.querySelector('.animate-spin');
     expect(loader).toBeInTheDocument();
@@ -116,8 +99,8 @@ describe('ProgressIndicator', () => {
 
   it('calculates total tests correctly based on models and selected tests', () => {
     render(
-      <ProgressIndicator 
-        {...defaultProps} 
+      <ProgressIndicator
+        {...defaultProps}
         progress={null}
         selectedTestsCount={3}
         answeringModelsCount={2}
@@ -147,12 +130,7 @@ describe('ProgressIndicator', () => {
       failed_count: 0,
     };
 
-    render(
-      <ProgressIndicator 
-        {...defaultProps} 
-        progress={minimalProgress} 
-      />
-    );
+    render(<ProgressIndicator {...defaultProps} progress={minimalProgress} />);
 
     expect(screen.getByText('Progress: 1 / 4')).toBeInTheDocument();
     expect(screen.getByText('25%')).toBeInTheDocument();

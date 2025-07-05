@@ -17,9 +17,7 @@ describe('Card', () => {
   });
 
   it('applies default styling classes', () => {
-    const { container } = render(
-      <Card>Content</Card>
-    );
+    const { container } = render(<Card>Content</Card>);
 
     const cardElement = container.firstChild;
     expect(cardElement).toHaveClass('bg-white/80');
@@ -34,9 +32,7 @@ describe('Card', () => {
   });
 
   it('applies additional className when provided', () => {
-    const { container } = render(
-      <Card className="custom-class">Content</Card>
-    );
+    const { container } = render(<Card className="custom-class">Content</Card>);
 
     const cardElement = container.firstChild;
     expect(cardElement).toHaveClass('custom-class');
