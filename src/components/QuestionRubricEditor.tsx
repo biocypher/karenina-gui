@@ -72,7 +72,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     setLastError(null);
   };
   
-  const handleTraitChange = (index: number, field: keyof RubricTrait, value: any) => {
+  const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
     if (!questionRubric || index < 0 || index >= questionRubric.traits.length) return;
     
     const currentTrait = questionRubric.traits[index];

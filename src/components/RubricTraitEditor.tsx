@@ -35,7 +35,7 @@ export default function RubricTraitEditor() {
     addTrait(newTrait);
   };
   
-  const handleTraitChange = (index: number, field: keyof RubricTrait, value: any) => {
+  const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
     if (!currentRubric || index < 0 || index >= currentRubric.traits.length) return;
     
     const currentTrait = currentRubric.traits[index];

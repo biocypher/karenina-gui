@@ -206,8 +206,6 @@ describe('Export Utils', () => {
 
   describe('exportFilteredResults', () => {
     it('should export filtered results as JSON', () => {
-      const mockDownload = vi.spyOn({ downloadFile }, 'downloadFile');
-      
       exportFilteredResults(mockResults, 'json');
 
       // Note: we can't easily spy on the module function, so we test the behavior

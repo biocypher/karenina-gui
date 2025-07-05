@@ -237,8 +237,6 @@ describe('RubricTraitEditor', () => {
     });
 
     it('should prevent removing last trait', async () => {
-      const user = userEvent.setup();
-      
       // Mock store with only one trait
       mockUseRubricStore.mockReturnValue({
         currentRubric: null,

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Column, Table } from '@tanstack/react-table';
 
-interface FilterComponentProps {
-  column: Column<any, unknown>;
-  table: Table<any>;
+interface FilterComponentProps<T = unknown> {
+  column: Column<T, unknown>;
+  table: Table<T>;
 }
 
 export function FilterComponent({ column, table }: FilterComponentProps) {

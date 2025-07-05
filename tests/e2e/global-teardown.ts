@@ -18,7 +18,7 @@ async function globalTeardown() {
     await cleanupTempFiles();
     
     console.log('✅ E2E global teardown completed successfully');
-  } catch (error) {
+  } catch {
     console.error('❌ E2E teardown error:', error);
     // Don't throw error in teardown to avoid masking test failures
   }
@@ -40,7 +40,7 @@ async function cleanupProcesses() {
         process.kill(-pids.frontend, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.frontend, 'SIGKILL');
-      } catch (error) {
+      } catch {
         console.log('Frontend process cleanup (expected if already terminated):', error);
       }
     }
@@ -52,7 +52,7 @@ async function cleanupProcesses() {
         process.kill(-pids.backend, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.backend, 'SIGKILL');
-      } catch (error) {
+      } catch {
         console.log('Backend process cleanup (expected if already terminated):', error);
       }
     }
@@ -64,7 +64,7 @@ async function cleanupProcesses() {
         process.kill(-pids.main, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.main, 'SIGKILL');
-      } catch (error) {
+      } catch {
         console.log('Legacy process cleanup (expected if already terminated):', error);
       }
     }
@@ -73,7 +73,7 @@ async function cleanupProcesses() {
     await fs.unlink(pidFilePath);
     console.log('✓ Removed PID file');
     
-  } catch (error) {
+  } catch {
     // PID file might not exist, which is fine
     console.log('No PID file found (processes might already be cleaned up)');
   }
@@ -91,7 +91,7 @@ async function killProcessesOnPorts(ports: number[]) {
       console.log(`🧹 Checking for processes on port ${port}...`);
       
       // Use lsof to find processes on the port
-      const { spawn } = require('child_process');
+      const { spawn } = await import('child_process');
       const lsof = spawn('lsof', ['-ti', `:${port}`], { stdio: ['pipe', 'pipe', 'pipe'] });
       
       let output = '';
@@ -108,7 +108,7 @@ async function killProcessesOnPorts(ports: number[]) {
               try {
                 console.log(`🧹 Killing process ${pid} on port ${port}`);
                 process.kill(parseInt(pid), 'SIGTERM');
-              } catch (error) {
+              } catch {
                 // Process might already be dead
               }
             });
@@ -116,7 +116,7 @@ async function killProcessesOnPorts(ports: number[]) {
           resolve();
         });
       });
-    } catch (error) {
+    } catch {
       // lsof might not be available or no processes found
       console.log(`No cleanup needed for port ${port}`);
     }
@@ -140,7 +140,7 @@ async function cleanupTempFiles() {
           console.log(`✓ Removed temp file: ${file}`);
         }
       }
-    } catch (error) {
+    } catch {
       // Directory might not exist or be empty
       console.log('No temp files to clean up');
     }
@@ -156,12 +156,12 @@ async function cleanupTempFiles() {
         await fs.access(artifactPath);
         await fs.unlink(artifactPath);
         console.log(`✓ Removed artifact: ${path.basename(artifactPath)}`);
-      } catch (error) {
+      } catch {
         // File doesn't exist, that's fine
       }
     }
     
-  } catch (error) {
+  } catch {
     console.log('Temp file cleanup error:', error);
   }
 }

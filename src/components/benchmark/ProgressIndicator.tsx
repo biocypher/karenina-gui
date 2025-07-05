@@ -12,7 +12,7 @@ interface VerificationProgress {
   failed_count: number;
   estimated_time_remaining?: number;
   error?: string;
-  results?: Record<string, any>;
+  results?: Record<string, unknown>;
 }
 
 interface ProgressIndicatorProps {
