@@ -19,7 +19,7 @@ interface AnswerTemplateGeneratorProps {
 export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = ({
   questions,
   onTemplatesGenerated,
-  onSwitchToCurator
+  onSwitchToCurator,
 }) => {
   // Template store state
   const {
@@ -46,7 +46,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     downloadResults,
     downloadAllGenerated,
     addToCuration,
-    getPendingQuestions
+    getPendingQuestions,
   } = useTemplateStore();
 
   // Get pending questions using the store getter
@@ -61,18 +61,18 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     let isMounted = true;
-    
+
     if (isGenerating && jobId) {
       interval = setInterval(async () => {
         if (!isMounted || !isGenerating) return;
-        
+
         try {
           console.log(`Polling progress for job: ${jobId}`);
           const response = await fetch(`/api/generation-progress/${jobId}`);
           const progressData = await response.json();
-          
+
           updateProgress(progressData);
-          
+
           if (progressData.status === 'completed') {
             completeGeneration(progressData.result);
           } else if (progressData.status === 'failed') {
@@ -82,13 +82,13 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
           if (isMounted) {
             handleApiError(err, 'Polling generation progress', {
               logToConsole: true,
-              setErrorState: setError
+              setErrorState: setError,
             });
           }
         }
       }, 1000);
     }
-    
+
     return () => {
       isMounted = false;
       if (interval) clearInterval(interval);
@@ -126,14 +126,12 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     }
   };
 
-
   // Add the store getters we need
-  const { getSelectedCount, getGeneratedCount, getSuccessfulTemplates } = useTemplateStore();
-  
+  const { getGeneratedCount, getSuccessfulTemplates } = useTemplateStore();
+
   const totalQuestions = Object.keys(questions).length;
   const pendingQuestionsCount = Object.keys(pendingQuestions).length;
   const generatedCount = getGeneratedCount();
-  const selectedCount = getSelectedCount();
   const successfulTemplates = getSuccessfulTemplates();
   const successfulCount = Object.keys(successfulTemplates).length;
   const hasQuestions = totalQuestions > 0;
@@ -181,9 +179,15 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
               <table className="w-full">
                 <thead className="bg-slate-50 dark:bg-slate-700 sticky top-0">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Question</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Actions</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Question
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
@@ -226,18 +230,13 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
       )}
 
       {/* Custom Prompt Composer */}
-      {hasQuestions && (
-        <CustomPromptComposer
-          questions={questions}
-          onPromptGenerated={setCustomSystemPrompt}
-        />
-      )}
+      {hasQuestions && <CustomPromptComposer questions={questions} onPromptGenerated={setCustomSystemPrompt} />}
 
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">Answer Template Generation</h2>
         <p className="text-slate-600 dark:text-slate-300 mb-6">
-          Generate answer templates from extracted questions using various LLM providers.
-          Select which questions to process and configure the generation parameters.
+          Generate answer templates from extracted questions using various LLM providers. Select which questions to
+          process and configure the generation parameters.
           {customSystemPrompt && (
             <span className="block mt-2 text-sm font-medium text-green-600 dark:text-green-400">
               ✅ Using custom system prompt for generation.
@@ -245,7 +244,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
           )}
           {pendingQuestionsCount < totalQuestions && (
             <span className="block mt-2 text-sm font-medium text-blue-600 dark:text-blue-400">
-              Showing {pendingQuestionsCount} pending questions (out of {totalQuestions} total). 
+              Showing {pendingQuestionsCount} pending questions (out of {totalQuestions} total).
               {generatedCount} questions already have generated templates.
             </span>
           )}
@@ -255,8 +254,12 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
           <div className="text-center py-8">
             <AlertCircle className="mx-auto w-12 h-12 text-slate-400 dark:text-slate-500 mb-4" />
             <div className="space-y-3">
-              <p className="text-slate-800 dark:text-slate-200 font-semibold">No questions available for template generation.</p>
-              <p className="text-slate-600 dark:text-slate-300">Extract questions first using the Question Extractor tab, then return here to generate answer templates.</p>
+              <p className="text-slate-800 dark:text-slate-200 font-semibold">
+                No questions available for template generation.
+              </p>
+              <p className="text-slate-600 dark:text-slate-300">
+                Extract questions first using the Question Extractor tab, then return here to generate answer templates.
+              </p>
               <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl">
                 <p className="text-blue-800 dark:text-blue-300 text-sm font-medium">
                   💡 <strong>Workflow:</strong> Question Extractor → Template Generator → Template Curator
@@ -267,7 +270,9 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
         ) : pendingQuestionsCount === 0 ? (
           <div className="text-center py-8">
             <CheckCircle className="mx-auto w-12 h-12 text-green-400 dark:text-green-500 mb-4" />
-            <p className="text-slate-600 dark:text-slate-300">All questions have generated templates! Use "Add to Curation" above to proceed.</p>
+            <p className="text-slate-600 dark:text-slate-300">
+              All questions have generated templates! Use "Add to Curation" above to proceed.
+            </p>
           </div>
         ) : (
           <>
@@ -282,9 +287,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
 
             {/* Interface Selection */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                LLM Interface
-              </label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">LLM Interface</label>
               <div className="flex gap-4">
                 <label className="flex items-center">
                   <input
@@ -314,7 +317,9 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
             </div>
 
             {/* Configuration */}
-            <div className={`grid grid-cols-1 ${config.interface === 'langchain' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 mb-6`}>
+            <div
+              className={`grid grid-cols-1 ${config.interface === 'langchain' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 mb-6`}
+            >
               {config.interface === 'langchain' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -332,16 +337,18 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
               )}
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Model Name
-                </label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Model Name</label>
                 <input
                   type="text"
                   value={config.model_name}
                   onChange={(e) => setConfig({ ...config, model_name: e.target.value })}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   disabled={isGenerating}
-                  placeholder={config.interface === 'langchain' ? 'e.g., gemini-2.0-flash, gpt-4' : 'e.g., meta-llama/llama-3.2-3b-instruct:free'}
+                  placeholder={
+                    config.interface === 'langchain'
+                      ? 'e.g., gemini-2.0-flash, gpt-4'
+                      : 'e.g., meta-llama/llama-3.2-3b-instruct:free'
+                  }
                 />
                 {config.interface === 'openrouter' && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -377,7 +384,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
                 <Play className="w-4 h-4" />
                 Generate Templates ({selectedQuestions.size} questions)
               </button>
-              
+
               {isGenerating && (
                 <button
                   onClick={handleCancelGeneration}
@@ -412,7 +419,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
       {/* Rubric Components */}
       {hasQuestions && (
         <>
-          <RubricTraitGenerator 
+          <RubricTraitGenerator
             questions={questions}
             onTraitsGenerated={(traits) => {
               console.log('Generated traits:', traits);
@@ -423,4 +430,4 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
       )}
     </div>
   );
-}; 
+};

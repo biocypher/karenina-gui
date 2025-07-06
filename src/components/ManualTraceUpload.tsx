@@ -5,7 +5,7 @@ interface ManualTraceUploadProps {
   onUploadSuccess?: (traceCount: number) => void;
   onUploadError?: (error: string) => void;
   className?: string;
-  finishedTemplates?: Array<[string, any]>;
+  finishedTemplates?: Array<[string, unknown]>;
 }
 
 interface UploadStatus {
@@ -18,73 +18,82 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
   onUploadSuccess,
   onUploadError,
   className = '',
-  finishedTemplates
+  finishedTemplates,
 }) => {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
     status: 'idle',
-    message: ''
+    message: '',
   });
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const handleFileUpload = useCallback(async (file: File) => {
-    setUploadStatus({ status: 'uploading', message: 'Uploading manual traces...' });
+  const handleFileUpload = useCallback(
+    async (file: File) => {
+      setUploadStatus({ status: 'uploading', message: 'Uploading manual traces...' });
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
 
-      const response = await fetch('/api/upload-manual-traces', {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch('/api/upload-manual-traces', {
+          method: 'POST',
+          body: formData,
+        });
 
-      const result = await response.json();
+        const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.detail || 'Upload failed');
-      }
+        if (!response.ok) {
+          throw new Error(result.detail || 'Upload failed');
+        }
 
-      setUploadStatus({
-        status: 'success',
-        message: result.message,
-        traceCount: result.trace_count
-      });
+        setUploadStatus({
+          status: 'success',
+          message: result.message,
+          traceCount: result.trace_count,
+        });
 
-      onUploadSuccess?.(result.trace_count);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      setUploadStatus({
-        status: 'error',
-        message: errorMessage
-      });
-      onUploadError?.(errorMessage);
-    }
-  }, [onUploadSuccess, onUploadError]);
-
-  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleFileUpload(file);
-    }
-  }, [handleFileUpload]);
-
-  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragOver(false);
-
-    const file = event.dataTransfer.files[0];
-    if (file) {
-      // Validate file type
-      if (!file.name.toLowerCase().endsWith('.json')) {
+        onUploadSuccess?.(result.trace_count);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
         setUploadStatus({
           status: 'error',
-          message: 'Please upload a JSON file'
+          message: errorMessage,
         });
-        return;
+        onUploadError?.(errorMessage);
       }
-      handleFileUpload(file);
-    }
-  }, [handleFileUpload]);
+    },
+    [onUploadSuccess, onUploadError]
+  );
+
+  const handleFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    },
+    [handleFileUpload]
+  );
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDragOver(false);
+
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        // Validate file type
+        if (!file.name.toLowerCase().endsWith('.json')) {
+          setUploadStatus({
+            status: 'error',
+            message: 'Please upload a JSON file',
+          });
+          return;
+        }
+        handleFileUpload(file);
+      }
+    },
+    [handleFileUpload]
+  );
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -104,21 +113,24 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
     if (!finishedTemplates?.length) {
       setUploadStatus({
         status: 'error',
-        message: 'No finished templates available'
+        message: 'No finished templates available',
       });
       return;
     }
 
     try {
       // Create empty template JSON with question hashes as keys
-      const emptyTemplate = finishedTemplates.reduce((acc, [questionHash]) => {
-        acc[questionHash] = "";
-        return acc;
-      }, {} as Record<string, string>);
+      const emptyTemplate = finishedTemplates.reduce(
+        (acc, [questionHash]) => {
+          acc[questionHash] = '';
+          return acc;
+        },
+        {} as Record<string, string>
+      );
 
       // Download JSON file
       const blob = new Blob([JSON.stringify(emptyTemplate, null, 2)], {
-        type: 'application/json'
+        type: 'application/json',
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -132,17 +144,17 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
       // Show success message briefly
       setUploadStatus({
         status: 'success',
-        message: `Downloaded template with ${finishedTemplates.length} question hashes`
+        message: `Downloaded template with ${finishedTemplates.length} question hashes`,
       });
-      
+
       // Clear message after 3 seconds
       setTimeout(() => {
         setUploadStatus({ status: 'idle', message: '' });
       }, 3000);
-    } catch (error) {
+    } catch {
       setUploadStatus({
         status: 'error',
-        message: 'Failed to generate template file'
+        message: 'Failed to generate template file',
       });
     }
   }, [finishedTemplates]);
@@ -151,7 +163,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
     if (!finishedTemplates?.length) {
       setUploadStatus({
         status: 'error',
-        message: 'No finished templates available'
+        message: 'No finished templates available',
       });
       return;
     }
@@ -159,17 +171,19 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
     try {
       // Create CSV content with headers
       const csvHeader = 'Question Hash,Raw Question\n';
-      const csvRows = finishedTemplates.map(([questionHash, templateData]) => {
-        // Escape quotes in the question text and wrap in quotes
-        const escapedQuestion = (templateData.question || '').replace(/"/g, '""');
-        return `"${questionHash}","${escapedQuestion}"`;
-      }).join('\n');
-      
+      const csvRows = finishedTemplates
+        .map(([questionHash, templateData]) => {
+          // Escape quotes in the question text and wrap in quotes
+          const escapedQuestion = (templateData.question || '').replace(/"/g, '""');
+          return `"${questionHash}","${escapedQuestion}"`;
+        })
+        .join('\n');
+
       const csvContent = csvHeader + csvRows;
 
       // Download CSV file
       const blob = new Blob([csvContent], {
-        type: 'text/csv;charset=utf-8;'
+        type: 'text/csv;charset=utf-8;',
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -183,17 +197,17 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
       // Show success message briefly
       setUploadStatus({
         status: 'success',
-        message: `Downloaded CSV mapper with ${finishedTemplates.length} questions`
+        message: `Downloaded CSV mapper with ${finishedTemplates.length} questions`,
       });
-      
+
       // Clear message after 3 seconds
       setTimeout(() => {
         setUploadStatus({ status: 'idle', message: '' });
       }, 3000);
-    } catch (error) {
+    } catch {
       setUploadStatus({
         status: 'error',
-        message: 'Failed to generate CSV mapper file'
+        message: 'Failed to generate CSV mapper file',
       });
     }
   }, [finishedTemplates]);
@@ -220,7 +234,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
       case 'uploading':
         return 'border-indigo-300 bg-indigo-50 dark:bg-indigo-900/20';
       default:
-        return isDragOver 
+        return isDragOver
           ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
           : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400';
     }
@@ -255,35 +269,33 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
 
         <div className="flex flex-col items-center gap-3">
           {getStatusIcon()}
-          
+
           {uploadStatus.status === 'idle' && (
             <>
               <p className="text-slate-600 dark:text-slate-400">
-                <span className="font-medium text-indigo-600 dark:text-indigo-400">
-                  Click to upload
-                </span> or drag and drop
+                <span className="font-medium text-indigo-600 dark:text-indigo-400">Click to upload</span> or drag and
+                drop
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-500">
-                JSON files only
-              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-500">JSON files only</p>
             </>
           )}
 
           {uploadStatus.status !== 'idle' && (
             <div className="flex items-center gap-2">
-              <p className={`text-sm font-medium ${
-                uploadStatus.status === 'success' ? 'text-green-700 dark:text-green-400' :
-                uploadStatus.status === 'error' ? 'text-red-700 dark:text-red-400' :
-                'text-indigo-700 dark:text-indigo-400'
-              }`}>
+              <p
+                className={`text-sm font-medium ${
+                  uploadStatus.status === 'success'
+                    ? 'text-green-700 dark:text-green-400'
+                    : uploadStatus.status === 'error'
+                      ? 'text-red-700 dark:text-red-400'
+                      : 'text-indigo-700 dark:text-indigo-400'
+                }`}
+              >
                 {uploadStatus.message}
               </p>
-              
+
               {uploadStatus.status !== 'uploading' && (
-                <button
-                  onClick={clearStatus}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                >
+                <button onClick={clearStatus} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -295,9 +307,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
       {/* Help Text */}
       <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded">
         <div className="flex items-center justify-between mb-1">
-          <h5 className="text-xs font-medium text-slate-700 dark:text-slate-300">
-            Expected JSON Format:
-          </h5>
+          <h5 className="text-xs font-medium text-slate-700 dark:text-slate-300">Expected JSON Format:</h5>
           {finishedTemplates?.length > 0 && (
             <div className="flex gap-2">
               <button
@@ -317,7 +327,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
           )}
         </div>
         <pre className="text-xs text-slate-600 dark:text-slate-400 font-mono bg-white dark:bg-slate-900 p-2 rounded border overflow-x-auto">
-{`{
+          {`{
   "abc123...": "Answer trace 1...",
   "def456...": "Answer trace 2..."
 }`}

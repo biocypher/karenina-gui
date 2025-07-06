@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
 import { RubricTrait, TraitKind } from '../types';
@@ -13,35 +13,33 @@ export default function RubricTraitEditor() {
     removeTrait,
     saveRubric,
     clearError,
-    setCurrentRubric
+    setCurrentRubric,
   } = useRubricStore();
-  
-  const [isExpanded, setIsExpanded] = useState(true);
-  
+
   // Initialize with default rubric if none exists
   useEffect(() => {
     if (!currentRubric) {
       setCurrentRubric({
-        traits: []
+        traits: [],
       });
     }
   }, [currentRubric, setCurrentRubric]);
-  
+
   const handleAddTrait = () => {
     const newTrait: RubricTrait = {
       name: `Trait ${(currentRubric?.traits.length || 0) + 1}`,
       description: '',
-      kind: 'boolean'
+      kind: 'boolean',
     };
     addTrait(newTrait);
   };
-  
-  const handleTraitChange = (index: number, field: keyof RubricTrait, value: any) => {
+
+  const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
     if (!currentRubric || index < 0 || index >= currentRubric.traits.length) return;
-    
+
     const currentTrait = currentRubric.traits[index];
     const updatedTrait: RubricTrait = { ...currentTrait, [field]: value };
-    
+
     // Set default min/max for score traits
     if (field === 'kind') {
       if (value === 'score') {
@@ -52,48 +50,50 @@ export default function RubricTraitEditor() {
         updatedTrait.max_score = undefined;
       }
     }
-    
+
     updateTrait(index, updatedTrait);
   };
-  
+
   const handleSaveRubric = async () => {
     if (!currentRubric) return;
-    
+
     // Validate rubric before saving
     if (currentRubric.traits.length === 0) {
       return;
     }
-    
+
     await saveRubric();
   };
-  
+
   if (!currentRubric) {
     return (
       <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-lg">
-        <div className="text-center text-slate-500 dark:text-slate-400">
-          Loading rubric editor...
-        </div>
+        <div className="text-center text-slate-500 dark:text-slate-400">Loading rubric editor...</div>
       </div>
     );
   }
-  
+
   return (
     <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-          Rubric Trait Editor
-        </h3>
+        <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">Rubric Trait Editor</h3>
       </div>
-      
+
       {/* Traits List */}
       <div className="space-y-3 mb-4">
         {currentRubric.traits.map((trait, index) => (
-          <div key={index} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div
+            key={index}
+            className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+          >
             <div className="grid grid-cols-12 gap-4 items-start">
               {/* Trait Name */}
               <div className="col-span-3">
-                <label htmlFor={`trait-name-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor={`trait-name-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Trait Name
                 </label>
                 <input
@@ -109,10 +109,13 @@ export default function RubricTraitEditor() {
                   aria-label="Trait name"
                 />
               </div>
-              
+
               {/* Trait Kind Selector */}
               <div className="col-span-2">
-                <label htmlFor={`trait-type-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor={`trait-type-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Trait Type
                 </label>
                 <div className="relative">
@@ -135,7 +138,7 @@ export default function RubricTraitEditor() {
                     </svg>
                   </div>
                 </div>
-                
+
                 {/* Score range inputs for score traits */}
                 {trait.kind === 'score' && (
                   <div className="mt-2">
@@ -176,10 +179,13 @@ export default function RubricTraitEditor() {
                   </div>
                 )}
               </div>
-              
+
               {/* Description */}
               <div className="col-span-6">
-                <label htmlFor={`trait-description-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor={`trait-description-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Trait Description
                 </label>
                 <input
@@ -195,7 +201,7 @@ export default function RubricTraitEditor() {
                   aria-label="Trait description"
                 />
               </div>
-              
+
               {/* Delete Button */}
               <div className="col-span-1 flex justify-end mt-6">
                 <button
@@ -211,7 +217,7 @@ export default function RubricTraitEditor() {
             </div>
           </div>
         ))}
-        
+
         {/* Add Trait Button */}
         <button
           onClick={handleAddTrait}
@@ -223,7 +229,7 @@ export default function RubricTraitEditor() {
           Add trait
         </button>
       </div>
-      
+
       {/* Error Display */}
       {lastError && (
         <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
@@ -233,17 +239,14 @@ export default function RubricTraitEditor() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-red-800 dark:text-red-200">{lastError}</p>
-              <button
-                onClick={clearError}
-                className="text-xs text-red-600 dark:text-red-400 hover:underline mt-1"
-              >
+              <button onClick={clearError} className="text-xs text-red-600 dark:text-red-400 hover:underline mt-1">
                 Dismiss
               </button>
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Action Buttons */}
       <div className="flex justify-end space-x-3">
         <button
@@ -255,32 +258,48 @@ export default function RubricTraitEditor() {
           {isSavingRubric ? 'Saving...' : 'Set Traits'}
         </button>
       </div>
-      
+
       {/* Rubric Summary */}
       {currentRubric.traits.length > 0 && (
         <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
-            <svg className="w-4 h-4 mr-2 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <svg
+              className="w-4 h-4 mr-2 text-slate-600 dark:text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
             Rubric Summary
           </h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Total Traits:</span>
-              <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">{currentRubric.traits.length}</span>
+              <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
+                {currentRubric.traits.length}
+              </span>
             </div>
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Types:</span>
               <div className="ml-2 flex space-x-3">
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">{currentRubric.traits.filter(t => t.kind === 'boolean').length}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {currentRubric.traits.filter((t) => t.kind === 'boolean').length}
+                  </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">binary</span>
                 </span>
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">{currentRubric.traits.filter(t => t.kind === 'score').length}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {currentRubric.traits.filter((t) => t.kind === 'score').length}
+                  </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
                 </span>
               </div>

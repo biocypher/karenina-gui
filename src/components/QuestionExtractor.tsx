@@ -31,30 +31,32 @@ interface QuestionExtractorProps {
   extractedQuestions?: QuestionData;
 }
 
-export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ 
+export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
   onQuestionsExtracted,
-  extractedQuestions: initialExtractedQuestions 
+  extractedQuestions: initialExtractedQuestions,
 }) => {
   const [uploadedFile, setUploadedFile] = useState<FileInfo | null>(null);
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [extractedQuestions, setExtractedQuestions] = useState<ExtractedQuestions | null>(
-    initialExtractedQuestions && Object.keys(initialExtractedQuestions).length > 0 ? {
-      success: true,
-      questions_count: Object.keys(initialExtractedQuestions).length,
-      questions_data: initialExtractedQuestions
-    } : null
+    initialExtractedQuestions && Object.keys(initialExtractedQuestions).length > 0
+      ? {
+          success: true,
+          questions_count: Object.keys(initialExtractedQuestions).length,
+          questions_data: initialExtractedQuestions,
+        }
+      : null
   );
   const [selectedQuestionColumn, setSelectedQuestionColumn] = useState<string>('');
   const [selectedAnswerColumn, setSelectedAnswerColumn] = useState<string>('');
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
-  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [, setIsPreviewing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'configure' | 'extract' | 'visualize'>(
     initialExtractedQuestions && Object.keys(initialExtractedQuestions).length > 0 ? 'visualize' : 'upload'
   );
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (file: File) => {
@@ -82,14 +84,14 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragOver(false);
-    
+
     const files = event.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
       // Validate file type
       const validExtensions = ['.xlsx', '.xls', '.csv', '.tsv', '.txt'];
       const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-      
+
       if (validExtensions.includes(fileExtension)) {
         handleFileSelect(file);
       } else {
@@ -116,7 +118,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
       const result = await response.json();
       setUploadedFile(result);
       setCurrentStep('preview');
-      
+
       // Auto-preview the file
       await handlePreviewFile(result.file_id);
     } catch (error) {
@@ -150,19 +152,19 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
 
       const result = await response.json();
       setPreviewData(result);
-      
+
       if (result.success && result.columns) {
         // Auto-select columns if they match common patterns
-        const questionCol = result.columns.find((col: string) => 
-          col.toLowerCase().includes('question') || col.toLowerCase().includes('q')
+        const questionCol = result.columns.find(
+          (col: string) => col.toLowerCase().includes('question') || col.toLowerCase().includes('q')
         );
-        const answerCol = result.columns.find((col: string) => 
-          col.toLowerCase().includes('answer') || col.toLowerCase().includes('a')
+        const answerCol = result.columns.find(
+          (col: string) => col.toLowerCase().includes('answer') || col.toLowerCase().includes('a')
         );
-        
+
         if (questionCol) setSelectedQuestionColumn(questionCol);
         if (answerCol) setSelectedAnswerColumn(answerCol);
-        
+
         setCurrentStep('configure');
       }
     } catch (error) {
@@ -197,7 +199,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
 
       const result = await response.json();
       setExtractedQuestions(result);
-      
+
       if (result.success) {
         setCurrentStep('visualize');
         // Call the callback to persist the extracted questions
@@ -219,14 +221,14 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
     const dataStr = JSON.stringify(extractedQuestions.questions_data, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `extracted_questions_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     URL.revokeObjectURL(url);
   };
 
@@ -240,7 +242,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          questions: extractedQuestions.questions_data
+          questions: extractedQuestions.questions_data,
         }),
       });
 
@@ -251,14 +253,14 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
       // Get the file blob
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = url;
       link.download = `questions_${new Date().toISOString().split('T')[0]}.py`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading Python file:', error);
@@ -283,7 +285,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
     const steps = ['upload', 'preview', 'configure', 'extract', 'visualize'];
     const currentIndex = steps.indexOf(currentStep);
     const stepIndex = steps.indexOf(step);
-    
+
     if (stepIndex < currentIndex) return 'completed';
     if (stepIndex === currentIndex) return 'active';
     return 'pending';
@@ -303,27 +305,31 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
           ].map((step, index) => {
             const status = getStepStatus(step.key);
             const Icon = step.icon;
-            
+
             return (
               <React.Fragment key={step.key}>
                 <div className="flex items-center z-10">
-                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
-                    status === 'completed' 
-                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' 
-                      : status === 'active'
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-                  }`}>
+                  <div
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                      status === 'completed'
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                        : status === 'active'
+                          ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
                     <Icon className="w-4 h-4" />
                     <span className="text-sm font-medium">{step.label}</span>
                   </div>
                 </div>
                 {index < 4 && (
-                  <div className={`flex-1 h-0.5 mx-4 ${
-                    getStepStatus(['upload', 'preview', 'configure', 'extract', 'visualize'][index + 1]) !== 'pending'
-                      ? 'bg-emerald-300 dark:bg-emerald-600'
-                      : 'bg-slate-300 dark:bg-slate-600'
-                  }`} />
+                  <div
+                    className={`flex-1 h-0.5 mx-4 ${
+                      getStepStatus(['upload', 'preview', 'configure', 'extract', 'visualize'][index + 1]) !== 'pending'
+                        ? 'bg-emerald-300 dark:bg-emerald-600'
+                        : 'bg-slate-300 dark:bg-slate-600'
+                    }`}
+                  />
                 )}
               </React.Fragment>
             );
@@ -338,11 +344,11 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
             <Upload className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             Upload Question File
           </h3>
-          
-          <div 
+
+          <div
             className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
-              isDragOver 
-                ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' 
+              isDragOver
+                ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                 : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500'
             }`}
             onDragOver={handleDragOver}
@@ -358,19 +364,24 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
               id="file-upload"
               aria-label="Select File"
             />
-            
+
             <div className="flex flex-col items-center gap-4">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
-                isDragOver ? 'bg-indigo-200 dark:bg-indigo-800' : 'bg-indigo-100 dark:bg-indigo-900/40'
-              }`}>
-                <Upload className={`w-8 h-8 ${isDragOver ? 'text-indigo-700 dark:text-indigo-300' : 'text-indigo-600 dark:text-indigo-400'}`} />
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
+                  isDragOver ? 'bg-indigo-200 dark:bg-indigo-800' : 'bg-indigo-100 dark:bg-indigo-900/40'
+                }`}
+              >
+                <Upload
+                  className={`w-8 h-8 ${isDragOver ? 'text-indigo-700 dark:text-indigo-300' : 'text-indigo-600 dark:text-indigo-400'}`}
+                />
               </div>
               <div>
                 <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                   {isDragOver ? 'Drop your file here' : 'Choose a file to upload'}
                 </p>
                 <p className="text-slate-600 dark:text-slate-300">
-                  Drag and drop or click to select • Supports Excel (.xlsx, .xls), CSV (.csv), and TSV (.tsv, .txt) files
+                  Drag and drop or click to select • Supports Excel (.xlsx, .xls), CSV (.csv), and TSV (.tsv, .txt)
+                  files
                 </p>
               </div>
               <button
@@ -397,7 +408,8 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
                   {uploadedFile?.filename}
                 </h3>
                 <p className="text-slate-600 dark:text-slate-300">
-                  {previewData.total_rows?.toLocaleString()} rows • {uploadedFile?.size ? Math.round(uploadedFile.size / 1024) : 0} KB
+                  {previewData.total_rows?.toLocaleString()} rows •{' '}
+                  {uploadedFile?.size ? Math.round(uploadedFile.size / 1024) : 0} KB
                 </p>
               </div>
               <button
@@ -416,7 +428,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
                 <Settings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 Configure Columns
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -429,11 +441,13 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
                   >
                     <option value="">Select column...</option>
                     {previewData.columns?.map((col) => (
-                      <option key={col} value={col}>{col}</option>
+                      <option key={col} value={col}>
+                        {col}
+                      </option>
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Answer Column
@@ -445,12 +459,14 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
                   >
                     <option value="">Select column...</option>
                     {previewData.columns?.map((col) => (
-                      <option key={col} value={col}>{col}</option>
+                      <option key={col} value={col}>
+                        {col}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <button
                   onClick={handleExtractQuestions}
@@ -459,7 +475,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
                 >
                   {isExtracting ? 'Extracting...' : 'Extract Questions'}
                 </button>
-                
+
                 {selectedQuestionColumn && selectedAnswerColumn && (
                   <div className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                     <CheckCircle className="w-4 h-4" />
@@ -527,11 +543,9 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
             <AlertCircle className="w-5 h-5" />
             <span className="font-medium">Error</span>
           </div>
-          <p className="text-red-700 dark:text-red-300 mt-1">
-            {previewData?.error || extractedQuestions?.error}
-          </p>
+          <p className="text-red-700 dark:text-red-300 mt-1">{previewData?.error || extractedQuestions?.error}</p>
         </div>
       )}
     </div>
   );
-}; 
+};

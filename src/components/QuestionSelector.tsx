@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, CheckSquare, Square, Minus, Check, FileText } from 'lucide-react';
+import { Search, Square, Check, FileText } from 'lucide-react';
 import { QuestionData } from '../types';
 
 interface QuestionSelectorProps {
@@ -11,17 +11,17 @@ interface QuestionSelectorProps {
 export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   questions,
   selectedQuestions,
-  onSelectionChange
+  onSelectionChange,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter questions based on search term
   const filteredQuestions = useMemo(() => {
     if (!searchTerm.trim()) return questions;
-    
+
     const searchLower = searchTerm.toLowerCase();
     const filtered: QuestionData = {};
-    
+
     Object.entries(questions).forEach(([id, question]) => {
       if (
         question.question.toLowerCase().includes(searchLower) ||
@@ -31,29 +31,21 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
         filtered[id] = question;
       }
     });
-    
+
     return filtered;
   }, [questions, searchTerm]);
 
   const filteredQuestionIds = Object.keys(filteredQuestions);
-  const totalQuestions = Object.keys(questions).length;
-  const filteredCount = filteredQuestionIds.length;
-  const selectedCount = selectedQuestions.size;
-  const filteredSelectedCount = filteredQuestionIds.filter(id => selectedQuestions.has(id)).length;
-
-  // Selection state for the current filtered view
-  const isAllFilteredSelected = filteredCount > 0 && filteredSelectedCount === filteredCount;
-  const isPartiallySelected = filteredSelectedCount > 0 && filteredSelectedCount < filteredCount;
 
   const handleSelectAll = () => {
     const newSelected = new Set(selectedQuestions);
-    filteredQuestionIds.forEach(id => newSelected.add(id));
+    filteredQuestionIds.forEach((id) => newSelected.add(id));
     onSelectionChange(newSelected);
   };
 
   const handleSelectNone = () => {
     const newSelected = new Set(selectedQuestions);
-    filteredQuestionIds.forEach(id => newSelected.delete(id));
+    filteredQuestionIds.forEach((id) => newSelected.delete(id));
     onSelectionChange(newSelected);
   };
 
@@ -73,14 +65,6 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       newSelected.add(questionId);
     }
     onSelectionChange(newSelected);
-  };
-
-  const handleHeaderCheckboxClick = () => {
-    if (isAllFilteredSelected) {
-      handleSelectNone();
-    } else {
-      handleSelectAll();
-    }
   };
 
   const truncateText = (text: string, maxLength: number = 80) => {
@@ -139,8 +123,15 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
                 <th className="w-12 px-4 py-3 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedQuestions.size === Object.keys(filteredQuestions).length && Object.keys(filteredQuestions).length > 0}
-                    onChange={selectedQuestions.size === Object.keys(filteredQuestions).length ? handleSelectNone : handleSelectAll}
+                    checked={
+                      selectedQuestions.size === Object.keys(filteredQuestions).length &&
+                      Object.keys(filteredQuestions).length > 0
+                    }
+                    onChange={
+                      selectedQuestions.size === Object.keys(filteredQuestions).length
+                        ? handleSelectNone
+                        : handleSelectAll
+                    }
                     className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                   />
                 </th>
@@ -195,4 +186,4 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
       )}
     </div>
   );
-}; 
+};

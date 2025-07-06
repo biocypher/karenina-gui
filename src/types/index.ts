@@ -13,12 +13,12 @@ export interface CheckpointItem {
   question: string;
   raw_answer: string;
   original_answer_template: string;
-  
+
   // Progress data
   answer_template: string;
   last_modified: string;
   finished: boolean;
-  
+
   // Question-specific rubric
   question_rubric?: Rubric;
 }
@@ -29,7 +29,7 @@ export interface Checkpoint {
 
 // Unified checkpoint structure that includes global rubric
 export interface UnifiedCheckpoint {
-  version: "2.0";
+  version: '2.0';
   global_rubric: Rubric | null;
   checkpoint: Checkpoint;
 }
@@ -51,7 +51,7 @@ export interface TemplateGenerationProgress {
   total_count: number;
   estimated_time_remaining?: number; // in seconds
   error?: string;
-  result?: any;
+  result?: TemplateGenerationResult;
 }
 
 export interface GeneratedTemplate {
@@ -110,9 +110,9 @@ export interface VerificationResult {
   error?: string;
   question_text: string;
   raw_llm_response: string;
-  parsed_response?: unknown;
-  verify_result?: unknown;
-  verify_granular_result?: unknown;
+  parsed_response?: ParsedAnswerResponse;
+  verify_result?: VerificationOutcome;
+  verify_granular_result?: GranularVerificationResult;
   verify_rubric?: Record<string, number | boolean>;
   answering_model: string;
   parsing_model: string;
@@ -143,7 +143,7 @@ export interface VerificationProgress {
 }
 
 // Rubric Types
-export type TraitKind = "boolean" | "score";
+export type TraitKind = 'boolean' | 'score';
 
 export interface RubricTrait {
   name: string;
@@ -179,4 +179,21 @@ export interface RubricTraitGenerationResponse {
 
 export interface RubricEvaluation {
   trait_scores: Record<string, number | boolean>;
+}
+
+// Enhanced type definitions for verification results
+export interface ParsedAnswerResponse {
+  [key: string]: string | number | boolean | null;
+}
+
+export interface VerificationOutcome {
+  success: boolean;
+  score?: number;
+  details?: string;
+}
+
+export interface GranularVerificationResult {
+  score: number;
+  breakdown?: Record<string, number>;
+  details?: string;
 }

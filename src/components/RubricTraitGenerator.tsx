@@ -19,10 +19,10 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   const [userSuggestions, setUserSuggestions] = useState('');
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // File upload state (session-only, no persistence)
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const {
     generatedSuggestions,
     isGeneratingTraits,
@@ -31,19 +31,19 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
     generateTraits,
     clearError,
     applyGeneratedTraits,
-    setConfig
+    setConfig,
   } = useRubricStore();
-  
+
   const questionIds = Object.keys(questions);
   const hasQuestions = questionIds.length > 0;
-  
+
   // Filter questions based on search term
   const filteredQuestions = useMemo(() => {
     if (!searchTerm.trim()) return questions;
-    
+
     const searchLower = searchTerm.toLowerCase();
     const filtered: QuestionData = {};
-    
+
     Object.entries(questions).forEach(([id, question]) => {
       if (
         question.question.toLowerCase().includes(searchLower) ||
@@ -53,14 +53,14 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
         filtered[id] = question;
       }
     });
-    
+
     return filtered;
   }, [questions, searchTerm]);
-  
+
   const filteredQuestionIds = Object.keys(filteredQuestions);
   const totalQuestions = Object.keys(questions).length;
   const selectedCount = selectedQuestions.size;
-  
+
   // Load default system prompt
   useEffect(() => {
     const loadDefaultPrompt = async () => {
@@ -83,41 +83,41 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
         setIsLoadingPrompt(false);
       }
     };
-    
+
     loadDefaultPrompt();
   }, []);
-  
+
   // Initialize with all questions selected by default (only on first load)
   useEffect(() => {
     if (hasQuestions && selectedQuestions.size === 0 && !hasUserInteracted) {
       setSelectedQuestions(new Set(questionIds));
     }
   }, [questionIds, hasQuestions, selectedQuestions.size, hasUserInteracted]);
-  
+
   const handleSelectAll = () => {
     setHasUserInteracted(true);
     const newSelected = new Set(selectedQuestions);
-    filteredQuestionIds.forEach(id => newSelected.add(id));
+    filteredQuestionIds.forEach((id) => newSelected.add(id));
     setSelectedQuestions(newSelected);
   };
-  
+
   const handleSelectNone = () => {
     setHasUserInteracted(true);
     const newSelected = new Set(selectedQuestions);
-    filteredQuestionIds.forEach(id => newSelected.delete(id));
+    filteredQuestionIds.forEach((id) => newSelected.delete(id));
     setSelectedQuestions(newSelected);
   };
-  
+
   const handleSelectAllQuestions = () => {
     setHasUserInteracted(true);
     setSelectedQuestions(new Set(questionIds));
   };
-  
+
   const handleSelectNoQuestions = () => {
     setHasUserInteracted(true);
     setSelectedQuestions(new Set());
   };
-  
+
   const handleQuestionToggle = (questionId: string) => {
     setHasUserInteracted(true);
     const newSelected = new Set(selectedQuestions);
@@ -128,64 +128,66 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
     }
     setSelectedQuestions(newSelected);
   };
-  
+
   const handleGenerateTraits = async () => {
     if (selectedQuestions.size === 0) {
       return;
     }
-    
+
     // Prepare selected questions data
     const selectedQuestionsData: QuestionData = {};
-    Array.from(selectedQuestions).forEach(id => {
+    Array.from(selectedQuestions).forEach((id) => {
       if (questions[id]) {
         selectedQuestionsData[id] = questions[id];
       }
     });
-    
+
     // Log selected questions data for verification
     console.log('Selected questions for trait generation:', {
       count: Object.keys(selectedQuestionsData).length,
       ids: Object.keys(selectedQuestionsData),
-      sample: Object.entries(selectedQuestionsData).slice(0, 2).map(([id, q]) => ({
-        id,
-        question: q.question,
-        answer: q.raw_answer
-      }))
+      sample: Object.entries(selectedQuestionsData)
+        .slice(0, 2)
+        .map(([id, q]) => ({
+          id,
+          question: q.question,
+          answer: q.raw_answer,
+        })),
     });
-    
+
     // Parse user suggestions
     const suggestions = userSuggestions
       .split(',')
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-    
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
     const request = {
       questions: selectedQuestionsData,
       system_prompt: systemPrompt || undefined,
       user_suggestions: suggestions.length > 0 ? suggestions : undefined,
-      config
+      config,
     };
-    
+
     console.log('Trait generation request:', {
       questionCount: Object.keys(request.questions).length,
       hasSystemPrompt: !!request.system_prompt,
       suggestionsCount: request.user_suggestions?.length || 0,
-      config: request.config
+      config: request.config,
     });
-    
+
     await generateTraits(request);
-    
+
     if (onTraitsGenerated && generatedSuggestions.length > 0) {
       onTraitsGenerated(generatedSuggestions);
     }
   };
-  
+
   const handleApplyTraits = () => {
     if (generatedSuggestions.length > 0) {
       applyGeneratedTraits(generatedSuggestions);
     }
   };
-  
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -203,43 +205,34 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
       }
     };
     reader.readAsText(file);
-    
+
     // Clear the input so the same file can be uploaded again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
-  
+
   const truncateText = (text: string, maxLength: number = 80) => {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
-  
+
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-200 dark:border-slate-700 p-4 mb-4">
       {/* Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full text-left"
-      >
+      <button onClick={() => setIsExpanded(!isExpanded)} className="flex items-center justify-between w-full text-left">
         <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 flex items-center">
-          {isExpanded ? (
-            <ChevronDownIcon className="h-5 w-5 mr-2" />
-          ) : (
-            <ChevronRightIcon className="h-5 w-5 mr-2" />
-          )}
+          {isExpanded ? <ChevronDownIcon className="h-5 w-5 mr-2" /> : <ChevronRightIcon className="h-5 w-5 mr-2" />}
           Rubric Trait Generator
         </h3>
       </button>
-      
+
       {isExpanded && (
         <div className="mt-4 space-y-4">
           {/* System Prompt */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                System prompt
-              </label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">System prompt</label>
               <div className="flex gap-2">
                 <input
                   ref={fileInputRef}
@@ -253,8 +246,8 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                 <label
                   htmlFor="prompt-upload"
                   className={`px-2 py-1 text-xs text-white rounded transition-colors ${
-                    isGeneratingTraits 
-                      ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-50' 
+                    isGeneratingTraits
+                      ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-50'
                       : 'bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-400 cursor-pointer'
                   }`}
                   title="Upload system prompt from file"
@@ -275,7 +268,11 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
             <textarea
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder={isLoadingPrompt ? "Loading default system prompt..." : "Enter custom system prompt or use the default..."}
+              placeholder={
+                isLoadingPrompt
+                  ? 'Loading default system prompt...'
+                  : 'Enter custom system prompt or use the default...'
+              }
               disabled={isLoadingPrompt}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md 
                          bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
@@ -285,19 +282,15 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
               rows={8}
             />
           </div>
-          
+
           {/* Model Configuration */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
               Model Configuration
             </label>
-            <ModelSelector
-              config={config}
-              onConfigChange={setConfig}
-              disabled={isGeneratingTraits}
-            />
+            <ModelSelector config={config} onConfigChange={setConfig} disabled={isGeneratingTraits} />
           </div>
-          
+
           {/* Question Selection */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -308,7 +301,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                 {selectedCount} of {totalQuestions} selected
               </div>
             </div>
-            
+
             {/* Search and Selection Controls */}
             <div className="flex flex-col sm:flex-row gap-4 mb-4">
               <div className="flex-1 relative">
@@ -338,7 +331,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                 </button>
               </div>
             </div>
-            
+
             <div className="border border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden shadow-inner">
               <div className="max-h-80 overflow-y-auto">
                 {hasQuestions ? (
@@ -348,10 +341,13 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                         <th className="w-12 px-4 py-3 text-left">
                           <input
                             type="checkbox"
-                            checked={filteredQuestionIds.length > 0 && filteredQuestionIds.every(id => selectedQuestions.has(id))}
+                            checked={
+                              filteredQuestionIds.length > 0 &&
+                              filteredQuestionIds.every((id) => selectedQuestions.has(id))
+                            }
                             onChange={() => {
                               setHasUserInteracted(true);
-                              if (filteredQuestionIds.every(id => selectedQuestions.has(id))) {
+                              if (filteredQuestionIds.every((id) => selectedQuestions.has(id))) {
                                 handleSelectNone();
                               } else {
                                 handleSelectAll();
@@ -360,9 +356,15 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                             className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                           />
                         </th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Question</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">Answer</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">ID</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                          Question
+                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                          Answer
+                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                          ID
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
@@ -404,7 +406,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                 )}
               </div>
             </div>
-            
+
             {/* No search results message */}
             {Object.keys(filteredQuestions).length === 0 && searchTerm.trim() && (
               <div className="text-center py-8 text-slate-500 dark:text-slate-400">
@@ -413,7 +415,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
               </div>
             )}
           </div>
-          
+
           {/* User Suggestions */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -429,33 +431,32 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
                          focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400
                          placeholder-slate-400 dark:placeholder-slate-500"
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Comma-separated list of trait suggestions
-            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Comma-separated list of trait suggestions</p>
           </div>
-          
+
           {/* Error Display */}
           {lastError && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-red-800 dark:text-red-200">{lastError}</p>
-                  <button
-                    onClick={clearError}
-                    className="text-xs text-red-600 dark:text-red-400 hover:underline mt-1"
-                  >
+                  <button onClick={clearError} className="text-xs text-red-600 dark:text-red-400 hover:underline mt-1">
                     Dismiss
                   </button>
                 </div>
               </div>
             </div>
           )}
-          
+
           {/* Generate Button */}
           <div className="flex justify-end">
             <button
@@ -467,7 +468,7 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
               {isGeneratingTraits ? 'Generating traits...' : 'Generate traits'}
             </button>
           </div>
-          
+
           {/* Generated Traits Preview */}
           {generatedSuggestions.length > 0 && (
             <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">

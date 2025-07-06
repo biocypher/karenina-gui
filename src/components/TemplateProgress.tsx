@@ -9,7 +9,7 @@ interface TemplateProgressProps {
 export const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
-  
+
   if (minutes > 0) {
     return `${minutes}m ${remainingSeconds}s`;
   }
@@ -22,7 +22,7 @@ export const TemplateProgress: React.FC<TemplateProgressProps> = ({ progress }) 
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
       <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Generation Progress</h3>
-      
+
       <div className="mb-4">
         <div className="flex justify-between text-sm text-slate-600 dark:text-slate-300 mb-2">
           <span>Progress</span>
@@ -47,7 +47,9 @@ export const TemplateProgress: React.FC<TemplateProgressProps> = ({ progress }) 
         </div>
         <div>
           <span className="text-slate-600 dark:text-slate-300">Processed:</span>
-          <span className="ml-2 font-medium text-slate-900 dark:text-slate-100">{progress.processed_count} / {progress.total_count}</span>
+          <span className="ml-2 font-medium text-slate-900 dark:text-slate-100">
+            {progress.processed_count} / {progress.total_count}
+          </span>
         </div>
       </div>
 

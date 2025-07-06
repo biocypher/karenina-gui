@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { beforeAll, afterEach, afterAll, beforeEach } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { vi } from 'vitest';
 
@@ -76,14 +76,14 @@ Object.defineProperty(window, 'confirm', {
 // Add DragEvent for drag and drop tests
 global.DragEvent = class DragEvent extends Event {
   dataTransfer: DataTransfer;
-  
+
   constructor(type: string, eventInitDict?: DragEventInit) {
     super(type, eventInitDict);
     this.dataTransfer = {
       dropEffect: 'none' as const,
       effectAllowed: 'uninitialized' as const,
-      files: [] as any,
-      items: [] as any,
+      files: [] as unknown as FileList,
+      items: [] as unknown as DataTransferItemList,
       types: [],
       clearData: vi.fn(),
       getData: vi.fn(() => ''),
@@ -91,34 +91,34 @@ global.DragEvent = class DragEvent extends Event {
       setDragImage: vi.fn(),
     } as DataTransfer;
   }
-} as any;
+} as unknown as typeof global.DragEvent;
 
 // Add DataTransfer for drag and drop tests
 global.DataTransfer = class DataTransfer {
   dropEffect: 'none' | 'copy' | 'link' | 'move' = 'none';
   effectAllowed: string = 'uninitialized';
-  files: FileList = [] as any;
-  items: DataTransferItemList = [] as any;
+  files: FileList = [] as unknown as FileList;
+  items: DataTransferItemList = [] as unknown as DataTransferItemList;
   types: string[] = [];
-  
+
   clearData = vi.fn();
   getData = vi.fn(() => '');
   setData = vi.fn();
   setDragImage = vi.fn();
-} as any;
+} as unknown as typeof DataTransfer;
 
 // Mock FileReader for file upload tests
 global.FileReader = class FileReader extends EventTarget {
   result: string | ArrayBuffer | null = null;
   error: DOMException | null = null;
   readyState: number = 0;
-  
-  onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
-  onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
-  onabort: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
-  onloadstart: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
-  onloadend: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
-  onprogress: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null;
+
+  onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null = null;
+  onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null = null;
+  onabort: ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null = null;
+  onloadstart: ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null = null;
+  onloadend: ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null = null;
+  onprogress: ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null = null;
 
   readAsText(file: Blob): void {
     // Simulate async file reading
@@ -127,48 +127,50 @@ global.FileReader = class FileReader extends EventTarget {
         // For our tests, we'll extract content from the file name or use the file content
         if (file instanceof File) {
           // Try to parse the file content if it's JSON
-          const reader = new FileReader();
-          const originalReadAsText = FileReader.prototype.readAsText;
-          
+          // Removed unused variables for linting
+
           // Use a real FileReader for actual content reading in tests
           const realReader = Object.create(FileReader.prototype);
-          realReader.onload = (e: any) => {
+          realReader.onload = (e: ProgressEvent<FileReader>) => {
             this.result = e.target.result;
             this.readyState = 2; // DONE
             if (this.onload) {
-              this.onload.call(this, { target: this } as any);
+              this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
             }
           };
-          
-          realReader.onerror = (e: any) => {
+
+          realReader.onerror = (e: ProgressEvent<FileReader>) => {
             this.error = e.target.error;
             this.readyState = 2; // DONE
             if (this.onerror) {
-              this.onerror.call(this, { target: this } as any);
+              this.onerror.call(this, { target: this } as ProgressEvent<FileReader>);
             }
           };
-          
+
           // For test files, we can directly read the content
           if (file.size > 0) {
-            file.text().then(text => {
-              this.result = text;
-              this.readyState = 2; // DONE
-              if (this.onload) {
-                this.onload.call(this, { target: this } as any);
-              }
-            }).catch(error => {
-              this.error = error;
-              this.readyState = 2; // DONE
-              if (this.onerror) {
-                this.onerror.call(this, { target: this } as any);
-              }
-            });
+            file
+              .text()
+              .then((text) => {
+                this.result = text;
+                this.readyState = 2; // DONE
+                if (this.onload) {
+                  this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
+                }
+              })
+              .catch((error) => {
+                this.error = error;
+                this.readyState = 2; // DONE
+                if (this.onerror) {
+                  this.onerror.call(this, { target: this } as ProgressEvent<FileReader>);
+                }
+              });
           } else {
             // Empty file
             this.result = '';
             this.readyState = 2; // DONE
             if (this.onload) {
-              this.onload.call(this, { target: this } as any);
+              this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
             }
           }
         }
@@ -176,28 +178,28 @@ global.FileReader = class FileReader extends EventTarget {
         this.error = error as DOMException;
         this.readyState = 2; // DONE
         if (this.onerror) {
-          this.onerror.call(this, { target: this } as any);
+          this.onerror.call(this, { target: this } as ProgressEvent<FileReader>);
         }
       }
     }, 10); // Small delay to simulate async behavior
   }
 
-  readAsDataURL(file: Blob): void {
+  readAsDataURL(): void {
     setTimeout(() => {
       this.result = 'data:application/octet-stream;base64,dGVzdA==';
       this.readyState = 2;
       if (this.onload) {
-        this.onload.call(this, { target: this } as any);
+        this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
       }
     }, 10);
   }
 
-  readAsArrayBuffer(file: Blob): void {
+  readAsArrayBuffer(): void {
     setTimeout(() => {
       this.result = new ArrayBuffer(8);
       this.readyState = 2;
       if (this.onload) {
-        this.onload.call(this, { target: this } as any);
+        this.onload.call(this, { target: this } as ProgressEvent<FileReader>);
       }
     }, 10);
   }
@@ -205,21 +207,21 @@ global.FileReader = class FileReader extends EventTarget {
   abort(): void {
     this.readyState = 2;
     if (this.onabort) {
-      this.onabort.call(this, { target: this } as any);
+      this.onabort.call(this, { target: this } as ProgressEvent<FileReader>);
     }
   }
 
   static readonly EMPTY = 0;
   static readonly LOADING = 1;
   static readonly DONE = 2;
-} as any;
+} as unknown as typeof FileReader;
 
 // Reset all mocks before each test
 beforeEach(() => {
   vi.clearAllMocks();
   localStorageMock.getItem.mockReturnValue(null);
   sessionStorageMock.getItem.mockReturnValue(null);
-  
+
   // Mock scrollIntoView for DOM elements
   Element.prototype.scrollIntoView = vi.fn();
 });
@@ -228,4 +230,4 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
-}); 
+});

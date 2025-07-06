@@ -55,8 +55,8 @@ export const TemplateResults: React.FC<TemplateResultsProps> = ({ result, onDown
       {result.failed_generations > 0 && (
         <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
           <div className="text-yellow-800 dark:text-yellow-300 text-sm">
-            <strong>Warning:</strong> {result.failed_generations} template(s) failed to generate.
-            Check the downloaded file for details.
+            <strong>Warning:</strong> {result.failed_generations} template(s) failed to generate. Check the downloaded
+            file for details.
           </div>
         </div>
       )}

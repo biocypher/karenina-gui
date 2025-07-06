@@ -29,7 +29,7 @@ export const useThemeStorage = () => {
     } catch (error) {
       console.warn('Failed to read theme from localStorage:', error);
     }
-    
+
     // Default to dark mode
     return 'dark';
   });
@@ -38,7 +38,7 @@ export const useThemeStorage = () => {
     try {
       localStorage.setItem('otarbench-theme', newTheme);
       setThemeState(newTheme);
-      
+
       // Apply theme to document
       if (newTheme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -65,4 +65,4 @@ export const useThemeStorage = () => {
   }, [theme]);
 
   return { theme, setTheme, toggleTheme };
-}; 
+};

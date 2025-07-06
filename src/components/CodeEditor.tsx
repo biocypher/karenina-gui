@@ -13,12 +13,12 @@ interface CodeEditorProps {
   savedCode?: string;
 }
 
-export const CodeEditor: React.FC<CodeEditorProps> = ({ 
-  value, 
-  onChange, 
+export const CodeEditor: React.FC<CodeEditorProps> = ({
+  value,
+  onChange,
   readOnly = false,
   originalCode = '',
-  savedCode = ''
+  savedCode = '',
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
@@ -62,7 +62,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       const end = textarea.selectionEnd;
       const newValue = value.substring(0, start) + '    ' + value.substring(end);
       onChange(newValue);
-      
+
       // Set cursor position after the inserted spaces
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 4;
@@ -75,7 +75,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       const textarea = textareaRef.current;
       preRef.current.scrollTop = textarea.scrollTop;
       preRef.current.scrollLeft = textarea.scrollLeft;
-      
+
       // Update scroll info for custom scrollbars
       setScrollInfo({
         scrollLeft: textarea.scrollLeft,
@@ -91,7 +91,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     if (textareaRef.current && preRef.current) {
       textareaRef.current.scrollLeft = scrollLeft;
       preRef.current.scrollLeft = scrollLeft;
-      setScrollInfo(prev => ({ ...prev, scrollLeft }));
+      setScrollInfo((prev) => ({ ...prev, scrollLeft }));
     }
   };
 
@@ -100,7 +100,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     if (textareaRef.current && preRef.current) {
       textareaRef.current.scrollTop = scrollTop;
       preRef.current.scrollTop = scrollTop;
-      setScrollInfo(prev => ({ ...prev, scrollTop }));
+      setScrollInfo((prev) => ({ ...prev, scrollTop }));
     }
   };
 
@@ -151,19 +151,19 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   // Determine if diff button should be shown
   const canShowDiff = hasChangesFromOriginal || hasChangesFromSaved;
-  
+
   // Determine if revert button should be shown and what options are available
   const canRevert = hasChangesFromOriginal || hasChangesFromSaved;
   const revertOptions = {
     canRevertToOriginal: hasChangesFromOriginal,
     canRevertToSaved: hasChangesFromSaved,
-    hasMultipleOptions: hasChangesFromOriginal && hasChangesFromSaved
+    hasMultipleOptions: hasChangesFromOriginal && hasChangesFromSaved,
   };
 
   if (showDiff) {
     const compareCode = diffMode === 'saved' ? savedCode : originalCode;
     const compareTitle = diffMode === 'saved' ? 'Diff vs Last Saved' : 'Diff vs Original';
-    
+
     return (
       <div className="w-full h-full flex flex-col">
         {/* Diff Header */}
@@ -176,15 +176,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               <Code className="w-4 h-4" />
               Back to Editor
             </button>
-            
+
             {/* Diff Mode Switcher */}
             {hasChangesFromOriginal && hasChangesFromSaved && (
               <div className="flex bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden shadow-sm">
                 <button
                   onClick={() => switchDiffMode('original')}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    diffMode === 'original' 
-                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white' 
+                    diffMode === 'original'
+                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                 >
@@ -193,8 +193,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <button
                   onClick={() => switchDiffMode('saved')}
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    diffMode === 'saved' 
-                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white' 
+                    diffMode === 'saved'
+                      ? 'bg-indigo-600 dark:bg-indigo-700 text-white'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                 >
@@ -203,18 +203,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               </div>
             )}
           </div>
-          
+
           <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">{compareTitle}</div>
         </div>
-        
+
         {/* Diff Content */}
         <div className="flex-1 min-h-0">
-          <DiffViewer
-            originalCode={compareCode}
-            currentCode={value}
-            title={compareTitle}
-            hideHeader={true}
-          />
+          <DiffViewer originalCode={compareCode} currentCode={value} title={compareTitle} hideHeader={true} />
         </div>
       </div>
     );
@@ -224,10 +219,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     <div className="w-full h-full border border-slate-300 rounded-2xl overflow-hidden bg-slate-900 shadow-xl flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          {/* Window controls removed for cleaner interface */}
-        </div>
-        
+        <div className="flex items-center gap-2">{/* Window controls removed for cleaner interface */}</div>
+
         <div className="flex items-center gap-3">
           {canShowDiff && (
             <button
@@ -238,7 +231,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               Show Diff
             </button>
           )}
-          
+
           {canRevert && (
             <div className="relative">
               {revertOptions.hasMultipleOptions ? (
@@ -264,7 +257,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <button
                   onClick={revertOptions.canRevertToSaved ? revertToSaved : revertToOriginal}
                   className="px-4 py-2 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  title={revertOptions.canRevertToSaved ? "Revert to last saved version" : "Revert to original template"}
+                  title={
+                    revertOptions.canRevertToSaved ? 'Revert to last saved version' : 'Revert to original template'
+                  }
                 >
                   <Undo2 className="w-4 h-4" />
                   Revert
@@ -272,7 +267,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               )}
             </div>
           )}
-          
+
           <div className="text-xs text-slate-400 font-mono font-semibold">Python</div>
         </div>
       </div>
@@ -303,10 +298,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               wordWrap: 'normal',
             }}
           >
-            <code
-              className="language-python"
-              dangerouslySetInnerHTML={{ __html: highlightedCode }}
-            />
+            <code className="language-python" dangerouslySetInnerHTML={{ __html: highlightedCode }} />
           </pre>
 
           {/* Textarea (Foreground) */}
@@ -356,7 +348,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 onChange={handleHorizontalScroll}
                 className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-horizontal"
                 style={{
-                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(scrollInfo.scrollLeft / scrollInfo.maxScrollLeft) * 100}%, #374151 ${(scrollInfo.scrollLeft / scrollInfo.maxScrollLeft) * 100}%, #374151 100%)`
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(scrollInfo.scrollLeft / scrollInfo.maxScrollLeft) * 100}%, #374151 ${(scrollInfo.scrollLeft / scrollInfo.maxScrollLeft) * 100}%, #374151 100%)`,
                 }}
               />
               <span className="text-xs text-slate-400 font-mono min-w-[4rem] text-right font-semibold">
@@ -379,7 +371,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 onChange={handleVerticalScroll}
                 className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-vertical"
                 style={{
-                  background: `linear-gradient(to right, #10b981 0%, #10b981 ${(scrollInfo.scrollTop / scrollInfo.maxScrollTop) * 100}%, #374151 ${(scrollInfo.scrollTop / scrollInfo.maxScrollTop) * 100}%, #374151 100%)`
+                  background: `linear-gradient(to right, #10b981 0%, #10b981 ${(scrollInfo.scrollTop / scrollInfo.maxScrollTop) * 100}%, #374151 ${(scrollInfo.scrollTop / scrollInfo.maxScrollTop) * 100}%, #374151 100%)`,
                 }}
               />
               <span className="text-xs text-slate-400 font-mono min-w-[4rem] text-right font-semibold">

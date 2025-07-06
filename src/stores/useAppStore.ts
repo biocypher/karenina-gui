@@ -8,10 +8,10 @@ interface AppState {
   // UI State
   activeTab: TabType;
   isLoading: boolean;
-  
+
   // Session State (ephemeral - regenerated on each app load)
   sessionId: string;
-  
+
   // Actions
   setActiveTab: (tab: TabType) => void;
   setIsLoading: (loading: boolean) => void;
@@ -29,13 +29,14 @@ export const useAppStore = create<AppState>((set) => ({
   activeTab: 'extractor',
   isLoading: false,
   sessionId: generateSessionId(),
-  
+
   // Actions
   setActiveTab: (tab: TabType) => set(() => ({ activeTab: tab })),
   setIsLoading: (loading: boolean) => set(() => ({ isLoading: loading })),
-  resetAppState: () => set(() => ({
-    activeTab: 'extractor',
-    isLoading: false,
-    sessionId: generateSessionId(),
-  })),
+  resetAppState: () =>
+    set(() => ({
+      activeTab: 'extractor',
+      isLoading: false,
+      sessionId: generateSessionId(),
+    })),
 }));

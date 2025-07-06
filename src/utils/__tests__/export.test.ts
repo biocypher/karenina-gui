@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { 
-  downloadFile, 
-  exportFromServer, 
-  exportToJSON, 
-  exportToCSV, 
+import {
+  downloadFile,
+  exportFromServer,
+  exportToJSON,
+  exportToCSV,
   exportFilteredResults,
-  ExportableResult 
+  ExportableResult,
 } from '../export';
 import { API_ENDPOINTS } from '../../constants/api';
 
@@ -37,19 +37,19 @@ describe('Export Utils', () => {
       execution_time: 1.5,
       timestamp: '2023-01-01T00:00:00Z',
       run_name: 'test-run',
-      job_id: 'job-123'
+      job_id: 'job-123',
     },
     {
       question_id: 'q2',
       question_text: 'What is "hello, world"?',
-      raw_llm_response: 'It\'s a greeting',
+      raw_llm_response: "It's a greeting",
       answering_model: 'gpt-4',
       parsing_model: 'gpt-4-parser',
       success: false,
       error: 'Parse error',
       execution_time: 0.8,
-      timestamp: '2023-01-01T00:01:00Z'
-    }
+      timestamp: '2023-01-01T00:01:00Z',
+    },
   ];
 
   beforeEach(() => {
@@ -61,11 +61,11 @@ describe('Export Utils', () => {
           href: '',
           download: '',
           click: vi.fn(),
-        } as any;
+        } as HTMLAnchorElement;
       }
-      return {} as any;
+      return {} as HTMLElement;
     });
-    
+
     document.body.appendChild = vi.fn();
     document.body.removeChild = vi.fn();
 
@@ -97,10 +97,10 @@ describe('Export Utils', () => {
       const mockBlob = new Blob(['test data']);
       const mockResponse = {
         ok: true,
-        blob: vi.fn().mockResolvedValue(mockBlob)
+        blob: vi.fn().mockResolvedValue(mockBlob),
       };
-      
-      (global.fetch as any).mockResolvedValue(mockResponse);
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       await exportFromServer('job-123', 'json');
 
@@ -110,13 +110,13 @@ describe('Export Utils', () => {
 
     it('should throw error when server request fails', async () => {
       const mockResponse = { ok: false };
-      (global.fetch as any).mockResolvedValue(mockResponse);
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       await expect(exportFromServer('job-123', 'json')).rejects.toThrow('Failed to export results');
     });
 
     it('should handle network errors', async () => {
-      (global.fetch as any).mockRejectedValue(new Error('Network error'));
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
 
       await expect(exportFromServer('job-123', 'json')).rejects.toThrow('Failed to export results');
     });
@@ -162,8 +162,8 @@ describe('Export Utils', () => {
           parsing_model: 'test-parser',
           success: true,
           execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z'
-        }
+          timestamp: '2023-01-01T00:00:00Z',
+        },
       ];
 
       const csv = exportToCSV(resultsWithSpecialChars);
@@ -194,8 +194,8 @@ describe('Export Utils', () => {
           timestamp: '2023-01-01T00:00:00Z',
           // Optional fields left undefined
           run_name: undefined,
-          error: undefined
-        }
+          error: undefined,
+        },
       ];
 
       const csv = exportToCSV(resultsWithNulls);
@@ -206,8 +206,6 @@ describe('Export Utils', () => {
 
   describe('exportFilteredResults', () => {
     it('should export filtered results as JSON', () => {
-      const mockDownload = vi.spyOn({ downloadFile }, 'downloadFile');
-      
       exportFilteredResults(mockResults, 'json');
 
       // Note: we can't easily spy on the module function, so we test the behavior
@@ -222,7 +220,7 @@ describe('Export Utils', () => {
 
     it('should show alert when no results to export', () => {
       window.alert = vi.fn();
-      
+
       exportFilteredResults([], 'json');
 
       expect(window.alert).toHaveBeenCalledWith('No results match the current filters.');
@@ -230,7 +228,7 @@ describe('Export Utils', () => {
 
     it('should call custom error handler when provided', () => {
       const onError = vi.fn();
-      
+
       exportFilteredResults([], 'json', onError);
 
       expect(onError).toHaveBeenCalledWith('No results match the current filters.');
@@ -239,7 +237,7 @@ describe('Export Utils', () => {
     it('should handle export errors with custom error handler', () => {
       const onError = vi.fn();
       // Mock window.URL.createObjectURL to throw
-      (window.URL.createObjectURL as any).mockImplementation(() => {
+      (window.URL.createObjectURL as ReturnType<typeof vi.fn>).mockImplementation(() => {
         throw new Error('Mock error');
       });
 

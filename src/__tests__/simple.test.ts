@@ -17,4 +17,4 @@ describe('Basic Test Setup', () => {
     expect(navigator.clipboard).toBeDefined();
     expect(global.fetch).toBeDefined();
   });
-}); 
+});

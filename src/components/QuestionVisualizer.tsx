@@ -16,15 +16,15 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const questionEntries = Object.entries(questions);
-  
+
   // Filter questions based on search term
-  const filteredQuestions = questionEntries.filter(([id, question]) =>
-    question.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    question.raw_answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredQuestions = questionEntries.filter(
+    ([id, question]) =>
+      question.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      question.raw_answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const toggleExpanded = (questionId: string) => {
@@ -80,7 +80,7 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
             {questionEntries.length} total
           </span>
         </h3>
-        
+
         <div className="flex items-center gap-3">
           <button
             onClick={expandAll}
@@ -125,7 +125,7 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
         ) : (
           filteredQuestions.map(([questionId, question], index) => {
             const isExpanded = expandedQuestions.has(questionId);
-            
+
             return (
               <div
                 key={questionId}
@@ -162,22 +162,18 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
                           </button>
                         </div>
                       </div>
-                      
+
                       <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1 line-clamp-2">
                         {question.question}
                       </h4>
-                      
+
                       <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-1">
                         <span className="font-medium">Answer:</span> {question.raw_answer}
                       </p>
                     </div>
-                    
+
                     <button className="ml-4 p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4" />
-                      )}
+                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -243,10 +239,10 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
       {/* Footer Info */}
       <div className="mt-6 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800">
         <div className="text-xs text-indigo-800 dark:text-indigo-300">
-          <strong>Tip:</strong> Click on any question to expand and see the full details including the question ID and raw answer. 
-          Use the copy buttons to copy question IDs to your clipboard.
+          <strong>Tip:</strong> Click on any question to expand and see the full details including the question ID and
+          raw answer. Use the copy buttons to copy question IDs to your clipboard.
         </div>
       </div>
     </div>
   );
-}; 
+};

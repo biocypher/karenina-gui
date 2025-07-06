@@ -9,22 +9,14 @@ interface QuestionRubricEditorProps {
 }
 
 export default function QuestionRubricEditor({ questionId }: QuestionRubricEditorProps) {
-  const {
-    currentRubric: globalRubric,
-    lastError: globalError,
-    clearError: clearGlobalError,
-  } = useRubricStore();
-  
-  const {
-    getQuestionRubric,
-    setQuestionRubric,
-    clearQuestionRubric
-  } = useQuestionStore();
-  
+  const { currentRubric: globalRubric, lastError: globalError, clearError: clearGlobalError } = useRubricStore();
+
+  const { getQuestionRubric, setQuestionRubric, clearQuestionRubric } = useQuestionStore();
+
   const [questionRubric, setQuestionRubricState] = useState<Rubric | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   // Load question rubric when questionId changes
   useEffect(() => {
     if (questionId) {
@@ -33,51 +25,53 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       setIsInitialized(true);
     }
   }, [questionId, getQuestionRubric]);
-  
+
   // Initialize with empty rubric if none exists
   useEffect(() => {
     if (isInitialized && !questionRubric) {
       setQuestionRubricState({
-        traits: []
+        traits: [],
       });
     }
   }, [isInitialized, questionRubric]);
-  
+
   const handleAddTrait = () => {
     if (!questionRubric) return;
-    
+
     const newTrait: RubricTrait = {
       name: `Question Trait ${questionRubric.traits.length + 1}`,
       description: '',
-      kind: 'boolean'
+      kind: 'boolean',
     };
-    
+
     // Check for conflicts with global rubric traits
-    const globalTraitNames = (globalRubric?.traits || []).map(t => t.name.toLowerCase());
-    const questionTraitNames = questionRubric.traits.map(t => t.name.toLowerCase());
-    
-    if (globalTraitNames.includes(newTrait.name.toLowerCase()) || 
-        questionTraitNames.includes(newTrait.name.toLowerCase())) {
+    const globalTraitNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
+    const questionTraitNames = questionRubric.traits.map((t) => t.name.toLowerCase());
+
+    if (
+      globalTraitNames.includes(newTrait.name.toLowerCase()) ||
+      questionTraitNames.includes(newTrait.name.toLowerCase())
+    ) {
       setLastError(`Trait with name "${newTrait.name}" already exists`);
       return;
     }
-    
+
     const updatedRubric = {
       ...questionRubric,
-      traits: [...questionRubric.traits, newTrait]
+      traits: [...questionRubric.traits, newTrait],
     };
-    
+
     setQuestionRubricState(updatedRubric);
     setQuestionRubric(questionId, updatedRubric);
     setLastError(null);
   };
-  
-  const handleTraitChange = (index: number, field: keyof RubricTrait, value: any) => {
+
+  const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
     if (!questionRubric || index < 0 || index >= questionRubric.traits.length) return;
-    
+
     const currentTrait = questionRubric.traits[index];
     const updatedTrait: RubricTrait = { ...currentTrait, [field]: value };
-    
+
     // Set default min/max for score traits
     if (field === 'kind') {
       if (value === 'score') {
@@ -88,68 +82,63 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
         updatedTrait.max_score = undefined;
       }
     }
-    
+
     // Check for trait name conflicts
     if (field === 'name') {
-      const globalTraitNames = (globalRubric?.traits || []).map(t => t.name.toLowerCase());
+      const globalTraitNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
       const questionTraitNames = questionRubric.traits
-        .map((t, i) => i !== index ? t.name.toLowerCase() : null)
+        .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
         .filter(Boolean);
-      
-      if (globalTraitNames.includes(value.toLowerCase()) || 
-          questionTraitNames.includes(value.toLowerCase())) {
+
+      if (globalTraitNames.includes(value.toLowerCase()) || questionTraitNames.includes(value.toLowerCase())) {
         setLastError(`Trait with name "${value}" already exists`);
         return;
       }
     }
-    
+
     const updatedTraits = [...questionRubric.traits];
     updatedTraits[index] = updatedTrait;
-    
+
     const updatedRubric = { ...questionRubric, traits: updatedTraits };
     setQuestionRubricState(updatedRubric);
     setQuestionRubric(questionId, updatedRubric);
     setLastError(null);
   };
-  
+
   const handleRemoveTrait = (index: number) => {
     if (!questionRubric || index < 0 || index >= questionRubric.traits.length) return;
-    
+
     const updatedTraits = questionRubric.traits.filter((_, i) => i !== index);
     const updatedRubric = { ...questionRubric, traits: updatedTraits };
-    
+
     setQuestionRubricState(updatedRubric);
     setQuestionRubric(questionId, updatedRubric);
     setLastError(null);
   };
-  
+
   const handleClearRubric = () => {
     clearQuestionRubric(questionId);
     setQuestionRubricState({ traits: [] });
     setLastError(null);
   };
-  
+
   const clearError = () => {
     setLastError(null);
   };
-  
+
   if (!isInitialized || !questionRubric) {
     return (
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-        <div className="text-center text-slate-500 dark:text-slate-400">
-          Loading question rubric editor...
-        </div>
+        <div className="text-center text-slate-500 dark:text-slate-400">Loading question rubric editor...</div>
       </div>
     );
   }
-  
+
   return (
     <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Question-Specific Rubric
-        </h3>
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Question-Specific Rubric</h3>
         {questionRubric.traits.length > 0 && (
           <button
             onClick={handleClearRubric}
@@ -159,7 +148,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
           </button>
         )}
       </div>
-      
+
       {/* Global Rubric Summary */}
       {globalRubric && globalRubric.traits.length > 0 && (
         <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
@@ -178,15 +167,21 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
           </div>
         </div>
       )}
-      
+
       {/* Question-Specific Traits */}
       <div className="space-y-3 mb-4">
         {questionRubric.traits.map((trait, index) => (
-          <div key={index} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div
+            key={index}
+            className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+          >
             <div className="grid grid-cols-12 gap-4 items-start">
               {/* Trait Name */}
               <div className="col-span-3">
-                <label htmlFor={`q-trait-name-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor={`q-trait-name-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Trait Name
                 </label>
                 <input
@@ -201,10 +196,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                   placeholder="e.g., Question Clarity"
                 />
               </div>
-              
+
               {/* Trait Kind Selector */}
               <div className="col-span-2">
-                <label htmlFor={`q-trait-type-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor={`q-trait-type-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Trait Type
                 </label>
                 <div className="relative">
@@ -226,7 +224,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                     </svg>
                   </div>
                 </div>
-                
+
                 {/* Score range inputs for score traits */}
                 {trait.kind === 'score' && (
                   <div className="mt-2">
@@ -261,10 +259,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                   </div>
                 )}
               </div>
-              
+
               {/* Description */}
               <div className="col-span-6">
-                <label htmlFor={`q-trait-description-${index}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label
+                  htmlFor={`q-trait-description-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
                   Trait Description
                 </label>
                 <input
@@ -279,7 +280,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                   placeholder="What should be evaluated for this specific question?"
                 />
               </div>
-              
+
               {/* Delete Button */}
               <div className="col-span-1 flex justify-end mt-6">
                 <button
@@ -294,7 +295,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
             </div>
           </div>
         ))}
-        
+
         {/* Add Trait Button */}
         <button
           onClick={handleAddTrait}
@@ -306,7 +307,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
           Add question-specific trait
         </button>
       </div>
-      
+
       {/* Error Display */}
       {(lastError || globalError) && (
         <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
@@ -326,12 +327,22 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
           </div>
         </div>
       )}
-      
+
       {/* Rubric Summary */}
       <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
-          <svg className="w-4 h-4 mr-2 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <svg
+            className="w-4 h-4 mr-2 text-slate-600 dark:text-slate-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
           </svg>
           Combined Rubric Summary
         </h4>
@@ -363,14 +374,14 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-indigo-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {questionRubric.traits.filter(t => t.kind === 'boolean').length}
+                    {questionRubric.traits.filter((t) => t.kind === 'boolean').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">binary</span>
                 </span>
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {questionRubric.traits.filter(t => t.kind === 'score').length}
+                    {questionRubric.traits.filter((t) => t.kind === 'score').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
                 </span>

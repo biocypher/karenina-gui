@@ -1,7 +1,5 @@
 import React from 'react';
 import { diffLines } from 'diff';
-import Prism from 'prismjs';
-import 'prismjs/components/prism-python';
 
 interface DiffViewerProps {
   originalCode: string;
@@ -10,21 +8,27 @@ interface DiffViewerProps {
   hideHeader?: boolean;
 }
 
+interface DiffPart {
+  added?: boolean;
+  removed?: boolean;
+  value: string;
+}
+
 export const DiffViewer: React.FC<DiffViewerProps> = ({ originalCode, currentCode, title, hideHeader = false }) => {
   const diff = diffLines(originalCode, currentCode);
-  
-  const renderDiffLine = (part: any, index: number) => {
-    const lineClass = part.added 
-      ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-l-4 border-emerald-500 dark:border-emerald-400 text-emerald-900 dark:text-emerald-300' 
-      : part.removed 
-      ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/30 border-l-4 border-red-500 dark:border-red-400 text-red-900 dark:text-red-300'
-      : 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100';
-    
+
+  const renderDiffLine = (part: DiffPart, index: number) => {
+    const lineClass = part.added
+      ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-l-4 border-emerald-500 dark:border-emerald-400 text-emerald-900 dark:text-emerald-300'
+      : part.removed
+        ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/30 border-l-4 border-red-500 dark:border-red-400 text-red-900 dark:text-red-300'
+        : 'bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100';
+
     const prefix = part.added ? '+' : part.removed ? '-' : ' ';
-    const lines = part.value.split('\n').filter((line: string, i: number, arr: string[]) => 
-      i < arr.length - 1 || line.trim() !== ''
-    );
-    
+    const lines = part.value
+      .split('\n')
+      .filter((line: string, i: number, arr: string[]) => i < arr.length - 1 || line.trim() !== '');
+
     return lines.map((line: string, lineIndex: number) => (
       <div key={`${index}-${lineIndex}`} className={`px-4 py-1.5 font-mono text-sm ${lineClass}`}>
         <span className="inline-block w-6 text-slate-500 dark:text-slate-400 select-none font-semibold">{prefix}</span>
@@ -38,9 +42,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ originalCode, currentCod
       {/* Header - conditionally rendered */}
       {!hideHeader && (
         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 border-b border-slate-300 dark:border-slate-600 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            {/* Window controls removed for cleaner interface */}
-          </div>
+          <div className="flex items-center gap-2">{/* Window controls removed for cleaner interface */}</div>
           <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">{title}</div>
         </div>
       )}

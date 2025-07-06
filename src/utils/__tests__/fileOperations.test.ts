@@ -6,33 +6,50 @@ import {
   parseJSONFile,
   resetFileInput,
   formatFileSize,
-  FILE_VALIDATION_PRESETS
+  FILE_VALIDATION_PRESETS,
 } from '../fileOperations';
 
 // Mock DOM methods
+interface MockURL {
+  createObjectURL: ReturnType<typeof vi.fn>;
+  revokeObjectURL: ReturnType<typeof vi.fn>;
+}
+
 Object.defineProperty(window, 'URL', {
   value: {
     createObjectURL: vi.fn(() => 'mock-url'),
     revokeObjectURL: vi.fn(),
-  },
+  } as MockURL,
   writable: true,
 });
+
+// Mock DOM element interfaces
+interface MockAnchorElement {
+  style: { display: string };
+  href: string;
+  download: string;
+  click: ReturnType<typeof vi.fn>;
+}
+
+interface MockElement {
+  [key: string]: unknown;
+}
 
 describe('fileOperations', () => {
   beforeEach(() => {
     // Mock document methods
-    document.createElement = vi.fn((tagName) => {
+    document.createElement = vi.fn((tagName: string): MockAnchorElement | MockElement => {
       if (tagName === 'a') {
         return {
           style: { display: '' },
           href: '',
           download: '',
           click: vi.fn(),
-        } as any;
+        } as MockAnchorElement;
       }
-      return {} as any;
+      return {} as MockElement;
     });
-    
+
     document.body.appendChild = vi.fn();
     document.body.removeChild = vi.fn();
   });
@@ -74,7 +91,7 @@ describe('fileOperations', () => {
     });
 
     it('should handle errors gracefully', () => {
-      (window.URL.createObjectURL as any).mockImplementation(() => {
+      (window.URL.createObjectURL as ReturnType<typeof vi.fn>).mockImplementation(() => {
         throw new Error('Mock error');
       });
 
@@ -135,7 +152,7 @@ describe('fileOperations', () => {
       const options = {
         allowedExtensions: ['.txt'],
         allowedMimeTypes: ['text/plain'],
-        maxSizeBytes: 10000
+        maxSizeBytes: 10000,
       };
 
       const result = validateFile(file, options);
@@ -156,41 +173,48 @@ describe('fileOperations', () => {
   describe('readFileAsText', () => {
     it('should read file as text successfully', async () => {
       const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
-      
+
       // Mock FileReader
-      const mockFileReader = {
+      interface MockFileReader {
+        readAsText: ReturnType<typeof vi.fn>;
+        onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null;
+        onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => void) | null;
+        result?: string | ArrayBuffer | null;
+      }
+
+      const mockFileReader: MockFileReader = {
         readAsText: vi.fn(),
-        onload: null as any,
-        onerror: null as any,
+        onload: null,
+        onerror: null,
       };
-      
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+
+      global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
 
       const promise = readFileAsText(file);
-      
+
       // Simulate successful read
-      mockFileReader.onload({ target: { result: 'test content' } });
-      
+      mockFileReader.onload!({ target: { result: 'test content' } } as ProgressEvent<FileReader>);
+
       const result = await promise;
       expect(result).toBe('test content');
     });
 
     it('should handle read errors', async () => {
       const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
-      
-      const mockFileReader = {
+
+      const mockFileReader: MockFileReader = {
         readAsText: vi.fn(),
-        onload: null as any,
-        onerror: null as any,
+        onload: null,
+        onerror: null,
       };
-      
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+
+      global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
 
       const promise = readFileAsText(file);
-      
+
       // Simulate error
-      mockFileReader.onerror();
-      
+      mockFileReader.onerror!({} as ProgressEvent<FileReader>);
+
       await expect(promise).rejects.toThrow('Failed to read file: test.txt');
     });
   });
@@ -198,85 +222,85 @@ describe('fileOperations', () => {
   describe('parseJSONFile', () => {
     it('should parse valid JSON file', async () => {
       const file = new File(['{"key": "value"}'], 'test.json', { type: 'application/json' });
-      
-      const mockFileReader = {
+
+      const mockFileReader: MockFileReader = {
         readAsText: vi.fn(),
-        onload: null as any,
-        onerror: null as any,
+        onload: null,
+        onerror: null,
       };
-      
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+
+      global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
 
       const promise = parseJSONFile(file);
-      
+
       // Simulate successful read
-      mockFileReader.onload({ target: { result: '{"key": "value"}' } });
-      
+      mockFileReader.onload!({ target: { result: '{"key": "value"}' } } as ProgressEvent<FileReader>);
+
       const result = await promise;
       expect(result).toEqual({ key: 'value' });
     });
 
     it('should handle invalid JSON', async () => {
       const file = new File(['invalid json'], 'test.json', { type: 'application/json' });
-      
-      const mockFileReader = {
+
+      const mockFileReader: MockFileReader = {
         readAsText: vi.fn(),
-        onload: null as any,
-        onerror: null as any,
+        onload: null,
+        onerror: null,
       };
-      
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+
+      global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
 
       const promise = parseJSONFile(file);
-      
+
       // Simulate successful read of invalid JSON
-      mockFileReader.onload({ target: { result: 'invalid json' } });
-      
+      mockFileReader.onload!({ target: { result: 'invalid json' } } as ProgressEvent<FileReader>);
+
       await expect(promise).rejects.toThrow('Invalid JSON format in file: test.json');
     });
 
     it('should use validator when provided', async () => {
       const file = new File(['{"name": "test"}'], 'test.json', { type: 'application/json' });
-      const validator = (data: any): data is { name: string } => {
-        return typeof data === 'object' && typeof data.name === 'string';
+      const validator = (data: unknown): data is { name: string } => {
+        return typeof data === 'object' && data !== null && typeof (data as { name?: unknown }).name === 'string';
       };
-      
-      const mockFileReader = {
+
+      const mockFileReader: MockFileReader = {
         readAsText: vi.fn(),
-        onload: null as any,
-        onerror: null as any,
+        onload: null,
+        onerror: null,
       };
-      
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+
+      global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
 
       const promise = parseJSONFile(file, validator);
-      
+
       // Simulate successful read
-      mockFileReader.onload({ target: { result: '{"name": "test"}' } });
-      
+      mockFileReader.onload!({ target: { result: '{"name": "test"}' } } as ProgressEvent<FileReader>);
+
       const result = await promise;
       expect(result).toEqual({ name: 'test' });
     });
 
     it('should reject when validator fails', async () => {
       const file = new File(['{"invalid": "data"}'], 'test.json', { type: 'application/json' });
-      const validator = (data: any): data is { name: string } => {
-        return typeof data === 'object' && typeof data.name === 'string';
+      const validator = (data: unknown): data is { name: string } => {
+        return typeof data === 'object' && data !== null && typeof (data as { name?: unknown }).name === 'string';
       };
-      
-      const mockFileReader = {
+
+      const mockFileReader: MockFileReader = {
         readAsText: vi.fn(),
-        onload: null as any,
-        onerror: null as any,
+        onload: null,
+        onerror: null,
       };
-      
-      global.FileReader = vi.fn(() => mockFileReader) as any;
+
+      global.FileReader = vi.fn(() => mockFileReader) as unknown as typeof FileReader;
 
       const promise = parseJSONFile(file, validator);
-      
+
       // Simulate successful read of data that fails validation
-      mockFileReader.onload({ target: { result: '{"invalid": "data"}' } });
-      
+      mockFileReader.onload!({ target: { result: '{"invalid": "data"}' } } as ProgressEvent<FileReader>);
+
       await expect(promise).rejects.toThrow('JSON data does not match expected format');
     });
   });
@@ -316,7 +340,7 @@ describe('fileOperations', () => {
   describe('FILE_VALIDATION_PRESETS', () => {
     it('should have correct JSON preset', () => {
       const preset = FILE_VALIDATION_PRESETS.JSON_ONLY;
-      
+
       expect(preset.allowedExtensions).toContain('.json');
       expect(preset.allowedMimeTypes).toContain('application/json');
       expect(preset.maxSizeBytes).toBe(50 * 1024 * 1024);
@@ -324,7 +348,7 @@ describe('fileOperations', () => {
 
     it('should have correct spreadsheet preset', () => {
       const preset = FILE_VALIDATION_PRESETS.SPREADSHEET;
-      
+
       expect(preset.allowedExtensions).toContain('.xlsx');
       expect(preset.allowedExtensions).toContain('.csv');
       expect(preset.allowedMimeTypes).toContain('text/csv');
@@ -332,7 +356,7 @@ describe('fileOperations', () => {
 
     it('should have correct text files preset', () => {
       const preset = FILE_VALIDATION_PRESETS.TEXT_FILES;
-      
+
       expect(preset.allowedExtensions).toContain('.txt');
       expect(preset.allowedMimeTypes).toContain('text/plain');
     });

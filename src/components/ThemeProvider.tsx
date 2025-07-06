@@ -8,9 +8,5 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const themeProps = useThemeStorage();
 
-  return (
-    <ThemeContext.Provider value={themeProps}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}; 
+  return <ThemeContext.Provider value={themeProps}>{children}</ThemeContext.Provider>;
+};

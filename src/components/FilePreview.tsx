@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, AlertCircle, Info, FileText, Grid } from 'lucide-react';
+import { Info, FileText, Grid } from 'lucide-react';
 
 interface PreviewData {
   success: boolean;
@@ -49,14 +49,19 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ data }) => {
             Showing {Math.min(data.preview_rows || 0, data.total_rows || 0)} of {data.total_rows?.toLocaleString()} rows
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-700">
-                <th className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-left text-sm font-medium text-slate-700 dark:text-slate-300">#</th>
+                <th className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                  #
+                </th>
                 {data.columns.map((header) => (
-                  <th key={header} className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <th
+                    key={header}
+                    className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-left text-sm font-medium text-slate-700 dark:text-slate-300"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="truncate" title={header}>
                         {header}
@@ -77,12 +82,13 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ data }) => {
                   <td className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-400">
                     {rowIndex + 1}
                   </td>
-                  {data.columns.map((column, colIndex) => (
-                    <td key={`${rowIndex}-${column}`} className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
+                  {data.columns.map((column) => (
+                    <td
+                      key={`${rowIndex}-${column}`}
+                      className="border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                    >
                       <div className="max-w-xs truncate" title={row[column] || ''}>
-                        {row[column] || (
-                          <span className="text-slate-400 italic">empty</span>
-                        )}
+                        {row[column] || <span className="text-slate-400 italic">empty</span>}
                       </div>
                     </td>
                   ))}
@@ -97,7 +103,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ data }) => {
             <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 text-sm">
               <Info className="w-4 h-4" />
               <span className="font-medium">
-                This is a preview of the first {data.preview_rows} rows. The table is scrollable both horizontally and vertically. ({data.total_rows - data.preview_rows} more rows in full file)
+                This is a preview of the first {data.preview_rows} rows. The table is scrollable both horizontally and
+                vertically. ({data.total_rows - data.preview_rows} more rows in full file)
               </span>
             </div>
           </div>
@@ -105,4 +112,4 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ data }) => {
       </div>
     </div>
   );
-}; 
+};

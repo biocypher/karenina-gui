@@ -14,12 +14,12 @@ const pidFilePath = path.join(process.cwd(), 'tests/e2e/.karenina-pids.json');
  */
 async function globalSetup() {
   console.log('🚀 Starting Karenina E2E setup...');
-  
+
   try {
     // Ensure we're in the right directory
     const currentDir = process.cwd();
     console.log(`Current directory: ${currentDir}`);
-    
+
     // Change to project root if we're in karenina-gui
     let workingDir = currentDir;
     if (currentDir.endsWith('karenina-gui')) {
@@ -33,13 +33,13 @@ async function globalSetup() {
     try {
       await fs.access(startupScriptPath);
       console.log(`✓ Found startup script: ${startupScriptPath}`);
-    } catch (error) {
+    } catch {
       throw new Error(`Startup script not found: ${startupScriptPath}`);
     }
 
     // Clean up any existing processes
     await cleanupExistingProcesses();
-    
+
     // Additional cleanup: ensure ports are free
     await killProcessesOnPorts([5173, 8080]);
     await sleep(2000); // Give time for ports to be freed
@@ -48,13 +48,13 @@ async function globalSetup() {
     const cleanEnv = { ...process.env };
     delete cleanEnv.VIRTUAL_ENV;
     delete cleanEnv.PYTHONPATH;
-    
+
     console.log('Starting frontend development server...');
     frontendProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(workingDir, 'karenina-gui'),
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: cleanEnv
+      env: cleanEnv,
     });
 
     if (!frontendProcess.pid) {
@@ -64,7 +64,7 @@ async function globalSetup() {
     console.log(`✓ Started frontend process with PID: ${frontendProcess.pid}`);
 
     console.log('Starting backend development server with direct function calls...');
-    
+
     // Create a temporary Python script that directly calls the server function
     const tempScriptPath = path.join(workingDir, 'temp-start-backend.py');
     const pythonScript = `
@@ -110,7 +110,7 @@ except Exception as e:
       cwd: path.join(workingDir, 'karenina-server'),
       detached: true,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: cleanEnv
+      env: cleanEnv,
     });
 
     if (!backendProcess.pid) {
@@ -123,26 +123,31 @@ except Exception as e:
     await storePids({
       frontend: frontendProcess.pid,
       backend: backendProcess.pid,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Set up process event handlers
-    frontendProcess.on('error', (error) => {
-      console.error('Frontend process error:', error);
+    frontendProcess.on('error', (processError) => {
+      console.error('❌ Frontend process error:', processError);
     });
 
-    backendProcess.on('error', (error) => {
-      console.error('Backend process error:', error);
+    backendProcess.on('error', (processError) => {
+      console.error('❌ Backend process error:', processError);
     });
 
     // Enhanced logging for debugging
     console.log('📄 Setting up process logging...');
-    
+
     if (frontendProcess.stdout) {
       frontendProcess.stdout.on('data', (data) => {
         const output = data.toString();
         // Log important frontend messages
-        if (output.includes('ready') || output.includes('Local:') || output.includes('ERROR') || output.includes('FAIL')) {
+        if (
+          output.includes('ready') ||
+          output.includes('Local:') ||
+          output.includes('ERROR') ||
+          output.includes('FAIL')
+        ) {
           console.log('📄 Frontend output:', output.trim());
         }
       });
@@ -186,15 +191,14 @@ except Exception as e:
     // Wait for servers to be ready
     console.log('⏳ Waiting for servers to be ready...');
     await waitForServers();
-    
+
     console.log('✅ Karenina E2E setup completed successfully');
-    
+
     // Return teardown function
     return async () => {
       console.log('🧹 Running E2E teardown...');
       await cleanup();
     };
-
   } catch (error) {
     console.error('❌ E2E setup failed:', error);
     await cleanup(); // Clean up on failure
@@ -227,16 +231,16 @@ async function waitForServers() {
 async function waitForServer(serverKey: keyof typeof TEST_CONFIG.servers, maxRetries: number, retryDelay: number) {
   const healthUrl = getHealthUrl(serverKey);
   console.log(`Checking health for ${serverKey} at ${healthUrl}`);
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const response = await fetch(healthUrl, { 
+      const response = await fetch(healthUrl, {
         method: 'GET',
-        signal: AbortSignal.timeout(5000) // 5 second timeout per request
+        signal: AbortSignal.timeout(5000), // 5 second timeout per request
       });
-      
+
       console.log(`${serverKey} health check attempt ${i + 1}: status ${response.status}`);
-      
+
       if (response.ok) {
         console.log(`✓ ${serverKey} server responded successfully`);
         return; // Server is ready
@@ -244,8 +248,10 @@ async function waitForServer(serverKey: keyof typeof TEST_CONFIG.servers, maxRet
         // Log response details for non-2xx responses
         try {
           const responseText = await response.text();
-          console.log(`${serverKey} health check failed with status ${response.status}. Response: ${responseText.substring(0, 200)}`);
-        } catch (e) {
+          console.log(
+            `${serverKey} health check failed with status ${response.status}. Response: ${responseText.substring(0, 200)}`
+          );
+        } catch {
           console.log(`${serverKey} health check failed with status ${response.status}. Could not read response.`);
         }
       }
@@ -253,24 +259,24 @@ async function waitForServer(serverKey: keyof typeof TEST_CONFIG.servers, maxRet
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.log(`${serverKey} health check attempt ${i + 1} failed: ${errorMsg}`);
     }
-    
+
     if (i < maxRetries - 1) {
-      console.log(`⏳ Server ${serverKey} not ready, retrying in ${retryDelay/1000}s... (${i + 1}/${maxRetries})`);
+      console.log(`⏳ Server ${serverKey} not ready, retrying in ${retryDelay / 1000}s... (${i + 1}/${maxRetries})`);
       await sleep(retryDelay);
     }
   }
-  
+
   throw new Error(`Server ${serverKey} failed to start after ${maxRetries} retries`);
 }
 
 /**
  * Store process PIDs for cleanup
  */
-async function storePids(pids: any) {
+async function storePids(pids: Record<string, number>) {
   try {
     await fs.writeFile(pidFilePath, JSON.stringify(pids, null, 2));
-  } catch (error) {
-    console.warn('Failed to store PIDs:', error);
+  } catch {
+    console.warn('Failed to store PIDs');
   }
 }
 
@@ -281,7 +287,7 @@ async function cleanupExistingProcesses() {
   try {
     const pidsData = await fs.readFile(pidFilePath, 'utf-8');
     const pids = JSON.parse(pidsData);
-    
+
     // Clean up frontend process
     if (pids.frontend) {
       console.log(`🧹 Cleaning up existing frontend process: ${pids.frontend}`);
@@ -289,11 +295,11 @@ async function cleanupExistingProcesses() {
         process.kill(-pids.frontend, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.frontend, 'SIGKILL');
-      } catch (error) {
+      } catch {
         console.log('Frontend process cleanup (expected if already dead)');
       }
     }
-    
+
     // Clean up backend process
     if (pids.backend) {
       console.log(`🧹 Cleaning up existing backend process: ${pids.backend}`);
@@ -301,11 +307,11 @@ async function cleanupExistingProcesses() {
         process.kill(-pids.backend, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.backend, 'SIGKILL');
-      } catch (error) {
+      } catch {
         console.log('Backend process cleanup (expected if already dead)');
       }
     }
-    
+
     // Legacy cleanup for old PID format
     if (pids.main) {
       console.log(`🧹 Cleaning up existing legacy process: ${pids.main}`);
@@ -313,14 +319,14 @@ async function cleanupExistingProcesses() {
         process.kill(-pids.main, 'SIGTERM');
         await sleep(1000);
         process.kill(-pids.main, 'SIGKILL');
-      } catch (error) {
+      } catch {
         console.log('Legacy process cleanup (expected if already dead)');
       }
     }
-    
+
     // Remove PID file
     await fs.unlink(pidFilePath);
-  } catch (error) {
+  } catch {
     // No existing PID file or process, that's fine
   }
 }
@@ -330,7 +336,7 @@ async function cleanupExistingProcesses() {
  */
 async function cleanup() {
   console.log('🧹 Cleaning up Karenina processes...');
-  
+
   try {
     // Clean up frontend process
     if (frontendProcess && frontendProcess.pid) {
@@ -339,8 +345,8 @@ async function cleanup() {
         process.kill(-frontendProcess.pid, 'SIGTERM');
         await sleep(2000);
         process.kill(-frontendProcess.pid, 'SIGKILL');
-      } catch (error) {
-        console.log('Frontend cleanup error (expected if already dead):', error);
+      } catch {
+        console.log('Frontend cleanup error (expected if already dead)');
       }
       frontendProcess = null;
     }
@@ -352,8 +358,8 @@ async function cleanup() {
         process.kill(-backendProcess.pid, 'SIGTERM');
         await sleep(2000);
         process.kill(-backendProcess.pid, 'SIGKILL');
-      } catch (error) {
-        console.log('Backend cleanup error (expected if already dead):', error);
+      } catch {
+        console.log('Backend cleanup error (expected if already dead)');
       }
       backendProcess = null;
     }
@@ -361,7 +367,7 @@ async function cleanup() {
     // Clean up PID file
     try {
       await fs.unlink(pidFilePath);
-    } catch (error) {
+    } catch {
       // File might not exist, ignore
     }
 
@@ -370,13 +376,13 @@ async function cleanup() {
       const tempScriptPath = path.join(process.cwd().replace('/karenina-gui', ''), 'temp-start-backend.py');
       await fs.unlink(tempScriptPath);
       console.log('✓ Cleaned up temporary Python script');
-    } catch (error) {
+    } catch {
       // File might not exist, ignore
     }
 
     console.log('✅ Cleanup completed');
-  } catch (error) {
-    console.error('❌ Cleanup error:', error);
+  } catch {
+    console.error('❌ E2E setup failed');
   }
 }
 
@@ -387,25 +393,28 @@ async function killProcessesOnPorts(ports: number[]) {
   for (const port of ports) {
     try {
       console.log(`🧹 Checking for processes on port ${port}...`);
-      
+
       // Use lsof to find processes on the port
       const lsof = spawn('lsof', ['-ti', `:${port}`], { stdio: ['pipe', 'pipe', 'pipe'] });
-      
+
       let output = '';
       lsof.stdout.on('data', (data: Buffer) => {
         output += data.toString();
       });
-      
+
       await new Promise<void>((resolve) => {
         lsof.on('close', (code: number) => {
           if (code === 0 && output.trim()) {
             // Found processes, kill them
-            const pids = output.trim().split('\n').filter(pid => pid.trim());
-            pids.forEach(pid => {
+            const pids = output
+              .trim()
+              .split('\n')
+              .filter((pid) => pid.trim());
+            pids.forEach((pid) => {
               try {
                 console.log(`🧹 Killing process ${pid} on port ${port}`);
                 process.kill(parseInt(pid), 'SIGTERM');
-              } catch (error) {
+              } catch {
                 // Process might already be dead
               }
             });
@@ -413,7 +422,7 @@ async function killProcessesOnPorts(ports: number[]) {
           resolve();
         });
       });
-    } catch (error) {
+    } catch {
       // lsof might not be available or no processes found
       console.log(`No cleanup needed for port ${port}`);
     }
@@ -424,7 +433,7 @@ async function killProcessesOnPorts(ports: number[]) {
  * Sleep utility function
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export default globalSetup;

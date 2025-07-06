@@ -19,11 +19,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ finished, modified, on
             : 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 hover:from-slate-200 hover:to-slate-300 border border-slate-300'
         }`}
       >
-        {finished ? (
-          <CheckCircle className="w-4 h-4" />
-        ) : (
-          <Circle className="w-4 h-4" />
-        )}
+        {finished ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
         {finished ? 'Finished' : 'Not Finished'}
       </button>
 

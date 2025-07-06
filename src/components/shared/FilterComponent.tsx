@@ -1,9 +1,9 @@
 import React from 'react';
 import { Column, Table } from '@tanstack/react-table';
 
-interface FilterComponentProps {
-  column: Column<any, unknown>;
-  table: Table<any>;
+interface FilterComponentProps<T = unknown> {
+  column: Column<T, unknown>;
+  table: Table<T>;
 }
 
 export function FilterComponent({ column, table }: FilterComponentProps) {
@@ -16,7 +16,7 @@ export function FilterComponent({ column, table }: FilterComponentProps) {
         <input
           type="number"
           value={(columnFilterValue as [number, number])?.[0] ?? ''}
-          onChange={e => {
+          onChange={(e) => {
             const value = e.target.value;
             column.setFilterValue((old: [number, number]) => [value, old?.[1]]);
           }}
@@ -26,7 +26,7 @@ export function FilterComponent({ column, table }: FilterComponentProps) {
         <input
           type="number"
           value={(columnFilterValue as [number, number])?.[1] ?? ''}
-          onChange={e => {
+          onChange={(e) => {
             const value = e.target.value;
             column.setFilterValue((old: [number, number]) => [old?.[0], value]);
           }}
@@ -41,7 +41,7 @@ export function FilterComponent({ column, table }: FilterComponentProps) {
     <input
       type="text"
       value={(columnFilterValue ?? '') as string}
-      onChange={e => column.setFilterValue(e.target.value)}
+      onChange={(e) => column.setFilterValue(e.target.value)}
       placeholder={`Search...`}
       className="w-full border-gray-300 rounded shadow-sm text-xs p-1"
     />

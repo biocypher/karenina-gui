@@ -14,7 +14,7 @@ export interface LogEntry {
   level: LogLevel;
   category: string;
   message: string;
-  data?: any;
+  data?: unknown;
   timestamp: Date;
   component?: string;
 }
@@ -62,7 +62,7 @@ class Logger {
    * Application lifecycle events
    */
   lifecycle = {
-    appInit: (sessionId: string) => 
+    appInit: (sessionId: string) =>
       this.log({
         level: LogLevel.INFO,
         category: 'LIFECYCLE',
@@ -73,7 +73,7 @@ class Logger {
     dataReset: () =>
       this.log({
         level: LogLevel.INFO,
-        category: 'LIFECYCLE', 
+        category: 'LIFECYCLE',
         message: 'All data has been reset',
         timestamp: new Date(),
       }),
@@ -173,7 +173,7 @@ class Logger {
         timestamp: new Date(),
       }),
 
-    checkpointOperation: (operation: string, data?: any) =>
+    checkpointOperation: (operation: string, data?: unknown) =>
       this.log({
         level: LogLevel.DEBUG,
         category: 'CHECKPOINT',
@@ -186,7 +186,7 @@ class Logger {
   /**
    * Generic methods for component-specific logging
    */
-  info(category: string, message: string, component?: string, data?: any): void {
+  info(category: string, message: string, component?: string, data?: unknown): void {
     this.log({
       level: LogLevel.INFO,
       category,
@@ -197,7 +197,7 @@ class Logger {
     });
   }
 
-  warning(category: string, message: string, component?: string, data?: any): void {
+  warning(category: string, message: string, component?: string, data?: unknown): void {
     this.log({
       level: LogLevel.WARN,
       category,
@@ -208,7 +208,7 @@ class Logger {
     });
   }
 
-  error(category: string, message: string, component?: string, data?: any): void {
+  error(category: string, message: string, component?: string, data?: unknown): void {
     this.log({
       level: LogLevel.ERROR,
       category,
@@ -219,7 +219,7 @@ class Logger {
     });
   }
 
-  debugLog(category: string, message: string, component?: string, data?: any): void {
+  debugLog(category: string, message: string, component?: string, data?: unknown): void {
     this.log({
       level: LogLevel.DEBUG,
       category,
@@ -235,14 +235,14 @@ class Logger {
 export const logger = new Logger();
 
 // Export convenience functions for backward compatibility
-export const logInfo = (category: string, message: string, component?: string, data?: any) =>
+export const logInfo = (category: string, message: string, component?: string, data?: unknown) =>
   logger.info(category, message, component, data);
 
-export const logWarn = (category: string, message: string, component?: string, data?: any) =>
+export const logWarn = (category: string, message: string, component?: string, data?: unknown) =>
   logger.warning(category, message, component, data);
 
-export const logError = (category: string, message: string, component?: string, data?: any) =>
+export const logError = (category: string, message: string, component?: string, data?: unknown) =>
   logger.error(category, message, component, data);
 
-export const logDebug = (category: string, message: string, component?: string, data?: any) =>
+export const logDebug = (category: string, message: string, component?: string, data?: unknown) =>
   logger.debugLog(category, message, component, data);
