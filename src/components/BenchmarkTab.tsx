@@ -82,9 +82,14 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const handleExportFilteredResults = async (format: 'json' | 'csv') => {
     const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
 
-    exportFilteredResults(filteredResults, format, (error) => {
-      setError(error);
-    });
+    exportFilteredResults(
+      filteredResults,
+      format,
+      (error) => {
+        setError(error);
+      },
+      currentRubric
+    );
   };
 
   // Poll for progress updates

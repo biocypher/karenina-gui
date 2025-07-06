@@ -27,6 +27,11 @@ describe('Export Utils', () => {
       parsed_response: { answer: 4 },
       verify_result: true,
       verify_granular_result: { correct: true },
+      verify_rubric: {
+        Conciseness: true,
+        Directness: 4,
+        specific_trait: 3,
+      },
       answering_model: 'gpt-4',
       parsing_model: 'gpt-4-parser',
       answering_replicate: 1,
@@ -43,6 +48,11 @@ describe('Export Utils', () => {
       question_id: 'q2',
       question_text: 'What is "hello, world"?',
       raw_llm_response: "It's a greeting",
+      verify_rubric: {
+        Conciseness: false,
+        Directness: 2,
+        another_specific: true,
+      },
       answering_model: 'gpt-4',
       parsing_model: 'gpt-4-parser',
       success: false,
@@ -51,6 +61,13 @@ describe('Export Utils', () => {
       timestamp: '2023-01-01T00:01:00Z',
     },
   ];
+
+  const mockGlobalRubric = {
+    traits: [
+      { name: 'Conciseness', description: 'Is the response concise?', kind: 'boolean' },
+      { name: 'Directness', description: 'Is the response direct?', kind: 'score', min_score: 1, max_score: 5 },
+    ],
+  };
 
   beforeEach(() => {
     // Mock document methods
@@ -201,6 +218,123 @@ describe('Export Utils', () => {
       const csv = exportToCSV(resultsWithNulls);
       expect(csv).not.toContain('undefined');
       expect(csv).not.toContain('null');
+    });
+
+    it('should consolidate question-specific rubrics when global rubric is provided', () => {
+      const csv = exportToCSV(mockResults, mockGlobalRubric);
+      const lines = csv.split('\n');
+
+      // Check headers include global rubrics but not question-specific ones
+      expect(lines[0]).toContain('rubric_Conciseness');
+      expect(lines[0]).toContain('rubric_Directness');
+      expect(lines[0]).toContain('question_specific_rubrics');
+      expect(lines[0]).not.toContain('rubric_specific_trait');
+      expect(lines[0]).not.toContain('rubric_another_specific');
+
+      // Check first row has global rubric values and consolidated question-specific
+      expect(lines[1]).toContain('true'); // Conciseness
+      expect(lines[1]).toContain('4'); // Directness
+      expect(lines[1]).toContain('"{""specific_trait"":3}"'); // question-specific rubrics as JSON (CSV escaped)
+
+      // Check second row
+      expect(lines[2]).toContain('false'); // Conciseness
+      expect(lines[2]).toContain('2'); // Directness
+      expect(lines[2]).toContain('"{""another_specific"":true}"'); // question-specific rubrics as JSON (CSV escaped)
+    });
+
+    it('should handle all global rubrics when no question-specific rubrics exist', () => {
+      const resultsOnlyGlobal: ExportableResult[] = [
+        {
+          question_id: 'q1',
+          question_text: 'Test question',
+          raw_llm_response: 'Test response',
+          verify_rubric: {
+            Conciseness: true,
+            Directness: 4,
+          },
+          answering_model: 'test-model',
+          parsing_model: 'test-parser',
+          success: true,
+          execution_time: 1.0,
+          timestamp: '2023-01-01T00:00:00Z',
+        },
+      ];
+
+      const csv = exportToCSV(resultsOnlyGlobal, mockGlobalRubric);
+      const lines = csv.split('\n');
+
+      // Should not include question_specific_rubrics column when no question-specific rubrics exist
+      expect(lines[0]).toContain('rubric_Conciseness');
+      expect(lines[0]).toContain('rubric_Directness');
+      expect(lines[0]).not.toContain('question_specific_rubrics');
+    });
+
+    it('should handle no global rubric (all rubrics become question-specific)', () => {
+      const csv = exportToCSV(mockResults); // No global rubric provided
+      const lines = csv.split('\n');
+
+      // All rubrics should be in question_specific_rubrics column
+      expect(lines[0]).not.toContain('rubric_Conciseness');
+      expect(lines[0]).not.toContain('rubric_Directness');
+      expect(lines[0]).toContain('question_specific_rubrics');
+
+      // Check JSON consolidation (CSV escaped)
+      expect(lines[1]).toContain('"{""Conciseness"":true,""Directness"":4,""specific_trait"":3}"');
+      expect(lines[2]).toContain('"{""Conciseness"":false,""Directness"":2,""another_specific"":true}"');
+    });
+
+    it('should handle empty question-specific rubrics with proper JSON', () => {
+      const resultsNoQuestionSpecific: ExportableResult[] = [
+        {
+          question_id: 'q1',
+          question_text: 'Test question',
+          raw_llm_response: 'Test response',
+          verify_rubric: {
+            Conciseness: true,
+            Directness: 4,
+          },
+          answering_model: 'test-model',
+          parsing_model: 'test-parser',
+          success: true,
+          execution_time: 1.0,
+          timestamp: '2023-01-01T00:00:00Z',
+        },
+        {
+          question_id: 'q2',
+          question_text: 'Test question 2',
+          raw_llm_response: 'Test response 2',
+          verify_rubric: {
+            Conciseness: false,
+            // Missing Directness and other specific traits
+          },
+          answering_model: 'test-model',
+          parsing_model: 'test-parser',
+          success: true,
+          execution_time: 1.0,
+          timestamp: '2023-01-01T00:00:00Z',
+        },
+      ];
+
+      // Mock global rubric that includes some traits not in all results
+      const extendedGlobalRubric = {
+        traits: [
+          { name: 'Conciseness', description: 'Is the response concise?', kind: 'boolean' },
+          { name: 'Directness', description: 'Is the response direct?', kind: 'score', min_score: 1, max_score: 5 },
+          { name: 'extra_trait', description: 'Extra trait', kind: 'boolean' },
+        ],
+      };
+
+      const csv = exportToCSV(resultsNoQuestionSpecific, extendedGlobalRubric);
+      const lines = csv.split('\n');
+
+      // Should handle missing global traits gracefully
+      expect(lines[1]).toContain('true'); // Conciseness
+      expect(lines[1]).toContain('4'); // Directness
+      expect(lines[1]).toContain(''); // extra_trait missing (empty)
+
+      expect(lines[2]).toContain('false'); // Conciseness
+      expect(lines[2]).toContain(''); // Directness missing (empty)
+      expect(lines[2]).toContain(''); // extra_trait missing (empty)
     });
   });
 

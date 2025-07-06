@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from '../constants/api';
+import type { Rubric, RubricTrait } from '../types';
 
 export interface ExportableResult {
   question_id: string;
@@ -88,20 +89,35 @@ function escapeCSVField(field: unknown): string {
 /**
  * Converts results to CSV format
  */
-export function exportToCSV(results: ExportableResult[]): string {
+export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric): string {
   // Extract all unique rubric trait names from results to create dynamic columns
-  const rubricTraitNames = new Set<string>();
+  const allRubricTraitNames = new Set<string>();
   results.forEach((result) => {
     if (result.verify_rubric) {
       Object.keys(result.verify_rubric).forEach((traitName) => {
-        rubricTraitNames.add(traitName);
+        allRubricTraitNames.add(traitName);
       });
     }
   });
 
-  const rubricHeaders = Array.from(rubricTraitNames)
-    .sort()
-    .map((trait) => `rubric_${trait}`);
+  // Determine global vs question-specific rubrics
+  const globalTraitNames = new Set<string>();
+  if (globalRubric && globalRubric.traits) {
+    globalRubric.traits.forEach((trait: RubricTrait) => {
+      globalTraitNames.add(trait.name);
+    });
+  }
+
+  // Separate traits into global and question-specific
+  const globalTraits = Array.from(allRubricTraitNames)
+    .filter((trait) => globalTraitNames.has(trait))
+    .sort();
+  const questionSpecificTraits = Array.from(allRubricTraitNames)
+    .filter((trait) => !globalTraitNames.has(trait))
+    .sort();
+
+  // Create headers for global rubrics only
+  const globalRubricHeaders = globalTraits.map((trait) => `rubric_${trait}`);
 
   const headers = [
     'row_index',
@@ -111,7 +127,8 @@ export function exportToCSV(results: ExportableResult[]): string {
     'parsed_response',
     'verify_result',
     'verify_granular_result',
-    ...rubricHeaders,
+    ...globalRubricHeaders,
+    ...(questionSpecificTraits.length > 0 ? ['question_specific_rubrics'] : []),
     'rubric_summary',
     'answering_model',
     'parsing_model',
@@ -130,13 +147,23 @@ export function exportToCSV(results: ExportableResult[]): string {
   const csvRows = [headers.join(',')];
 
   results.forEach((result, index) => {
-    // Extract rubric trait values in the same order as headers
-    const rubricValues = Array.from(rubricTraitNames)
-      .sort()
-      .map((traitName) => {
-        const value = result.verify_rubric?.[traitName];
-        return escapeCSVField(value !== undefined ? value : '');
+    // Extract global rubric trait values
+    const globalRubricValues = globalTraits.map((traitName) => {
+      const value = result.verify_rubric?.[traitName];
+      return escapeCSVField(value !== undefined ? value : '');
+    });
+
+    // Create question-specific rubrics JSON
+    const questionSpecificRubrics: Record<string, number | boolean> = {};
+    if (result.verify_rubric) {
+      questionSpecificTraits.forEach((trait) => {
+        if (trait in result.verify_rubric!) {
+          questionSpecificRubrics[trait] = result.verify_rubric![trait];
+        }
       });
+    }
+    const questionSpecificRubricsValue =
+      questionSpecificTraits.length > 0 ? escapeCSVField(JSON.stringify(questionSpecificRubrics)) : '';
 
     // Create rubric summary
     let rubricSummary = '';
@@ -158,7 +185,8 @@ export function exportToCSV(results: ExportableResult[]): string {
       escapeCSVField(
         result.verify_granular_result !== undefined ? JSON.stringify(result.verify_granular_result) : 'N/A'
       ),
-      ...rubricValues,
+      ...globalRubricValues,
+      ...(questionSpecificTraits.length > 0 ? [questionSpecificRubricsValue] : []),
       escapeCSVField(rubricSummary),
       escapeCSVField(result.answering_model),
       escapeCSVField(result.parsing_model),
@@ -185,7 +213,8 @@ export function exportToCSV(results: ExportableResult[]): string {
 export function exportFilteredResults(
   results: ExportableResult[],
   format: 'json' | 'csv',
-  onError?: (error: string) => void
+  onError?: (error: string) => void,
+  globalRubric?: Rubric
 ): void {
   if (results.length === 0) {
     const errorMsg = 'No results match the current filters.';
@@ -207,7 +236,7 @@ export function exportFilteredResults(
       mimeType = 'application/json';
       fileName = `filtered_results_${new Date().toISOString().split('T')[0]}.json`;
     } else {
-      content = exportToCSV(results);
+      content = exportToCSV(results, globalRubric);
       mimeType = 'text/csv';
       fileName = `filtered_results_${new Date().toISOString().split('T')[0]}.csv`;
     }
