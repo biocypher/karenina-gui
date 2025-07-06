@@ -170,4 +170,4 @@ playwright-report/
 playwright/.cache/
 
 # Karenina specific
-.karenina-pids.json
+*.karenina-pids.json
