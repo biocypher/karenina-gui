@@ -4,12 +4,14 @@ import { Rubric } from '../types';
 interface RubricResultsDisplayProps {
   rubricResults: Record<string, number | boolean> | undefined;
   currentRubric?: Rubric;
+  evaluationRubric?: Rubric; // The merged rubric that was actually used for evaluation
   className?: string;
 }
 
 export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
   rubricResults,
   currentRubric,
+  evaluationRubric,
   className = '',
 }) => {
   if (!rubricResults) {
@@ -34,11 +36,27 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
   const totalTraits = traits.length;
   const successRate = passedTraits / totalTraits;
 
-  // Get trait descriptions from current rubric if available
-  const getTraitDescription = (traitName: string): string | undefined => {
-    if (!currentRubric) return undefined;
-    const trait = currentRubric.traits.find((t) => t.name === traitName);
-    return trait?.description;
+  // Get trait descriptions and source info from the rubric that was actually used for evaluation
+  const getTraitInfo = (traitName: string): { description?: string; isQuestionSpecific?: boolean } => {
+    // Prioritize evaluationRubric (the merged rubric that was actually used)
+    const rubricToUse = evaluationRubric || currentRubric;
+    if (!rubricToUse) return {};
+
+    const trait = rubricToUse.traits.find((t) => t.name === traitName);
+    if (!trait) return {};
+
+    // Determine if this trait is question-specific by checking if it exists in currentRubric
+    // If evaluationRubric has it but currentRubric doesn't, it's question-specific
+    let isQuestionSpecific = false;
+    if (evaluationRubric && currentRubric) {
+      const existsInGlobal = currentRubric.traits.some((t) => t.name === traitName);
+      isQuestionSpecific = !existsInGlobal;
+    }
+
+    return {
+      description: trait.description,
+      isQuestionSpecific,
+    };
   };
 
   return (
@@ -61,13 +79,20 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
       <div className="space-y-2">
         {traits.map(([name, value]) => {
           const isPassed = typeof value === 'boolean' ? value : value && value >= 3;
-          const description = getTraitDescription(name);
+          const { description, isQuestionSpecific } = getTraitInfo(name);
 
           return (
             <div key={name} className="flex flex-col space-y-1">
               <div className="flex justify-between items-center bg-white dark:bg-slate-800 px-3 py-2 rounded">
                 <div className="flex-1">
-                  <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">{name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">{name}</span>
+                    {isQuestionSpecific && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+                        Q-specific
+                      </span>
+                    )}
+                  </div>
                   {description && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{description}</p>}
                 </div>
                 <span

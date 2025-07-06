@@ -886,6 +886,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                               <RubricResultsDisplay
                                 rubricResults={selectedResult.verify_rubric}
                                 currentRubric={currentRubric}
+                                evaluationRubric={selectedResult.evaluation_rubric}
                               />
                             </div>
                           )}
