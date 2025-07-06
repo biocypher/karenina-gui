@@ -1,0 +1,55 @@
+{
+  "version": "2.0",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "What is the capital of France?",
+      "category": "Geography",
+      "isFinished": true,
+      "hasGeneratedTemplate": true,
+      "rubric": {
+        "traits": [
+          {
+            "name": "Accuracy",
+            "description": "Is the answer factually correct?",
+            "scale": [1, 2, 3, 4, 5]
+          }
+        ]
+      }
+    },
+    {
+      "id": "q2",
+      "question": "Calculate the area of a circle with radius 5cm",
+      "category": "Mathematics",
+      "isFinished": false,
+      "hasGeneratedTemplate": true,
+      "rubric": null
+    }
+  ],
+  "templates": {
+    "q1": {
+      "template": "class Answer(BaseModel):\n    capital: str = Field(description=\"The capital city of France\")\n    country: str = Field(default=\"France\")"
+    },
+    "q2": {
+      "template": "class Answer(BaseModel):\n    area: float = Field(description=\"Area of the circle in square cm\")\n    formula: str = Field(description=\"Formula used for calculation\")"
+    }
+  },
+  "globalRubric": {
+    "traits": [
+      {
+        "name": "Clarity",
+        "description": "Is the answer clear and well-structured?",
+        "scale": [1, 2, 3, 4, 5]
+      },
+      {
+        "name": "Completeness",
+        "description": "Does the answer address all parts of the question?",
+        "scale": [1, 2, 3, 4, 5]
+      }
+    ]
+  },
+  "progress": {
+    "finished": 1,
+    "total": 2
+  }
+}

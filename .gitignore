@@ -169,6 +169,5 @@ test-results/
 playwright-report/
 playwright/.cache/
 
-# Process ID files
+# Karenina specific
 *.karenina-pids.json
-.karenina-pids.json
