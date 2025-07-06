@@ -168,3 +168,6 @@ storybook-static
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Karenina specific
+.karenina-pids.json
