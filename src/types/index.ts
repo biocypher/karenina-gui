@@ -114,6 +114,7 @@ export interface VerificationResult {
   verify_result?: VerificationOutcome;
   verify_granular_result?: GranularVerificationResult;
   verify_rubric?: Record<string, number | boolean>;
+  evaluation_rubric?: Rubric; // The merged rubric used for evaluation (global + question-specific)
   answering_model: string;
   parsing_model: string;
   execution_time: number;

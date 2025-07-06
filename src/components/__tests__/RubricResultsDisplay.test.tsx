@@ -172,6 +172,41 @@ describe('RubricResultsDisplay', () => {
       expect(screen.queryByText('Answer is factually correct')).not.toBeInTheDocument();
       expect(screen.queryByText('Response is clear and understandable')).not.toBeInTheDocument();
     });
+
+    it('prioritizes evaluationRubric over currentRubric for descriptions', () => {
+      const evaluationRubric: Rubric = {
+        traits: [
+          {
+            name: 'Accuracy',
+            kind: 'boolean',
+            description: 'Question-specific accuracy description',
+          },
+          {
+            name: 'Clarity',
+            kind: 'score',
+            min_score: 1,
+            max_score: 5,
+            description: 'Question-specific clarity description',
+          },
+        ],
+      };
+
+      render(
+        <RubricResultsDisplay
+          rubricResults={resultsWithDescriptions}
+          currentRubric={mockRubric}
+          evaluationRubric={evaluationRubric}
+        />
+      );
+
+      // Should display descriptions from evaluationRubric, not currentRubric
+      expect(screen.getByText('Question-specific accuracy description')).toBeInTheDocument();
+      expect(screen.getByText('Question-specific clarity description')).toBeInTheDocument();
+
+      // Should not display original descriptions
+      expect(screen.queryByText('Answer is factually correct')).not.toBeInTheDocument();
+      expect(screen.queryByText('Response is clear and understandable')).not.toBeInTheDocument();
+    });
   });
 
   describe('with edge cases', () => {
@@ -207,6 +242,80 @@ describe('RubricResultsDisplay', () => {
 
       const summaryBadge = screen.getByText('1/4 passed');
       expect(summaryBadge).toHaveClass('bg-red-100', 'text-red-800');
+    });
+  });
+
+  describe('with question-specific trait indicators', () => {
+    const mixedResults = {
+      GlobalTrait: true,
+      QuestionSpecificTrait: 4,
+    };
+
+    it('displays question-specific indicators correctly', () => {
+      const globalRubric: Rubric = {
+        traits: [
+          {
+            name: 'GlobalTrait',
+            kind: 'boolean',
+            description: 'This is a global trait',
+          },
+        ],
+      };
+
+      const evaluationRubric: Rubric = {
+        traits: [
+          {
+            name: 'GlobalTrait',
+            kind: 'boolean',
+            description: 'This is a global trait',
+          },
+          {
+            name: 'QuestionSpecificTrait',
+            kind: 'score',
+            min_score: 1,
+            max_score: 5,
+            description: 'This is a question-specific trait',
+          },
+        ],
+      };
+
+      render(
+        <RubricResultsDisplay
+          rubricResults={mixedResults}
+          currentRubric={globalRubric}
+          evaluationRubric={evaluationRubric}
+        />
+      );
+
+      // Global trait should not have Q-specific indicator
+      expect(screen.getByText('GlobalTrait')).toBeInTheDocument();
+
+      // Question-specific trait should have Q-specific indicator
+      expect(screen.getByText('QuestionSpecificTrait')).toBeInTheDocument();
+      expect(screen.getByText('Q-specific')).toBeInTheDocument();
+
+      // Should display both descriptions
+      expect(screen.getByText('This is a global trait')).toBeInTheDocument();
+      expect(screen.getByText('This is a question-specific trait')).toBeInTheDocument();
+    });
+
+    it('handles case where no global rubric is provided', () => {
+      const evaluationRubric: Rubric = {
+        traits: [
+          {
+            name: 'SomeTrait',
+            kind: 'boolean',
+            description: 'A trait description',
+          },
+        ],
+      };
+
+      render(<RubricResultsDisplay rubricResults={{ SomeTrait: true }} evaluationRubric={evaluationRubric} />);
+
+      expect(screen.getByText('SomeTrait')).toBeInTheDocument();
+      expect(screen.getByText('A trait description')).toBeInTheDocument();
+      // Should not show Q-specific indicator when no global rubric to compare against
+      expect(screen.queryByText('Q-specific')).not.toBeInTheDocument();
     });
   });
 
