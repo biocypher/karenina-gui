@@ -28,11 +28,17 @@ describe('FieldEditor', () => {
     expect(screen.getByRole('checkbox')).toBeChecked();
   });
 
-  it('calls onChange when field name is updated', () => {
+  it('calls onChange when field name is updated (with debouncing)', async () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
     const nameInput = screen.getByDisplayValue('test_field');
     fireEvent.change(nameInput, { target: { value: 'new_field_name' } });
+
+    // Debounced, so should not be called immediately
+    expect(mockOnChange).not.toHaveBeenCalled();
+
+    // Wait for debounce delay (500ms)
+    await new Promise((resolve) => setTimeout(resolve, 550));
 
     expect(mockOnChange).toHaveBeenCalledWith({
       ...defaultField,
@@ -87,30 +93,27 @@ describe('FieldEditor', () => {
     expect(screen.queryByTitle('Remove field')).not.toBeInTheDocument();
   });
 
-  it('expands to show description field when expand button is clicked', () => {
+  it('description field is always visible', () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
-    // Initially collapsed
-    expect(screen.queryByDisplayValue('A test field')).not.toBeInTheDocument();
-
-    // Click expand button
-    const expandButton = screen.getByTitle('Expand');
-    fireEvent.click(expandButton);
-
-    // Now description should be visible
+    // Description should always be visible now
     expect(screen.getByDisplayValue('A test field')).toBeInTheDocument();
   });
 
-  it('updates description when changed in expanded view', () => {
+  it('updates description when changed (with debouncing)', async () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
-    // Expand first
-    const expandButton = screen.getByTitle('Expand');
-    fireEvent.click(expandButton);
+    // Description is always visible, no need to expand
 
     // Update description
     const descriptionTextarea = screen.getByDisplayValue('A test field');
     fireEvent.change(descriptionTextarea, { target: { value: 'Updated description' } });
+
+    // Debounced, so should not be called immediately
+    expect(mockOnChange).not.toHaveBeenCalled();
+
+    // Wait for debounce delay (300ms)
+    await new Promise((resolve) => setTimeout(resolve, 350));
 
     expect(mockOnChange).toHaveBeenCalledWith({
       ...defaultField,
@@ -130,16 +133,16 @@ describe('FieldEditor', () => {
     render(<FieldEditor field={literalField} onChange={mockOnChange} />);
 
     // Expand to see literal values
-    const expandButton = screen.getByTitle('Expand');
+    const expandButton = screen.getByTitle('Show Advanced Options');
     fireEvent.click(expandButton);
 
     // Check that literal values are shown
     expect(screen.getByDisplayValue('active')).toBeInTheDocument();
     expect(screen.getByDisplayValue('inactive')).toBeInTheDocument();
-    expect(screen.getByText('Add Value')).toBeInTheDocument();
+    expect(screen.getByText('Add Choice Option')).toBeInTheDocument();
   });
 
-  it('adds new literal value when Add Value button is clicked', () => {
+  it('adds new literal value when Add Choice Option button is clicked', () => {
     const literalField: PydanticFieldDefinition = {
       name: 'status',
       type: 'literal',
@@ -151,10 +154,10 @@ describe('FieldEditor', () => {
     render(<FieldEditor field={literalField} onChange={mockOnChange} />);
 
     // Expand and click Add Value
-    const expandButton = screen.getByTitle('Expand');
+    const expandButton = screen.getByTitle('Show Advanced Options');
     fireEvent.click(expandButton);
 
-    const addButton = screen.getByText('Add Value');
+    const addButton = screen.getByText('Add Choice Option');
     fireEvent.click(addButton);
 
     // The component filters out empty values, so the result should just be the original value
@@ -178,11 +181,11 @@ describe('FieldEditor', () => {
     render(<FieldEditor field={listField} onChange={mockOnChange} />);
 
     // Expand to see list options
-    const expandButton = screen.getByTitle('Expand');
+    const expandButton = screen.getByTitle('Show Advanced Options');
     fireEvent.click(expandButton);
 
     // Check that item type selector is shown
-    expect(screen.getByText('Item Type')).toBeInTheDocument();
+    expect(screen.getByText('List Item Type')).toBeInTheDocument();
     expect(screen.getByDisplayValue('String')).toBeInTheDocument();
   });
 
@@ -198,11 +201,11 @@ describe('FieldEditor', () => {
     render(<FieldEditor field={listField} onChange={mockOnChange} />);
 
     // Expand and change item type
-    const expandButton = screen.getByTitle('Expand');
+    const expandButton = screen.getByTitle('Show Advanced Options');
     fireEvent.click(expandButton);
 
-    // Find the item type selector by looking for the one under "Item Type" label
-    const itemTypeLabel = screen.getByText('Item Type');
+    // Find the item type selector by looking for the one under "List Item Type" label
+    const itemTypeLabel = screen.getByText('List Item Type');
     const itemTypeContainer = itemTypeLabel.closest('div');
     const itemTypeSelector = itemTypeContainer?.querySelector('select');
 
@@ -221,11 +224,11 @@ describe('FieldEditor', () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
     // Expand to see python type
-    const expandButton = screen.getByTitle('Expand');
+    const expandButton = screen.getByTitle('Show Advanced Options');
     fireEvent.click(expandButton);
 
     // Check that python type is displayed
-    expect(screen.getByText('Python Type')).toBeInTheDocument();
+    expect(screen.getByText('Generated Python Type')).toBeInTheDocument();
     expect(screen.getByText('str')).toBeInTheDocument();
   });
 
@@ -240,7 +243,7 @@ describe('FieldEditor', () => {
     render(<FieldEditor field={optionalField} onChange={mockOnChange} />);
 
     // Expand to see python type
-    const expandButton = screen.getByTitle('Expand');
+    const expandButton = screen.getByTitle('Show Advanced Options');
     fireEvent.click(expandButton);
 
     expect(screen.getByText('Optional[str]')).toBeInTheDocument();

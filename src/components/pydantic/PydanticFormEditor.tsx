@@ -48,18 +48,18 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
         // Generate model_post_init
         methods.push({
           name: 'model_post_init',
-          code: generateModelPostInit(newClassDef.fields),
+          code: generateModelPostInit(newClassDef.fields, newClassDef.correctValuePattern),
         });
 
         // Generate verify
         methods.push({
           name: 'verify',
-          code: generateVerifyMethod(newClassDef.fields),
+          code: generateVerifyMethod(newClassDef.fields, newClassDef.correctValuePattern),
         });
 
         // Generate verify_granular if needed
         if (newClassDef.fields.length > 1) {
-          const granularCode = generateVerifyGranularMethod(newClassDef.fields);
+          const granularCode = generateVerifyGranularMethod(newClassDef.fields, newClassDef.correctValuePattern);
           if (granularCode) {
             methods.push({
               name: 'verify_granular',
@@ -142,7 +142,7 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
   if (parseError) {
     return (
       <div className={`p-6 ${className}`}>
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -154,9 +154,9 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Parse Error</h3>
-              <p className="mt-1 text-sm text-red-700">{parseError}</p>
-              <p className="mt-2 text-sm text-red-600">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Parse Error</h3>
+              <p className="mt-1 text-sm text-red-700 dark:text-red-300">{parseError}</p>
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">
                 Switch to Code View to fix the syntax errors, or clear the editor to start fresh.
               </p>
             </div>
@@ -180,7 +180,7 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
     <div className={`p-6 space-y-6 ${className}`}>
       {/* Validation Errors */}
       {validationErrors.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -192,8 +192,8 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">Validation Issues</h3>
-              <ul className="mt-1 text-sm text-yellow-700 list-disc list-inside">
+              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">Validation Issues</h3>
+              <ul className="mt-1 text-sm text-yellow-700 dark:text-yellow-300 list-disc list-inside">
                 {validationErrors.map((error, index) => (
                   <li key={index}>{error}</li>
                 ))}
@@ -204,52 +204,76 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
       )}
 
       {/* Class Settings */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Class Settings</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Class Settings</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Class Name</label>
             <input
               type="text"
               value={classDef.className}
               onChange={(e) => handleClassNameChange(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className="block w-full rounded-xl border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Base Class</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base Class</label>
             <input
               type="text"
               value={classDef.baseClass || 'BaseAnswer'}
               readOnly
-              className="block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm"
+              className="block w-full rounded-xl border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 shadow-sm sm:text-sm"
             />
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 space-y-4">
           <label className="flex items-center">
             <input
               type="checkbox"
               checked={isAutoGenerateMethods}
               onChange={(e) => setIsAutoGenerateMethods(e.target.checked)}
-              className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
-            <span className="ml-2 text-sm text-gray-700">
+            <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">
               Auto-generate methods (model_post_init, verify, verify_granular)
             </span>
           </label>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Correct Value Pattern
+            </label>
+            <select
+              value={classDef.correctValuePattern || 'single'}
+              onChange={(e) => {
+                const newClassDef = {
+                  ...classDef,
+                  correctValuePattern: e.target.value as 'single' | 'multiple',
+                };
+                setClassDef(newClassDef);
+                updateCode(newClassDef);
+              }}
+              className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option value="single">Single Field Answer (self.correct = value)</option>
+              <option value="multiple">Multiple Field Answer (self.correct = {'{"field": value}'})</option>
+            </select>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Choose how to structure the correct values in model_post_init
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Fields Section */}
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Fields</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Fields</h3>
           <button
             type="button"
             onClick={handleAddField}
-            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -259,17 +283,24 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
         </div>
 
         {classDef.fields.length === 0 ? (
-          <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center py-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl">
+            <svg
+              className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No fields</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by adding a field to your Answer class.</p>
+            <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">No fields</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Get started by adding a field to your Answer class.
+            </p>
             <div className="mt-4">
               <button
                 type="button"
                 onClick={handleAddField}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                className="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
               >
                 Add Field
               </button>
@@ -290,16 +321,16 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
       </div>
 
       {/* Summary */}
-      <div className="bg-blue-50 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-blue-900 mb-2">Class Summary</h4>
-        <div className="text-sm text-blue-800">
+      <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 border border-blue-100 dark:border-blue-800">
+        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">Class Summary</h4>
+        <div className="text-sm text-blue-800 dark:text-blue-300">
           <p>
-            Class: <code className="bg-blue-100 px-1 rounded">{classDef.className}</code>
+            Class: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{classDef.className}</code>
           </p>
           <p>Fields: {classDef.fields.length}</p>
           <p>Methods: {classDef.methods.length}</p>
           {classDef.fields.length > 1 && (
-            <p className="text-xs text-blue-600 mt-1">
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
               ✓ verify_granular method will be auto-generated for granular scoring
             </p>
           )}

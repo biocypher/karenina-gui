@@ -222,6 +222,7 @@ export interface PydanticFieldDefinition {
   literalValues?: string[]; // For Literal types
   listItemType?: string; // For List types
   unionTypes?: string[]; // For Union types
+  correctValue?: string | number | boolean | string[] | null; // The correct value for this field - what goes into self.correct
   validationRules?: {
     minLength?: number;
     maxLength?: number;
@@ -244,6 +245,7 @@ export interface PydanticClassDefinition {
   fields: PydanticFieldDefinition[];
   methods: PydanticMethod[];
   docstring?: string;
+  correctValuePattern?: 'single' | 'multiple'; // How to structure self.correct in model_post_init
 }
 
 export interface PydanticParseResult {

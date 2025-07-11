@@ -500,14 +500,15 @@ function App() {
                       onChange={setCurrentTemplate}
                       originalCode={originalCode}
                       savedCode={savedCode}
+                      enableFormEditor={true}
                     />
                   </div>
 
                   <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-inner">
                     <p className="text-sm text-indigo-800 dark:text-indigo-300 font-medium">
                       <strong>Tip:</strong> Edit the Pydantic class above to match the expected answer format. Use
-                      proper Python syntax with type hints and Field descriptions. Click "Show Diff\" to compare
-                      changes.
+                      proper Python syntax with type hints and Field descriptions. Click "Form Editor" for a visual
+                      interface or "Show Diff" to compare changes.
                     </p>
                   </div>
 

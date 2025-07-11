@@ -227,21 +227,25 @@ export function generatePythonType(field: PydanticFieldDefinition): string {
 /**
  * Generate a model_post_init method based on field definitions
  */
-export function generateModelPostInit(fields: PydanticFieldDefinition[]): string {
+export function generateModelPostInit(
+  fields: PydanticFieldDefinition[],
+  correctValuePattern?: 'single' | 'multiple'
+): string {
   const lines: string[] = ['    def model_post_init(self, __context):'];
 
   if (fields.length === 0) {
     lines.push('        self.correct = {}');
-  } else if (fields.length === 1) {
+  } else if (correctValuePattern === 'single' || (correctValuePattern === undefined && fields.length === 1)) {
+    // Single field pattern: self.correct = value
     const field = fields[0];
-    const correctValue = getDefaultCorrectValue(field);
-    lines.push(`        self.correct = ${formatDefaultValue(correctValue)}`);
+    const correctValue = field.correctValue !== undefined ? field.correctValue : getDefaultCorrectValue(field);
+    lines.push(`        self.correct = ${formatCorrectValue(correctValue, field)}`);
   } else {
-    // Multiple fields - use dict
+    // Multiple field pattern: self.correct = {"field": value, ...}
     lines.push('        self.correct = {');
     for (const field of fields) {
-      const correctValue = getDefaultCorrectValue(field);
-      lines.push(`            "${field.name}": ${formatDefaultValue(correctValue)},`);
+      const correctValue = field.correctValue !== undefined ? field.correctValue : getDefaultCorrectValue(field);
+      lines.push(`            "${field.name}": ${formatCorrectValue(correctValue, field)},`);
     }
     lines.push('        }');
   }
@@ -276,18 +280,61 @@ function getDefaultCorrectValue(field: PydanticFieldDefinition): string | number
 }
 
 /**
+ * Format a correct value for Python based on field type
+ */
+function formatCorrectValue(
+  value: string | number | boolean | string[] | null | undefined,
+  field: PydanticFieldDefinition
+): string {
+  if (value === undefined || value === null) {
+    return 'None';
+  }
+
+  switch (field.type) {
+    case 'str':
+    case 'literal':
+    case 'date':
+      return `"${String(value).replace(/"/g, '\\"')}"`;
+    case 'bool':
+      return value ? 'True' : 'False';
+    case 'int':
+      return String(parseInt(String(value)) || 0);
+    case 'float':
+      return String(parseFloat(String(value)) || 0.0);
+    case 'list':
+      if (Array.isArray(value)) {
+        const items = value.map((item) => `"${String(item).replace(/"/g, '\\"')}"`);
+        return `[${items.join(', ')}]`;
+      }
+      return '[]';
+    case 'set':
+      if (Array.isArray(value)) {
+        const items = value.map((item) => `"${String(item).replace(/"/g, '\\"')}"`);
+        return `{${items.join(', ')}}`;
+      }
+      return 'set()';
+    default:
+      return formatDefaultValue(value);
+  }
+}
+
+/**
  * Generate a verify method based on field definitions
  */
-export function generateVerifyMethod(fields: PydanticFieldDefinition[]): string {
+export function generateVerifyMethod(
+  fields: PydanticFieldDefinition[],
+  correctValuePattern?: 'single' | 'multiple'
+): string {
   const lines: string[] = ['    def verify(self) -> bool:'];
 
   if (fields.length === 0) {
     lines.push('        return True');
-  } else if (fields.length === 1) {
+  } else if (correctValuePattern === 'single' || (correctValuePattern === undefined && fields.length === 1)) {
+    // Single field pattern: compare with self.correct directly
     const field = fields[0];
     lines.push(`        return self.${field.name} == self.correct`);
   } else {
-    // Multiple fields - check all
+    // Multiple field pattern: compare with self.correct dict
     const conditions: string[] = [];
     for (const field of fields) {
       conditions.push(`self.${field.name} == self.correct["${field.name}"]`);
@@ -301,20 +348,29 @@ export function generateVerifyMethod(fields: PydanticFieldDefinition[]): string 
 /**
  * Generate a verify_granular method for multiple fields
  */
-export function generateVerifyGranularMethod(fields: PydanticFieldDefinition[]): string {
+export function generateVerifyGranularMethod(
+  fields: PydanticFieldDefinition[],
+  correctValuePattern?: 'single' | 'multiple'
+): string {
   if (fields.length <= 1) {
     return ''; // Not needed for single field
   }
 
   const lines: string[] = ['    def verify_granular(self) -> float:', '        score = 0', '        n_params = 0'];
 
-  for (const field of fields) {
-    lines.push(`        if self.${field.name} == self.correct["${field.name}"]:`);
-    lines.push('            score += 1');
-    lines.push('            n_params += 1');
+  if (correctValuePattern === 'single') {
+    // Single field pattern - can't do granular scoring with single correct value
+    lines.push('        # Granular scoring not applicable for single field pattern');
+    lines.push('        return 1.0 if self.verify() else 0.0');
+  } else {
+    // Multiple field pattern: iterate through self.correct dict
+    for (const field of fields) {
+      lines.push(`        if self.${field.name} == self.correct["${field.name}"]:`);
+      lines.push('            score += 1');
+      lines.push('        n_params += 1');
+    }
+    lines.push('        return score / n_params if n_params > 0 else 0');
   }
-
-  lines.push('        return score / n_params if n_params > 0 else 0');
 
   return lines.join('\n');
 }
