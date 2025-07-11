@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FieldEditor } from '../FieldEditor';
 import type { PydanticFieldDefinition } from '../../../types';
@@ -28,33 +28,38 @@ describe('FieldEditor', () => {
     expect(screen.getByRole('checkbox')).toBeChecked();
   });
 
-  it('calls onChange when field name is updated (with debouncing)', async () => {
+  it('does not call onChange immediately when field name is updated', () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
     const nameInput = screen.getByDisplayValue('test_field');
     fireEvent.change(nameInput, { target: { value: 'new_field_name' } });
 
-    // Debounced, so should not be called immediately
+    // Should not be called immediately - only when Save button is clicked
     expect(mockOnChange).not.toHaveBeenCalled();
-
-    // Wait for debounce delay (500ms)
-    await new Promise((resolve) => setTimeout(resolve, 550));
-
-    expect(mockOnChange).toHaveBeenCalledWith({
-      ...defaultField,
-      name: 'new_field_name',
-    });
   });
 
-  it('calls onChange when field type is changed', () => {
+  it('calls onChange when Save button is clicked after field changes', () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
+    // Change field name
+    const nameInput = screen.getByDisplayValue('test_field');
+    fireEvent.change(nameInput, { target: { value: 'new_field_name' } });
+
+    // Change field type
     const typeSelect = screen.getByDisplayValue('String');
     fireEvent.change(typeSelect, { target: { value: 'int' } });
 
+    // Should not be called yet
+    expect(mockOnChange).not.toHaveBeenCalled();
+
+    // Click Save button
+    const saveButton = screen.getByText('Save Field');
+    fireEvent.click(saveButton);
+
+    // Now it should be called with all changes
     expect(mockOnChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'test_field',
+        name: 'new_field_name',
         type: 'int',
         pythonType: 'int',
         required: true,
@@ -62,19 +67,19 @@ describe('FieldEditor', () => {
     );
   });
 
-  it('calls onChange when required checkbox is toggled', () => {
+  it('enables Save button when field has unsaved changes', () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
-    const checkbox = screen.getByRole('checkbox');
-    fireEvent.click(checkbox);
+    // Save button should be disabled initially
+    const saveButton = screen.getByText('Save Field');
+    expect(saveButton).toBeDisabled();
 
-    expect(mockOnChange).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'test_field',
-        required: false,
-        pythonType: 'Optional[str]',
-      })
-    );
+    // Change field name
+    const nameInput = screen.getByDisplayValue('test_field');
+    fireEvent.change(nameInput, { target: { value: 'new_field_name' } });
+
+    // Save button should now be enabled
+    expect(saveButton).toBeEnabled();
   });
 
   it('shows remove button when onRemove prop is provided', () => {
@@ -100,20 +105,19 @@ describe('FieldEditor', () => {
     expect(screen.getByDisplayValue('A test field')).toBeInTheDocument();
   });
 
-  it('updates description when changed (with debouncing)', async () => {
+  it('updates description when Save button is clicked', () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
-
-    // Description is always visible, no need to expand
 
     // Update description
     const descriptionTextarea = screen.getByDisplayValue('A test field');
     fireEvent.change(descriptionTextarea, { target: { value: 'Updated description' } });
 
-    // Debounced, so should not be called immediately
+    // Should not be called immediately
     expect(mockOnChange).not.toHaveBeenCalled();
 
-    // Wait for debounce delay (300ms)
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    // Click Save button
+    const saveButton = screen.getByText('Save Field');
+    fireEvent.click(saveButton);
 
     expect(mockOnChange).toHaveBeenCalledWith({
       ...defaultField,
@@ -121,7 +125,7 @@ describe('FieldEditor', () => {
     });
   });
 
-  it('shows literal values editor for literal type fields', () => {
+  it('shows literal values editor for literal type fields (always visible)', () => {
     const literalField: PydanticFieldDefinition = {
       name: 'status',
       type: 'literal',
@@ -132,11 +136,7 @@ describe('FieldEditor', () => {
 
     render(<FieldEditor field={literalField} onChange={mockOnChange} />);
 
-    // Expand to see literal values
-    const expandButton = screen.getByTitle('Show Advanced Options');
-    fireEvent.click(expandButton);
-
-    // Check that literal values are shown
+    // Literal values should be visible immediately (no expand needed)
     expect(screen.getByDisplayValue('active')).toBeInTheDocument();
     expect(screen.getByDisplayValue('inactive')).toBeInTheDocument();
     expect(screen.getByText('Add Choice Option')).toBeInTheDocument();
@@ -153,14 +153,15 @@ describe('FieldEditor', () => {
 
     render(<FieldEditor field={literalField} onChange={mockOnChange} />);
 
-    // Expand and click Add Value
-    const expandButton = screen.getByTitle('Show Advanced Options');
-    fireEvent.click(expandButton);
-
+    // Click Add Choice Option (no need to expand - always visible)
     const addButton = screen.getByText('Add Choice Option');
     fireEvent.click(addButton);
 
-    // The component filters out empty values, so the result should just be the original value
+    // Need to save changes
+    const saveButton = screen.getByText('Save Field');
+    fireEvent.click(saveButton);
+
+    // The component adds an empty string and then filters it, so result should be original value
     expect(mockOnChange).toHaveBeenCalledWith(
       expect.objectContaining({
         literalValues: ['active'],
@@ -180,11 +181,7 @@ describe('FieldEditor', () => {
 
     render(<FieldEditor field={listField} onChange={mockOnChange} />);
 
-    // Expand to see list options
-    const expandButton = screen.getByTitle('Show Advanced Options');
-    fireEvent.click(expandButton);
-
-    // Check that item type selector is shown
+    // List options are always visible now
     expect(screen.getByText('List Item Type')).toBeInTheDocument();
     expect(screen.getByDisplayValue('String')).toBeInTheDocument();
   });
@@ -200,10 +197,6 @@ describe('FieldEditor', () => {
 
     render(<FieldEditor field={listField} onChange={mockOnChange} />);
 
-    // Expand and change item type
-    const expandButton = screen.getByTitle('Show Advanced Options');
-    fireEvent.click(expandButton);
-
     // Find the item type selector by looking for the one under "List Item Type" label
     const itemTypeLabel = screen.getByText('List Item Type');
     const itemTypeContainer = itemTypeLabel.closest('div');
@@ -211,6 +204,10 @@ describe('FieldEditor', () => {
 
     expect(itemTypeSelector).toBeTruthy();
     fireEvent.change(itemTypeSelector!, { target: { value: 'int' } });
+
+    // Need to save changes
+    const saveButton = screen.getByText('Save Field');
+    fireEvent.click(saveButton);
 
     expect(mockOnChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -220,14 +217,10 @@ describe('FieldEditor', () => {
     );
   });
 
-  it('displays correct python type in expanded view', () => {
+  it('displays correct python type in field editor', () => {
     render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
-    // Expand to see python type
-    const expandButton = screen.getByTitle('Show Advanced Options');
-    fireEvent.click(expandButton);
-
-    // Check that python type is displayed
+    // Python type should be visible (no expand needed)
     expect(screen.getByText('Generated Python Type')).toBeInTheDocument();
     expect(screen.getByText('str')).toBeInTheDocument();
   });
@@ -242,10 +235,7 @@ describe('FieldEditor', () => {
 
     render(<FieldEditor field={optionalField} onChange={mockOnChange} />);
 
-    // Expand to see python type
-    const expandButton = screen.getByTitle('Show Advanced Options');
-    fireEvent.click(expandButton);
-
+    // Python type should be visible (no expand needed)
     expect(screen.getByText('Optional[str]')).toBeInTheDocument();
   });
 });
