@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GitCompare, Code, Undo2 } from 'lucide-react';
+import { GitCompare, Code, Undo2, Edit3, FileText } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-python';
 import 'prismjs/themes/prism-tomorrow.css';
 import { DiffViewer } from './DiffViewer';
+import { PydanticFormEditor } from './pydantic/PydanticFormEditor';
 
 interface CodeEditorProps {
   value: string;
@@ -11,6 +12,7 @@ interface CodeEditorProps {
   readOnly?: boolean;
   originalCode?: string;
   savedCode?: string;
+  enableFormEditor?: boolean; // Enable the dual-view Pydantic form editor
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -19,6 +21,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   readOnly = false,
   originalCode = '',
   savedCode = '',
+  enableFormEditor = false,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
@@ -26,6 +29,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [highlightedCode, setHighlightedCode] = useState('');
   const [showDiff, setShowDiff] = useState(false);
   const [diffMode, setDiffMode] = useState<'original' | 'saved'>('original');
+  const [editorMode, setEditorMode] = useState<'code' | 'form'>('code');
   const [scrollInfo, setScrollInfo] = useState({
     scrollLeft: 0,
     scrollTop: 0,
@@ -215,6 +219,35 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     );
   }
 
+  // Form Editor View
+  if (enableFormEditor && editorMode === 'form') {
+    return (
+      <div className="w-full h-full flex flex-col">
+        {/* Form Editor Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 border-b border-indigo-300 dark:border-indigo-600 flex-shrink-0 rounded-t-2xl">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setEditorMode('code')}
+              className="px-4 py-2 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:bg-slate-800 dark:hover:bg-slate-500 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <FileText className="w-4 h-4" />
+              Code View
+            </button>
+          </div>
+
+          <div className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">
+            Form Editor - Visual Pydantic Builder
+          </div>
+        </div>
+
+        {/* Form Editor Content */}
+        <div className="flex-1 min-h-0 bg-gray-50 dark:bg-gray-900">
+          <PydanticFormEditor code={value} onChange={onChange} className="h-full overflow-auto" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full border border-slate-300 rounded-2xl overflow-hidden bg-slate-900 shadow-xl flex flex-col">
       {/* Header */}
@@ -222,6 +255,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         <div className="flex items-center gap-2">{/* Window controls removed for cleaner interface */}</div>
 
         <div className="flex items-center gap-3">
+          {enableFormEditor && (
+            <button
+              onClick={() => setEditorMode('form')}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <Edit3 className="w-4 h-4" />
+              Form Editor
+            </button>
+          )}
+
           {canShowDiff && (
             <button
               onClick={toggleDiff}
