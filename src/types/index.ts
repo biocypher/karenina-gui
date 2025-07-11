@@ -198,3 +198,61 @@ export interface GranularVerificationResult {
   breakdown?: Record<string, number>;
   details?: string;
 }
+
+// Pydantic Model Editor Types
+export type PydanticFieldType =
+  | 'str'
+  | 'int'
+  | 'float'
+  | 'bool'
+  | 'date'
+  | 'literal'
+  | 'list'
+  | 'optional'
+  | 'union'
+  | 'set';
+
+export interface PydanticFieldDefinition {
+  name: string;
+  type: PydanticFieldType;
+  pythonType: string; // The actual Python type annotation (e.g., "Optional[str]", "List[int]")
+  description?: string;
+  defaultValue?: string | number | boolean | null;
+  required: boolean;
+  literalValues?: string[]; // For Literal types
+  listItemType?: string; // For List types
+  unionTypes?: string[]; // For Union types
+  validationRules?: {
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    min?: number;
+    max?: number;
+  };
+}
+
+export interface PydanticMethod {
+  name: string;
+  code: string;
+  decorator?: string; // e.g., "@model_validator"
+}
+
+export interface PydanticClassDefinition {
+  className: string;
+  baseClass?: string; // Usually "BaseModel"
+  imports: string[];
+  fields: PydanticFieldDefinition[];
+  methods: PydanticMethod[];
+  docstring?: string;
+}
+
+export interface PydanticParseResult {
+  success: boolean;
+  classDefinition?: PydanticClassDefinition;
+  error?: string;
+  warnings?: string[];
+}
+
+export interface PydanticEditorMode {
+  mode: 'code' | 'form';
+}
