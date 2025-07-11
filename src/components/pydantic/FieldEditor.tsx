@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { PydanticFieldDefinition, PydanticFieldType } from '../../types';
+import { quickValidateField, validatePythonIdentifier, validateFieldType } from '../../utils/pydanticValidator';
 
 interface FieldEditorProps {
   field: PydanticFieldDefinition;
@@ -9,6 +10,11 @@ interface FieldEditorProps {
 
 export function FieldEditor({ field, onChange, onRemove }: FieldEditorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Real-time validation
+  const quickValidation = quickValidateField(field);
+  const nameValidation = validatePythonIdentifier(field.name);
+  const typeValidation = validateFieldType(field);
 
   const handleFieldChange = (updates: Partial<PydanticFieldDefinition>) => {
     onChange({ ...field, ...updates });
@@ -75,12 +81,30 @@ export function FieldEditor({ field, onChange, onRemove }: FieldEditorProps) {
         <div className="flex items-center space-x-4 flex-1">
           {/* Field Name */}
           <div className="flex-1 min-w-0">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Field Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Field Name
+              {quickValidation.hasErrors && (
+                <span className="ml-1 text-red-500 text-xs">
+                  ⚠ {quickValidation.errorCount} error{quickValidation.errorCount > 1 ? 's' : ''}
+                </span>
+              )}
+              {!quickValidation.hasErrors && quickValidation.hasWarnings && (
+                <span className="ml-1 text-yellow-500 text-xs">
+                  ⚠ {quickValidation.warningCount} warning{quickValidation.warningCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </label>
             <input
               type="text"
               value={field.name}
               onChange={(e) => handleFieldChange({ name: e.target.value })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={`block w-full rounded-md shadow-sm sm:text-sm ${
+                quickValidation.hasErrors
+                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                  : quickValidation.hasWarnings
+                    ? 'border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500'
+                    : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
+              }`}
               placeholder="field_name"
             />
           </div>
@@ -248,6 +272,73 @@ export function FieldEditor({ field, onChange, onRemove }: FieldEditorProps) {
               {field.pythonType}
             </code>
           </div>
+
+          {/* Validation Messages */}
+          {(nameValidation.errors.length > 0 ||
+            nameValidation.warnings.length > 0 ||
+            typeValidation.errors.length > 0 ||
+            typeValidation.warnings.length > 0) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Validation</label>
+              <div className="space-y-2">
+                {/* Name validation errors */}
+                {nameValidation.errors.map((error, index) => (
+                  <div
+                    key={`name-error-${index}`}
+                    className="flex items-start space-x-2 p-2 bg-red-50 border border-red-200 rounded text-sm"
+                  >
+                    <span className="text-red-500 font-medium">✗</span>
+                    <div>
+                      <p className="text-red-700">{error.message}</p>
+                      {error.suggestion && <p className="text-red-600 text-xs mt-1">💡 {error.suggestion}</p>}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Type validation errors */}
+                {typeValidation.errors.map((error, index) => (
+                  <div
+                    key={`type-error-${index}`}
+                    className="flex items-start space-x-2 p-2 bg-red-50 border border-red-200 rounded text-sm"
+                  >
+                    <span className="text-red-500 font-medium">✗</span>
+                    <div>
+                      <p className="text-red-700">{error.message}</p>
+                      {error.suggestion && <p className="text-red-600 text-xs mt-1">💡 {error.suggestion}</p>}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Name validation warnings */}
+                {nameValidation.warnings.map((warning, index) => (
+                  <div
+                    key={`name-warning-${index}`}
+                    className="flex items-start space-x-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm"
+                  >
+                    <span className="text-yellow-500 font-medium">⚠</span>
+                    <div>
+                      <p className="text-yellow-700">{warning.message}</p>
+                      {warning.suggestion && <p className="text-yellow-600 text-xs mt-1">💡 {warning.suggestion}</p>}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Type validation warnings */}
+                {typeValidation.warnings.map((warning, index) => (
+                  <div
+                    key={`type-warning-${index}`}
+                    className="flex items-start space-x-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm"
+                  >
+                    <span className="text-yellow-500 font-medium">⚠</span>
+                    <div>
+                      <p className="text-yellow-700">{warning.message}</p>
+                      {warning.suggestion && <p className="text-yellow-600 text-xs mt-1">💡 {warning.suggestion}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
