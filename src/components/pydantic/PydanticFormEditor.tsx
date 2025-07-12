@@ -19,13 +19,20 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
   const [classDef, setClassDef] = useState<PydanticClassDefinition | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [isAutoGenerateMethods, setIsAutoGenerateMethods] = useState(true);
+  // Always auto-generate methods and use multiple field pattern
+  const isAutoGenerateMethods = true;
+  const defaultCorrectValuePattern: 'single' | 'multiple' = 'multiple';
 
   // Parse the code when it changes
   useEffect(() => {
     const parseResult = parsePydanticClass(code);
     if (parseResult.success && parseResult.classDefinition) {
-      setClassDef(parseResult.classDefinition);
+      // Ensure defaults are set
+      const classDefWithDefaults = {
+        ...parseResult.classDefinition,
+        correctValuePattern: parseResult.classDefinition.correctValuePattern || defaultCorrectValuePattern,
+      };
+      setClassDef(classDefWithDefaults);
       setParseError(null);
 
       // Validate the parsed class
@@ -48,18 +55,24 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
         // Generate model_post_init
         methods.push({
           name: 'model_post_init',
-          code: generateModelPostInit(newClassDef.fields, newClassDef.correctValuePattern),
+          code: generateModelPostInit(
+            newClassDef.fields,
+            newClassDef.correctValuePattern || defaultCorrectValuePattern
+          ),
         });
 
         // Generate verify
         methods.push({
           name: 'verify',
-          code: generateVerifyMethod(newClassDef.fields, newClassDef.correctValuePattern),
+          code: generateVerifyMethod(newClassDef.fields, newClassDef.correctValuePattern || defaultCorrectValuePattern),
         });
 
         // Generate verify_granular if needed
         if (newClassDef.fields.length > 1) {
-          const granularCode = generateVerifyGranularMethod(newClassDef.fields, newClassDef.correctValuePattern);
+          const granularCode = generateVerifyGranularMethod(
+            newClassDef.fields,
+            newClassDef.correctValuePattern || defaultCorrectValuePattern
+          );
           if (granularCode) {
             methods.push({
               name: 'verify_granular',
@@ -107,6 +120,7 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
     const newClassDef = {
       ...classDef,
       fields: [...classDef.fields, newField],
+      correctValuePattern: classDef.correctValuePattern || defaultCorrectValuePattern,
     };
 
     setClassDef(newClassDef);
@@ -121,18 +135,6 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
     const newClassDef = {
       ...classDef,
       fields: newFields,
-    };
-
-    setClassDef(newClassDef);
-    updateCode(newClassDef);
-  };
-
-  const handleClassNameChange = (newClassName: string) => {
-    if (!classDef) return;
-
-    const newClassDef = {
-      ...classDef,
-      className: newClassName,
     };
 
     setClassDef(newClassDef);
@@ -202,69 +204,6 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
           </div>
         </div>
       )}
-
-      {/* Class Settings */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Class Settings</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Class Name</label>
-            <input
-              type="text"
-              value={classDef.className}
-              onChange={(e) => handleClassNameChange(e.target.value)}
-              className="block w-full rounded-xl border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base Class</label>
-            <input
-              type="text"
-              value={classDef.baseClass || 'BaseAnswer'}
-              readOnly
-              className="block w-full rounded-xl border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 shadow-sm sm:text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={isAutoGenerateMethods}
-              onChange={(e) => setIsAutoGenerateMethods(e.target.checked)}
-              className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
-            <span className="ml-2 text-sm text-slate-700 dark:text-slate-300">
-              Auto-generate methods (model_post_init, verify, verify_granular)
-            </span>
-          </label>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Correct Value Pattern
-            </label>
-            <select
-              value={classDef.correctValuePattern || 'single'}
-              onChange={(e) => {
-                const newClassDef = {
-                  ...classDef,
-                  correctValuePattern: e.target.value as 'single' | 'multiple',
-                };
-                setClassDef(newClassDef);
-                updateCode(newClassDef);
-              }}
-              className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            >
-              <option value="single">Single Field Answer (self.correct = value)</option>
-              <option value="multiple">Multiple Field Answer (self.correct = {'{"field": value}'})</option>
-            </select>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Choose how to structure the correct values in model_post_init
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Fields Section */}
       <div>
