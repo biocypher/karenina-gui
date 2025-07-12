@@ -47,6 +47,25 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const hasChangesFromOriginal = hasOriginal && value !== originalCode;
   const hasChangesFromSaved = hasSaved && value !== savedCode;
 
+  // Determine if revert button should be shown and what options are available
+  const canRevert = hasChangesFromOriginal || hasChangesFromSaved;
+  const revertOptions = {
+    canRevertToOriginal: hasChangesFromOriginal,
+    canRevertToSaved: hasChangesFromSaved,
+    hasMultipleOptions: hasChangesFromOriginal && hasChangesFromSaved,
+  };
+
+  const handleRevert = (type: 'original' | 'saved') => {
+    if (type === 'original' && hasOriginal) {
+      onChange(originalCode);
+    } else if (type === 'saved' && hasSaved) {
+      onChange(savedCode);
+    }
+  };
+
+  const revertToOriginal = () => handleRevert('original');
+  const revertToSaved = () => handleRevert('saved');
+
   useEffect(() => {
     // Highlight the code using Prism
     try {
@@ -124,17 +143,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     setDiffMode(mode);
   };
 
-  const handleRevert = (type: 'original' | 'saved') => {
-    if (type === 'original' && hasOriginal) {
-      onChange(originalCode);
-    } else if (type === 'saved' && hasSaved) {
-      onChange(savedCode);
-    }
-  };
-
-  const revertToOriginal = () => handleRevert('original');
-  const revertToSaved = () => handleRevert('saved');
-
   // Update scroll info when content changes
   useEffect(() => {
     const updateScrollInfo = () => {
@@ -155,14 +163,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   // Determine if diff button should be shown
   const canShowDiff = hasChangesFromOriginal || hasChangesFromSaved;
-
-  // Determine if revert button should be shown and what options are available
-  const canRevert = hasChangesFromOriginal || hasChangesFromSaved;
-  const revertOptions = {
-    canRevertToOriginal: hasChangesFromOriginal,
-    canRevertToSaved: hasChangesFromSaved,
-    hasMultipleOptions: hasChangesFromOriginal && hasChangesFromSaved,
-  };
 
   if (showDiff) {
     const compareCode = diffMode === 'saved' ? savedCode : originalCode;
@@ -224,7 +224,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     return (
       <div className="w-full h-full flex flex-col">
         {/* Form Editor Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 border-b border-indigo-300 dark:border-indigo-600 flex-shrink-0 rounded-t-2xl">
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 border-b border-slate-300 dark:border-slate-600 flex-shrink-0 rounded-t-2xl">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setEditorMode('code')}
@@ -233,9 +233,45 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               <FileText className="w-4 h-4" />
               Code View
             </button>
+
+            {canRevert && (
+              <div className="relative">
+                {revertOptions.hasMultipleOptions ? (
+                  <div className="flex bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden shadow-sm">
+                    <button
+                      onClick={revertToOriginal}
+                      className="px-3 py-2 text-xs font-medium bg-slate-600 text-white hover:bg-slate-700 transition-colors flex items-center gap-1.5"
+                      title="Revert to original template"
+                    >
+                      <Undo2 className="w-3 h-3" />
+                      Revert to Original
+                    </button>
+                    <button
+                      onClick={revertToSaved}
+                      className="px-3 py-2 text-xs font-medium bg-slate-600 text-white hover:bg-slate-700 transition-colors flex items-center gap-1.5 border-l border-slate-500"
+                      title="Revert to last saved version"
+                    >
+                      <Undo2 className="w-3 h-3" />
+                      Revert to Saved
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={revertOptions.canRevertToSaved ? revertToSaved : revertToOriginal}
+                    className="px-4 py-2 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    title={
+                      revertOptions.canRevertToSaved ? 'Revert to last saved version' : 'Revert to original template'
+                    }
+                  >
+                    <Undo2 className="w-4 h-4" />
+                    Revert
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">
+          <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             Form Editor - Visual Pydantic Builder
           </div>
         </div>
