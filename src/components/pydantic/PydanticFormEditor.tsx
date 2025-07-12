@@ -251,6 +251,7 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
               <FieldEditor
                 key={`${field.name}-${index}`}
                 field={field}
+                fieldNumber={index + 1}
                 onChange={(updatedField) => handleFieldChange(index, updatedField)}
                 onRemove={() => handleRemoveField(index)}
               />

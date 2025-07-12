@@ -4,11 +4,12 @@ import { quickValidateField, validatePythonIdentifier, validateFieldType } from 
 
 interface FieldEditorProps {
   field: PydanticFieldDefinition;
+  fieldNumber?: number;
   onChange: (updatedField: PydanticFieldDefinition) => void;
   onRemove?: () => void;
 }
 
-export function FieldEditor({ field, onChange, onRemove }: FieldEditorProps) {
+export function FieldEditor({ field, fieldNumber, onChange, onRemove }: FieldEditorProps) {
   // Local state for field editing
   const [localField, setLocalField] = useState<PydanticFieldDefinition>(field);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -206,8 +207,31 @@ export function FieldEditor({ field, onChange, onRemove }: FieldEditorProps) {
   };
 
   return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-8 bg-white dark:bg-slate-800 shadow-lg">
-      <div className="space-y-8">
+    <div className="relative border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-200">
+      {/* Field Number Badge */}
+      {fieldNumber && (
+        <div className="absolute -top-3 -left-3 w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg z-10">
+          {fieldNumber}
+        </div>
+      )}
+
+      {/* Enhanced Field Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Field {fieldNumber ? `${fieldNumber}: ` : ''}
+            {localField.name || 'Unnamed'}
+          </h4>
+          <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-md text-xs font-medium capitalize">
+            {localField.type}
+          </span>
+        </div>
+        {hasUnsavedChanges && (
+          <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">• Unsaved changes</span>
+        )}
+      </div>
+
+      <div className="space-y-6">
         {/* Basic Field Information */}
         <div className="space-y-6">
           {/* Field Name and Type - Row Layout */}

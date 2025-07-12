@@ -221,7 +221,9 @@ describe('FieldEditor', () => {
 
     // Python type should be visible (no expand needed)
     expect(screen.getByText('Generated Python Type')).toBeInTheDocument();
-    expect(screen.getByText('str')).toBeInTheDocument();
+    // Look for all str texts and verify at least one exists (there should be multiple now with the type badge)
+    const strElements = screen.getAllByText('str');
+    expect(strElements.length).toBeGreaterThan(0);
   });
 
   it('always generates required field types (no Optional)', () => {
@@ -229,7 +231,8 @@ describe('FieldEditor', () => {
 
     // Python type should always be required (no Optional wrapper)
     expect(screen.getByText('Generated Python Type')).toBeInTheDocument();
-    expect(screen.getByText('str')).toBeInTheDocument();
+    const strElements = screen.getAllByText('str');
+    expect(strElements.length).toBeGreaterThan(0);
     expect(screen.queryByText('Optional[str]')).not.toBeInTheDocument();
   });
 });
