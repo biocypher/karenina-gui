@@ -25,7 +25,6 @@ describe('FieldEditor', () => {
 
     expect(screen.getByDisplayValue('test_field')).toBeInTheDocument();
     expect(screen.getByDisplayValue('String')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).toBeChecked();
   });
 
   it('does not call onChange immediately when field name is updated', () => {
@@ -225,17 +224,12 @@ describe('FieldEditor', () => {
     expect(screen.getByText('str')).toBeInTheDocument();
   });
 
-  it('generates correct python type for optional fields', () => {
-    const optionalField: PydanticFieldDefinition = {
-      name: 'optional_field',
-      type: 'str',
-      pythonType: 'Optional[str]',
-      required: false,
-    };
+  it('always generates required field types (no Optional)', () => {
+    render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
 
-    render(<FieldEditor field={optionalField} onChange={mockOnChange} />);
-
-    // Python type should be visible (no expand needed)
-    expect(screen.getByText('Optional[str]')).toBeInTheDocument();
+    // Python type should always be required (no Optional wrapper)
+    expect(screen.getByText('Generated Python Type')).toBeInTheDocument();
+    expect(screen.getByText('str')).toBeInTheDocument();
+    expect(screen.queryByText('Optional[str]')).not.toBeInTheDocument();
   });
 });

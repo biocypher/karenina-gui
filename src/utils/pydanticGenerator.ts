@@ -172,41 +172,38 @@ export function generatePythonType(field: PydanticFieldDefinition): string {
     return field.pythonType;
   }
 
-  // Generate based on field type
+  // Generate based on field type - all fields are required
   switch (field.type) {
     case 'str':
-      return field.required ? 'str' : 'Optional[str]';
+      return 'str';
 
     case 'int':
-      return field.required ? 'int' : 'Optional[int]';
+      return 'int';
 
     case 'float':
-      return field.required ? 'float' : 'Optional[float]';
+      return 'float';
 
     case 'bool':
-      return field.required ? 'bool' : 'Optional[bool]';
+      return 'bool';
 
     case 'date':
-      return field.required ? 'date' : 'Optional[date]';
+      return 'date';
 
     case 'literal':
       if (field.literalValues && field.literalValues.length > 0) {
         const values = field.literalValues.map((v) => `"${v}"`).join(', ');
-        const literalType = `Literal[${values}]`;
-        return field.required ? literalType : `Optional[${literalType}]`;
+        return `Literal[${values}]`;
       }
       return 'str'; // Fallback
 
     case 'list': {
       const itemType = field.listItemType || 'str';
-      const listType = `List[${itemType}]`;
-      return field.required ? listType : `Optional[${listType}]`;
+      return `List[${itemType}]`;
     }
 
     case 'set': {
       const setItemType = field.listItemType || 'str';
-      const setType = `Set[${setItemType}]`;
-      return field.required ? setType : `Optional[${setType}]`;
+      return `Set[${setItemType}]`;
     }
 
     default:

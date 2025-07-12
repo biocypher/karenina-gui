@@ -261,27 +261,6 @@ export function FieldEditor({ field, onChange, onRemove }: FieldEditorProps) {
               </select>
             </div>
           </div>
-
-          {/* Required Toggle - Standalone */}
-          <div className="flex items-center">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={localField.required}
-                onChange={(e) =>
-                  handleLocalFieldChange({
-                    required: e.target.checked,
-                    pythonType: generatePythonTypeFromField({
-                      ...localField,
-                      required: e.target.checked,
-                    }),
-                  })
-                }
-                className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 w-4 h-4"
-              />
-              <span className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">Required Field</span>
-            </label>
-          </div>
         </div>
 
         {/* Description Field - Full Width */}
