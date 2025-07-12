@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Settings, Eye, EyeOff, Upload } from 'lucide-react';
+import { Plus, Trash2, Settings, Eye, EyeOff, Upload, Maximize2, X } from 'lucide-react';
 import { QuestionData } from '../types';
 import { CodeEditor } from './CodeEditor';
 
@@ -7,7 +7,7 @@ interface PromptExample {
   id: string;
   selectedQuestionId: string;
   rawQuestion: string;
-  jsonQuestion: string;
+  rawAnswer: string;
   pythonCode: string;
 }
 
@@ -15,6 +15,16 @@ interface CustomPromptComposerProps {
   questions: QuestionData;
   onPromptGenerated?: (prompt: string) => void;
 }
+
+const DEFAULT_ANSWER_TEMPLATE = `class Answer(BaseAnswer):
+    answer: str = Field(description="")
+
+    def model_post_init(self, __context):
+        self.id = ""
+        self.correct = ""
+
+    def verify(self) -> bool:
+        return str(self.answer).strip().lower() == str(self.correct).strip().lower()`;
 
 export const CustomPromptComposer: React.FC<CustomPromptComposerProps> = ({ questions, onPromptGenerated }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -48,6 +58,7 @@ Your task:
   const [uploadedPrompt, setUploadedPrompt] = useState<string>('');
   const [isUsingUploadedPrompt, setIsUsingUploadedPrompt] = useState(false);
   const [, setHasUnsavedChanges] = useState(false); // Used for tracking changes
+  const [fullscreenExampleId, setFullscreenExampleId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Track changes to mark unsaved state
@@ -62,16 +73,8 @@ Your task:
       id: `example_${Date.now()}`,
       selectedQuestionId: '',
       rawQuestion: '',
-      jsonQuestion: '',
-      pythonCode: `class Answer(BaseAnswer):
-    answer: str = Field(description="")
-
-    def model_post_init(self, __context):
-        self.id = ""
-        self.correct = ""
-
-    def verify(self) -> bool:
-        return str(self.answer).strip().lower() == str(self.correct).strip().lower()`,
+      rawAnswer: '',
+      pythonCode: DEFAULT_ANSWER_TEMPLATE,
     };
     setExamples((prev) => [...prev, newExample]);
   };
@@ -86,15 +89,10 @@ Your task:
         if (ex.id === exampleId) {
           const updated = { ...ex, [field]: value };
 
-          // Auto-populate raw and JSON when question is selected
+          // Auto-populate raw question and answer when question is selected
           if (field === 'selectedQuestionId' && value && questions[value]) {
             updated.rawQuestion = questions[value].question;
-            updated.jsonQuestion = JSON.stringify({
-              id: value,
-              question: questions[value].question,
-              raw_answer: questions[value].raw_answer,
-              tags: [],
-            });
+            updated.rawAnswer = questions[value].raw_answer || '';
           }
 
           return updated;
@@ -142,6 +140,44 @@ Your task:
     setIsPromptActive(false);
   };
 
+  const toggleFullscreen = (exampleId: string) => {
+    if (fullscreenExampleId === exampleId) {
+      setFullscreenExampleId(null);
+      document.body.style.overflow = 'auto';
+    } else {
+      setFullscreenExampleId(exampleId);
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  const exitFullscreen = () => {
+    setFullscreenExampleId(null);
+    document.body.style.overflow = 'auto';
+  };
+
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && fullscreenExampleId) {
+        exitFullscreen();
+      }
+    };
+
+    if (fullscreenExampleId) {
+      document.addEventListener('keydown', handleEscape);
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+      };
+    }
+  }, [fullscreenExampleId]);
+
+  // Cleanup body overflow on unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
   const generateAndSetPrompt = () => {
     // Build the complete prompt
     let prompt = instructions.trim();
@@ -153,7 +189,7 @@ Your task:
         const exampleNum = index + 1;
         prompt += `\n<example_${exampleNum}>`;
         prompt += `\nRaw question:"${example.rawQuestion}"`;
-        prompt += `\nJSON question: '${example.jsonQuestion}'`;
+        prompt += `\nAnswer: ${example.rawAnswer || 'N/A'}`;
         prompt += '\n\nAnswer:';
         prompt += '\n```python';
         prompt += `\n${example.pythonCode}`;
@@ -401,33 +437,45 @@ Your task:
                           />
                         </div>
 
-                        {/* JSON Question */}
+                        {/* Raw Answer */}
                         <div>
                           <label
-                            htmlFor={`json-question-${example.id}`}
+                            htmlFor={`raw-answer-${example.id}`}
                             className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
                           >
-                            JSON Question
+                            Raw Answer
                           </label>
                           <textarea
-                            id={`json-question-${example.id}`}
-                            value={example.jsonQuestion}
+                            id={`raw-answer-${example.id}`}
+                            value={example.rawAnswer}
                             readOnly
-                            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm font-mono h-20 resize-y bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100"
-                            placeholder="JSON representation..."
+                            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm h-20 resize-y bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100"
+                            placeholder="Raw answer text..."
                           />
                         </div>
                       </div>
 
                       {/* Right Column - Python Code Editor */}
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                          Python Example Code
-                        </label>
-                        <div className="h-80">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Python Example Code
+                          </label>
+                          <button
+                            onClick={() => toggleFullscreen(example.id)}
+                            className="px-3 py-1 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors flex items-center gap-1 text-xs shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            title="Expand to fullscreen"
+                          >
+                            <Maximize2 className="w-3 h-3" />
+                            Fullscreen
+                          </button>
+                        </div>
+                        <div className="h-96">
                           <CodeEditor
                             value={example.pythonCode}
                             onChange={(value) => updateExample(example.id, 'pythonCode', value)}
+                            enableFormEditor={true}
+                            originalCode={DEFAULT_ANSWER_TEMPLATE}
                           />
                         </div>
                       </div>
@@ -478,6 +526,50 @@ Your task:
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
             This is the complete system prompt that will be used for template generation.
           </p>
+        </div>
+      )}
+
+      {/* Fullscreen Modal */}
+      {fullscreenExampleId && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="w-full h-full bg-white dark:bg-slate-900 flex flex-col">
+            {/* Fullscreen Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-600">
+              <div className="flex items-center gap-3">
+                <Settings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  Python Example Code Editor - Example {examples.findIndex((ex) => ex.id === fullscreenExampleId) + 1}
+                </h3>
+              </div>
+              <button
+                onClick={exitFullscreen}
+                className="px-4 py-2 bg-slate-600 dark:bg-slate-700 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                title="Exit fullscreen (Esc)"
+              >
+                <X className="w-4 h-4" />
+                Close
+              </button>
+            </div>
+
+            {/* Fullscreen Editor */}
+            <div className="flex-1 p-6">
+              {(() => {
+                const fullscreenExample = examples.find((ex) => ex.id === fullscreenExampleId);
+                if (!fullscreenExample) return null;
+
+                return (
+                  <div className="h-full">
+                    <CodeEditor
+                      value={fullscreenExample.pythonCode}
+                      onChange={(value) => updateExample(fullscreenExample.id, 'pythonCode', value)}
+                      enableFormEditor={true}
+                      originalCode={DEFAULT_ANSWER_TEMPLATE}
+                    />
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       )}
     </div>
