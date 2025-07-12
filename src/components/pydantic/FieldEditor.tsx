@@ -56,8 +56,6 @@ export function FieldEditor({ field, fieldNumber, onChange, onRemove }: FieldEdi
       updates.literalValues = ['value1', 'value2'];
     } else if (newType === 'list') {
       updates.listItemType = 'str';
-    } else if (newType === 'set') {
-      updates.listItemType = 'str';
     }
 
     // Update pythonType based on the new type
@@ -170,7 +168,7 @@ export function FieldEditor({ field, fieldNumber, onChange, onRemove }: FieldEdi
             <textarea
               value={Array.isArray(localField.correctValue) ? localField.correctValue.join('\n') : ''}
               onChange={(e) => {
-                const lines = e.target.value.split('\n').filter((line) => line.trim());
+                const lines = e.target.value.split('\n');
                 handleCorrectValueChange(lines);
               }}
               rows={4}
@@ -279,9 +277,8 @@ export function FieldEditor({ field, fieldNumber, onChange, onRemove }: FieldEdi
                 <option value="float">Float</option>
                 <option value="bool">Boolean</option>
                 <option value="date">Date</option>
-                <option value="literal">Multiple Choice (Exclusive)</option>
+                <option value="literal">Multiple Choice</option>
                 <option value="list">List</option>
-                <option value="set">Set of Values</option>
               </select>
             </div>
           </div>
@@ -350,10 +347,10 @@ export function FieldEditor({ field, fieldNumber, onChange, onRemove }: FieldEdi
           </div>
         )}
 
-        {(localField.type === 'list' || localField.type === 'set') && (
+        {localField.type === 'list' && (
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-              {localField.type === 'list' ? 'List Item Type' : 'Set Item Type'}
+              List Item Type
             </label>
             <select
               value={localField.listItemType || 'str'}
@@ -551,9 +548,6 @@ function generatePythonTypeFromField(field: PydanticFieldDefinition): string {
       break;
     case 'list':
       baseType = `List[${field.listItemType || 'str'}]`;
-      break;
-    case 'set':
-      baseType = `Set[${field.listItemType || 'str'}]`;
       break;
     default:
       baseType = 'str';

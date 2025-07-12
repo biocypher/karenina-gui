@@ -200,7 +200,7 @@ export interface GranularVerificationResult {
 }
 
 // Pydantic Model Editor Types
-export type PydanticFieldType = 'str' | 'int' | 'float' | 'bool' | 'date' | 'literal' | 'list' | 'set';
+export type PydanticFieldType = 'str' | 'int' | 'float' | 'bool' | 'date' | 'literal' | 'list';
 
 export interface PydanticFieldDefinition {
   name: string;

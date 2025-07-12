@@ -201,11 +201,6 @@ export function generatePythonType(field: PydanticFieldDefinition): string {
       return `List[${itemType}]`;
     }
 
-    case 'set': {
-      const setItemType = field.listItemType || 'str';
-      return `Set[${setItemType}]`;
-    }
-
     default:
       return 'Any';
   }
@@ -257,8 +252,6 @@ function getDefaultCorrectValue(field: PydanticFieldDefinition): string | number
       return field.literalValues?.[0] || 'value';
     case 'list':
       return [];
-    case 'set':
-      return [];
     case 'date':
       return '2024-01-01';
     default:
@@ -267,7 +260,7 @@ function getDefaultCorrectValue(field: PydanticFieldDefinition): string | number
 }
 
 /**
- * Format a list/set item value based on its type
+ * Format a list item value based on its type
  */
 function formatListItemValue(item: string | number | boolean, itemType: string): string {
   switch (itemType) {
@@ -312,12 +305,6 @@ function formatCorrectValue(
         return `[${items.join(', ')}]`;
       }
       return '[]';
-    case 'set':
-      if (Array.isArray(value)) {
-        const items = value.map((item) => formatListItemValue(item, field.listItemType || 'str'));
-        return `{${items.join(', ')}}`;
-      }
-      return 'set()';
     default:
       return formatDefaultValue(value);
   }
