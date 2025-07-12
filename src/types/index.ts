@@ -200,17 +200,7 @@ export interface GranularVerificationResult {
 }
 
 // Pydantic Model Editor Types
-export type PydanticFieldType =
-  | 'str'
-  | 'int'
-  | 'float'
-  | 'bool'
-  | 'date'
-  | 'literal'
-  | 'list'
-  | 'optional'
-  | 'union'
-  | 'set';
+export type PydanticFieldType = 'str' | 'int' | 'float' | 'bool' | 'date' | 'literal' | 'list' | 'set';
 
 export interface PydanticFieldDefinition {
   name: string;
@@ -221,7 +211,6 @@ export interface PydanticFieldDefinition {
   required: boolean;
   literalValues?: string[]; // For Literal types
   listItemType?: string; // For List types
-  unionTypes?: string[]; // For Union types
   correctValue?: string | number | boolean | string[] | null; // The correct value for this field - what goes into self.correct
   validationRules?: {
     minLength?: number;

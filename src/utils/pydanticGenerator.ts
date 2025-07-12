@@ -209,16 +209,6 @@ export function generatePythonType(field: PydanticFieldDefinition): string {
       return field.required ? setType : `Optional[${setType}]`;
     }
 
-    case 'union':
-      if (field.unionTypes && field.unionTypes.length > 0) {
-        return `Union[${field.unionTypes.join(', ')}]`;
-      }
-      return 'Any'; // Fallback
-
-    case 'optional':
-      // Already optional
-      return field.pythonType || 'Optional[Any]';
-
     default:
       return 'Any';
   }
@@ -280,6 +270,24 @@ function getDefaultCorrectValue(field: PydanticFieldDefinition): string | number
 }
 
 /**
+ * Format a list/set item value based on its type
+ */
+function formatListItemValue(item: string | number | boolean, itemType: string): string {
+  switch (itemType) {
+    case 'str':
+      return `"${String(item).replace(/"/g, '\\"')}"`;
+    case 'int':
+      return String(parseInt(String(item)) || 0);
+    case 'float':
+      return String(parseFloat(String(item)) || 0.0);
+    case 'bool':
+      return String(item).toLowerCase() === 'true' ? 'True' : 'False';
+    default:
+      return `"${String(item).replace(/"/g, '\\"')}"`;
+  }
+}
+
+/**
  * Format a correct value for Python based on field type
  */
 function formatCorrectValue(
@@ -303,13 +311,13 @@ function formatCorrectValue(
       return String(parseFloat(String(value)) || 0.0);
     case 'list':
       if (Array.isArray(value)) {
-        const items = value.map((item) => `"${String(item).replace(/"/g, '\\"')}"`);
+        const items = value.map((item) => formatListItemValue(item, field.listItemType || 'str'));
         return `[${items.join(', ')}]`;
       }
       return '[]';
     case 'set':
       if (Array.isArray(value)) {
-        const items = value.map((item) => `"${String(item).replace(/"/g, '\\"')}"`);
+        const items = value.map((item) => formatListItemValue(item, field.listItemType || 'str'));
         return `{${items.join(', ')}}`;
       }
       return 'set()';
