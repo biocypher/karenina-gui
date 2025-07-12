@@ -29,7 +29,9 @@ describe('pydanticParser', () => {
         description: 'Answer contains whether rofecoxib is withdrawn - true or false',
         required: true,
         literalValues: undefined,
+        listItemType: undefined,
         defaultValue: undefined,
+        correctValue: true,
       });
 
       expect(classDef.methods).toHaveLength(2);
@@ -62,7 +64,9 @@ describe('pydanticParser', () => {
         description: 'Answer contains evidence that the cause was cardiovascular disease or other reason',
         required: true,
         literalValues: ['Increased risk of cardiovascular side effects', 'other'],
+        listItemType: undefined,
         defaultValue: undefined,
+        correctValue: 'Increased risk of cardiovascular side effects',
       });
     });
 

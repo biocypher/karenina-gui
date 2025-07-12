@@ -33,6 +33,9 @@ export function parsePydanticClass(code: string): PydanticParseResult {
     // Extract methods
     const methods = extractMethods(code);
 
+    // Extract correct values from model_post_init and populate fields
+    extractCorrectValuesIntoFields(fields, methods);
+
     // Extract docstring if present
     const docstring = extractDocstring(code);
 
@@ -306,6 +309,132 @@ function extractDocstring(code: string): string | undefined {
   const match = code.match(docstringPattern);
 
   return match ? match[1].trim() : undefined;
+}
+
+/**
+ * Extract correct values from model_post_init method and populate into field definitions
+ */
+function extractCorrectValuesIntoFields(fields: PydanticFieldDefinition[], methods: PydanticMethod[]): void {
+  // Find the model_post_init method
+  const modelPostInitMethod = methods.find((m) => m.name === 'model_post_init');
+  if (!modelPostInitMethod) {
+    return; // No model_post_init method found
+  }
+
+  const code = modelPostInitMethod.code;
+
+  // Extract correct values from self.correct assignments
+  // Pattern 1: self.correct = { "field": value }  (multiple fields)
+  const dictPattern = /self\.correct\s*=\s*\{([\s\S]*?)\}/;
+  const dictMatch = code.match(dictPattern);
+
+  if (dictMatch) {
+    // Multiple field pattern
+    const dictContent = dictMatch[1];
+
+    // Use a more robust approach to extract field assignments
+    // Match "field_name": followed by any value until next field or end
+    const fieldRegex = /"([^"]+)":\s*((?:\[[^\]]*\]|"[^"]*"|'[^']*'|[^,}]+))(?:\s*,)?/g;
+
+    let match;
+    while ((match = fieldRegex.exec(dictContent)) !== null) {
+      const fieldName = match[1].trim();
+      const valueStr = match[2].trim().replace(/,$/, ''); // Remove trailing comma
+
+      // Find the corresponding field and set its correctValue
+      const field = fields.find((f) => f.name === fieldName);
+      if (field) {
+        field.correctValue = parseCorrectValue(valueStr, field.type);
+      }
+    }
+  } else {
+    // Pattern 2: self.correct = value  (single field)
+    const singlePattern = /self\.correct\s*=\s*(.+)/;
+    const singleMatch = code.match(singlePattern);
+
+    if (singleMatch && fields.length === 1) {
+      const valueStr = singleMatch[1].trim();
+      const field = fields[0];
+      field.correctValue = parseCorrectValue(valueStr, field.type);
+    }
+  }
+}
+
+/**
+ * Parse a correct value string based on field type
+ */
+function parseCorrectValue(
+  valueStr: string,
+  fieldType: PydanticFieldType
+): string | number | boolean | string[] | null {
+  valueStr = valueStr.trim();
+
+  switch (fieldType) {
+    case 'str':
+      // Remove quotes
+      if (
+        (valueStr.startsWith('"') && valueStr.endsWith('"')) ||
+        (valueStr.startsWith("'") && valueStr.endsWith("'"))
+      ) {
+        return valueStr.slice(1, -1);
+      }
+      return valueStr;
+
+    case 'int':
+      return parseInt(valueStr) || 0;
+
+    case 'float':
+      return parseFloat(valueStr) || 0.0;
+
+    case 'bool':
+      return valueStr.toLowerCase() === 'true';
+
+    case 'list':
+      // Parse list: ["item1", "item2"] or ['item1', 'item2']
+      if (valueStr.startsWith('[') && valueStr.endsWith(']')) {
+        const listContent = valueStr.slice(1, -1).trim();
+        if (!listContent) return [];
+
+        // Split by comma and clean up each item
+        const items = listContent
+          .split(',')
+          .map((item) => {
+            item = item.trim();
+            // Remove quotes if present
+            if ((item.startsWith('"') && item.endsWith('"')) || (item.startsWith("'") && item.endsWith("'"))) {
+              return item.slice(1, -1);
+            }
+            return item;
+          })
+          .filter((item) => item.length > 0);
+
+        return items;
+      }
+      return [];
+
+    case 'literal':
+      // Remove quotes for literal values
+      if (
+        (valueStr.startsWith('"') && valueStr.endsWith('"')) ||
+        (valueStr.startsWith("'") && valueStr.endsWith("'"))
+      ) {
+        return valueStr.slice(1, -1);
+      }
+      return valueStr;
+
+    case 'date':
+      // Remove quotes for date strings
+      if (
+        (valueStr.startsWith('"') && valueStr.endsWith('"')) ||
+        (valueStr.startsWith("'") && valueStr.endsWith("'"))
+      ) {
+        return valueStr.slice(1, -1);
+      }
+      return valueStr;
+
+    default:
+      return valueStr;
+  }
 }
 
 /**
