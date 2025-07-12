@@ -141,6 +141,9 @@ function extractFields(code: string): PydanticFieldDefinition[] {
     // Extract literal values if it's a Literal type
     const literalValues = extractLiteralValues(pythonType);
 
+    // Extract list item type if it's a List type
+    const listItemType = extractListItemType(pythonType);
+
     fields.push({
       name: fieldName,
       type: fieldType,
@@ -148,6 +151,7 @@ function extractFields(code: string): PydanticFieldDefinition[] {
       description,
       required,
       literalValues,
+      listItemType,
       defaultValue: undefined, // Will be set by model_post_init
     });
   }
@@ -182,6 +186,7 @@ function extractFields(code: string): PydanticFieldDefinition[] {
     const fieldType = parsePythonType(pythonType);
     const required = !pythonType.startsWith('Optional[') && !defaultValue;
     const literalValues = extractLiteralValues(pythonType);
+    const listItemType = extractListItemType(pythonType);
 
     fields.push({
       name: fieldName,
@@ -190,6 +195,7 @@ function extractFields(code: string): PydanticFieldDefinition[] {
       description: undefined,
       required,
       literalValues,
+      listItemType,
       defaultValue: defaultValue === 'None' ? null : defaultValue,
     });
   }
@@ -203,19 +209,43 @@ function extractFields(code: string): PydanticFieldDefinition[] {
 function parsePythonType(pythonType: string): PydanticFieldType {
   const typeStr = pythonType.toLowerCase().trim();
 
+  // Check complex types first (order matters!)
+  if (typeStr.startsWith('literal[')) return 'literal';
+  if (typeStr.startsWith('list[')) return 'list';
+  if (typeStr.startsWith('optional[')) {
+    // Handle Optional[List[str]], Optional[str], etc.
+    const innerTypeMatch = typeStr.match(/optional\[(.+)\]/);
+    if (innerTypeMatch) {
+      return parsePythonType(innerTypeMatch[1]);
+    }
+  }
+
+  // Check simple types last
   if (typeStr.includes('str')) return 'str';
   if (typeStr.includes('int')) return 'int';
   if (typeStr.includes('float')) return 'float';
   if (typeStr.includes('bool')) return 'bool';
   if (typeStr.includes('date')) return 'date';
-  if (typeStr.startsWith('literal[')) return 'literal';
-  if (typeStr.startsWith('list[')) return 'list';
-  if (typeStr.startsWith('set[')) return 'set';
-  if (typeStr.startsWith('optional[')) return 'optional';
-  if (typeStr.startsWith('union[')) return 'union';
 
   // Default to string for unknown types
   return 'str';
+}
+
+/**
+ * Extract list item type from List[type] annotation
+ */
+function extractListItemType(pythonType: string): string | undefined {
+  const listMatch = pythonType.match(/List\[([^\]]+)\]/i);
+  if (listMatch) {
+    const itemType = listMatch[1].trim().toLowerCase();
+    // Map Python types to our simple types
+    if (itemType === 'str') return 'str';
+    if (itemType === 'int') return 'int';
+    if (itemType === 'float') return 'float';
+    if (itemType === 'bool') return 'bool';
+    return 'str'; // Default to string
+  }
+  return undefined;
 }
 
 /**

@@ -67,8 +67,11 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
           code: generateVerifyMethod(newClassDef.fields, newClassDef.correctValuePattern || defaultCorrectValuePattern),
         });
 
-        // Generate verify_granular if needed
-        if (newClassDef.fields.length > 1) {
+        // Generate verify_granular if needed (multiple fields OR single list field)
+        const shouldGenerateGranular =
+          newClassDef.fields.length > 1 || (newClassDef.fields.length === 1 && newClassDef.fields[0].type === 'list');
+
+        if (shouldGenerateGranular) {
           const granularCode = generateVerifyGranularMethod(
             newClassDef.fields,
             newClassDef.correctValuePattern || defaultCorrectValuePattern
