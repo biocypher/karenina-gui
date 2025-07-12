@@ -324,12 +324,20 @@ export function generateVerifyMethod(
   } else if (correctValuePattern === 'single' || (correctValuePattern === undefined && fields.length === 1)) {
     // Single field pattern: compare with self.correct directly
     const field = fields[0];
-    lines.push(`        return self.${field.name} == self.correct`);
+    if (field.type === 'list') {
+      lines.push(`        return set(self.${field.name}) == set(self.correct)`);
+    } else {
+      lines.push(`        return self.${field.name} == self.correct`);
+    }
   } else {
     // Multiple field pattern: compare with self.correct dict
     const conditions: string[] = [];
     for (const field of fields) {
-      conditions.push(`self.${field.name} == self.correct["${field.name}"]`);
+      if (field.type === 'list') {
+        conditions.push(`set(self.${field.name}) == set(self.correct["${field.name}"])`);
+      } else {
+        conditions.push(`self.${field.name} == self.correct["${field.name}"]`);
+      }
     }
     lines.push(`        return ${conditions.join(' and ')}`);
   }
@@ -344,24 +352,52 @@ export function generateVerifyGranularMethod(
   fields: PydanticFieldDefinition[],
   correctValuePattern?: 'single' | 'multiple'
 ): string {
-  if (fields.length <= 1) {
-    return ''; // Not needed for single field
-  }
+  const lines: string[] = ['    def verify_granular(self) -> float:'];
 
-  const lines: string[] = ['    def verify_granular(self) -> float:', '        score = 0', '        n_params = 0'];
+  // Check if we have any list fields that need special handling
+  const hasListFields = fields.some((field) => field.type === 'list');
 
-  if (correctValuePattern === 'single') {
-    // Single field pattern - can't do granular scoring with single correct value
+  if (fields.length === 1 && fields[0].type === 'list') {
+    // Single list field - use the special list scoring logic
+    const field = fields[0];
+    const correctSource = correctValuePattern === 'single' ? 'self.correct' : `self.correct["${field.name}"]`;
+
+    lines.push('        score = 0');
+    lines.push('        n_params = 0');
+    lines.push(`        for item in ${correctSource}:`);
+    lines.push(`            if item in self.${field.name}:`);
+    lines.push('                score += 1');
+    lines.push('            n_params += 1');
+    lines.push('        return score / n_params if n_params > 0 else 0.0');
+  } else if (fields.length <= 1 && !hasListFields) {
+    // Single non-list field - simple binary scoring
+    lines.push('        return 1.0 if self.verify() else 0.0');
+  } else if (correctValuePattern === 'single') {
+    // Single field pattern - can't do granular scoring with single correct value for non-lists
     lines.push('        # Granular scoring not applicable for single field pattern');
     lines.push('        return 1.0 if self.verify() else 0.0');
   } else {
-    // Multiple field pattern: iterate through self.correct dict
+    // Multiple field pattern: iterate through fields with different logic for lists
+    lines.push('        score = 0');
+    lines.push('        n_params = 0');
+
     for (const field of fields) {
-      lines.push(`        if self.${field.name} == self.correct["${field.name}"]:`);
-      lines.push('            score += 1');
-      lines.push('        n_params += 1');
+      if (field.type === 'list') {
+        // Special list field scoring: count correct items found
+        lines.push(`        # Score list field: ${field.name}`);
+        lines.push(`        for item in self.correct["${field.name}"]:`);
+        lines.push(`            if item in self.${field.name}:`);
+        lines.push('                score += 1');
+        lines.push('            n_params += 1');
+      } else {
+        // Regular field scoring: binary correct/incorrect
+        lines.push(`        # Score regular field: ${field.name}`);
+        lines.push(`        if self.${field.name} == self.correct["${field.name}"]:`);
+        lines.push('            score += 1');
+        lines.push('        n_params += 1');
+      }
     }
-    lines.push('        return score / n_params if n_params > 0 else 0');
+    lines.push('        return score / n_params if n_params > 0 else 0.0');
   }
 
   return lines.join('\n');

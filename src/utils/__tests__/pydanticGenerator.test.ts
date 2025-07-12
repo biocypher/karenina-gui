@@ -261,6 +261,23 @@ describe('pydanticGenerator', () => {
       expect(method).toContain('return self.answer == self.correct');
     });
 
+    it('should generate set comparison for single list field', () => {
+      const fields: PydanticFieldDefinition[] = [
+        {
+          name: 'drugs',
+          type: 'list',
+          pythonType: 'List[str]',
+          listItemType: 'str',
+          required: true,
+        },
+      ];
+
+      const method = generateVerifyMethod(fields);
+
+      expect(method).toContain('def verify(self) -> bool:');
+      expect(method).toContain('return set(self.drugs) == set(self.correct)');
+    });
+
     it('should generate for multiple fields', () => {
       const fields: PydanticFieldDefinition[] = [
         { name: 'phase', type: 'str', pythonType: 'str', required: true },
@@ -271,10 +288,24 @@ describe('pydanticGenerator', () => {
 
       expect(method).toContain('return self.phase == self.correct["phase"] and self.status == self.correct["status"]');
     });
+
+    it('should generate mixed comparison for multiple fields with lists', () => {
+      const fields: PydanticFieldDefinition[] = [
+        { name: 'phase', type: 'str', pythonType: 'str', required: true },
+        { name: 'drugs', type: 'list', pythonType: 'List[str]', listItemType: 'str', required: true },
+      ];
+
+      const method = generateVerifyMethod(fields);
+
+      expect(method).toContain('def verify(self) -> bool:');
+      expect(method).toContain('self.phase == self.correct["phase"]');
+      expect(method).toContain('set(self.drugs) == set(self.correct["drugs"])');
+      expect(method).toContain(' and ');
+    });
   });
 
   describe('generateVerifyGranularMethod', () => {
-    it('should not generate for single field', () => {
+    it('should generate binary scoring for single non-list field', () => {
       const fields: PydanticFieldDefinition[] = [
         {
           name: 'answer',
@@ -286,10 +317,67 @@ describe('pydanticGenerator', () => {
 
       const method = generateVerifyGranularMethod(fields);
 
-      expect(method).toBe('');
+      expect(method).toContain('def verify_granular(self) -> float:');
+      expect(method).toContain('return 1.0 if self.verify() else 0.0');
     });
 
-    it('should generate for multiple fields', () => {
+    it('should generate list scoring for single list field', () => {
+      const fields: PydanticFieldDefinition[] = [
+        {
+          name: 'drugs',
+          type: 'list',
+          pythonType: 'List[str]',
+          listItemType: 'str',
+          required: true,
+        },
+      ];
+
+      const method = generateVerifyGranularMethod(fields, 'multiple');
+
+      expect(method).toContain('def verify_granular(self) -> float:');
+      expect(method).toContain('for item in self.correct["drugs"]:');
+      expect(method).toContain('if item in self.drugs:');
+      expect(method).toContain('score += 1');
+      expect(method).toContain('n_params += 1');
+      expect(method).toContain('return score / n_params if n_params > 0 else 0.0');
+    });
+
+    it('should generate list scoring for single list field with single pattern', () => {
+      const fields: PydanticFieldDefinition[] = [
+        {
+          name: 'drugs',
+          type: 'list',
+          pythonType: 'List[str]',
+          listItemType: 'str',
+          required: true,
+        },
+      ];
+
+      const method = generateVerifyGranularMethod(fields, 'single');
+
+      expect(method).toContain('def verify_granular(self) -> float:');
+      expect(method).toContain('for item in self.correct:');
+      expect(method).toContain('if item in self.drugs:');
+    });
+
+    it('should generate for multiple fields with mixed types', () => {
+      const fields: PydanticFieldDefinition[] = [
+        { name: 'phase', type: 'str', pythonType: 'str', required: true },
+        { name: 'drugs', type: 'list', pythonType: 'List[str]', listItemType: 'str', required: true },
+      ];
+
+      const method = generateVerifyGranularMethod(fields);
+
+      expect(method).toContain('def verify_granular(self) -> float:');
+      expect(method).toContain('# Score regular field: phase');
+      expect(method).toContain('if self.phase == self.correct["phase"]:');
+      expect(method).toContain('# Score list field: drugs');
+      expect(method).toContain('for item in self.correct["drugs"]:');
+      expect(method).toContain('if item in self.drugs:');
+      expect(method).toContain('return score / n_params if n_params > 0 else 0.0');
+    });
+
+    it('should generate for multiple non-list fields', () => {
       const fields: PydanticFieldDefinition[] = [
         { name: 'phase', type: 'str', pythonType: 'str', required: true },
         { name: 'status', type: 'str', pythonType: 'str', required: true },
@@ -300,7 +388,7 @@ describe('pydanticGenerator', () => {
       expect(method).toContain('def verify_granular(self) -> float:');
       expect(method).toContain('if self.phase == self.correct["phase"]:');
       expect(method).toContain('if self.status == self.correct["status"]:');
-      expect(method).toContain('return score / n_params if n_params > 0 else 0');
+      expect(method).toContain('return score / n_params if n_params > 0 else 0.0');
     });
   });
 });
