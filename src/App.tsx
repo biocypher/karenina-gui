@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Save, FileText, Clock, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, Save, FileText, Clock, Database, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
 import { QuestionData, UnifiedCheckpoint, VerificationResult } from './types';
 import { CodeEditor } from './components/CodeEditor';
+import { ExpandedEditor } from './components/ExpandedEditor';
 import { StatusBadge } from './components/StatusBadge';
 import { FileManager } from './components/FileManager';
 import { ChatInterface } from './components/ChatInterface';
@@ -45,6 +46,7 @@ function App() {
   // Remaining local state - ephemeral data not managed by stores yet
   const [extractedQuestions, setExtractedQuestions] = useState<QuestionData>({});
   const [benchmarkResults, setBenchmarkResults] = useState<Record<string, VerificationResult>>({});
+  const [isExpandedMode, setIsExpandedMode] = useState(false);
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
@@ -490,6 +492,14 @@ function App() {
                         <Save className="w-4 h-4" />
                         Save
                       </button>
+                      <button
+                        onClick={() => setIsExpandedMode(true)}
+                        className="px-5 py-2.5 bg-purple-600 dark:bg-purple-700 text-white rounded-xl hover:bg-purple-700 dark:hover:bg-purple-600 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        title="Open in full-screen editor"
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                        Expand
+                      </button>
                     </div>
                   </div>
 
@@ -590,6 +600,27 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* Expanded Editor Overlay */}
+      {isExpandedMode && selectedQuestion && (
+        <ExpandedEditor
+          value={currentTemplate}
+          onChange={setCurrentTemplate}
+          originalCode={originalCode}
+          savedCode={savedCode}
+          selectedQuestion={selectedQuestion}
+          questionIndex={currentIndex}
+          totalQuestions={questionIds.length}
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+          canGoPrevious={currentIndex > 0}
+          canGoNext={currentIndex < questionIds.length - 1}
+          onClose={() => setIsExpandedMode(false)}
+          onSave={handleSave}
+          onToggleFinished={handleToggleFinished}
+          isFinished={checkpointItem?.finished || false}
+        />
+      )}
     </div>
   );
 }

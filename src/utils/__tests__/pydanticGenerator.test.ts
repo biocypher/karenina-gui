@@ -172,9 +172,10 @@ describe('pydanticGenerator', () => {
       expect(generatePythonType({ name: 'test', type: 'float', pythonType: '', required: true })).toBe('float');
     });
 
-    it('should generate Optional types for non-required fields', () => {
-      expect(generatePythonType({ name: 'test', type: 'str', pythonType: '', required: false })).toBe('Optional[str]');
-      expect(generatePythonType({ name: 'test', type: 'int', pythonType: '', required: false })).toBe('Optional[int]');
+    it('should generate required types (no Optional) regardless of required flag', () => {
+      // All fields are now always required in the GUI editor
+      expect(generatePythonType({ name: 'test', type: 'str', pythonType: '', required: false })).toBe('str');
+      expect(generatePythonType({ name: 'test', type: 'int', pythonType: '', required: false })).toBe('int');
     });
 
     it('should generate Literal types correctly', () => {
@@ -208,7 +209,7 @@ describe('pydanticGenerator', () => {
           required: false,
           listItemType: 'int',
         })
-      ).toBe('Optional[List[int]]');
+      ).toBe('List[int]');
     });
   });
 

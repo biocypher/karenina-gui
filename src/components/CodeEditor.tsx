@@ -29,7 +29,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [highlightedCode, setHighlightedCode] = useState('');
   const [showDiff, setShowDiff] = useState(false);
   const [diffMode, setDiffMode] = useState<'original' | 'saved'>('original');
-  const [editorMode, setEditorMode] = useState<'code' | 'form'>('code');
+  const [editorMode, setEditorMode] = useState<'code' | 'form'>('form');
   const [scrollInfo, setScrollInfo] = useState({
     scrollLeft: 0,
     scrollTop: 0,
