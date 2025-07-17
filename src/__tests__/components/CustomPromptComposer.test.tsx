@@ -61,11 +61,11 @@ describe('CustomPromptComposer Component', () => {
       expect(screen.getByText('Example 1')).toBeInTheDocument();
       expect(screen.getByText('Question Selector')).toBeInTheDocument();
       expect(screen.getByText('Raw Question')).toBeInTheDocument();
-      expect(screen.getByText('JSON Question')).toBeInTheDocument();
+      expect(screen.getByText('Raw Answer')).toBeInTheDocument();
       expect(screen.getByText('Python Example Code')).toBeInTheDocument();
     });
 
-    it('3. Select a question - "Raw" and "JSON" fields populate automatically', async () => {
+    it('3. Select a question - "Raw Question" and "Raw Answer" fields populate automatically', async () => {
       const user = userEvent.setup();
 
       // Add an example first
@@ -85,15 +85,9 @@ describe('CustomPromptComposer Component', () => {
       const rawQuestionField = screen.getByLabelText(/Raw Question/i);
       expect(rawQuestionField).toHaveValue(firstQuestion.question);
 
-      // Check that JSON question field is populated
-      const jsonQuestionField = screen.getByLabelText(/JSON Question/i);
-      const expectedJson = JSON.stringify({
-        id: firstQuestionId,
-        question: firstQuestion.question,
-        raw_answer: firstQuestion.raw_answer,
-        tags: [],
-      });
-      expect(jsonQuestionField).toHaveValue(expectedJson);
+      // Check that raw answer field is populated
+      const rawAnswerField = screen.getByLabelText(/Raw Answer/i);
+      expect(rawAnswerField).toHaveValue(firstQuestion.raw_answer);
     });
 
     it('4. Enter Python in code editor - Syntax highlighting active; code retained', async () => {
