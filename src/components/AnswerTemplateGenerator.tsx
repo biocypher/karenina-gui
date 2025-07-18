@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Play, Square, Download, CheckCircle, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { Play, Square, Download, CheckCircle, AlertCircle, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
 import { handleApiError } from '../utils/errorHandler';
@@ -47,6 +47,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     downloadAllGenerated,
     addToCuration,
     getPendingQuestions,
+    retryFailedTemplate,
   } = useTemplateStore();
 
   // Get pending questions using the store getter
@@ -119,6 +120,10 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     removeGeneratedTemplate(questionId);
   };
 
+  const handleRetryFailedTemplate = async (questionId: string) => {
+    await retryFailedTemplate(questionId, questions);
+  };
+
   const handleClearAllGenerated = () => {
     if (window.confirm('Are you sure you want to clear all generated templates? This cannot be undone.')) {
       // Clear all generated templates by resetting the store's generated templates
@@ -134,7 +139,23 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
   const generatedCount = getGeneratedCount();
   const successfulTemplates = getSuccessfulTemplates();
   const successfulCount = Object.keys(successfulTemplates).length;
+  const failedCount = generatedCount - successfulCount;
   const hasQuestions = totalQuestions > 0;
+
+  const handleRetryAllFailed = async () => {
+    // Get all failed template IDs
+    const failedIds = Object.entries(generatedTemplates)
+      .filter(([, template]) => !template.success)
+      .map(([id]) => id);
+
+    if (failedIds.length === 0) return;
+
+    // Set selected questions to all failed questions
+    setSelectedQuestions(new Set(failedIds));
+
+    // Start generation with force regenerate
+    await startGeneration(questions, true);
+  };
 
   return (
     <div className="space-y-6">
@@ -155,6 +176,16 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
                 <Plus className="w-4 h-4" />
                 Add to Curation ({successfulCount})
               </button>
+              {failedCount > 0 && (
+                <button
+                  onClick={handleRetryAllFailed}
+                  disabled={isGenerating}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-600 dark:bg-orange-700 text-white rounded-xl hover:bg-orange-700 dark:hover:bg-orange-600 disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Retry Failed ({failedCount})
+                </button>
+              )}
               <button
                 onClick={handleDownloadAllGenerated}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-xl hover:bg-green-700 dark:hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -212,12 +243,25 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <button
-                            onClick={() => handleRemoveGeneratedTemplate(questionId)}
-                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {!template.success && (
+                              <button
+                                onClick={() => handleRetryFailedTemplate(questionId)}
+                                disabled={isGenerating}
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:text-slate-400 dark:disabled:text-slate-600 transition-colors"
+                                title="Retry generation"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleRemoveGeneratedTemplate(questionId)}
+                              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                              title="Remove from list"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

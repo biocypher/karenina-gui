@@ -51,6 +51,7 @@ interface TemplateState {
     onSwitchToCurator?: () => void
   ) => void;
   resetTemplateState: () => void;
+  retryFailedTemplate: (questionId: string, questions: QuestionData) => Promise<void>;
 
   // Computed getters
   getPendingQuestions: (questions: QuestionData) => QuestionData;
@@ -135,9 +136,9 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
           ...state.config,
           // Add timestamp to ensure backend treats this as a fresh request
           _cache_bust: Date.now(),
-          _force_regenerate: forceRegenerate,
         },
         custom_system_prompt: state.customSystemPrompt,
+        force_regenerate: forceRegenerate,
       };
 
       const response = await fetch('/api/generate-answer-templates', {
@@ -306,6 +307,31 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       jobId: null,
       generatedTemplates: {},
     }));
+  },
+
+  retryFailedTemplate: async (questionId: string, questions: QuestionData) => {
+    const state = get();
+
+    // Check if the question exists and has failed
+    const failedTemplate = state.generatedTemplates[questionId];
+    if (!failedTemplate || failedTemplate.success) {
+      return;
+    }
+
+    // Check if the question data exists
+    if (!questions[questionId]) {
+      set(() => ({ error: 'Question not found for retry' }));
+      return;
+    }
+
+    // Set selected questions to only the failed question
+    set(() => ({
+      selectedQuestions: new Set([questionId]),
+      error: null,
+    }));
+
+    // Start generation with force regenerate
+    await state.startGeneration(questions, true);
   },
 
   // Computed getters
