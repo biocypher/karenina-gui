@@ -9,6 +9,7 @@ import { PydanticFormEditor } from './pydantic/PydanticFormEditor';
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onSave?: () => void;
   readOnly?: boolean;
   originalCode?: string;
   savedCode?: string;
@@ -18,6 +19,7 @@ interface CodeEditorProps {
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   value,
   onChange,
+  onSave,
   readOnly = false,
   originalCode = '',
   savedCode = '',
@@ -278,7 +280,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
         {/* Form Editor Content */}
         <div className="flex-1 min-h-0 bg-gray-50 dark:bg-gray-900">
-          <PydanticFormEditor code={value} onChange={onChange} className="h-full overflow-auto" />
+          <PydanticFormEditor code={value} onChange={onChange} onSave={onSave} className="h-full overflow-auto" />
         </div>
       </div>
     );

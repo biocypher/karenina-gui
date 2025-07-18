@@ -12,10 +12,11 @@ import type { PydanticFieldDefinition, PydanticClassDefinition, PydanticMethod }
 interface PydanticFormEditorProps {
   code: string;
   onChange: (newCode: string) => void;
+  onSave?: () => void;
   className?: string;
 }
 
-export function PydanticFormEditor({ code, onChange, className }: PydanticFormEditorProps) {
+export function PydanticFormEditor({ code, onChange, onSave, className }: PydanticFormEditorProps) {
   const [classDef, setClassDef] = useState<PydanticClassDefinition | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -32,6 +33,7 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
         ...parseResult.classDefinition,
         correctValuePattern: parseResult.classDefinition.correctValuePattern || defaultCorrectValuePattern,
       };
+
       setClassDef(classDefWithDefaults);
       setParseError(null);
 
@@ -89,6 +91,11 @@ export function PydanticFormEditor({ code, onChange, className }: PydanticFormEd
 
       const newCode = generatePydanticCode(newClassDef);
       onChange(newCode);
+
+      // Auto-save after field changes
+      if (onSave) {
+        onSave();
+      }
     } catch (error) {
       console.error('Error generating code:', error);
     }

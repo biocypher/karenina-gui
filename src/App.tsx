@@ -508,6 +508,7 @@ function App() {
                     <CodeEditor
                       value={currentTemplate}
                       onChange={setCurrentTemplate}
+                      onSave={handleSave}
                       originalCode={originalCode}
                       savedCode={savedCode}
                       enableFormEditor={true}

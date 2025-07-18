@@ -249,6 +249,7 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
           <CodeEditor
             value={value}
             onChange={onChange}
+            onSave={onSave}
             originalCode={originalCode}
             savedCode={savedCode}
             enableFormEditor={true}
