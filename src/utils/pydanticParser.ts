@@ -113,7 +113,9 @@ function extractFields(code: string): PydanticFieldDefinition[] {
 
   // First, let's handle multiline field definitions
   // This regex matches field definitions that may span multiple lines
-  const multilineFieldPattern = /^\s{0,4}(\w+)\s*:\s*([^=]+?)\s*=\s*Field\s*\(([^)]*)\)/gms;
+  // We need to properly handle nested parentheses in Field() arguments
+  const multilineFieldPattern =
+    /^\s{0,4}(\w+)\s*:\s*([^=]+?)\s*=\s*Field\s*\(((?:[^()]|'[^']*'|"[^"]*"|\([^)]*\))*)\)/gms;
 
   let match;
   while ((match = multilineFieldPattern.exec(code)) !== null) {
@@ -132,8 +134,20 @@ function extractFields(code: string): PydanticFieldDefinition[] {
     }
 
     // Extract description from Field arguments
-    const descMatch = fieldArgs.match(/description\s*=\s*["']([^"']+)["']/);
-    const description = descMatch ? descMatch[1] : undefined;
+    // Handle escaped quotes in descriptions (both single and double quoted strings)
+    let description: string | undefined;
+
+    // Try double quoted strings first
+    let descMatch = fieldArgs.match(/description\s*=\s*"((?:[^"\\]|\\.)*)"/);
+    if (descMatch) {
+      description = descMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    } else {
+      // Try single quoted strings as fallback
+      descMatch = fieldArgs.match(/description\s*=\s*'((?:[^'\\]|\\.)*)'/);
+      if (descMatch) {
+        description = descMatch[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+      }
+    }
 
     // Parse the field type
     const fieldType = parsePythonType(pythonType);
