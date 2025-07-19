@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Play, Square, Download, CheckCircle, AlertCircle, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
+import { useConfigStore } from '../stores/useConfigStore';
 import { handleApiError } from '../utils/errorHandler';
 import { QuestionSelector } from './QuestionSelector';
 import { CustomPromptComposer } from './CustomPromptComposer';
@@ -21,6 +22,9 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
   onTemplatesGenerated,
   onSwitchToCurator,
 }) => {
+  // Configuration store - use saved values (not working draft values)
+  const { savedInterface, savedProvider, savedModel } = useConfigStore();
+
   // Template store state
   const {
     config,
@@ -49,6 +53,16 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     getPendingQuestions,
     retryFailedTemplate,
   } = useTemplateStore();
+
+  // Initialize config with saved defaults from configuration store
+  useEffect(() => {
+    setConfig({
+      ...config,
+      interface: savedInterface,
+      model_provider: savedProvider,
+      model_name: savedModel,
+    });
+  }, [savedInterface, savedProvider, savedModel]);
 
   // Get pending questions using the store getter
   const pendingQuestions = getPendingQuestions(questions);

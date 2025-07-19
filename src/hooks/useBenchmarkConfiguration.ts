@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ModelConfiguration } from '../types';
+import { useConfigStore } from '../stores/useConfigStore';
 
 export interface BenchmarkConfiguration {
   answeringModels: ModelConfiguration[];
@@ -12,11 +13,14 @@ export interface BenchmarkConfiguration {
 }
 
 export const useBenchmarkConfiguration = () => {
+  // Get saved defaults from config store (not working draft values)
+  const { savedInterface, savedProvider, savedModel } = useConfigStore();
+
   const [answeringModels, setAnsweringModels] = useState<ModelConfiguration[]>([
     {
       id: 'answering-1',
       model_provider: 'google_genai',
-      model_name: 'gemini-2.0-flash',
+      model_name: 'gemini-2.5-flash',
       temperature: 0.1,
       interface: 'langchain',
       system_prompt: 'You are an expert assistant. Answer the question accurately and concisely.',
@@ -27,13 +31,38 @@ export const useBenchmarkConfiguration = () => {
     {
       id: 'parsing-1',
       model_provider: 'google_genai',
-      model_name: 'gemini-2.0-flash',
+      model_name: 'gemini-2.5-flash',
       temperature: 0.1,
       interface: 'langchain',
       system_prompt:
         'You are a validation assistant. Parse and validate responses against the given Pydantic template.',
     },
   ]);
+
+  // Update default models when saved config store defaults change
+  useEffect(() => {
+    setAnsweringModels(models => 
+      models.map((model, index) => 
+        index === 0 ? {
+          ...model,
+          interface: savedInterface,
+          model_provider: savedProvider,
+          model_name: savedModel,
+        } : model
+      )
+    );
+
+    setParsingModels(models => 
+      models.map((model, index) => 
+        index === 0 ? {
+          ...model,
+          interface: savedInterface,
+          model_provider: savedProvider,
+          model_name: savedModel,
+        } : model
+      )
+    );
+  }, [savedInterface, savedProvider, savedModel]);
 
   const [replicateCount, setReplicateCount] = useState<number>(1);
   const [expandedPrompts, setExpandedPrompts] = useState<Set<string>>(new Set());
@@ -45,10 +74,10 @@ export const useBenchmarkConfiguration = () => {
   const addAnsweringModel = () => {
     const newModel: ModelConfiguration = {
       id: `answering-${Date.now()}`,
-      model_provider: 'google_genai',
-      model_name: 'gemini-2.0-flash',
+      model_provider: savedProvider,
+      model_name: savedModel,
       temperature: 0.1,
-      interface: 'langchain',
+      interface: savedInterface,
       system_prompt: 'You are an expert assistant. Answer the question accurately and concisely.',
     };
     setAnsweringModels([...answeringModels, newModel]);
@@ -57,10 +86,10 @@ export const useBenchmarkConfiguration = () => {
   const addParsingModel = () => {
     const newModel: ModelConfiguration = {
       id: `parsing-${Date.now()}`,
-      model_provider: 'google_genai',
-      model_name: 'gemini-2.0-flash',
+      model_provider: savedProvider,
+      model_name: savedModel,
       temperature: 0.1,
-      interface: 'langchain',
+      interface: savedInterface,
       system_prompt:
         'You are a validation assistant. Parse and validate responses against the given Pydantic template.',
     };
@@ -91,7 +120,7 @@ export const useBenchmarkConfiguration = () => {
               case 'langchain':
                 // Ensure provider has a default value for langchain
                 if (!updatedModel.model_provider) {
-                  updatedModel.model_provider = 'google_genai';
+                  updatedModel.model_provider = savedProvider;
                 }
                 break;
               case 'openrouter':
@@ -125,7 +154,7 @@ export const useBenchmarkConfiguration = () => {
               case 'langchain':
                 // Ensure provider has a default value for langchain
                 if (!updatedModel.model_provider) {
-                  updatedModel.model_provider = 'google_genai';
+                  updatedModel.model_provider = savedProvider;
                 }
                 break;
               case 'openrouter':

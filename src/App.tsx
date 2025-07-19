@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Save, FileText, Clock, Database, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { ChevronDown, Save, FileText, Clock, Database, ChevronLeft, ChevronRight, Maximize2, Settings } from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
+import { useConfigStore } from './stores/useConfigStore';
 import { QuestionData, UnifiedCheckpoint, VerificationResult } from './types';
 import { CodeEditor } from './components/CodeEditor';
 import { ExpandedEditor } from './components/ExpandedEditor';
@@ -13,6 +14,7 @@ import { AnswerTemplateGenerator } from './components/AnswerTemplateGenerator';
 import { BenchmarkTab } from './components/BenchmarkTab';
 import { ThemeToggle } from './components/ThemeToggle';
 import QuestionRubricEditor from './components/QuestionRubricEditor';
+import { ConfigurationModal } from './components/ConfigurationModal';
 import { formatTimestamp, forceResetAllData } from './utils/dataLoader';
 
 // VerificationResult interface now imported from types
@@ -20,6 +22,9 @@ import { formatTimestamp, forceResetAllData } from './utils/dataLoader';
 function App() {
   // App store state
   const { activeTab, isLoading, sessionId, setActiveTab, setIsLoading, resetAppState } = useAppStore();
+  
+  // Configuration store 
+  const { loadConfiguration } = useConfigStore();
 
   // Question store state
   const {
@@ -47,6 +52,7 @@ function App() {
   const [extractedQuestions, setExtractedQuestions] = useState<QuestionData>({});
   const [benchmarkResults, setBenchmarkResults] = useState<Record<string, VerificationResult>>({});
   const [isExpandedMode, setIsExpandedMode] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
@@ -58,6 +64,13 @@ function App() {
     setIsLoading(false);
     console.log('🚀 App: Fresh state initialized with session:', sessionId);
   }, [sessionId, setIsLoading]);
+  
+  // Load configuration defaults on app startup
+  useEffect(() => {
+    loadConfiguration().catch(error => {
+      console.error('Failed to load configuration defaults:', error);
+    });
+  }, [loadConfiguration]);
 
   // Template selection is now handled by the question store
 
@@ -246,7 +259,17 @@ function App() {
                 </p>
               </div>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsConfigModalOpen(true)}
+                className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 
+                         hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                title="Configuration"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+              <ThemeToggle />
+            </div>
           </div>
 
           {/* Development Session Status - Only show in development */}
@@ -622,6 +645,12 @@ function App() {
           isFinished={checkpointItem?.finished || false}
         />
       )}
+      
+      {/* Configuration Modal */}
+      <ConfigurationModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+      />
     </div>
   );
 }

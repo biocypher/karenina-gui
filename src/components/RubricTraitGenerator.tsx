@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Search, Check, Square, Upload } from 'lucide-react';
 import { useRubricStore } from '../stores/useRubricStore';
+import { useConfigStore } from '../stores/useConfigStore';
 import { QuestionData, RubricTrait } from '../types';
 import { ModelSelector } from './ModelSelector';
 
@@ -23,6 +24,9 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
   // File upload state (session-only, no persistence)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Configuration store - use saved values (not working draft values)
+  const { savedInterface, savedProvider, savedModel } = useConfigStore();
+
   const {
     generatedSuggestions,
     isGeneratingTraits,
@@ -33,6 +37,16 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
     applyGeneratedTraits,
     setConfig,
   } = useRubricStore();
+
+  // Initialize config with saved defaults from configuration store
+  useEffect(() => {
+    setConfig({
+      ...config,
+      interface: savedInterface,
+      model_provider: savedProvider,
+      model_name: savedModel,
+    });
+  }, [savedInterface, savedProvider, savedModel, setConfig]);
 
   const questionIds = Object.keys(questions);
   const hasQuestions = questionIds.length > 0;

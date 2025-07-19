@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, MessageCircle, Trash2, Settings, Loader2, Bot, User } from 'lucide-react';
+import { useConfigStore } from '../stores/useConfigStore';
 
 interface ChatMessage {
   type: 'human' | 'ai' | 'system';
@@ -32,11 +33,22 @@ export const ChatInterface: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Model configuration
-  const [model, setModel] = useState('gemini-2.0-flash');
-  const [provider, setProvider] = useState('google_genai');
+  // Get default configuration from store
+  const { defaultInterface, defaultProvider, defaultModel } = useConfigStore();
+
+  // Model configuration - use defaults from config store
+  const [model, setModel] = useState(defaultModel);
+  const [provider, setProvider] = useState(defaultProvider);
   const [temperature, setTemperature] = useState(0.7);
   const [systemMessage, setSystemMessage] = useState('');
+  
+  // Update when defaults change
+  useEffect(() => {
+    if (defaultInterface === 'langchain') {
+      setProvider(defaultProvider);
+      setModel(defaultModel);
+    }
+  }, [defaultInterface, defaultProvider, defaultModel]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
