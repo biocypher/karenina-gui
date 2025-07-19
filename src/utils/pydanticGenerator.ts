@@ -58,7 +58,7 @@ function generateFieldDefinition(field: PydanticFieldDefinition): string {
 
     if (field.description) {
       // Escape quotes in description
-      const escapedDesc = field.description.replace(/"/g, '\\"');
+      const escapedDesc = field.description.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       fieldArgs.push(`description="${escapedDesc}"`);
     }
 
@@ -110,7 +110,7 @@ function formatDefaultValue(value: string | number | boolean | null | string[] |
   }
   if (typeof value === 'string') {
     // Escape quotes and format as Python string
-    return `"${value.replace(/"/g, '\\"')}"`;
+    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
   }
   if (typeof value === 'boolean') {
     return value ? 'True' : 'False';
@@ -265,7 +265,7 @@ function getDefaultCorrectValue(field: PydanticFieldDefinition): string | number
 function formatListItemValue(item: string | number | boolean, itemType: string): string {
   switch (itemType) {
     case 'str':
-      return `"${String(item).replace(/"/g, '\\"')}"`;
+      return `"${String(item).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
     case 'int':
       return String(parseInt(String(item)) || 0);
     case 'float':
@@ -273,7 +273,7 @@ function formatListItemValue(item: string | number | boolean, itemType: string):
     case 'bool':
       return String(item).toLowerCase() === 'true' ? 'True' : 'False';
     default:
-      return `"${String(item).replace(/"/g, '\\"')}"`;
+      return `"${String(item).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
   }
 }
 
@@ -292,7 +292,7 @@ function formatCorrectValue(
     case 'str':
     case 'literal':
     case 'date':
-      return `"${String(value).replace(/"/g, '\\"')}"`;
+      return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
     case 'bool':
       return value ? 'True' : 'False';
     case 'int':

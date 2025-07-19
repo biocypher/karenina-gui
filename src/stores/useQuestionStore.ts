@@ -255,9 +255,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     const state = get();
     const checkpointItem = state.checkpoint[questionId];
 
+    const templateToLoad = checkpointItem?.answer_template || state.questionData[questionId]?.answer_template || '';
+
     set(() => ({
       selectedQuestionId: questionId,
-      currentTemplate: checkpointItem?.answer_template || state.questionData[questionId]?.answer_template || '',
+      currentTemplate: templateToLoad,
     }));
   },
 

@@ -340,4 +340,99 @@ describe('useTemplateStore', () => {
       expect(state.hasInitialized).toBe(false);
     });
   });
+
+  describe('Retry Failed Template', () => {
+    it('should retry a failed template', async () => {
+      const store = useTemplateStore.getState();
+
+      // Set up a failed template
+      useTemplateStore.setState({
+        generatedTemplates: {
+          q1: {
+            question_id: 'q1',
+            template_code: '',
+            generation_time: 1000,
+            success: false,
+            error_message: 'Generation failed',
+          },
+        },
+      });
+
+      // Mock successful API response
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ job_id: 'retry-job-123' }),
+      });
+
+      // Retry the failed template
+      await store.retryFailedTemplate('q1', mockQuestions);
+
+      // Check that selected questions were set to only the failed question
+      const state = useTemplateStore.getState();
+      expect(state.selectedQuestions.has('q1')).toBe(true);
+      expect(state.selectedQuestions.size).toBe(1);
+
+      // Check that generation was started with force regenerate
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/generate-answer-templates',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+          }),
+          body: expect.stringContaining('"force_regenerate":true'),
+        })
+      );
+    });
+
+    it('should not retry a successful template', async () => {
+      const store = useTemplateStore.getState();
+
+      // Set up a successful template
+      useTemplateStore.setState({
+        generatedTemplates: {
+          q1: mockGeneratedTemplate,
+        },
+      });
+
+      await store.retryFailedTemplate('q1', mockQuestions);
+
+      // Should not make any API calls
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should handle missing question data', async () => {
+      const store = useTemplateStore.getState();
+
+      // Set up a failed template
+      useTemplateStore.setState({
+        generatedTemplates: {
+          q1: {
+            question_id: 'q1',
+            template_code: '',
+            generation_time: 1000,
+            success: false,
+            error_message: 'Generation failed',
+          },
+        },
+      });
+
+      // Try to retry with empty questions data
+      await store.retryFailedTemplate('q1', {});
+
+      // Should set error state
+      const state = useTemplateStore.getState();
+      expect(state.error).toBe('Question not found for retry');
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should handle non-existent template', async () => {
+      const store = useTemplateStore.getState();
+
+      await store.retryFailedTemplate('non-existent', mockQuestions);
+
+      // Should not make any API calls
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
 });

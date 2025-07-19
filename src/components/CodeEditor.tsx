@@ -9,6 +9,7 @@ import { PydanticFormEditor } from './pydantic/PydanticFormEditor';
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onSave?: () => void;
   readOnly?: boolean;
   originalCode?: string;
   savedCode?: string;
@@ -18,6 +19,7 @@ interface CodeEditorProps {
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   value,
   onChange,
+  onSave,
   readOnly = false,
   originalCode = '',
   savedCode = '',
@@ -228,10 +230,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setEditorMode('code')}
-              className="px-4 py-2 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:bg-slate-800 dark:hover:bg-slate-500 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               <FileText className="w-4 h-4" />
-              Code View
+              Code Editor
             </button>
 
             {canRevert && (
@@ -278,7 +280,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
         {/* Form Editor Content */}
         <div className="flex-1 min-h-0 bg-gray-50 dark:bg-gray-900">
-          <PydanticFormEditor code={value} onChange={onChange} className="h-full overflow-auto" />
+          <PydanticFormEditor code={value} onChange={onChange} onSave={onSave} className="h-full overflow-auto" />
         </div>
       </div>
     );
@@ -288,8 +290,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     <div className="w-full h-full border border-slate-300 rounded-2xl overflow-hidden bg-slate-900 shadow-xl flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700 flex-shrink-0">
-        <div className="flex items-center gap-2">{/* Window controls removed for cleaner interface */}</div>
-
         <div className="flex items-center gap-3">
           {enableFormEditor && (
             <button
@@ -300,7 +300,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               Form Editor
             </button>
           )}
+        </div>
 
+        <div className="flex items-center gap-3">
           {canShowDiff && (
             <button
               onClick={toggleDiff}
