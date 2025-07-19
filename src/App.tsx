@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Save, FileText, Clock, Database, ChevronLeft, ChevronRight, Maximize2, Settings } from 'lucide-react';
+import {
+  ChevronDown,
+  Save,
+  FileText,
+  Clock,
+  Database,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Settings,
+} from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
 import { useConfigStore } from './stores/useConfigStore';
@@ -22,8 +32,8 @@ import { formatTimestamp, forceResetAllData } from './utils/dataLoader';
 function App() {
   // App store state
   const { activeTab, isLoading, sessionId, setActiveTab, setIsLoading, resetAppState } = useAppStore();
-  
-  // Configuration store 
+
+  // Configuration store
   const { loadConfiguration } = useConfigStore();
 
   // Question store state
@@ -64,11 +74,15 @@ function App() {
     setIsLoading(false);
     console.log('🚀 App: Fresh state initialized with session:', sessionId);
   }, [sessionId, setIsLoading]);
-  
+
   // Load configuration defaults on app startup
   useEffect(() => {
-    loadConfiguration().catch(error => {
+    loadConfiguration().catch((error) => {
       console.error('Failed to load configuration defaults:', error);
+      // Notify user of configuration loading failure
+      alert(
+        'Warning: Failed to load application configuration. Default settings will be used. Please check your network connection and refresh if needed.'
+      );
     });
   }, [loadConfiguration]);
 
@@ -645,12 +659,9 @@ function App() {
           isFinished={checkpointItem?.finished || false}
         />
       )}
-      
+
       {/* Configuration Modal */}
-      <ConfigurationModal
-        isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
-      />
+      <ConfigurationModal isOpen={isConfigModalOpen} onClose={() => setIsConfigModalOpen(false)} />
     </div>
   );
 }

@@ -1,52 +1,108 @@
 import { create } from 'zustand';
 
+/**
+ * Represents an environment variable key-value pair
+ */
 interface EnvVariable {
   key: string;
   value: string;
 }
 
+/**
+ * Configuration store state interface
+ *
+ * This store manages application configuration using a "working vs saved" pattern:
+ * - Working values (default*): Draft configuration being edited in the modal
+ * - Saved values (saved*): Persisted configuration used by generation components
+ * - Original values: Baseline for reset functionality
+ *
+ * This pattern prevents accidental application of unsaved changes while providing
+ * a smooth editing experience with proper draft/commit workflow.
+ */
 interface ConfigState {
-  // Working/draft LLM configuration (being edited in modal)
+  // ===== WORKING/DRAFT CONFIGURATION =====
+  // These values are modified during editing in the configuration modal
+  // and only applied to saved values when explicitly saved
+
+  /** Draft LLM interface selection being edited in modal */
   defaultInterface: 'langchain' | 'openrouter';
+  /** Draft provider name being edited in modal (e.g., 'openai', 'google_genai') */
   defaultProvider: string;
+  /** Draft model name being edited in modal (e.g., 'gpt-4', 'gemini-2.0-flash') */
   defaultModel: string;
-  
-  // Saved/persisted defaults (used by generation components)
+
+  // ===== SAVED/PERSISTED CONFIGURATION =====
+  // These values are used by generation components and only updated when saved
+
+  /** Currently saved and active LLM interface used by generation components */
   savedInterface: 'langchain' | 'openrouter';
+  /** Currently saved and active provider used by generation components */
   savedProvider: string;
+  /** Currently saved and active model used by generation components */
   savedModel: string;
-  
-  // Original defaults (for reset functionality)
+
+  // ===== BASELINE CONFIGURATION =====
+  // Original values loaded from server, used for reset functionality
+
+  /** Original defaults from server for reset functionality */
   originalDefaults: {
     defaultInterface: 'langchain' | 'openrouter';
     defaultProvider: string;
     defaultModel: string;
   };
-  
-  // Environment variables (masked and unmasked)
+
+  // ===== ENVIRONMENT VARIABLES =====
+
+  /** Environment variables with sensitive values masked (e.g., API keys shown as "***") */
   envVariables: Record<string, string>;
+  /** Environment variables with actual unmasked values for editing */
   unmaskedEnvVariables: Record<string, string>;
-  
-  // Loading states
+
+  // ===== LOADING STATES =====
+
+  /** Loading state for initial configuration fetch */
   isLoading: boolean;
+  /** Loading state for environment variable operations */
   isSaving: boolean;
+  /** Loading state for saving default configuration */
   isSavingDefaults: boolean;
+  /** Current error message, if any */
   error: string | null;
-  
-  // Computed properties
+
+  // ===== COMPUTED PROPERTIES =====
+
+  /** Returns true if working values differ from original defaults */
   hasUnsavedDefaults: () => boolean;
-  
-  // Actions
+
+  // ===== ACTIONS =====
+
+  /** Load configuration and environment variables from server */
   loadConfiguration: () => Promise<void>;
+  /** Load unmasked environment variables for editing */
   loadUnmaskedEnvVariables: () => Promise<void>;
+
+  // Working value updates (for modal editing)
+  /** Update draft interface selection */
   updateDefaultInterface: (interface: 'langchain' | 'openrouter') => void;
+  /** Update draft provider selection */
   updateDefaultProvider: (provider: string) => void;
+  /** Update draft model selection */
   updateDefaultModel: (model: string) => void;
+
+  // Persistence operations
+  /** Save current working values as new defaults and update saved values */
   saveDefaults: () => Promise<void>;
+  /** Reset working values to original defaults (discard unsaved changes) */
   resetDefaults: () => void;
+
+  // Environment variable management
+  /** Update a single environment variable */
   updateEnvVariable: (key: string, value: string) => Promise<void>;
+  /** Update multiple environment variables in bulk */
   updateEnvVariables: (variables: EnvVariable[]) => Promise<void>;
+  /** Update entire .env file contents */
   updateEnvFileContents: (content: string) => Promise<void>;
+  /** Remove an environment variable */
   removeEnvVariable: (key: string) => Promise<void>;
 }
 
@@ -55,12 +111,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   defaultInterface: 'langchain',
   defaultProvider: 'google_genai',
   defaultModel: 'gemini-2.5-flash',
-  
+
   // Saved values (used by generation components)
   savedInterface: 'langchain',
   savedProvider: 'google_genai',
   savedModel: 'gemini-2.5-flash',
-  
+
   originalDefaults: {
     defaultInterface: 'langchain',
     defaultProvider: 'google_genai',
@@ -72,7 +128,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   isSaving: false,
   isSavingDefaults: false,
   error: null,
-  
+
   // Computed property to check if defaults have changed
   hasUnsavedDefaults: () => {
     const state = get();
@@ -82,7 +138,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       state.defaultModel !== state.originalDefaults.defaultModel
     );
   },
-  
+
   // Load configuration from server
   loadConfiguration: async () => {
     set({ isLoading: true, error: null });
@@ -93,14 +149,14 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         throw new Error('Failed to load environment variables');
       }
       const envVariables = await envResponse.json();
-      
+
       // Load default configuration
       const defaultsResponse = await fetch('/api/config/defaults');
       if (!defaultsResponse.ok) {
         throw new Error('Failed to load default configuration');
       }
       const defaults = await defaultsResponse.json();
-      
+
       set({
         envVariables,
         // Set both working and saved values from backend
@@ -124,7 +180,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       });
     }
   },
-  
+
   // Load unmasked environment variables
   loadUnmaskedEnvVariables: async () => {
     try {
@@ -140,22 +196,22 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       });
     }
   },
-  
+
   // Update default interface
   updateDefaultInterface: (newInterface) => {
     set({ defaultInterface: newInterface });
   },
-  
+
   // Update default provider
   updateDefaultProvider: (provider) => {
     set({ defaultProvider: provider });
   },
-  
+
   // Update default model
   updateDefaultModel: (model) => {
     set({ defaultModel: model });
   },
-  
+
   // Save defaults to backend
   saveDefaults: async () => {
     set({ isSavingDefaults: true, error: null });
@@ -166,18 +222,18 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         default_provider: state.defaultProvider,
         default_model: state.defaultModel,
       };
-      
+
       const response = await fetch('/api/config/defaults', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(defaultsToSave),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'Failed to save defaults');
       }
-      
+
       // Update saved values and original defaults to match current working values
       set({
         savedInterface: state.defaultInterface,
@@ -190,7 +246,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         },
         isSavingDefaults: false,
       });
-      
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to save defaults',
@@ -199,7 +254,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       throw error;
     }
   },
-  
+
   // Reset defaults to original values (undo unsaved changes)
   resetDefaults: () => {
     const state = get();
@@ -209,7 +264,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       defaultModel: state.originalDefaults.defaultModel,
     });
   },
-  
+
   // Update a single environment variable
   updateEnvVariable: async (key, value) => {
     set({ isSaving: true, error: null });
@@ -219,12 +274,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, value }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'Failed to update environment variable');
       }
-      
+
       // Reload configuration to get updated masked values
       await get().loadConfiguration();
       set({ isSaving: false });
@@ -236,7 +291,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       throw error;
     }
   },
-  
+
   // Update multiple environment variables
   updateEnvVariables: async (variables) => {
     set({ isSaving: true, error: null });
@@ -246,12 +301,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ variables }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'Failed to update environment variables');
       }
-      
+
       // Reload configuration
       await get().loadConfiguration();
       set({ isSaving: false });
@@ -263,7 +318,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       throw error;
     }
   },
-  
+
   // Update entire .env file contents
   updateEnvFileContents: async (content) => {
     set({ isSaving: true, error: null });
@@ -273,12 +328,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'Failed to update .env file');
       }
-      
+
       // Reload configuration
       await get().loadConfiguration();
       set({ isSaving: false });
@@ -290,7 +345,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       throw error;
     }
   },
-  
+
   // Remove an environment variable
   removeEnvVariable: async (key) => {
     set({ isSaving: true, error: null });
@@ -298,12 +353,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       const response = await fetch(`/api/config/env-vars/${key}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'Failed to remove environment variable');
       }
-      
+
       // Reload configuration
       await get().loadConfiguration();
       set({ isSaving: false });

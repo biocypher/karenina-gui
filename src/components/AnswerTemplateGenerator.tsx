@@ -56,13 +56,23 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
 
   // Initialize config with saved defaults from configuration store
   useEffect(() => {
-    setConfig((prevConfig) => ({
-      ...prevConfig,
+    // Only update if values have actually changed to prevent unnecessary re-renders
+    if (
+      config.interface === savedInterface &&
+      config.model_provider === savedProvider &&
+      config.model_name === savedModel
+    ) {
+      return;
+    }
+
+    setConfig({
+      ...config,
       interface: savedInterface,
       model_provider: savedProvider,
       model_name: savedModel,
-    }));
-  }, [savedInterface, savedProvider, savedModel, setConfig]);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedInterface, savedProvider, savedModel]);
 
   // Get pending questions using the store getter
   const pendingQuestions = getPendingQuestions(questions);
