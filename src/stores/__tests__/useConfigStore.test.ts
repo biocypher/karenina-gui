@@ -39,14 +39,14 @@ describe('useConfigStore', () => {
   });
 
   it('loads configuration successfully', async () => {
-    const mockEnvResponse = { 'OPENAI_API_KEY': '****5678' };
+    const mockEnvResponse = { OPENAI_API_KEY: '****5678' };
     const mockDefaultsResponse = {
       default_interface: 'openrouter',
       default_provider: 'openai',
       default_model: 'gpt-4',
     };
 
-    (global.fetch as any)
+    (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockEnvResponse),
@@ -71,7 +71,7 @@ describe('useConfigStore', () => {
   });
 
   it('handles load configuration error', async () => {
-    (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
 
     const { result } = renderHook(() => useConfigStore());
 
@@ -114,25 +114,27 @@ describe('useConfigStore', () => {
   });
 
   it('updates environment variable successfully', async () => {
-    (global.fetch as any)
+    (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ message: 'Success' }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          variables: { 'NEW_KEY': '****test' },
-          providers: { openai: true },
-        }),
+        json: () =>
+          Promise.resolve({
+            variables: { NEW_KEY: '****test' },
+            providers: { openai: true },
+          }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          default_interface: 'langchain',
-          default_provider: 'google_genai',
-          default_model: 'gemini-pro',
-        }),
+        json: () =>
+          Promise.resolve({
+            default_interface: 'langchain',
+            default_provider: 'google_genai',
+            default_model: 'gemini-pro',
+          }),
       });
 
     const { result } = renderHook(() => useConfigStore());
@@ -152,7 +154,7 @@ describe('useConfigStore', () => {
   });
 
   it('handles update environment variable error', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: false,
       json: () => Promise.resolve({ detail: 'Invalid API key format' }),
     });
@@ -162,7 +164,7 @@ describe('useConfigStore', () => {
     await act(async () => {
       try {
         await result.current.updateEnvVariable('INVALID_KEY', 'invalid_value');
-      } catch (error) {
+      } catch {
         // Expected to throw
       }
     });
@@ -172,25 +174,27 @@ describe('useConfigStore', () => {
   });
 
   it('removes environment variable successfully', async () => {
-    (global.fetch as any)
+    (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ message: 'Success' }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          variables: {},
-          providers: { openai: false },
-        }),
+        json: () =>
+          Promise.resolve({
+            variables: {},
+            providers: { openai: false },
+          }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          default_interface: 'langchain',
-          default_provider: 'google_genai',
-          default_model: 'gemini-pro',
-        }),
+        json: () =>
+          Promise.resolve({
+            default_interface: 'langchain',
+            default_provider: 'google_genai',
+            default_model: 'gemini-pro',
+          }),
       });
 
     const { result } = renderHook(() => useConfigStore());
@@ -208,9 +212,9 @@ describe('useConfigStore', () => {
   });
 
   it('loads unmasked environment variables', async () => {
-    const mockUnmaskedEnvResponse = { 'OPENAI_API_KEY': 'sk-real-key-value' };
+    const mockUnmaskedEnvResponse = { OPENAI_API_KEY: 'sk-real-key-value' };
 
-    (global.fetch as any).mockResolvedValueOnce({
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockUnmaskedEnvResponse),
     });
@@ -225,25 +229,27 @@ describe('useConfigStore', () => {
   });
 
   it('updates env file contents successfully', async () => {
-    (global.fetch as any)
+    (global.fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ message: 'Success' }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          variables: { 'NEW_VAR': 'new_value' },
-          providers: { openai: true },
-        }),
+        json: () =>
+          Promise.resolve({
+            variables: { NEW_VAR: 'new_value' },
+            providers: { openai: true },
+          }),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          default_interface: 'langchain',
-          default_provider: 'google_genai',
-          default_model: 'gemini-pro',
-        }),
+        json: () =>
+          Promise.resolve({
+            default_interface: 'langchain',
+            default_provider: 'google_genai',
+            default_model: 'gemini-pro',
+          }),
       });
 
     const { result } = renderHook(() => useConfigStore());

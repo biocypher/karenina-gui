@@ -16,12 +16,12 @@ const mockConfigStore = {
     defaultModel: 'gemini-2.5-flash',
   },
   envVariables: {
-    'OPENAI_API_KEY': '****************************5678',
-    'GOOGLE_API_KEY': '****************************s_12',
+    OPENAI_API_KEY: '****************************5678',
+    GOOGLE_API_KEY: '****************************s_12',
   },
   unmaskedEnvVariables: {
-    'OPENAI_API_KEY': 'sk-1234567890abcdef1234567890abcdef1234567890abcdef5678',
-    'GOOGLE_API_KEY': 'AIzaSyDQVGlDuGIHUiAOgsl12340123456789ABCDE_s_12',
+    OPENAI_API_KEY: 'sk-1234567890abcdef1234567890abcdef1234567890abcdef5678',
+    GOOGLE_API_KEY: 'AIzaSyDQVGlDuGIHUiAOgsl12340123456789ABCDE_s_12',
   },
   isLoading: false,
   isSaving: false,
@@ -51,19 +51,14 @@ global.fetch = vi.fn();
 describe('ConfigurationModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (global.fetch as any).mockResolvedValue({
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ content: 'OPENAI_API_KEY=test\nGOOGLE_API_KEY=test' }),
     });
   });
 
   it('renders correctly when open', () => {
-    render(
-      <ConfigurationModal
-        isOpen={true}
-        onClose={() => {}}
-      />
-    );
+    render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
     expect(screen.getByText('Configuration')).toBeInTheDocument();
     expect(screen.getByText('Default Settings')).toBeInTheDocument();
@@ -71,23 +66,13 @@ describe('ConfigurationModal', () => {
   });
 
   it('does not render when closed', () => {
-    render(
-      <ConfigurationModal
-        isOpen={false}
-        onClose={() => {}}
-      />
-    );
+    render(<ConfigurationModal isOpen={false} onClose={() => {}} />);
 
     expect(screen.queryByText('Configuration')).not.toBeInTheDocument();
   });
 
   it('loads configuration when opened', async () => {
-    render(
-      <ConfigurationModal
-        isOpen={true}
-        onClose={() => {}}
-      />
-    );
+    render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
     await waitFor(() => {
       expect(mockConfigStore.loadConfiguration).toHaveBeenCalled();
@@ -95,12 +80,7 @@ describe('ConfigurationModal', () => {
   });
 
   it('switches between tabs', async () => {
-    render(
-      <ConfigurationModal
-        isOpen={true}
-        onClose={() => {}}
-      />
-    );
+    render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
     // Click on Environment Variables tab
     fireEvent.click(screen.getByText('Environment Variables'));
@@ -112,12 +92,7 @@ describe('ConfigurationModal', () => {
   });
 
   it('shows default settings correctly', () => {
-    render(
-      <ConfigurationModal
-        isOpen={true}
-        onClose={() => {}}
-      />
-    );
+    render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
     // Should show default settings section
     expect(screen.getByText('LangChain')).toBeInTheDocument();
@@ -127,12 +102,7 @@ describe('ConfigurationModal', () => {
   });
 
   it('handles interface selection', () => {
-    render(
-      <ConfigurationModal
-        isOpen={true}
-        onClose={() => {}}
-      />
-    );
+    render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
     const openrouterRadio = screen.getByDisplayValue('openrouter');
     fireEvent.click(openrouterRadio);
@@ -142,12 +112,7 @@ describe('ConfigurationModal', () => {
 
   it('calls onClose when modal is closed', () => {
     const onClose = vi.fn();
-    render(
-      <ConfigurationModal
-        isOpen={true}
-        onClose={onClose}
-      />
-    );
+    render(<ConfigurationModal isOpen={true} onClose={onClose} />);
 
     // Click the close button (X)
     const closeButton = screen.getByLabelText('Close modal');
@@ -169,12 +134,7 @@ describe('ConfigurationModal', () => {
 
     originalMock.mockReturnValue(storeWithError);
 
-    render(
-      <ConfigurationModal
-        isOpen={true}
-        onClose={() => {}}
-      />
-    );
+    render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
     expect(screen.getByText('Test error message')).toBeInTheDocument();
   });
@@ -192,12 +152,7 @@ describe('ConfigurationModal', () => {
 
     originalMock.mockReturnValue(storeWithLoading);
 
-    render(
-      <ConfigurationModal
-        isOpen={true}
-        onClose={() => {}}
-      />
-    );
+    render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
     expect(screen.getByText('Loading configuration...')).toBeInTheDocument();
   });

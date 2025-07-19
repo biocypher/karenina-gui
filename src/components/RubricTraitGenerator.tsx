@@ -40,12 +40,12 @@ export default function RubricTraitGenerator({ questions, onTraitsGenerated }: R
 
   // Initialize config with saved defaults from configuration store
   useEffect(() => {
-    setConfig({
-      ...config,
+    setConfig((prevConfig) => ({
+      ...prevConfig,
       interface: savedInterface,
       model_provider: savedProvider,
       model_name: savedModel,
-    });
+    }));
   }, [savedInterface, savedProvider, savedModel, setConfig]);
 
   const questionIds = Object.keys(questions);

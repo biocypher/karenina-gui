@@ -56,13 +56,13 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
 
   // Initialize config with saved defaults from configuration store
   useEffect(() => {
-    setConfig({
-      ...config,
+    setConfig((prevConfig) => ({
+      ...prevConfig,
       interface: savedInterface,
       model_provider: savedProvider,
       model_name: savedModel,
-    });
-  }, [savedInterface, savedProvider, savedModel]);
+    }));
+  }, [savedInterface, savedProvider, savedModel, setConfig]);
 
   // Get pending questions using the store getter
   const pendingQuestions = getPendingQuestions(questions);
