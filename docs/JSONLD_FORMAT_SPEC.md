@@ -161,8 +161,18 @@
 
 **Rating Value Conventions**:
 
-- **Boolean traits**: ratingValue ∈ {0, 1}, bestRating = 1, worstRating = 0
-- **Score traits**: ratingValue ∈ [worstRating, bestRating], typically [1, 5]
+- **Boolean traits**: bestRating = 1, worstRating = 0 (fixed range)
+- **Score traits**: Dynamic range based on trait definition
+  - bestRating = trait.max_score (or 5 if null/undefined)
+  - worstRating = trait.min_score (or 1 if null/undefined)
+  - Examples: [0, 10], [1, 3], [-10, 10], [0, 100]
+
+**Score Range Validation**:
+
+- min_score must be less than max_score
+- Both values must be finite numbers
+- Negative scores are allowed for flexibility
+- Default fallbacks: min_score=1, max_score=5
 
 ## Metadata Structure
 
@@ -270,13 +280,13 @@ const numericHash = Math.abs(questionText.split('').reduce((a, b) => ((a << 5) -
   "@type": "Rating",
   "name": "Accuracy",
   "description": "Is the answer correct?",
-  "ratingValue": 0,
   "bestRating": 1,
-  "worstRating": 0
+  "worstRating": 0,
+  "additionalType": "GlobalRubricTrait"
 }
 ```
 
-**Score Trait**:
+**Score Trait (Standard 1-5 Range)**:
 
 ```json
 // v2.0
@@ -291,9 +301,53 @@ const numericHash = Math.abs(questionText.split('').reduce((a, b) => ((a << 5) -
 {
   "@type": "Rating",
   "name": "Quality",
-  "ratingValue": 1,
   "bestRating": 5,
-  "worstRating": 1
+  "worstRating": 1,
+  "additionalType": "QuestionSpecificRubricTrait"
+}
+```
+
+**Score Trait (Custom 0-10 Range)**:
+
+```json
+// v2.0
+{
+  "name": "Precision",
+  "kind": "score",
+  "min_score": 0,
+  "max_score": 10,
+  "description": "Numerical precision score"
+}
+
+// JSON-LD
+{
+  "@type": "Rating",
+  "name": "Precision",
+  "description": "Numerical precision score",
+  "bestRating": 10,
+  "worstRating": 0,
+  "additionalType": "GlobalRubricTrait"
+}
+```
+
+**Score Trait (Null Values Use Defaults)**:
+
+```json
+// v2.0
+{
+  "name": "Overall",
+  "kind": "score",
+  "min_score": null,
+  "max_score": null
+}
+
+// JSON-LD
+{
+  "@type": "Rating",
+  "name": "Overall",
+  "bestRating": 5,
+  "worstRating": 1,
+  "additionalType": "GlobalRubricTrait"
 }
 ```
 

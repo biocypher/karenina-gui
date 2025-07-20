@@ -87,6 +87,42 @@ export function generateQuestionId(questionText: string): string {
   return `urn:uuid:question-${hash}-${simpleHash}`;
 }
 
+/**
+ * Validates and normalizes score values for rubric traits
+ * @param value - The score value to validate (can be null, undefined, or number)
+ * @param defaultValue - Default value to use if score is null/undefined
+ * @param fieldName - Name of the field for error messages ('min_score' or 'max_score')
+ * @param traitName - Name of the trait for error messages
+ * @returns Validated score value
+ */
+function validateScoreValue(
+  value: number | null | undefined,
+  defaultValue: number,
+  fieldName: string,
+  traitName: string
+): number {
+  // Use default if value is null or undefined
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+
+  // Validate that it's a number
+  if (typeof value !== 'number' || isNaN(value)) {
+    throw new CheckpointConversionError(
+      `Invalid ${fieldName} for trait "${traitName}": expected number, got ${typeof value}`
+    );
+  }
+
+  // Validate reasonable range (allow negative scores for flexibility)
+  if (!isFinite(value)) {
+    throw new CheckpointConversionError(
+      `Invalid ${fieldName} for trait "${traitName}": value must be finite, got ${value}`
+    );
+  }
+
+  return value;
+}
+
 export function convertRubricTraitToRating(
   trait: RubricTrait,
   rubricType: 'global' | 'question-specific'
@@ -104,9 +140,17 @@ export function convertRubricTraitToRating(
       additionalType,
     };
   } else {
-    // Score trait
-    const minScore = trait.min_score || 1;
-    const maxScore = trait.max_score || 5;
+    // Score trait - validate and handle score ranges
+    const minScore = validateScoreValue(trait.min_score, 1, 'min_score', trait.name);
+    const maxScore = validateScoreValue(trait.max_score, 5, 'max_score', trait.name);
+
+    // Validate that min <= max
+    if (minScore >= maxScore) {
+      throw new CheckpointConversionError(
+        `Invalid score range for trait "${trait.name}": min_score (${minScore}) must be less than max_score (${maxScore})`
+      );
+    }
+
     return {
       '@type': 'Rating',
       '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
@@ -120,7 +164,30 @@ export function convertRubricTraitToRating(
 }
 
 export function convertRatingToRubricTrait(rating: SchemaOrgRating): RubricTrait {
+  // Validate rating object
+  if (!rating || typeof rating !== 'object') {
+    throw new CheckpointConversionError('Invalid rating object: rating must be a valid object');
+  }
+
+  if (typeof rating.name !== 'string' || !rating.name.trim()) {
+    throw new CheckpointConversionError('Invalid rating object: name is required and must be a non-empty string');
+  }
+
+  if (typeof rating.bestRating !== 'number' || typeof rating.worstRating !== 'number') {
+    throw new CheckpointConversionError(
+      `Invalid rating object "${rating.name}": bestRating and worstRating must be numbers`
+    );
+  }
+
+  // Determine if it's a boolean trait (standard 0-1 range)
   const isBoolean = rating.bestRating === 1 && rating.worstRating === 0;
+
+  // Validate score range for non-boolean traits
+  if (!isBoolean && rating.worstRating >= rating.bestRating) {
+    throw new CheckpointConversionError(
+      `Invalid rating object "${rating.name}": worstRating (${rating.worstRating}) must be less than bestRating (${rating.bestRating})`
+    );
+  }
 
   return {
     name: rating.name,

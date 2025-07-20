@@ -64,6 +64,33 @@ function generateQuestionId(questionText) {
   return `urn:uuid:question-${hash}-${simpleHash}`;
 }
 
+/**
+ * Validates and normalizes score values for rubric traits
+ * @param {number|null|undefined} value - The score value to validate
+ * @param {number} defaultValue - Default value to use if score is null/undefined
+ * @param {string} fieldName - Name of the field for error messages
+ * @param {string} traitName - Name of the trait for error messages
+ * @returns {number} Validated score value
+ */
+function validateScoreValue(value, defaultValue, fieldName, traitName) {
+  // Use default if value is null or undefined
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+
+  // Validate that it's a number
+  if (typeof value !== 'number' || isNaN(value)) {
+    throw new MigrationError(`Invalid ${fieldName} for trait "${traitName}": expected number, got ${typeof value}`);
+  }
+
+  // Validate reasonable range (allow negative scores for flexibility)
+  if (!isFinite(value)) {
+    throw new MigrationError(`Invalid ${fieldName} for trait "${traitName}": value must be finite, got ${value}`);
+  }
+
+  return value;
+}
+
 function convertRubricTraitToRating(trait, ratingValue, author = 'Global Rubric') {
   let actualRatingValue;
   let bestRating;
@@ -74,8 +101,17 @@ function convertRubricTraitToRating(trait, ratingValue, author = 'Global Rubric'
     bestRating = 1;
     worstRating = 0;
   } else {
-    const minScore = trait.min_score || 1;
-    const maxScore = trait.max_score || 5;
+    // Score trait - validate and handle score ranges
+    const minScore = validateScoreValue(trait.min_score, 1, 'min_score', trait.name);
+    const maxScore = validateScoreValue(trait.max_score, 5, 'max_score', trait.name);
+
+    // Validate that min <= max
+    if (minScore >= maxScore) {
+      throw new MigrationError(
+        `Invalid score range for trait "${trait.name}": min_score (${minScore}) must be less than max_score (${maxScore})`
+      );
+    }
+
     actualRatingValue = ratingValue !== undefined ? ratingValue : minScore;
     bestRating = maxScore;
     worstRating = minScore;

@@ -142,6 +142,156 @@ describe('checkpoint-converter', () => {
       expect(globalRating.additionalType).toBe('GlobalRubricTrait');
       expect(questionRating.additionalType).toBe('QuestionSpecificRubricTrait');
     });
+
+    describe('custom score ranges', () => {
+      it('should handle 0-10 score range', () => {
+        const trait: RubricTrait = {
+          name: 'Quality',
+          description: 'Overall quality',
+          kind: 'score',
+          min_score: 0,
+          max_score: 10,
+        };
+
+        const rating = convertRubricTraitToRating(trait, 'global');
+
+        expect(rating.bestRating).toBe(10);
+        expect(rating.worstRating).toBe(0);
+      });
+
+      it('should handle 1-3 score range', () => {
+        const trait: RubricTrait = {
+          name: 'Conciseness',
+          description: 'How concise is the answer',
+          kind: 'score',
+          min_score: 1,
+          max_score: 3,
+        };
+
+        const rating = convertRubricTraitToRating(trait, 'global');
+
+        expect(rating.bestRating).toBe(3);
+        expect(rating.worstRating).toBe(1);
+      });
+
+      it('should handle 0-100 score range', () => {
+        const trait: RubricTrait = {
+          name: 'Percentage Score',
+          description: 'Score as percentage',
+          kind: 'score',
+          min_score: 0,
+          max_score: 100,
+        };
+
+        const rating = convertRubricTraitToRating(trait, 'global');
+
+        expect(rating.bestRating).toBe(100);
+        expect(rating.worstRating).toBe(0);
+      });
+
+      it('should handle negative score ranges', () => {
+        const trait: RubricTrait = {
+          name: 'Deviation',
+          description: 'Score with negative values',
+          kind: 'score',
+          min_score: -10,
+          max_score: 10,
+        };
+
+        const rating = convertRubricTraitToRating(trait, 'global');
+
+        expect(rating.bestRating).toBe(10);
+        expect(rating.worstRating).toBe(-10);
+      });
+
+      it('should use defaults for null/undefined score values', () => {
+        const trait: RubricTrait = {
+          name: 'Default Range',
+          description: 'Trait with default score range',
+          kind: 'score',
+          min_score: null,
+          max_score: undefined,
+        };
+
+        const rating = convertRubricTraitToRating(trait, 'global');
+
+        expect(rating.bestRating).toBe(5); // Default max
+        expect(rating.worstRating).toBe(1); // Default min
+      });
+
+      it('should use mixed defaults (one null, one specified)', () => {
+        const trait: RubricTrait = {
+          name: 'Mixed Range',
+          description: 'Trait with mixed score range',
+          kind: 'score',
+          min_score: 0,
+          max_score: null,
+        };
+
+        const rating = convertRubricTraitToRating(trait, 'global');
+
+        expect(rating.bestRating).toBe(5); // Default max
+        expect(rating.worstRating).toBe(0); // Specified min
+      });
+    });
+
+    describe('validation and error handling', () => {
+      it('should throw error for invalid min >= max', () => {
+        const trait: RubricTrait = {
+          name: 'Invalid Range',
+          description: 'Trait with invalid range',
+          kind: 'score',
+          min_score: 5,
+          max_score: 3,
+        };
+
+        expect(() => convertRubricTraitToRating(trait, 'global')).toThrow(
+          'Invalid score range for trait "Invalid Range": min_score (5) must be less than max_score (3)'
+        );
+      });
+
+      it('should throw error for equal min and max', () => {
+        const trait: RubricTrait = {
+          name: 'Equal Range',
+          description: 'Trait with equal min/max',
+          kind: 'score',
+          min_score: 5,
+          max_score: 5,
+        };
+
+        expect(() => convertRubricTraitToRating(trait, 'global')).toThrow(
+          'Invalid score range for trait "Equal Range": min_score (5) must be less than max_score (5)'
+        );
+      });
+
+      it('should throw error for non-finite score values', () => {
+        const trait: RubricTrait = {
+          name: 'Infinite Range',
+          description: 'Trait with infinite score',
+          kind: 'score',
+          min_score: 1,
+          max_score: Number.POSITIVE_INFINITY,
+        };
+
+        expect(() => convertRubricTraitToRating(trait, 'global')).toThrow(
+          'Invalid max_score for trait "Infinite Range": value must be finite, got Infinity'
+        );
+      });
+
+      it('should throw error for NaN score values', () => {
+        const trait: RubricTrait = {
+          name: 'NaN Range',
+          description: 'Trait with NaN score',
+          kind: 'score',
+          min_score: NaN,
+          max_score: 5,
+        };
+
+        expect(() => convertRubricTraitToRating(trait, 'global')).toThrow(
+          'Invalid min_score for trait "NaN Range": expected number, got number'
+        );
+      });
+    });
   });
 
   describe('convertRatingToRubricTrait', () => {
@@ -182,6 +332,135 @@ describe('checkpoint-converter', () => {
         kind: 'score',
         min_score: 1,
         max_score: 5,
+      });
+    });
+
+    describe('custom score range conversions', () => {
+      it('should convert 0-10 rating back to trait', () => {
+        const rating: SchemaOrgRating = {
+          '@type': 'Rating',
+          name: 'Quality',
+          description: 'Overall quality',
+          bestRating: 10,
+          worstRating: 0,
+          additionalType: 'GlobalRubricTrait',
+        };
+
+        const trait = convertRatingToRubricTrait(rating);
+
+        expect(trait).toEqual({
+          name: 'Quality',
+          description: 'Overall quality',
+          kind: 'score',
+          min_score: 0,
+          max_score: 10,
+        });
+      });
+
+      it('should convert 1-3 rating back to trait', () => {
+        const rating: SchemaOrgRating = {
+          '@type': 'Rating',
+          name: 'Conciseness',
+          description: 'How concise is the answer',
+          bestRating: 3,
+          worstRating: 1,
+          additionalType: 'GlobalRubricTrait',
+        };
+
+        const trait = convertRatingToRubricTrait(rating);
+
+        expect(trait).toEqual({
+          name: 'Conciseness',
+          description: 'How concise is the answer',
+          kind: 'score',
+          min_score: 1,
+          max_score: 3,
+        });
+      });
+
+      it('should convert negative range rating back to trait', () => {
+        const rating: SchemaOrgRating = {
+          '@type': 'Rating',
+          name: 'Deviation',
+          description: 'Score with negative values',
+          bestRating: 10,
+          worstRating: -10,
+          additionalType: 'GlobalRubricTrait',
+        };
+
+        const trait = convertRatingToRubricTrait(rating);
+
+        expect(trait).toEqual({
+          name: 'Deviation',
+          description: 'Score with negative values',
+          kind: 'score',
+          min_score: -10,
+          max_score: 10,
+        });
+      });
+    });
+
+    describe('validation and error handling', () => {
+      it('should throw error for invalid rating object', () => {
+        expect(() => convertRatingToRubricTrait(null as unknown as SchemaOrgRating)).toThrow(
+          'Invalid rating object: rating must be a valid object'
+        );
+      });
+
+      it('should throw error for missing name', () => {
+        const rating = {
+          '@type': 'Rating',
+          name: '',
+          bestRating: 5,
+          worstRating: 1,
+          additionalType: 'GlobalRubricTrait',
+        } as SchemaOrgRating;
+
+        expect(() => convertRatingToRubricTrait(rating)).toThrow(
+          'Invalid rating object: name is required and must be a non-empty string'
+        );
+      });
+
+      it('should throw error for non-numeric ratings', () => {
+        const rating = {
+          '@type': 'Rating',
+          name: 'Test',
+          bestRating: 'five' as unknown as number,
+          worstRating: 1,
+          additionalType: 'GlobalRubricTrait',
+        } as SchemaOrgRating;
+
+        expect(() => convertRatingToRubricTrait(rating)).toThrow(
+          'Invalid rating object "Test": bestRating and worstRating must be numbers'
+        );
+      });
+
+      it('should throw error for invalid range (worst >= best)', () => {
+        const rating: SchemaOrgRating = {
+          '@type': 'Rating',
+          name: 'Invalid Range',
+          bestRating: 3,
+          worstRating: 5,
+          additionalType: 'GlobalRubricTrait',
+        };
+
+        expect(() => convertRatingToRubricTrait(rating)).toThrow(
+          'Invalid rating object "Invalid Range": worstRating (5) must be less than bestRating (3)'
+        );
+      });
+
+      it('should throw error for equal range (worst = best)', () => {
+        const rating: SchemaOrgRating = {
+          '@type': 'Rating',
+          name: 'Equal Range',
+          bestRating: 5,
+          worstRating: 5,
+          additionalType: 'GlobalRubricTrait',
+        };
+
+        expect(() => convertRatingToRubricTrait(rating)).toThrow(
+          'Invalid rating object "Equal Range": worstRating (5) must be less than bestRating (5)'
+        );
       });
     });
   });

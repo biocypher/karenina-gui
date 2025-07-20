@@ -41,23 +41,50 @@ Karenina has upgraded from proprietary `checkpoint_v2.json` format to standard *
 {
   "@type": "Rating",
   "name": "Accuracy",
-  "ratingValue": 1,
   "bestRating": 1,
-  "worstRating": 0
+  "worstRating": 0,
+  "additionalType": "GlobalRubricTrait"
 }
 ```
 
-**Score traits** (1-5 scale):
+**Score traits** (dynamic ranges):
 
 ```json
+// Standard 1-5 range
 {
   "@type": "Rating",
   "name": "Completeness",
-  "ratingValue": 4,
   "bestRating": 5,
-  "worstRating": 1
+  "worstRating": 1,
+  "additionalType": "QuestionSpecificRubricTrait"
+}
+
+// Custom 0-10 range
+{
+  "@type": "Rating",
+  "name": "Precision",
+  "bestRating": 10,
+  "worstRating": 0,
+  "additionalType": "GlobalRubricTrait"
+}
+
+// Percentage 0-100 range
+{
+  "@type": "Rating",
+  "name": "Coverage",
+  "bestRating": 100,
+  "worstRating": 0,
+  "additionalType": "QuestionSpecificRubricTrait"
 }
 ```
+
+**Score Range Validation**:
+
+- Automatically uses the actual min_score/max_score from your trait definitions
+- Supports any range: 0-10, 1-3, -10 to 10, 0-100, etc.
+- Validates that min < max
+- Uses defaults (1-5) if values are null/undefined
+- Allows negative scores for specialized use cases
 
 ## Migration Methods
 
@@ -271,9 +298,26 @@ const globalRubric = checkpoint.global_rubric;
 
 **Solution**: Run `npm install` to install required dependencies.
 
-**3. Empty Rating Values**
-**Issue**: Some rating values show as 0
-**Explanation**: Default values for unevaluated traits (0 for boolean, min_score for numeric)
+**3. Invalid Score Ranges**
+
+```bash
+❌ Error: Invalid score range for trait "Quality": min_score (5) must be less than max_score (3)
+```
+
+**Solution**: Ensure min_score < max_score in your trait definitions.
+
+**4. Invalid Score Values**
+
+```bash
+❌ Error: Invalid max_score for trait "Coverage": value must be finite, got Infinity
+```
+
+**Solution**: Use finite numeric values for min_score and max_score.
+
+**5. Score Range Handling**
+**Behavior**: System automatically uses your trait's actual min_score/max_score values
+**Fallbacks**: Uses 1-5 range when values are null/undefined
+**Examples**: Supports 0-10, 1-3, 0-100, -10 to 10, etc.
 
 ### Validation Commands
 
