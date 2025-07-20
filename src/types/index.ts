@@ -34,6 +34,95 @@ export interface UnifiedCheckpoint {
   checkpoint: Checkpoint;
 }
 
+// JSON-LD Checkpoint Types (schema.org vocabulary)
+export interface JsonLdContext {
+  '@context': {
+    '@version': number;
+    '@vocab': string;
+    [key: string]: unknown;
+  };
+}
+
+export interface SchemaOrgRating {
+  '@type': 'Rating';
+  '@id'?: string;
+  name: string;
+  description?: string;
+  bestRating: number;
+  worstRating: number;
+  additionalType: 'GlobalRubricTrait' | 'QuestionSpecificRubricTrait';
+  ratingExplanation?: string;
+}
+
+export interface SchemaOrgPropertyValue {
+  '@type': 'PropertyValue';
+  name: string;
+  value: unknown;
+}
+
+export interface SchemaOrgAnswer {
+  '@type': 'Answer';
+  '@id'?: string;
+  text: string;
+}
+
+export interface SchemaOrgSoftwareSourceCode {
+  '@type': 'SoftwareSourceCode';
+  '@id'?: string;
+  name?: string;
+  text: string; // The Pydantic template code
+  programmingLanguage: 'Python';
+  codeRepository?: string;
+}
+
+export interface SchemaOrgQuestion {
+  '@type': 'Question';
+  '@id'?: string;
+  text: string; // Question text
+  acceptedAnswer: SchemaOrgAnswer;
+  hasPart: SchemaOrgSoftwareSourceCode; // Pydantic template
+  rating?: SchemaOrgRating[]; // Rubric trait evaluations
+  additionalProperty?: SchemaOrgPropertyValue[]; // metadata like finished, original_template
+}
+
+export interface SchemaOrgDataFeedItem {
+  '@type': 'DataFeedItem';
+  '@id'?: string;
+  dateCreated?: string;
+  dateModified: string; // last_modified from v2.0
+  item: SchemaOrgQuestion;
+}
+
+export interface SchemaOrgDataset extends JsonLdContext {
+  '@type': 'Dataset';
+  '@id'?: string;
+  name: string;
+  description?: string;
+  version: string; // '3.0.0-jsonld'
+  creator?: string;
+  dateCreated?: string;
+  dateModified?: string;
+  hasPart: SchemaOrgDataFeedItem[];
+  additionalProperty?: SchemaOrgPropertyValue[]; // global rubric info, format version
+}
+
+// Type alias for the complete JSON-LD checkpoint
+export type JsonLdCheckpoint = SchemaOrgDataset;
+
+// Conversion mapping types
+export interface RubricTraitToRatingMapping {
+  rubricTrait: RubricTrait;
+  ratingValue?: number; // Set when trait is evaluated
+  isEvaluated: boolean;
+}
+
+export interface CheckpointConversionMetadata {
+  originalVersion: string;
+  convertedAt: string;
+  totalQuestions: number;
+  totalRatings: number;
+}
+
 // Template Generation Types
 export interface TemplateGenerationConfig {
   model_provider: string;

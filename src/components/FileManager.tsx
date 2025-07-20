@@ -1,7 +1,14 @@
 import React, { useRef } from 'react';
-import { Upload, Download, FileText, Database, RotateCcw, CheckCircle } from 'lucide-react';
-import { QuestionData, Checkpoint, UnifiedCheckpoint } from '../types';
+import { Upload, Download, FileText, Database, RotateCcw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { QuestionData, Checkpoint, UnifiedCheckpoint, JsonLdCheckpoint } from '../types';
 import { useRubricStore } from '../stores/useRubricStore';
+import {
+  v2ToJsonLd,
+  jsonLdToV2,
+  isJsonLdCheckpoint,
+  isV2Checkpoint,
+  CheckpointConversionError,
+} from '../utils/checkpoint-converter';
 
 interface FileManagerProps {
   onLoadQuestionData: (data: QuestionData) => void;
@@ -73,28 +80,76 @@ export const FileManager: React.FC<FileManagerProps> = ({
         const content = e.target?.result as string;
         const data = JSON.parse(content);
 
-        // Validate it's a unified checkpoint
-        if (!data.version || data.version !== '2.0' || !data.checkpoint) {
-          alert('Invalid checkpoint format. Please ensure the file is a valid v2.0 unified checkpoint.');
-          return;
+        let unifiedCheckpoint: UnifiedCheckpoint;
+        let formatUsed = '';
+
+        // Check if it's a JSON-LD checkpoint
+        if (isJsonLdCheckpoint(data)) {
+          console.log('📊 Detected JSON-LD checkpoint format');
+          formatUsed = 'JSON-LD v3.0';
+
+          try {
+            unifiedCheckpoint = jsonLdToV2(data as JsonLdCheckpoint);
+            console.log('✅ Successfully converted JSON-LD to internal format');
+          } catch (conversionError) {
+            console.error('❌ JSON-LD conversion failed:', conversionError);
+            if (conversionError instanceof CheckpointConversionError) {
+              alert(
+                `Failed to convert JSON-LD checkpoint:\n\n${conversionError.message}\n\nPlease check the file format and try again.`
+              );
+            } else {
+              alert('Failed to convert JSON-LD checkpoint. Please check the file format.');
+            }
+            return;
+          }
         }
+        // Check if it's a legacy v2.0 checkpoint
+        else if (isV2Checkpoint(data)) {
+          console.log('📊 Detected legacy v2.0 checkpoint format');
+          formatUsed = 'Legacy v2.0';
 
-        const unifiedCheckpoint = data as UnifiedCheckpoint;
+          // Show migration notice
+          const shouldContinue = confirm(
+            '⚠️ MIGRATION NOTICE\n\n' +
+              'You are loading a legacy v2.0 checkpoint format.\n\n' +
+              '• Legacy files will no longer be supported after this update\n' +
+              '• This file will be converted to the new JSON-LD format when saved\n' +
+              '• Consider downloading a new checkpoint after loading to migrate your data\n\n' +
+              'Continue loading this legacy file?'
+          );
 
-        // Validate checkpoint structure
-        const isValidCheckpoint = Object.values(unifiedCheckpoint.checkpoint).every(
-          (item) =>
-            item &&
-            typeof item.question === 'string' &&
-            typeof item.raw_answer === 'string' &&
-            typeof item.original_answer_template === 'string' &&
-            typeof item.answer_template === 'string' &&
-            typeof item.last_modified === 'string' &&
-            typeof item.finished === 'boolean'
-        );
+          if (!shouldContinue) {
+            return;
+          }
 
-        if (!isValidCheckpoint) {
-          alert('Invalid checkpoint data structure. Please ensure the file contains valid checkpoint data.');
+          unifiedCheckpoint = data as UnifiedCheckpoint;
+
+          // Validate checkpoint structure
+          const isValidCheckpoint = Object.values(unifiedCheckpoint.checkpoint).every(
+            (item) =>
+              item &&
+              typeof item.question === 'string' &&
+              typeof item.raw_answer === 'string' &&
+              typeof item.original_answer_template === 'string' &&
+              typeof item.answer_template === 'string' &&
+              typeof item.last_modified === 'string' &&
+              typeof item.finished === 'boolean'
+          );
+
+          if (!isValidCheckpoint) {
+            alert('Invalid v2.0 checkpoint data structure. Please ensure the file contains valid checkpoint data.');
+            return;
+          }
+        }
+        // Unknown format
+        else {
+          alert(
+            '❌ Unrecognized checkpoint format.\n\n' +
+              'Supported formats:\n' +
+              '• JSON-LD v3.0 (current)\n' +
+              '• Legacy v2.0 (deprecated)\n\n' +
+              'Please ensure the file is a valid checkpoint.'
+          );
           return;
         }
 
@@ -121,12 +176,21 @@ export const FileManager: React.FC<FileManagerProps> = ({
             });
         }
 
+        const itemCount = Object.keys(unifiedCheckpoint.checkpoint).length;
+        const rubricText = unifiedCheckpoint.global_rubric
+          ? ` and global rubric with ${unifiedCheckpoint.global_rubric.traits.length} traits`
+          : '';
+
         alert(
-          `Successfully loaded unified checkpoint v2.0 with ${Object.keys(unifiedCheckpoint.checkpoint).length} items${unifiedCheckpoint.global_rubric ? ` and global rubric with ${unifiedCheckpoint.global_rubric.traits.length} traits` : ''}.\n\n✅ Your complete session has been restored!`
+          `✅ Successfully loaded ${formatUsed} checkpoint with ${itemCount} items${rubricText}.\n\n` +
+            '📦 Your complete session has been restored!\n\n' +
+            (formatUsed.includes('Legacy')
+              ? '💡 Tip: Download a new checkpoint to migrate to JSON-LD format.'
+              : '🎉 Using the latest JSON-LD format.')
         );
       } catch (error) {
         console.error('Error parsing checkpoint:', error);
-        alert('Error parsing checkpoint file. Please check the file format.');
+        alert('Error parsing checkpoint file. Please check the file format and ensure it is valid JSON.');
       }
     };
     reader.readAsText(file);
@@ -143,25 +207,61 @@ export const FileManager: React.FC<FileManagerProps> = ({
       return;
     }
 
-    // Create unified checkpoint with global rubric
-    const unifiedCheckpoint: UnifiedCheckpoint = {
-      version: '2.0',
-      global_rubric: currentRubric,
-      checkpoint: checkpoint,
-    };
+    try {
+      // Create unified checkpoint with global rubric
+      const unifiedCheckpoint: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: currentRubric,
+        checkpoint: checkpoint,
+      };
 
-    const dataStr = JSON.stringify(unifiedCheckpoint, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
+      // Convert to JSON-LD format
+      console.log('📊 Converting checkpoint to JSON-LD format...');
+      const jsonLdCheckpoint = v2ToJsonLd(unifiedCheckpoint, {
+        preserveIds: true,
+        includeMetadata: true,
+        validateOutput: true,
+      });
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `checkpoint_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      console.log('✅ Successfully converted to JSON-LD format');
 
-    URL.revokeObjectURL(url);
+      const dataStr = JSON.stringify(jsonLdCheckpoint, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/ld+json' });
+      const url = URL.createObjectURL(dataBlob);
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `karenina_checkpoint_${timestamp}.jsonld`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+
+      // Show success message with format info
+      const itemCount = Object.keys(checkpoint).length;
+      const rubricInfo = currentRubric ? ` and ${currentRubric.traits.length} rubric traits` : '';
+
+      alert(
+        `✅ Checkpoint downloaded successfully!\n\n` +
+          `📊 Format: JSON-LD v3.0 (schema.org)\n` +
+          `📁 File: karenina_checkpoint_${timestamp}.jsonld\n` +
+          `📦 Contains: ${itemCount} questions${rubricInfo}\n\n` +
+          `🎉 Your data is now in semantic web format and compatible with linked data tools!`
+      );
+    } catch (conversionError) {
+      console.error('❌ Failed to convert checkpoint to JSON-LD:', conversionError);
+
+      if (conversionError instanceof CheckpointConversionError) {
+        alert(
+          `❌ Failed to export checkpoint:\n\n${conversionError.message}\n\n` +
+            'Please check your data and try again, or contact support if the problem persists.'
+        );
+      } else {
+        alert('❌ Failed to export checkpoint. Please try again or contact support.');
+      }
+    }
   };
 
   const downloadQuestionData = () => {
@@ -261,7 +361,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
             <input
               ref={checkpointFileInputRef}
               type="file"
-              accept=".json"
+              accept=".json,.jsonld"
               onChange={handleCheckpointUpload}
               className="hidden"
               id="checkpoint-upload"
@@ -338,30 +438,59 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
       {/* Info Section */}
       <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-inner">
-        <h5 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2">File Format Information</h5>
+        <h5 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
+          <Database className="w-4 h-4" />
+          File Format Information
+        </h5>
         <div className="text-xs text-indigo-800 dark:text-indigo-300 space-y-1 font-medium">
           <p>
             <strong>Question Data JSON:</strong> Contains questions extracted from the Question Extractor tab or
             previously saved data
           </p>
           <p>
-            <strong>Unified Checkpoint (v2.0):</strong> Complete session snapshot including questions, progress,
-            modifications, completion status, and global rubric
+            <strong>JSON-LD Checkpoint (v3.0):</strong> ✨ New format using schema.org vocabulary for semantic web
+            compatibility
+          </p>
+          <p>
+            <strong>Legacy Checkpoint (v2.0):</strong> ⚠️ Deprecated format, will be converted to JSON-LD when loaded
           </p>
           <p>
             <strong>Finished Items JSON:</strong> Contains only completed questions with updated answer templates
           </p>
           <p>
-            <strong>✅ What's Saved:</strong> Question data, answer templates, progress status, per-question rubrics,
-            and the global rubric
+            <strong>✅ What's Saved:</strong> Question data, answer templates, progress status, rubric evaluations as
+            Rating objects, and metadata
           </p>
           <p>
-            <strong>📦 Single File Restore:</strong> Upload a checkpoint file to restore your complete session including
-            all rubrics
+            <strong>📦 Single File Restore:</strong> Upload any checkpoint format to restore your complete session
           </p>
           <p>
-            <strong>Tip:</strong> Always backup your checkpoint before uploading new data or starting from scratch
+            <strong>🌐 Semantic Web:</strong> JSON-LD format enables compatibility with linked data tools and RDF
+            processing
           </p>
+          <p>
+            <strong>💡 Migration:</strong> Legacy v2.0 files are automatically converted - download new checkpoint to
+            complete migration
+          </p>
+        </div>
+      </div>
+
+      {/* Migration Notice */}
+      <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 rounded-xl border border-amber-200 dark:border-amber-700 shadow-inner">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+          <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
+            <p className="font-semibold">🚀 Format Upgrade: v2.0 → JSON-LD v3.0</p>
+            <p>
+              • <strong>Exports:</strong> Now use JSON-LD format with schema.org vocabulary (.jsonld files)
+            </p>
+            <p>
+              • <strong>Imports:</strong> Support both new JSON-LD and legacy v2.0 formats for smooth migration
+            </p>
+            <p>
+              • <strong>Compatibility:</strong> JSON-LD files work with semantic web tools and RDF triple stores
+            </p>
+          </div>
         </div>
       </div>
 
