@@ -217,12 +217,12 @@ export const DatasetMetadataEditor: React.FC<DatasetMetadataEditorProps> = ({ is
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCancel} />
 
       {/* Modal */}
-      <div className="relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 dark:border-slate-700/30 w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+      <div className="relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 dark:border-slate-700/30 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200/50 dark:border-slate-700/50">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
