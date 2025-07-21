@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Square, Check, FileText } from 'lucide-react';
-import { QuestionData } from '../types';
+import { Search, Square, Check, FileText, Filter } from 'lucide-react';
+import { QuestionData, Checkpoint } from '../types';
 
 interface QuestionSelectorProps {
-  questions: QuestionData;
+  questions: QuestionData | Checkpoint;
   selectedQuestions: Set<string>;
   onSelectionChange: (selected: Set<string>) => void;
 }
@@ -14,26 +14,49 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
   onSelectionChange,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'finished' | 'unfinished'>('all');
 
-  // Filter questions based on search term
+  // Check if questions have finished property (i.e., are Checkpoint type)
+  const hasFinishedProperty = useMemo(() => {
+    const firstQuestion = Object.values(questions)[0];
+    return firstQuestion && 'finished' in firstQuestion;
+  }, [questions]);
+
+  // Filter questions based on search term and finish status
   const filteredQuestions = useMemo(() => {
-    if (!searchTerm.trim()) return questions;
+    let filtered = questions;
 
-    const searchLower = searchTerm.toLowerCase();
-    const filtered: QuestionData = {};
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      const searchFiltered: typeof questions = {};
 
-    Object.entries(questions).forEach(([id, question]) => {
-      if (
-        question.question.toLowerCase().includes(searchLower) ||
-        question.raw_answer.toLowerCase().includes(searchLower) ||
-        id.toLowerCase().includes(searchLower)
-      ) {
-        filtered[id] = question;
-      }
-    });
+      Object.entries(questions).forEach(([id, question]) => {
+        if (
+          question.question.toLowerCase().includes(searchLower) ||
+          question.raw_answer.toLowerCase().includes(searchLower) ||
+          id.toLowerCase().includes(searchLower)
+        ) {
+          searchFiltered[id] = question;
+        }
+      });
+      filtered = searchFiltered;
+    }
+
+    // Apply status filter if finished property exists
+    if (hasFinishedProperty && filterStatus !== 'all') {
+      const statusFiltered: typeof questions = {};
+      Object.entries(filtered).forEach(([id, question]) => {
+        const isFinished = 'finished' in question ? question.finished : true;
+        if ((filterStatus === 'finished' && isFinished) || (filterStatus === 'unfinished' && !isFinished)) {
+          statusFiltered[id] = question;
+        }
+      });
+      filtered = statusFiltered;
+    }
 
     return filtered;
-  }, [questions, searchTerm]);
+  }, [questions, searchTerm, filterStatus, hasFinishedProperty]);
 
   const filteredQuestionIds = Object.keys(filteredQuestions);
 
@@ -96,6 +119,22 @@ export const QuestionSelector: React.FC<QuestionSelectorProps> = ({
             className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
           />
         </div>
+
+        {/* Status Filter Dropdown - only show if questions have finished property */}
+        {hasFinishedProperty && (
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4" />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'finished' | 'unfinished')}
+              className="pl-10 pr-8 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            >
+              <option value="all">Show All</option>
+              <option value="finished">Finished Only</option>
+              <option value="unfinished">Unfinished Only</option>
+            </select>
+          </div>
+        )}
         <div className="flex gap-2">
           <button
             onClick={handleSelectAllQuestions}

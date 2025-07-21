@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Maximize2,
   Settings,
+  Filter,
 } from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
@@ -70,6 +71,7 @@ function App() {
   const [isExpandedMode, setIsExpandedMode] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
+  const [questionFilter, setQuestionFilter] = useState<'all' | 'finished' | 'unfinished'>('all');
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
@@ -212,8 +214,19 @@ function App() {
     toggleFinished();
   };
 
-  // Navigation functions using store getters
-  const questionIds = getQuestionIds();
+  // Navigation functions using store getters with filtering
+  const allQuestionIds = getQuestionIds();
+  const questionIds = allQuestionIds.filter((id) => {
+    if (questionFilter === 'all') return true;
+
+    const checkpointItem = checkpoint[id];
+    if (!checkpointItem) return questionFilter === 'unfinished'; // If no checkpoint, consider unfinished
+
+    if (questionFilter === 'finished') return checkpointItem.finished;
+    if (questionFilter === 'unfinished') return !checkpointItem.finished;
+
+    return true;
+  });
   const currentIndex = getCurrentIndex();
 
   const handlePrevious = () => {
@@ -444,33 +457,58 @@ function App() {
             {/* Control Panel */}
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6 mb-8">
               <div className="grid grid-cols-1 gap-6">
-                {/* Question Dropdown */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                    <Database className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
-                    Select Question
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedQuestionId}
-                      onChange={(e) => handleQuestionChange(e.target.value)}
-                      className="block w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 font-medium shadow-sm"
-                      disabled={questionIds.length === 0}
-                    >
-                      <option value="">
-                        {questionIds.length === 0
-                          ? 'No questions available - upload data first'
-                          : 'Choose a question...'}
-                      </option>
-                      {questionIds.map((id, index) => (
-                        <option key={id} value={id}>
-                          {index + 1}. {questionData[id].question.substring(0, 60)}
-                          {questionData[id].question.length > 60 ? '...' : ''}
+                {/* Question Selection Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Question Dropdown */}
+                  <div className="lg:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                      <Database className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
+                      Select Question
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={selectedQuestionId}
+                        onChange={(e) => handleQuestionChange(e.target.value)}
+                        className="block w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 font-medium shadow-sm"
+                        disabled={questionIds.length === 0}
+                      >
+                        <option value="">
+                          {questionIds.length === 0
+                            ? 'No questions available - upload data first'
+                            : 'Choose a question...'}
                         </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        {questionIds.map((id, index) => (
+                          <option key={id} value={id}>
+                            {index + 1}. {questionData[id].question.substring(0, 60)}
+                            {questionData[id].question.length > 60 ? '...' : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                    </div>
                   </div>
+
+                  {/* Filter Dropdown */}
+                  {Object.keys(checkpoint).length > 0 && (
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                        <Filter className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
+                        Filter
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={questionFilter}
+                          onChange={(e) => setQuestionFilter(e.target.value as 'all' | 'finished' | 'unfinished')}
+                          className="block w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 font-medium shadow-sm"
+                        >
+                          <option value="all">Show All</option>
+                          <option value="finished">Finished Only</option>
+                          <option value="unfinished">Unfinished Only</option>
+                        </select>
+                        <Filter className="absolute right-3 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Navigation Buttons */}
