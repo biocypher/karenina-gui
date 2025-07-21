@@ -239,6 +239,14 @@ export function v2ToJsonLd(
             name: 'original_answer_template',
             value: item.original_answer_template,
           },
+          // Include custom metadata if present
+          ...(item.custom_metadata
+            ? Object.entries(item.custom_metadata).map(([key, value]) => ({
+                '@type': 'PropertyValue' as const,
+                name: `custom_${key}`, // Prefix to distinguish from system properties
+                value: value,
+              }))
+            : []),
         ],
       };
 
@@ -371,6 +379,15 @@ export function jsonLdToV2(
         (prop) => prop.name === 'original_answer_template'
       );
 
+      // Extract custom metadata (properties with custom_ prefix)
+      const customMetadata: { [key: string]: string } = {};
+      question.additionalProperty
+        ?.filter((prop) => prop.name.startsWith('custom_'))
+        .forEach((prop) => {
+          const key = prop.name.replace('custom_', ''); // Remove the custom_ prefix
+          customMetadata[key] = prop.value as string;
+        });
+
       // Convert ratings back to question-specific rubric
       let questionRubric: Rubric | undefined;
       if (question.rating && question.rating.length > 0) {
@@ -393,6 +410,8 @@ export function jsonLdToV2(
         last_modified: dataFeedItem.dateModified,
         finished: (finishedProp?.value as boolean) || false,
         question_rubric: questionRubric,
+        // Include custom metadata if any were found
+        custom_metadata: Object.keys(customMetadata).length > 0 ? customMetadata : undefined,
       };
 
       checkpoint[questionId] = checkpointItem;

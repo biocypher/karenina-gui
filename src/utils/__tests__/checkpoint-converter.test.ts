@@ -709,4 +709,95 @@ describe('checkpoint-converter', () => {
       expect(jsonLd.hasPart).toHaveLength(1000);
     });
   });
+
+  describe('custom metadata handling', () => {
+    it('should export and import custom metadata correctly', () => {
+      // Create a checkpoint with custom metadata
+      const checkpointWithCustomMetadata: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'question-1': {
+            question: 'What is the capital of France?',
+            raw_answer: 'Paris',
+            original_answer_template: 'class Answer(BaseModel): capital: str',
+            answer_template: 'class Answer(BaseModel): capital: str = Field()',
+            last_modified: '2025-01-20T10:00:00Z',
+            finished: true,
+            custom_metadata: {
+              priority: 'high',
+              category: 'geography',
+              tags: 'europe,capital',
+              difficulty: 'easy',
+            },
+          },
+          'question-2': {
+            question: 'What is 2+2?',
+            raw_answer: '4',
+            original_answer_template: 'class Answer(BaseModel): result: int',
+            answer_template: 'class Answer(BaseModel): result: int = Field()',
+            last_modified: '2025-01-20T11:00:00Z',
+            finished: false,
+            // No custom metadata for this question
+          },
+        },
+      };
+
+      // Export to JSON-LD
+      const jsonLd = v2ToJsonLd(checkpointWithCustomMetadata);
+
+      // Verify custom metadata is in the export
+      const question1 = jsonLd.hasPart[0];
+      expect(question1.item.additionalProperty).toBeDefined();
+
+      const customProps = question1.item.additionalProperty?.filter((prop) => prop.name.startsWith('custom_'));
+      expect(customProps).toHaveLength(4);
+      expect(customProps?.find((p) => p.name === 'custom_priority')?.value).toBe('high');
+      expect(customProps?.find((p) => p.name === 'custom_category')?.value).toBe('geography');
+      expect(customProps?.find((p) => p.name === 'custom_tags')?.value).toBe('europe,capital');
+      expect(customProps?.find((p) => p.name === 'custom_difficulty')?.value).toBe('easy');
+
+      // Question 2 should not have custom metadata
+      const question2 = jsonLd.hasPart[1];
+      const question2CustomProps = question2.item.additionalProperty?.filter((prop) => prop.name.startsWith('custom_'));
+      expect(question2CustomProps).toHaveLength(0);
+
+      // Import back from JSON-LD
+      const importedCheckpoint = jsonLdToV2(jsonLd);
+
+      // Verify custom metadata is restored
+      expect(importedCheckpoint.checkpoint['question-1']?.custom_metadata).toEqual({
+        priority: 'high',
+        category: 'geography',
+        tags: 'europe,capital',
+        difficulty: 'easy',
+      });
+
+      // Question 2 should not have custom metadata
+      expect(importedCheckpoint.checkpoint['question-2']?.custom_metadata).toBeUndefined();
+    });
+
+    it('should handle empty custom metadata correctly', () => {
+      const checkpointWithoutCustomMetadata: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'question-1': {
+            question: 'Test question',
+            raw_answer: 'Test answer',
+            original_answer_template: 'class Answer(BaseModel): pass',
+            answer_template: 'class Answer(BaseModel): answer: str',
+            last_modified: '2025-01-20T10:00:00Z',
+            finished: false,
+            // No custom_metadata field
+          },
+        },
+      };
+
+      const jsonLd = v2ToJsonLd(checkpointWithoutCustomMetadata);
+      const imported = jsonLdToV2(jsonLd);
+
+      expect(imported.checkpoint['question-1']?.custom_metadata).toBeUndefined();
+    });
+  });
 });
