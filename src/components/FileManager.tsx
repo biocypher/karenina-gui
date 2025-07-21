@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Download, FileText, Database, RotateCcw, CheckCircle, Settings } from 'lucide-react';
-import { QuestionData, Checkpoint, UnifiedCheckpoint, JsonLdCheckpoint } from '../types';
+import { Upload, Download, Database, RotateCcw, Settings } from 'lucide-react';
+import { Checkpoint, UnifiedCheckpoint, JsonLdCheckpoint } from '../types';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { DatasetMetadataEditor } from './DatasetMetadataEditor';
@@ -13,21 +13,12 @@ import {
 } from '../utils/checkpoint-converter';
 
 interface FileManagerProps {
-  onLoadQuestionData: (data: QuestionData) => void;
   onLoadCheckpoint: (checkpoint: UnifiedCheckpoint) => void;
   onResetAllData: () => void;
   checkpoint: Checkpoint;
-  questionData: QuestionData;
 }
 
-export const FileManager: React.FC<FileManagerProps> = ({
-  onLoadQuestionData,
-  onLoadCheckpoint,
-  onResetAllData,
-  checkpoint,
-  questionData,
-}) => {
-  const jsonFileInputRef = useRef<HTMLInputElement>(null);
+export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onResetAllData, checkpoint }) => {
   const checkpointFileInputRef = useRef<HTMLInputElement>(null);
 
   // Dataset metadata editor state
@@ -36,45 +27,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
   // Get current rubric and dataset metadata from stores
   const { currentRubric } = useRubricStore();
   const { metadata: datasetMetadata } = useDatasetStore();
-
-  const handleJsonUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const data = JSON.parse(content) as QuestionData;
-
-        // Validate the structure
-        const isValidQuestionData = Object.values(data).every(
-          (item) =>
-            item &&
-            typeof item.question === 'string' &&
-            typeof item.raw_answer === 'string' &&
-            typeof item.answer_template === 'string'
-        );
-
-        if (!isValidQuestionData) {
-          alert('Invalid JSON format. Please ensure the file contains valid question data.');
-          return;
-        }
-
-        onLoadQuestionData(data);
-        alert(`Successfully loaded ${Object.keys(data).length} questions from JSON file.`);
-      } catch (error) {
-        console.error('Error parsing JSON:', error);
-        alert('Error parsing JSON file. Please check the file format.');
-      }
-    };
-    reader.readAsText(file);
-
-    // Reset the input
-    if (jsonFileInputRef.current) {
-      jsonFileInputRef.current.value = '';
-    }
-  };
 
   const handleCheckpointUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -275,61 +227,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
     }
   };
 
-  const downloadQuestionData = () => {
-    if (Object.keys(questionData).length === 0) {
-      alert('No question data to download.');
-      return;
-    }
-
-    const dataStr = JSON.stringify(questionData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `question_data_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
-  };
-
-  const downloadFinishedItems = () => {
-    // Get all finished items from checkpoint
-    const finishedItems = Object.entries(checkpoint).filter(([, item]) => item.finished);
-
-    if (finishedItems.length === 0) {
-      alert('No finished items to download. Please mark some items as finished first.');
-      return;
-    }
-
-    // Create question data with updated answer templates for finished items
-    const finishedQuestionData: QuestionData = {};
-
-    finishedItems.forEach(([questionId, checkpointItem]) => {
-      // Use checkpoint data directly (new format has all necessary info)
-      finishedQuestionData[questionId] = {
-        question: checkpointItem.question,
-        raw_answer: checkpointItem.raw_answer,
-        answer_template: checkpointItem.answer_template,
-      };
-    });
-
-    const dataStr = JSON.stringify(finishedQuestionData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `finished_items_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
-  };
-
   // Count finished items
   const finishedCount = Object.values(checkpoint).filter((item) => item.finished).length;
 
@@ -340,32 +237,13 @@ export const FileManager: React.FC<FileManagerProps> = ({
         File Management
       </h3>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upload Section */}
         <div className="space-y-4">
           <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
             <Upload className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             Upload Files
           </h4>
-
-          {/* JSON Upload */}
-          <div>
-            <input
-              ref={jsonFileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleJsonUpload}
-              className="hidden"
-              id="json-upload"
-            />
-            <label
-              htmlFor="json-upload"
-              className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 dark:from-blue-700 dark:to-indigo-700 dark:hover:from-blue-800 dark:hover:to-indigo-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium cursor-pointer shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              <FileText className="w-4 h-4" />
-              Upload Question Data
-            </label>
-          </div>
 
           {/* Checkpoint Upload */}
           <div>
@@ -387,22 +265,12 @@ export const FileManager: React.FC<FileManagerProps> = ({
           </div>
         </div>
 
-        {/* Download Section */}
+        {/* Download and Actions Section */}
         <div className="space-y-4">
           <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
             <Download className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            Download Files
+            Download & Actions
           </h4>
-
-          {/* Question Data Download */}
-          <button
-            onClick={downloadQuestionData}
-            disabled={Object.keys(questionData).length === 0}
-            className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 dark:from-purple-700 dark:to-pink-700 dark:hover:from-purple-800 dark:hover:to-pink-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
-          >
-            <FileText className="w-4 h-4" />
-            Download Question Data
-          </button>
 
           {/* Checkpoint Download */}
           <button
@@ -413,24 +281,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
             <Database className="w-4 h-4" />
             Download Checkpoint
           </button>
-
-          {/* Finished Items Download */}
-          <button
-            onClick={downloadFinishedItems}
-            disabled={finishedCount === 0}
-            className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 dark:from-emerald-700 dark:to-green-700 dark:hover:from-emerald-800 dark:hover:to-green-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
-          >
-            <CheckCircle className="w-4 h-4" />
-            Download Finished Items
-          </button>
-        </div>
-
-        {/* Actions Section */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
-            <RotateCcw className="w-4 h-4 text-red-600 dark:text-red-400" />
-            Actions
-          </h4>
 
           {/* Dataset Metadata Button */}
           <button
@@ -471,13 +321,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
         </h5>
         <div className="text-xs text-indigo-800 dark:text-indigo-300 space-y-1">
           <p>
-            <strong>Question Data:</strong> Upload/download extracted questions
-          </p>
-          <p>
-            <strong>Checkpoint:</strong> Save/restore complete session with progress
-          </p>
-          <p>
-            <strong>Finished Items:</strong> Export completed questions only
+            <strong>Checkpoint:</strong> Save/restore complete session with progress, dataset metadata, and rubrics
           </p>
         </div>
       </div>
@@ -485,7 +329,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
       {/* Statistics */}
       <div className="mt-6 grid grid-cols-3 gap-4 text-center">
         <div className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm">
-          <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{Object.keys(questionData).length}</div>
+          <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{Object.keys(checkpoint).length}</div>
           <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">Questions Loaded</div>
         </div>
         <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-xl border border-blue-200 dark:border-blue-700 shadow-sm">

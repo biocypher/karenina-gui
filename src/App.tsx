@@ -435,11 +435,9 @@ function App() {
             {/* File Management Section */}
             <div className="mb-8">
               <FileManager
-                onLoadQuestionData={handleLoadQuestionData}
                 onLoadCheckpoint={handleLoadCheckpoint}
                 onResetAllData={handleResetAllData}
                 checkpoint={checkpoint}
-                questionData={questionData}
               />
             </div>
 
