@@ -227,16 +227,48 @@ function App() {
     return true;
   });
 
+  // Debug logging to understand filter state
+  console.log('🔍 Filter Debug:', {
+    questionFilter,
+    allQuestionIds: allQuestionIds.length,
+    filteredQuestionIds: questionIds.length,
+    selectedQuestionId,
+    selectedInFiltered: questionIds.includes(selectedQuestionId),
+  });
+
   // Calculate current index based on filtered questions, not all questions
   const currentIndex = questionIds.indexOf(selectedQuestionId);
 
   // Auto-navigate when filter changes: select first available question in filtered list
+  const prevFilterRef = useRef(questionFilter);
   useEffect(() => {
-    // If current selection is not in filtered list, or no question selected, select first available
-    if (questionIds.length > 0 && (!selectedQuestionId || currentIndex === -1)) {
-      navigateToQuestion(questionIds[0]);
+    // Only navigate when filter actually changes (not on every render)
+    const filterChanged = prevFilterRef.current !== questionFilter;
+    prevFilterRef.current = questionFilter;
+
+    if (filterChanged) {
+      // Recompute filtered questions inside the effect to avoid dependency issues
+      const currentFilteredIds = getQuestionIds().filter((id) => {
+        if (questionFilter === 'all') return true;
+
+        const checkpointItem = checkpoint[id];
+        if (!checkpointItem) return questionFilter === 'unfinished';
+
+        if (questionFilter === 'finished') return checkpointItem.finished;
+        if (questionFilter === 'unfinished') return !checkpointItem.finished;
+
+        return true;
+      });
+
+      console.log('🔄 Filter changed to:', questionFilter, 'Available questions:', currentFilteredIds.length);
+
+      // Always select first question when filter changes, regardless of current selection
+      if (currentFilteredIds.length > 0) {
+        console.log('🎯 Auto-navigating to first filtered question:', currentFilteredIds[0]);
+        navigateToQuestion(currentFilteredIds[0]);
+      }
     }
-  }, [questionFilter, questionIds, selectedQuestionId, currentIndex, navigateToQuestion]); // Include all dependencies
+  }, [questionFilter, navigateToQuestion, getQuestionIds, checkpoint]); // Include all dependencies needed for filtering
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
