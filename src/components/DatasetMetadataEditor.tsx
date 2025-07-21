@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, Database, User, Building2, Plus, Trash2, Tag, FileText, Hash } from 'lucide-react';
 import { DatasetMetadata, SchemaOrgPerson, SchemaOrgOrganization } from '../types';
 import { useDatasetStore } from '../stores/useDatasetStore';
@@ -80,6 +81,20 @@ export const DatasetMetadataEditor: React.FC<DatasetMetadataEditorProps> = ({ is
       setIsDirty(false);
     }
   }, [isOpen, metadata]);
+
+  // Manage body overflow when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
 
   const handleInputChange = (
     field: keyof DatasetEditForm,
@@ -216,7 +231,7 @@ export const DatasetMetadataEditor: React.FC<DatasetMetadataEditorProps> = ({ is
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCancel} />
@@ -597,6 +612,7 @@ export const DatasetMetadataEditor: React.FC<DatasetMetadataEditorProps> = ({ is
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
