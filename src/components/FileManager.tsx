@@ -238,11 +238,11 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
       </h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upload Section */}
+        {/* Checkpointing Section */}
         <div className="space-y-4">
           <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
-            <Upload className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            Upload Files
+            <Database className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            Checkpointing
           </h4>
 
           {/* Checkpoint Upload */}
@@ -259,18 +259,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
               htmlFor="checkpoint-upload"
               className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium cursor-pointer shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              <Database className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
               Upload Checkpoint
             </label>
           </div>
-        </div>
-
-        {/* Download and Actions Section */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
-            <Download className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            Download & Actions
-          </h4>
 
           {/* Checkpoint Download */}
           <button
@@ -278,9 +270,17 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
             disabled={Object.keys(checkpoint).length === 0}
             className="w-full px-4 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 dark:from-amber-700 dark:to-orange-700 dark:hover:from-amber-800 dark:hover:to-orange-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
           >
-            <Database className="w-4 h-4" />
+            <Download className="w-4 h-4" />
             Download Checkpoint
           </button>
+        </div>
+
+        {/* Actions Section */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
+            <Settings className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            Actions
+          </h4>
 
           {/* Dataset Metadata Button */}
           <button
@@ -310,19 +310,6 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
           <div className="text-xs text-slate-500 dark:text-slate-400 text-center py-2 bg-slate-50/50 dark:bg-slate-700/50 rounded-lg">
             This will clear all questions, templates, and progress
           </div>
-        </div>
-      </div>
-
-      {/* Info Section */}
-      <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-inner">
-        <h5 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
-          <Database className="w-4 h-4" />
-          File Formats
-        </h5>
-        <div className="text-xs text-indigo-800 dark:text-indigo-300 space-y-1">
-          <p>
-            <strong>Checkpoint:</strong> Save/restore complete session with progress, dataset metadata, and rubrics
-          </p>
         </div>
       </div>
 
