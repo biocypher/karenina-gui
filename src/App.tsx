@@ -239,14 +239,23 @@ function App() {
   // Calculate current index based on filtered questions, not all questions
   const currentIndex = questionIds.indexOf(selectedQuestionId);
 
-  // Auto-navigate when filter changes: select first available question in filtered list
+  // Auto-navigate when filter changes or when question status changes: select first available question in filtered list
   const prevFilterRef = useRef(questionFilter);
+  const prevCheckpointRef = useRef(checkpoint);
   useEffect(() => {
-    // Only navigate when filter actually changes (not on every render)
+    // Check if filter changed
     const filterChanged = prevFilterRef.current !== questionFilter;
     prevFilterRef.current = questionFilter;
 
-    if (filterChanged) {
+    // Check if the currently selected question's finished status changed
+    const currentCheckpointItem = checkpoint[selectedQuestionId];
+    const prevCheckpointItem = prevCheckpointRef.current[selectedQuestionId];
+    const selectedQuestionStatusChanged =
+      currentCheckpointItem && prevCheckpointItem && currentCheckpointItem.finished !== prevCheckpointItem.finished;
+    prevCheckpointRef.current = checkpoint;
+
+    if (filterChanged || selectedQuestionStatusChanged) {
+      console.log('🔄 Filter update triggered by:', filterChanged ? 'filter change' : 'question status change');
       // Recompute filtered questions inside the effect to avoid dependency issues
       const currentFilteredIds = getQuestionIds().filter((id) => {
         if (questionFilter === 'all') return true;
@@ -262,16 +271,32 @@ function App() {
 
       console.log('🔄 Filter changed to:', questionFilter, 'Available questions:', currentFilteredIds.length);
 
-      // Always update selection when filter changes
-      if (currentFilteredIds.length > 0) {
-        console.log('🎯 Auto-navigating to first filtered question:', currentFilteredIds[0]);
-        navigateToQuestion(currentFilteredIds[0]);
-      } else {
-        console.log('🚫 No questions match filter, clearing selection');
-        navigateToQuestion(''); // Clear selection when no questions match filter
+      // Handle navigation based on what triggered the update
+      if (selectedQuestionStatusChanged && questionFilter !== 'all') {
+        // If current question status changed and no longer matches filter, navigate away
+        const currentQuestionStillMatches = currentFilteredIds.includes(selectedQuestionId);
+        if (!currentQuestionStillMatches) {
+          console.log('🔄 Current question no longer matches filter after status change');
+          if (currentFilteredIds.length > 0) {
+            console.log('🎯 Auto-navigating to first matching question:', currentFilteredIds[0]);
+            navigateToQuestion(currentFilteredIds[0]);
+          } else {
+            console.log('🚫 No questions match filter after status change, clearing selection');
+            navigateToQuestion('');
+          }
+        }
+      } else if (filterChanged) {
+        // Always update selection when filter changes
+        if (currentFilteredIds.length > 0) {
+          console.log('🎯 Auto-navigating to first filtered question:', currentFilteredIds[0]);
+          navigateToQuestion(currentFilteredIds[0]);
+        } else {
+          console.log('🚫 No questions match filter, clearing selection');
+          navigateToQuestion(''); // Clear selection when no questions match filter
+        }
       }
     }
-  }, [questionFilter, navigateToQuestion, getQuestionIds, checkpoint]); // Include all dependencies needed for filtering
+  }, [questionFilter, navigateToQuestion, getQuestionIds, checkpoint, selectedQuestionId]); // Include all dependencies needed for filtering
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
