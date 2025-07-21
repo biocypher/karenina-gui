@@ -835,6 +835,9 @@ function App() {
           onSave={handleSave}
           onToggleFinished={handleToggleFinished}
           isFinished={checkpointItem?.finished || false}
+          questionFilter={questionFilter}
+          onFilterChange={setQuestionFilter}
+          hasCheckpointData={Object.keys(checkpoint).length > 0}
         />
       )}
 
