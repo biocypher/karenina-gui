@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Calendar, FileText, Tag, User, Plus, Trash2 } from 'lucide-react';
 import { CheckpointItem } from '../types';
 
@@ -29,10 +29,21 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
     finished: checkpointItem.finished || false,
     notes: '',
     tags: [],
-    customProperties: {},
+    customProperties: checkpointItem.custom_metadata || {},
   });
 
   const [isDirty, setIsDirty] = useState(false);
+
+  // Reset form data when the checkpoint item changes (question switching)
+  useEffect(() => {
+    setFormData({
+      finished: checkpointItem.finished || false,
+      notes: '',
+      tags: [],
+      customProperties: checkpointItem.custom_metadata || {},
+    });
+    setIsDirty(false);
+  }, [checkpointItem, questionId]);
 
   const handleInputChange = (
     field: keyof MetadataEditForm,
@@ -80,8 +91,11 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
       ...checkpointItem,
       finished: formData.finished,
       last_modified: new Date().toISOString(),
-      // Store custom properties in a way that they can be preserved
-      // This would typically be extended to handle the custom properties properly
+      // Store custom properties in the checkpoint
+      custom_metadata:
+        formData.customProperties && Object.keys(formData.customProperties).length > 0
+          ? formData.customProperties
+          : undefined,
     };
 
     onSave(questionId, updatedItem);
@@ -95,12 +109,12 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
       if (!confirmDiscard) return;
     }
 
-    // Reset form data
+    // Reset form data to original values
     setFormData({
       finished: checkpointItem.finished || false,
       notes: '',
       tags: [],
-      customProperties: {},
+      customProperties: checkpointItem.custom_metadata || {},
     });
     setIsDirty(false);
     onClose();
@@ -243,6 +257,14 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
                   <span className="font-medium text-slate-600 dark:text-slate-400">Has Rubric:</span>
                   <span className="text-slate-800 dark:text-slate-200">
                     {checkpointItem.question_rubric ? '✅ Yes' : '❌ No'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-slate-600 dark:text-slate-400">Custom Properties:</span>
+                  <span className="text-slate-800 dark:text-slate-200">
+                    {checkpointItem.custom_metadata && Object.keys(checkpointItem.custom_metadata).length > 0
+                      ? `${Object.keys(checkpointItem.custom_metadata).length} properties`
+                      : '❌ None'}
                   </span>
                 </div>
               </div>

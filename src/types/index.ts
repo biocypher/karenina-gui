@@ -21,6 +21,9 @@ export interface CheckpointItem {
 
   // Question-specific rubric
   question_rubric?: Rubric;
+
+  // Custom metadata properties
+  custom_metadata?: { [key: string]: string };
 }
 
 export interface Checkpoint {

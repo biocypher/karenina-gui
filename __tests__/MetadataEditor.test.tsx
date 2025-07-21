@@ -12,6 +12,10 @@ describe('MetadataEditor', () => {
     answer_template: 'class Answer(BaseModel): capital: str',
     last_modified: '2025-01-20T10:00:00Z',
     finished: false,
+    custom_metadata: {
+      existing_property: 'existing_value',
+      another_prop: 'another_value',
+    },
   };
 
   const mockProps = {
@@ -76,7 +80,8 @@ describe('MetadataEditor', () => {
   });
 
   it('shows custom properties section', () => {
-    render(<MetadataEditor {...mockProps} />);
+    const itemWithoutProps = { ...mockCheckpointItem, custom_metadata: undefined };
+    render(<MetadataEditor {...mockProps} checkpointItem={itemWithoutProps} />);
 
     expect(screen.getByText('Custom Properties')).toBeInTheDocument();
     expect(screen.getByText('Add Property')).toBeInTheDocument();
@@ -214,5 +219,120 @@ describe('MetadataEditor', () => {
 
     // The timestamp should be formatted to a readable date
     expect(screen.getByText(/2025/)).toBeInTheDocument();
+  });
+
+  it('loads existing custom properties from checkpointItem', () => {
+    render(<MetadataEditor {...mockProps} />);
+
+    // Should display existing custom properties
+    expect(screen.getByDisplayValue('existing_property')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('existing_value')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('another_prop')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('another_value')).toBeInTheDocument();
+  });
+
+  it('displays custom properties count in system information', () => {
+    render(<MetadataEditor {...mockProps} />);
+
+    expect(screen.getByText('2 properties')).toBeInTheDocument();
+  });
+
+  it('displays no custom properties when none exist', () => {
+    const itemWithoutProps = { ...mockCheckpointItem, custom_metadata: undefined };
+    render(<MetadataEditor {...mockProps} checkpointItem={itemWithoutProps} />);
+
+    expect(screen.getByText('❌ None')).toBeInTheDocument();
+  });
+
+  it('saves custom properties to checkpoint', async () => {
+    const user = userEvent.setup();
+    render(<MetadataEditor {...mockProps} />);
+
+    // Add a new custom property
+    vi.stubGlobal(
+      'prompt',
+      vi.fn(() => 'new_property')
+    );
+    const addButton = screen.getByText('Add Property');
+    await user.click(addButton);
+
+    // Set value for the new property
+    const newValueInput = screen
+      .getAllByPlaceholderText('Value...')
+      .find((input) => input.previousElementSibling?.value === 'new_property');
+    if (newValueInput) {
+      await user.clear(newValueInput);
+      await user.type(newValueInput, 'new_value');
+    }
+
+    // Save changes
+    const saveButton = screen.getByText('Save Changes');
+    await user.click(saveButton);
+
+    // Verify onSave was called with custom_metadata
+    expect(mockProps.onSave).toHaveBeenCalledWith(
+      'test-question-1',
+      expect.objectContaining({
+        custom_metadata: expect.objectContaining({
+          existing_property: 'existing_value',
+          another_prop: 'another_value',
+          new_property: 'new_value',
+        }),
+      })
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it('removes custom_metadata when all properties are deleted', async () => {
+    const user = userEvent.setup();
+    render(<MetadataEditor {...mockProps} />);
+
+    // Find all delete buttons by finding buttons that have red text colors (trash buttons)
+    const allButtons = screen.getAllByRole('button');
+    const trashButtons = allButtons.filter((button) => button.className.includes('text-red-500'));
+
+    // Click all trash buttons to remove properties
+    for (const trashButton of trashButtons) {
+      await user.click(trashButton);
+    }
+
+    // Make a change to enable save button
+    const finishedCheckbox = screen.getByLabelText('Mark as finished');
+    await user.click(finishedCheckbox);
+
+    // Save changes
+    const saveButton = screen.getByText('Save Changes');
+    await user.click(saveButton);
+
+    // Verify custom_metadata is undefined when empty
+    expect(mockProps.onSave).toHaveBeenCalledWith(
+      'test-question-1',
+      expect.objectContaining({
+        custom_metadata: undefined,
+      })
+    );
+  });
+
+  it('resets form when checkpointItem changes (question switching)', () => {
+    const { rerender } = render(<MetadataEditor {...mockProps} />);
+
+    // Verify initial properties are loaded
+    expect(screen.getByDisplayValue('existing_property')).toBeInTheDocument();
+
+    // Change to different question with different metadata
+    const newCheckpointItem: CheckpointItem = {
+      ...mockCheckpointItem,
+      custom_metadata: {
+        different_prop: 'different_value',
+      },
+    };
+
+    rerender(<MetadataEditor {...mockProps} checkpointItem={newCheckpointItem} questionId="different-question" />);
+
+    // Should show new properties and not old ones
+    expect(screen.getByDisplayValue('different_prop')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('different_value')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('existing_property')).not.toBeInTheDocument();
   });
 });
