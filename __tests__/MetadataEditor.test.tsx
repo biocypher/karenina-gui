@@ -34,8 +34,8 @@ describe('MetadataEditor', () => {
     render(<MetadataEditor {...mockProps} />);
 
     expect(screen.getByText('Edit Metadata')).toBeInTheDocument();
-    expect(screen.getByText('Editable Metadata')).toBeInTheDocument();
-    expect(screen.getByText('System Information (Read-Only)')).toBeInTheDocument();
+    expect(screen.getByText('Question Author')).toBeInTheDocument();
+    expect(screen.getByText('Sources')).toBeInTheDocument();
   });
 
   it('does not render when isOpen is false', () => {
@@ -44,13 +44,13 @@ describe('MetadataEditor', () => {
     expect(screen.queryByText('Edit Metadata')).not.toBeInTheDocument();
   });
 
-  it('displays correct system information', () => {
+  it('displays author input fields', () => {
     render(<MetadataEditor {...mockProps} />);
 
-    expect(screen.getByText('test-question-1')).toBeInTheDocument();
-    expect(screen.getByText(/2025/)).toBeInTheDocument(); // Date should be formatted
-    expect(screen.getByText(`${mockCheckpointItem.question.length} characters`)).toBeInTheDocument(); // Question length
-    expect(screen.getByText(`${mockCheckpointItem.raw_answer.length} characters`)).toBeInTheDocument(); // Answer length
+    expect(screen.getByPlaceholderText('Author name...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('author@example.com')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('University or organization...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('https://example.com')).toBeInTheDocument();
   });
 
   it('shows finished status correctly', () => {
@@ -106,38 +106,36 @@ describe('MetadataEditor', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows template metadata when template exists', () => {
+  it('shows sources section', () => {
     render(<MetadataEditor {...mockProps} />);
 
-    expect(screen.getByText('Template Metadata (Read-Only)')).toBeInTheDocument();
-    // Check for both template length appearances (current and original)
-    const templateLengthElements = screen.getAllByText(`${mockCheckpointItem.answer_template.length} characters`);
-    expect(templateLengthElements).toHaveLength(2); // Both current and original template lengths
+    expect(screen.getByText('Sources')).toBeInTheDocument();
+    expect(screen.getByText('Academic')).toBeInTheDocument();
+    expect(screen.getByText('Web')).toBeInTheDocument();
+    expect(screen.getByText(/No sources added/)).toBeInTheDocument();
   });
 
-  it('shows rubric metadata when rubric exists', () => {
-    const itemWithRubric = {
-      ...mockCheckpointItem,
-      question_rubric: {
-        traits: [
-          { name: 'Accuracy', description: 'How accurate is the answer', kind: 'boolean' as const },
-          {
-            name: 'Completeness',
-            description: 'How complete is the answer',
-            kind: 'score' as const,
-            min_score: 0,
-            max_score: 10,
-          },
-        ],
-      },
-    };
+  it('allows adding academic and web sources with correct field requirements', async () => {
+    const user = userEvent.setup();
+    render(<MetadataEditor {...mockProps} />);
 
-    render(<MetadataEditor {...mockProps} checkpointItem={itemWithRubric} />);
+    // Test Academic Source
+    const academicButton = screen.getByText('Academic');
+    await user.click(academicButton);
 
-    expect(screen.getByText('Rubric Metadata (Read-Only)')).toBeInTheDocument();
-    expect(screen.getByText('2 traits')).toBeInTheDocument();
-    expect(screen.getByText('Accuracy')).toBeInTheDocument();
-    expect(screen.getByText('Completeness')).toBeInTheDocument();
+    expect(screen.getByText('Academic Source')).toBeInTheDocument();
+    expect(screen.getAllByText('Title')).toHaveLength(1); // Title is optional for academic (only one exists)
+    expect(screen.getByText('DOI/Identifier *')).toBeInTheDocument(); // DOI is required for academic
+    expect(screen.queryByText('Published Date')).not.toBeInTheDocument(); // Published date removed
+
+    // Test Web Source
+    const webButton = screen.getByText('Web');
+    await user.click(webButton);
+
+    expect(screen.getByText('Web Source')).toBeInTheDocument();
+    expect(screen.getAllByText('Title')).toHaveLength(2); // Now there are two Title labels (academic and web)
+    expect(screen.getByText('URL *')).toBeInTheDocument(); // URL is required for web
+    expect(screen.getByPlaceholderText('Publisher name...')).toBeInTheDocument();
   });
 
   it('calls onClose when cancel button is clicked', async () => {
@@ -214,13 +212,6 @@ describe('MetadataEditor', () => {
     confirmSpy.mockRestore();
   });
 
-  it('formats timestamp correctly', () => {
-    render(<MetadataEditor {...mockProps} />);
-
-    // The timestamp should be formatted to a readable date
-    expect(screen.getByText(/2025/)).toBeInTheDocument();
-  });
-
   it('loads existing custom properties from checkpointItem', () => {
     render(<MetadataEditor {...mockProps} />);
 
@@ -229,19 +220,6 @@ describe('MetadataEditor', () => {
     expect(screen.getByDisplayValue('existing_value')).toBeInTheDocument();
     expect(screen.getByDisplayValue('another_prop')).toBeInTheDocument();
     expect(screen.getByDisplayValue('another_value')).toBeInTheDocument();
-  });
-
-  it('displays custom properties count in system information', () => {
-    render(<MetadataEditor {...mockProps} />);
-
-    expect(screen.getByText('2 properties')).toBeInTheDocument();
-  });
-
-  it('displays no custom properties when none exist', () => {
-    const itemWithoutProps = { ...mockCheckpointItem, custom_metadata: undefined };
-    render(<MetadataEditor {...mockProps} checkpointItem={itemWithoutProps} />);
-
-    expect(screen.getByText('❌ None')).toBeInTheDocument();
   });
 
   it('saves custom properties to checkpoint', async () => {
@@ -257,9 +235,12 @@ describe('MetadataEditor', () => {
     await user.click(addButton);
 
     // Set value for the new property
-    const newValueInput = screen
-      .getAllByPlaceholderText('Value...')
-      .find((input) => input.previousElementSibling?.value === 'new_property');
+    const newValueInput = screen.getAllByPlaceholderText('Property value...').find((input) => {
+      // Find the input in the same row as the 'new_property' key
+      const parent = input.closest('.grid');
+      const keyInput = parent?.querySelector('input[readonly]') as HTMLInputElement;
+      return keyInput?.value === 'new_property';
+    });
     if (newValueInput) {
       await user.clear(newValueInput);
       await user.type(newValueInput, 'new_value');
@@ -282,6 +263,112 @@ describe('MetadataEditor', () => {
     );
 
     vi.unstubAllGlobals();
+  });
+
+  it('saves author information to checkpoint', async () => {
+    const user = userEvent.setup();
+    render(<MetadataEditor {...mockProps} />);
+
+    // Fill in author information
+    const nameInput = screen.getByPlaceholderText('Author name...');
+    await user.type(nameInput, 'John Doe');
+
+    const emailInput = screen.getByPlaceholderText('author@example.com');
+    await user.type(emailInput, 'john@example.com');
+
+    const affiliationInput = screen.getByPlaceholderText('University or organization...');
+    await user.type(affiliationInput, 'Example University');
+
+    // Save changes
+    const saveButton = screen.getByText('Save Changes');
+    await user.click(saveButton);
+
+    // Verify onSave was called with author
+    expect(mockProps.onSave).toHaveBeenCalledWith(
+      'test-question-1',
+      expect.objectContaining({
+        author: expect.objectContaining({
+          '@type': 'Person',
+          name: 'John Doe',
+          email: 'john@example.com',
+          affiliation: 'Example University',
+        }),
+      })
+    );
+  });
+
+  it('saves academic sources to checkpoint', async () => {
+    const user = userEvent.setup();
+    render(<MetadataEditor {...mockProps} />);
+
+    // Add an academic source
+    const academicButton = screen.getByText('Academic');
+    await user.click(academicButton);
+
+    const titleInput = screen.getByPlaceholderText('Source title...');
+    await user.type(titleInput, 'Test Academic Paper');
+
+    const urlInput = screen.getByPlaceholderText('https://...');
+    await user.type(urlInput, 'https://example.com/paper');
+
+    const doiInput = screen.getByPlaceholderText('DOI or identifier...');
+    await user.type(doiInput, '10.1000/example');
+
+    // Save changes
+    const saveButton = screen.getByText('Save Changes');
+    await user.click(saveButton);
+
+    // Verify onSave was called with sources (no datePublished field)
+    expect(mockProps.onSave).toHaveBeenCalledWith(
+      'test-question-1',
+      expect.objectContaining({
+        sources: [
+          expect.objectContaining({
+            '@type': 'ScholarlyArticle',
+            name: 'Test Academic Paper',
+            url: 'https://example.com/paper',
+            identifier: '10.1000/example',
+          }),
+        ],
+      })
+    );
+  });
+
+  it('saves web sources to checkpoint', async () => {
+    const user = userEvent.setup();
+    render(<MetadataEditor {...mockProps} />);
+
+    // Add a web source
+    const webButton = screen.getByText('Web');
+    await user.click(webButton);
+
+    const titleInput = screen.getByPlaceholderText('Source title...');
+    await user.type(titleInput, 'Example Website');
+
+    const urlInput = screen.getByPlaceholderText('https://...');
+    await user.type(urlInput, 'https://example.com');
+
+    const publisherInput = screen.getByPlaceholderText('Publisher name...');
+    await user.type(publisherInput, 'Example Corp');
+
+    // Save changes
+    const saveButton = screen.getByText('Save Changes');
+    await user.click(saveButton);
+
+    // Verify onSave was called with web source
+    expect(mockProps.onSave).toHaveBeenCalledWith(
+      'test-question-1',
+      expect.objectContaining({
+        sources: [
+          expect.objectContaining({
+            '@type': 'WebPage',
+            name: 'Example Website',
+            url: 'https://example.com',
+            publisher: 'Example Corp',
+          }),
+        ],
+      })
+    );
   });
 
   it('removes custom_metadata when all properties are deleted', async () => {
