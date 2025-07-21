@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Upload, Download, FileText, Database, RotateCcw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Upload, Download, FileText, Database, RotateCcw, CheckCircle } from 'lucide-react';
 import { QuestionData, Checkpoint, UnifiedCheckpoint, JsonLdCheckpoint } from '../types';
 import { useRubricStore } from '../stores/useRubricStore';
 import {
@@ -440,57 +440,18 @@ export const FileManager: React.FC<FileManagerProps> = ({
       <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-inner">
         <h5 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
           <Database className="w-4 h-4" />
-          File Format Information
+          File Formats
         </h5>
-        <div className="text-xs text-indigo-800 dark:text-indigo-300 space-y-1 font-medium">
+        <div className="text-xs text-indigo-800 dark:text-indigo-300 space-y-1">
           <p>
-            <strong>Question Data JSON:</strong> Contains questions extracted from the Question Extractor tab or
-            previously saved data
+            <strong>Question Data:</strong> Upload/download extracted questions
           </p>
           <p>
-            <strong>JSON-LD Checkpoint (v3.0):</strong> ✨ New format using schema.org vocabulary for semantic web
-            compatibility
+            <strong>Checkpoint:</strong> Save/restore complete session with progress
           </p>
           <p>
-            <strong>Legacy Checkpoint (v2.0):</strong> ⚠️ Deprecated format, will be converted to JSON-LD when loaded
+            <strong>Finished Items:</strong> Export completed questions only
           </p>
-          <p>
-            <strong>Finished Items JSON:</strong> Contains only completed questions with updated answer templates
-          </p>
-          <p>
-            <strong>✅ What's Saved:</strong> Question data, answer templates, progress status, rubric evaluations as
-            Rating objects, and metadata
-          </p>
-          <p>
-            <strong>📦 Single File Restore:</strong> Upload any checkpoint format to restore your complete session
-          </p>
-          <p>
-            <strong>🌐 Semantic Web:</strong> JSON-LD format enables compatibility with linked data tools and RDF
-            processing
-          </p>
-          <p>
-            <strong>💡 Migration:</strong> Legacy v2.0 files are automatically converted - download new checkpoint to
-            complete migration
-          </p>
-        </div>
-      </div>
-
-      {/* Migration Notice */}
-      <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 rounded-xl border border-amber-200 dark:border-amber-700 shadow-inner">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-amber-800 dark:text-amber-300 space-y-1">
-            <p className="font-semibold">🚀 Format Upgrade: v2.0 → JSON-LD v3.0</p>
-            <p>
-              • <strong>Exports:</strong> Now use JSON-LD format with schema.org vocabulary (.jsonld files)
-            </p>
-            <p>
-              • <strong>Imports:</strong> Support both new JSON-LD and legacy v2.0 formats for smooth migration
-            </p>
-            <p>
-              • <strong>Compatibility:</strong> JSON-LD files work with semantic web tools and RDF triple stores
-            </p>
-          </div>
         </div>
       </div>
 
