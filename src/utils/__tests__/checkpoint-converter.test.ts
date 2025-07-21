@@ -800,4 +800,278 @@ describe('checkpoint-converter', () => {
       expect(imported.checkpoint['question-1']?.custom_metadata).toBeUndefined();
     });
   });
+
+  describe('author and sources handling', () => {
+    it('should export and import author data correctly', () => {
+      const checkpointWithAuthor: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'question-1': {
+            question: 'What is machine learning?',
+            raw_answer: 'Machine learning is a subset of AI.',
+            original_answer_template: 'class Answer(BaseModel): definition: str',
+            answer_template: 'class Answer(BaseModel): definition: str = Field()',
+            last_modified: '2025-01-21T10:00:00Z',
+            finished: true,
+            author: {
+              '@type': 'Person',
+              name: 'Dr. Jane Smith',
+              email: 'jane@university.edu',
+              affiliation: 'MIT',
+              url: 'https://mit.edu/~jane',
+            },
+          },
+        },
+      };
+
+      // Export to JSON-LD
+      const jsonLd = v2ToJsonLd(checkpointWithAuthor);
+
+      // Verify author is exported as JSON string
+      const question1 = jsonLd.hasPart[0];
+      const authorProp = question1.item.additionalProperty?.find((prop) => prop.name === 'author');
+      expect(authorProp).toBeDefined();
+      expect(typeof authorProp?.value).toBe('string');
+
+      const exportedAuthor = JSON.parse(authorProp?.value as string);
+      expect(exportedAuthor).toEqual({
+        '@type': 'Person',
+        name: 'Dr. Jane Smith',
+        email: 'jane@university.edu',
+        affiliation: 'MIT',
+        url: 'https://mit.edu/~jane',
+      });
+
+      // Import back from JSON-LD
+      const importedCheckpoint = jsonLdToV2(jsonLd);
+
+      // Verify author is restored correctly
+      expect(importedCheckpoint.checkpoint['question-1']?.author).toEqual({
+        '@type': 'Person',
+        name: 'Dr. Jane Smith',
+        email: 'jane@university.edu',
+        affiliation: 'MIT',
+        url: 'https://mit.edu/~jane',
+      });
+    });
+
+    it('should export and import sources data correctly', () => {
+      const checkpointWithSources: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'question-1': {
+            question: 'What are the benefits of renewable energy?',
+            raw_answer: 'Renewable energy reduces carbon emissions.',
+            original_answer_template: 'class Answer(BaseModel): benefits: List[str]',
+            answer_template: 'class Answer(BaseModel): benefits: List[str] = Field()',
+            last_modified: '2025-01-21T11:00:00Z',
+            finished: true,
+            sources: [
+              {
+                '@type': 'ScholarlyArticle',
+                name: 'Renewable Energy Technologies',
+                url: 'https://doi.org/10.1016/j.energy.2023.12345',
+                identifier: '10.1016/j.energy.2023.12345',
+              },
+              {
+                '@type': 'WebPage',
+                name: 'Clean Energy Guide',
+                url: 'https://energy.gov/renewable-guide',
+                publisher: 'U.S. Department of Energy',
+              },
+            ],
+          },
+        },
+      };
+
+      // Export to JSON-LD
+      const jsonLd = v2ToJsonLd(checkpointWithSources);
+
+      // Verify sources are exported as JSON string
+      const question1 = jsonLd.hasPart[0];
+      const sourcesProp = question1.item.additionalProperty?.find((prop) => prop.name === 'sources');
+      expect(sourcesProp).toBeDefined();
+      expect(typeof sourcesProp?.value).toBe('string');
+
+      const exportedSources = JSON.parse(sourcesProp?.value as string);
+      expect(exportedSources).toHaveLength(2);
+      expect(exportedSources[0]).toEqual({
+        '@type': 'ScholarlyArticle',
+        name: 'Renewable Energy Technologies',
+        url: 'https://doi.org/10.1016/j.energy.2023.12345',
+        identifier: '10.1016/j.energy.2023.12345',
+      });
+      expect(exportedSources[1]).toEqual({
+        '@type': 'WebPage',
+        name: 'Clean Energy Guide',
+        url: 'https://energy.gov/renewable-guide',
+        publisher: 'U.S. Department of Energy',
+      });
+
+      // Import back from JSON-LD
+      const importedCheckpoint = jsonLdToV2(jsonLd);
+
+      // Verify sources are restored correctly
+      expect(importedCheckpoint.checkpoint['question-1']?.sources).toEqual([
+        {
+          '@type': 'ScholarlyArticle',
+          name: 'Renewable Energy Technologies',
+          url: 'https://doi.org/10.1016/j.energy.2023.12345',
+          identifier: '10.1016/j.energy.2023.12345',
+        },
+        {
+          '@type': 'WebPage',
+          name: 'Clean Energy Guide',
+          url: 'https://energy.gov/renewable-guide',
+          publisher: 'U.S. Department of Energy',
+        },
+      ]);
+    });
+
+    it('should handle both author and sources together', () => {
+      const checkpointWithBoth: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'question-1': {
+            question: 'How does photosynthesis work?',
+            raw_answer: 'Photosynthesis converts light energy into chemical energy.',
+            original_answer_template: 'class Answer(BaseModel): process: str',
+            answer_template: 'class Answer(BaseModel): process: str = Field()',
+            last_modified: '2025-01-21T12:00:00Z',
+            finished: true,
+            author: {
+              '@type': 'Person',
+              name: 'Prof. Green',
+              email: 'green@bio.edu',
+            },
+            sources: [
+              {
+                '@type': 'ScholarlyArticle',
+                name: 'Photosynthesis Mechanisms',
+                identifier: '10.1038/nature.2023.01',
+              },
+            ],
+          },
+        },
+      };
+
+      // Test round-trip
+      const jsonLd = v2ToJsonLd(checkpointWithBoth);
+      const imported = jsonLdToV2(jsonLd);
+
+      // Verify both author and sources are preserved
+      const importedItem = imported.checkpoint['question-1'];
+      expect(importedItem?.author).toEqual({
+        '@type': 'Person',
+        name: 'Prof. Green',
+        email: 'green@bio.edu',
+      });
+      expect(importedItem?.sources).toEqual([
+        {
+          '@type': 'ScholarlyArticle',
+          name: 'Photosynthesis Mechanisms',
+          identifier: '10.1038/nature.2023.01',
+        },
+      ]);
+    });
+
+    it('should handle undefined/empty author and sources', () => {
+      const checkpointWithoutMetadata: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'question-1': {
+            question: 'Basic question',
+            raw_answer: 'Basic answer',
+            original_answer_template: 'class Answer(BaseModel): text: str',
+            answer_template: 'class Answer(BaseModel): text: str = Field()',
+            last_modified: '2025-01-21T13:00:00Z',
+            finished: false,
+            // No author or sources
+          },
+        },
+      };
+
+      // Test round-trip
+      const jsonLd = v2ToJsonLd(checkpointWithoutMetadata);
+      const imported = jsonLdToV2(jsonLd);
+
+      // Verify no author/sources properties are created
+      const importedItem = imported.checkpoint['question-1'];
+      expect(importedItem?.author).toBeUndefined();
+      expect(importedItem?.sources).toBeUndefined();
+
+      // Verify no author/sources properties in JSON-LD
+      const question1 = jsonLd.hasPart[0];
+      const authorProp = question1.item.additionalProperty?.find((prop) => prop.name === 'author');
+      const sourcesProp = question1.item.additionalProperty?.find((prop) => prop.name === 'sources');
+      expect(authorProp).toBeUndefined();
+      expect(sourcesProp).toBeUndefined();
+    });
+
+    it('should handle malformed JSON gracefully during import', () => {
+      // Create a JSON-LD checkpoint with invalid JSON in author/sources
+      const malformedJsonLd: JsonLdCheckpoint = {
+        '@context': {} as Record<string, unknown>,
+        '@type': 'Dataset',
+        name: 'Test Dataset',
+        version: '3.0.0-jsonld',
+        creator: 'Test',
+        dateCreated: '2025-01-21T14:00:00Z',
+        dateModified: '2025-01-21T14:00:00Z',
+        hasPart: [
+          {
+            '@type': 'DataFeedItem',
+            dateModified: '2025-01-21T14:00:00Z',
+            item: {
+              '@type': 'Question',
+              text: 'Test question',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Test answer',
+              },
+              hasPart: {
+                '@type': 'SoftwareSourceCode',
+                text: 'class Answer(BaseModel): text: str',
+                programmingLanguage: 'Python',
+              },
+              additionalProperty: [
+                {
+                  '@type': 'PropertyValue',
+                  name: 'finished',
+                  value: false,
+                },
+                {
+                  '@type': 'PropertyValue',
+                  name: 'original_answer_template',
+                  value: 'class Answer(BaseModel): text: str',
+                },
+                {
+                  '@type': 'PropertyValue',
+                  name: 'author',
+                  value: 'invalid-json-{malformed',
+                },
+                {
+                  '@type': 'PropertyValue',
+                  name: 'sources',
+                  value: '[invalid-json-array',
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      // Should not throw an error and should ignore malformed JSON
+      const imported = jsonLdToV2(malformedJsonLd);
+
+      // Verify malformed JSON is ignored
+      const importedItem = imported.checkpoint['question_0'];
+      expect(importedItem?.author).toBeUndefined();
+      expect(importedItem?.sources).toBeUndefined();
+    });
+  });
 });

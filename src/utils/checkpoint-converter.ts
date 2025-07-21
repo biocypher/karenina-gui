@@ -9,6 +9,9 @@ import {
   RubricTrait,
   Rubric,
   CheckpointConversionMetadata,
+  SchemaOrgPerson,
+  SchemaOrgCreativeWork,
+  DatasetMetadata,
 } from '../types/index';
 // Import context as JSON (TypeScript doesn't handle .jsonld extension)
 const schemaOrgContext = {
@@ -239,6 +242,26 @@ export function v2ToJsonLd(
             name: 'original_answer_template',
             value: item.original_answer_template,
           },
+          // Include author as JSON string if present
+          ...(item.author
+            ? [
+                {
+                  '@type': 'PropertyValue' as const,
+                  name: 'author',
+                  value: JSON.stringify(item.author),
+                },
+              ]
+            : []),
+          // Include sources as JSON string if present
+          ...(item.sources && item.sources.length > 0
+            ? [
+                {
+                  '@type': 'PropertyValue' as const,
+                  name: 'sources',
+                  value: JSON.stringify(item.sources),
+                },
+              ]
+            : []),
           // Include custom metadata if present
           ...(item.custom_metadata
             ? Object.entries(item.custom_metadata).map(([key, value]) => ({
@@ -315,17 +338,23 @@ export function v2ToJsonLd(
       });
     }
 
+    // Use dataset metadata if available, otherwise fallback to defaults
+    const datasetMeta = checkpoint.dataset_metadata;
+    const defaultName = 'Karenina LLM Benchmark Checkpoint';
+    const defaultDescription = `Checkpoint containing ${questionIds.length} benchmark questions with answer templates and rubric evaluations`;
+    const defaultCreator = 'Karenina Benchmarking System';
+
     // Create the final JSON-LD document
     const jsonLdCheckpoint: JsonLdCheckpoint = {
       '@context': schemaOrgContext['@context'],
       '@type': 'Dataset',
       '@id': options.preserveIds ? `urn:uuid:karenina-checkpoint-${Date.now()}` : undefined,
-      name: 'Karenina LLM Benchmark Checkpoint',
-      description: `Checkpoint containing ${questionIds.length} benchmark questions with answer templates and rubric evaluations`,
-      version: '3.0.0-jsonld',
-      creator: 'Karenina Benchmarking System',
-      dateCreated: timestamp,
-      dateModified: timestamp,
+      name: datasetMeta?.name || defaultName,
+      description: datasetMeta?.description || defaultDescription,
+      version: datasetMeta?.version || '3.0.0-jsonld',
+      creator: datasetMeta?.creator?.name || defaultCreator,
+      dateCreated: datasetMeta?.dateCreated || timestamp,
+      dateModified: datasetMeta?.dateModified || timestamp,
       hasPart: dataFeedItems,
       additionalProperty: additionalProperties,
     };
@@ -378,6 +407,28 @@ export function jsonLdToV2(
       const originalTemplateProp = question.additionalProperty?.find(
         (prop) => prop.name === 'original_answer_template'
       );
+      const authorProp = question.additionalProperty?.find((prop) => prop.name === 'author');
+      const sourcesProp = question.additionalProperty?.find((prop) => prop.name === 'sources');
+
+      // Parse schema.org enhanced metadata
+      let author: SchemaOrgPerson | undefined;
+      let sources: SchemaOrgCreativeWork[] | undefined;
+
+      if (authorProp && typeof authorProp.value === 'string') {
+        try {
+          author = JSON.parse(authorProp.value);
+        } catch {
+          // Invalid JSON, ignore author
+        }
+      }
+
+      if (sourcesProp && typeof sourcesProp.value === 'string') {
+        try {
+          sources = JSON.parse(sourcesProp.value);
+        } catch {
+          // Invalid JSON, ignore sources
+        }
+      }
 
       // Extract custom metadata (properties with custom_ prefix)
       const customMetadata: { [key: string]: string } = {};
@@ -412,14 +463,43 @@ export function jsonLdToV2(
         question_rubric: questionRubric,
         // Include custom metadata if any were found
         custom_metadata: Object.keys(customMetadata).length > 0 ? customMetadata : undefined,
+        // Include schema.org enhanced metadata
+        author: author,
+        sources: sources,
       };
 
       checkpoint[questionId] = checkpointItem;
     });
 
+    // Extract dataset metadata from the JSON-LD dataset properties
+    const datasetMetadata: DatasetMetadata = {
+      name: jsonLdCheckpoint.name !== 'Karenina LLM Benchmark Checkpoint' ? jsonLdCheckpoint.name : undefined,
+      description: jsonLdCheckpoint.description?.startsWith('Checkpoint containing')
+        ? undefined
+        : jsonLdCheckpoint.description,
+      version: jsonLdCheckpoint.version !== '3.0.0-jsonld' ? jsonLdCheckpoint.version : undefined,
+      dateCreated: jsonLdCheckpoint.dateCreated,
+      dateModified: jsonLdCheckpoint.dateModified,
+      creator:
+        typeof jsonLdCheckpoint.creator === 'string' && jsonLdCheckpoint.creator !== 'Karenina Benchmarking System'
+          ? ({
+              '@type': 'Person',
+              name: jsonLdCheckpoint.creator,
+            } as SchemaOrgPerson)
+          : undefined,
+    };
+
+    // Only include dataset metadata if it has non-default values
+    const hasCustomMetadata =
+      datasetMetadata.name ||
+      datasetMetadata.description ||
+      (datasetMetadata.version && datasetMetadata.version !== '3.0.0-jsonld') ||
+      datasetMetadata.creator;
+
     const result: UnifiedCheckpoint = {
       version: '2.0',
       global_rubric: globalRubric,
+      dataset_metadata: hasCustomMetadata ? datasetMetadata : undefined,
       checkpoint,
     };
 

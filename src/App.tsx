@@ -13,6 +13,7 @@ import {
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
 import { useConfigStore } from './stores/useConfigStore';
+import { useDatasetStore } from './stores/useDatasetStore';
 import { QuestionData, UnifiedCheckpoint, VerificationResult, CheckpointItem } from './types';
 import { CodeEditor } from './components/CodeEditor';
 import { ExpandedEditor } from './components/ExpandedEditor';
@@ -36,6 +37,9 @@ function App() {
 
   // Configuration store
   const { loadConfiguration } = useConfigStore();
+
+  // Dataset store
+  const { metadata: datasetMetadata } = useDatasetStore();
 
   // Question store state
   const {
@@ -408,6 +412,26 @@ function App() {
         {/* Template Curator Tab */}
         {activeTab === 'curator' && (
           <>
+            {/* Dataset Info Display */}
+            {datasetMetadata.name && (
+              <div className="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-xl border border-blue-200 dark:border-blue-700 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-1">
+                      📊 {datasetMetadata.name}
+                    </h4>
+                    {datasetMetadata.description && (
+                      <p className="text-sm text-blue-700 dark:text-blue-400">{datasetMetadata.description}</p>
+                    )}
+                    <div className="flex items-center gap-4 mt-2 text-xs text-blue-600 dark:text-blue-400">
+                      {datasetMetadata.version && <span>Version: {datasetMetadata.version}</span>}
+                      {datasetMetadata.creator && <span>Creator: {datasetMetadata.creator.name}</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* File Management Section */}
             <div className="mb-8">
               <FileManager

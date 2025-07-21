@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle, Download } from 'lucide-react';
 import { TemplateGenerationResult } from '../types';
-import { formatDuration } from './TemplateProgress';
+import { formatDuration } from '../utils/time';
 
 interface TemplateResultsProps {
   result: TemplateGenerationResult | null;

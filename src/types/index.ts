@@ -8,6 +8,34 @@ export interface QuestionData {
   [key: string]: Question;
 }
 
+// Schema.org compliant types for enhanced metadata
+export interface SchemaOrgPerson {
+  '@type': 'Person';
+  name: string;
+  email?: string;
+  affiliation?: string;
+  url?: string;
+}
+
+export interface SchemaOrgOrganization {
+  '@type': 'Organization';
+  name: string;
+  description?: string;
+  url?: string;
+  email?: string;
+}
+
+export interface SchemaOrgCreativeWork {
+  '@type': 'CreativeWork' | 'ScholarlyArticle' | 'WebPage';
+  name: string;
+  author?: SchemaOrgPerson;
+  url?: string;
+  datePublished?: string;
+  publisher?: string;
+  identifier?: string; // DOI, ISBN, etc.
+  description?: string;
+}
+
 export interface CheckpointItem {
   // Original question data
   question: string;
@@ -24,16 +52,41 @@ export interface CheckpointItem {
 
   // Custom metadata properties
   custom_metadata?: { [key: string]: string };
+
+  // Schema.org enhanced metadata
+  author?: SchemaOrgPerson;
+  sources?: SchemaOrgCreativeWork[];
 }
 
 export interface Checkpoint {
   [key: string]: CheckpointItem;
 }
 
-// Unified checkpoint structure that includes global rubric
+// Dataset-level metadata interface
+export interface DatasetMetadata {
+  // Basic dataset information
+  name?: string;
+  description?: string;
+  version?: string;
+  license?: string;
+  keywords?: string[];
+
+  // Schema.org compliance
+  creator?: SchemaOrgPerson | SchemaOrgOrganization;
+  publisher?: SchemaOrgOrganization;
+  datePublished?: string;
+  dateCreated?: string;
+  dateModified?: string;
+
+  // Custom properties
+  custom_properties?: { [key: string]: string };
+}
+
+// Unified checkpoint structure that includes global rubric and dataset metadata
 export interface UnifiedCheckpoint {
   version: '2.0';
   global_rubric: Rubric | null;
+  dataset_metadata?: DatasetMetadata;
   checkpoint: Checkpoint;
 }
 

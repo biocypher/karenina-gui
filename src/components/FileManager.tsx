@@ -1,7 +1,9 @@
-import React, { useRef } from 'react';
-import { Upload, Download, FileText, Database, RotateCcw, CheckCircle } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Upload, Download, FileText, Database, RotateCcw, CheckCircle, Settings } from 'lucide-react';
 import { QuestionData, Checkpoint, UnifiedCheckpoint, JsonLdCheckpoint } from '../types';
 import { useRubricStore } from '../stores/useRubricStore';
+import { useDatasetStore } from '../stores/useDatasetStore';
+import { DatasetMetadataEditor } from './DatasetMetadataEditor';
 import {
   v2ToJsonLd,
   jsonLdToV2,
@@ -28,8 +30,12 @@ export const FileManager: React.FC<FileManagerProps> = ({
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
   const checkpointFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get current rubric from store
+  // Dataset metadata editor state
+  const [isDatasetEditorOpen, setIsDatasetEditorOpen] = useState(false);
+
+  // Get current rubric and dataset metadata from stores
   const { currentRubric } = useRubricStore();
+  const { metadata: datasetMetadata } = useDatasetStore();
 
   const handleJsonUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -156,6 +162,13 @@ export const FileManager: React.FC<FileManagerProps> = ({
         // Load checkpoint into question store
         onLoadCheckpoint(unifiedCheckpoint);
 
+        // Load dataset metadata into dataset store if present
+        if (unifiedCheckpoint.dataset_metadata) {
+          const { setMetadata } = useDatasetStore.getState();
+          setMetadata(unifiedCheckpoint.dataset_metadata);
+          console.log('✅ Loaded dataset metadata:', unifiedCheckpoint.dataset_metadata.name || 'Unnamed dataset');
+        }
+
         // Load global rubric into rubric store if present
         if (unifiedCheckpoint.global_rubric) {
           const { setCurrentRubric, saveRubric } = useRubricStore.getState();
@@ -205,10 +218,11 @@ export const FileManager: React.FC<FileManagerProps> = ({
     }
 
     try {
-      // Create unified checkpoint with global rubric
+      // Create unified checkpoint with global rubric and dataset metadata
       const unifiedCheckpoint: UnifiedCheckpoint = {
         version: '2.0',
         global_rubric: currentRubric,
+        dataset_metadata: datasetMetadata,
         checkpoint: checkpoint,
       };
 
@@ -418,6 +432,22 @@ export const FileManager: React.FC<FileManagerProps> = ({
             Actions
           </h4>
 
+          {/* Dataset Metadata Button */}
+          <button
+            onClick={() => setIsDatasetEditorOpen(true)}
+            className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 dark:from-blue-700 dark:to-cyan-700 dark:hover:from-blue-800 dark:hover:to-cyan-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <Settings className="w-4 h-4" />
+            Dataset Metadata
+          </button>
+
+          {/* Dataset Name Display */}
+          {datasetMetadata.name && (
+            <div className="text-xs text-slate-600 dark:text-slate-400 text-center py-2 bg-slate-50/50 dark:bg-slate-700/50 rounded-lg">
+              Dataset: <span className="font-medium text-slate-700 dark:text-slate-300">{datasetMetadata.name}</span>
+            </div>
+          )}
+
           {/* Reset All Data */}
           <button
             onClick={onResetAllData}
@@ -467,6 +497,17 @@ export const FileManager: React.FC<FileManagerProps> = ({
           <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">Finished Items</div>
         </div>
       </div>
+
+      {/* Dataset Metadata Editor Modal */}
+      <DatasetMetadataEditor
+        isOpen={isDatasetEditorOpen}
+        onClose={() => setIsDatasetEditorOpen(false)}
+        onSave={() => {
+          // The save is handled by the DatasetMetadataEditor component itself
+          // We just need to close the modal
+          console.log('✅ Dataset metadata updated');
+        }}
+      />
     </div>
   );
 };
