@@ -56,7 +56,6 @@ function App() {
     navigateToQuestion,
     resetQuestionState,
     getQuestionIds,
-    getCurrentIndex,
     getSelectedQuestion,
     getCheckpointItem,
     getIsModified,
@@ -227,17 +226,27 @@ function App() {
 
     return true;
   });
-  const currentIndex = getCurrentIndex();
+
+  // Calculate current index based on filtered questions, not all questions
+  const currentIndex = questionIds.indexOf(selectedQuestionId);
+
+  // Auto-navigate when filter changes: select first available question in filtered list
+  useEffect(() => {
+    // If current selection is not in filtered list, or no question selected, select first available
+    if (questionIds.length > 0 && (!selectedQuestionId || currentIndex === -1)) {
+      navigateToQuestion(questionIds[0]);
+    }
+  }, [questionFilter, questionIds, selectedQuestionId, currentIndex, navigateToQuestion]); // Include all dependencies
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      handleNavigateToQuestion(questionIds[currentIndex - 1]);
+      navigateToQuestion(questionIds[currentIndex - 1]);
     }
   };
 
   const handleNext = () => {
     if (currentIndex < questionIds.length - 1) {
-      handleNavigateToQuestion(questionIds[currentIndex + 1]);
+      navigateToQuestion(questionIds[currentIndex + 1]);
     }
   };
 
@@ -474,7 +483,9 @@ function App() {
                       >
                         <option value="">
                           {questionIds.length === 0
-                            ? 'No questions available - upload data first'
+                            ? allQuestionIds.length === 0
+                              ? 'No questions available - upload data first'
+                              : 'No questions match the current filter'
                             : 'Choose a question...'}
                         </option>
                         {questionIds.map((id, index) => (
