@@ -262,10 +262,13 @@ function App() {
 
       console.log('🔄 Filter changed to:', questionFilter, 'Available questions:', currentFilteredIds.length);
 
-      // Always select first question when filter changes, regardless of current selection
+      // Always update selection when filter changes
       if (currentFilteredIds.length > 0) {
         console.log('🎯 Auto-navigating to first filtered question:', currentFilteredIds[0]);
         navigateToQuestion(currentFilteredIds[0]);
+      } else {
+        console.log('🚫 No questions match filter, clearing selection');
+        navigateToQuestion(''); // Clear selection when no questions match filter
       }
     }
   }, [questionFilter, navigateToQuestion, getQuestionIds, checkpoint]); // Include all dependencies needed for filtering
