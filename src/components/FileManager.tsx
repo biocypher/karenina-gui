@@ -183,10 +183,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
         alert(
           `✅ Successfully loaded ${formatUsed} checkpoint with ${itemCount} items${rubricText}.\n\n` +
-            '📦 Your complete session has been restored!\n\n' +
-            (formatUsed.includes('Legacy')
-              ? '💡 Tip: Download a new checkpoint to migrate to JSON-LD format.'
-              : '🎉 Using the latest JSON-LD format.')
+            '📦 Your complete session has been restored!\n\n'
         );
       } catch (error) {
         console.error('Error parsing checkpoint:', error);
