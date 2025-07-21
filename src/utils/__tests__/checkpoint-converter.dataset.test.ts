@@ -147,14 +147,14 @@ describe('checkpoint-converter dataset metadata', () => {
       expect(result.dataset_metadata?.dateModified).toBe('2025-01-16T00:00:00Z');
     });
 
-    it('ignores default dataset metadata values', () => {
+    it('preserves dataset metadata values even when they look like defaults', () => {
       const jsonLdCheckpoint: JsonLdCheckpoint = {
         '@context': { '@vocab': 'http://schema.org/' },
         '@type': 'Dataset',
-        name: 'Karenina LLM Benchmark Checkpoint', // default name
+        name: 'Karenina LLM Benchmark Checkpoint', // default-looking name
         description: 'Checkpoint containing 1 benchmark questions with answer templates and rubric evaluations',
-        version: '3.0.0-jsonld', // default version
-        creator: 'Karenina Benchmarking System', // default creator
+        version: '3.0.0-jsonld', // default-looking version
+        creator: 'Karenina Benchmarking System', // default-looking creator
         dateCreated: '2025-01-15T00:00:00Z',
         dateModified: '2025-01-16T00:00:00Z',
         hasPart: [
@@ -180,20 +180,26 @@ describe('checkpoint-converter dataset metadata', () => {
 
       const result = jsonLdToV2(jsonLdCheckpoint);
 
-      // Since all values are defaults, dataset_metadata should be undefined
-      expect(result.dataset_metadata).toBeUndefined();
+      // All metadata values should be preserved, even if they look like defaults
+      expect(result.dataset_metadata).toBeDefined();
+      expect(result.dataset_metadata?.name).toBe('Karenina LLM Benchmark Checkpoint');
+      expect(result.dataset_metadata?.description).toBe(
+        'Checkpoint containing 1 benchmark questions with answer templates and rubric evaluations'
+      );
+      expect(result.dataset_metadata?.version).toBe('3.0.0-jsonld');
+      expect(result.dataset_metadata?.creator).toEqual({
+        '@type': 'Person',
+        name: 'Karenina Benchmarking System',
+      });
+      expect(result.dataset_metadata?.dateCreated).toBe('2025-01-15T00:00:00Z');
+      expect(result.dataset_metadata?.dateModified).toBe('2025-01-16T00:00:00Z');
     });
 
-    it('returns undefined dataset_metadata when no custom values are found', () => {
+    it('returns undefined dataset_metadata when no metadata fields are present', () => {
       const jsonLdCheckpoint: JsonLdCheckpoint = {
         '@context': { '@vocab': 'http://schema.org/' },
         '@type': 'Dataset',
-        name: 'Karenina LLM Benchmark Checkpoint',
-        description: 'Checkpoint containing 1 benchmark questions with answer templates and rubric evaluations',
-        version: '3.0.0-jsonld',
-        creator: 'Karenina Benchmarking System',
-        dateCreated: '2025-01-15T00:00:00Z',
-        dateModified: '2025-01-16T00:00:00Z',
+        // No name, description, version, creator, or date fields
         hasPart: [
           {
             '@type': 'DataFeedItem',
@@ -220,7 +226,7 @@ describe('checkpoint-converter dataset metadata', () => {
       expect(result.dataset_metadata).toBeUndefined();
     });
 
-    it('handles mixed custom and default values correctly', () => {
+    it('preserves all metadata values regardless of content', () => {
       const jsonLdCheckpoint: JsonLdCheckpoint = {
         '@context': { '@vocab': 'http://schema.org/' },
         '@type': 'Dataset',
@@ -255,12 +261,16 @@ describe('checkpoint-converter dataset metadata', () => {
 
       expect(result.dataset_metadata).toBeDefined();
       expect(result.dataset_metadata?.name).toBe('Custom Name'); // custom value preserved
-      expect(result.dataset_metadata?.description).toBeUndefined(); // default value ignored
-      expect(result.dataset_metadata?.version).toBeUndefined(); // default value ignored
+      expect(result.dataset_metadata?.description).toBe(
+        'Checkpoint containing 1 benchmark questions with answer templates and rubric evaluations'
+      ); // all values preserved
+      expect(result.dataset_metadata?.version).toBe('3.0.0-jsonld'); // all values preserved
       expect(result.dataset_metadata?.creator).toEqual({
         '@type': 'Person',
         name: 'Custom Creator',
       }); // custom value preserved as Person
+      expect(result.dataset_metadata?.dateCreated).toBe('2025-01-15T00:00:00Z');
+      expect(result.dataset_metadata?.dateModified).toBe('2025-01-16T00:00:00Z');
     });
   });
 

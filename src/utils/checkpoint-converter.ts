@@ -472,16 +472,15 @@ export function jsonLdToV2(
     });
 
     // Extract dataset metadata from the JSON-LD dataset properties
+    // Always preserve the metadata that was explicitly saved in the checkpoint
     const datasetMetadata: DatasetMetadata = {
-      name: jsonLdCheckpoint.name !== 'Karenina LLM Benchmark Checkpoint' ? jsonLdCheckpoint.name : undefined,
-      description: jsonLdCheckpoint.description?.startsWith('Checkpoint containing')
-        ? undefined
-        : jsonLdCheckpoint.description,
-      version: jsonLdCheckpoint.version !== '3.0.0-jsonld' ? jsonLdCheckpoint.version : undefined,
+      name: jsonLdCheckpoint.name || undefined,
+      description: jsonLdCheckpoint.description || undefined,
+      version: jsonLdCheckpoint.version || undefined,
       dateCreated: jsonLdCheckpoint.dateCreated,
       dateModified: jsonLdCheckpoint.dateModified,
       creator:
-        typeof jsonLdCheckpoint.creator === 'string' && jsonLdCheckpoint.creator !== 'Karenina Benchmarking System'
+        typeof jsonLdCheckpoint.creator === 'string'
           ? ({
               '@type': 'Person',
               name: jsonLdCheckpoint.creator,
@@ -489,11 +488,13 @@ export function jsonLdToV2(
           : undefined,
     };
 
-    // Only include dataset metadata if it has non-default values
+    // Include dataset metadata if any fields are present
     const hasCustomMetadata =
       datasetMetadata.name ||
       datasetMetadata.description ||
-      (datasetMetadata.version && datasetMetadata.version !== '3.0.0-jsonld') ||
+      datasetMetadata.version ||
+      datasetMetadata.dateCreated ||
+      datasetMetadata.dateModified ||
       datasetMetadata.creator;
 
     const result: UnifiedCheckpoint = {
