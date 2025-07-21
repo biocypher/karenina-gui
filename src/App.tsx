@@ -45,6 +45,7 @@ function App() {
     currentTemplate,
     loadQuestionData,
     loadCheckpoint,
+    setCheckpoint,
     saveCurrentTemplate,
     toggleFinished,
     navigateToQuestion,
@@ -233,17 +234,19 @@ function App() {
 
   const handleSaveMetadata = (questionId: string, updatedItem: CheckpointItem) => {
     // Update the checkpoint with the new metadata
-    // This will update the store with the modified checkpoint item
+    // Use direct checkpoint update to preserve all metadata
     const updatedCheckpoint = {
       ...checkpoint,
       [questionId]: updatedItem,
     };
 
-    // Use the store's method to update the checkpoint
-    loadCheckpoint({
-      version: '2.0',
-      global_rubric: null,
-      checkpoint: updatedCheckpoint,
+    // Use direct checkpoint setter to avoid full data reload
+    setCheckpoint(updatedCheckpoint);
+
+    console.log('💾 Saved metadata for question:', questionId, {
+      custom_metadata: updatedItem.custom_metadata,
+      finished: updatedItem.finished,
+      last_modified: updatedItem.last_modified,
     });
   };
 
