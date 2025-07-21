@@ -13,10 +13,11 @@ import {
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
 import { useConfigStore } from './stores/useConfigStore';
-import { QuestionData, UnifiedCheckpoint, VerificationResult } from './types';
+import { QuestionData, UnifiedCheckpoint, VerificationResult, CheckpointItem } from './types';
 import { CodeEditor } from './components/CodeEditor';
 import { ExpandedEditor } from './components/ExpandedEditor';
 import { StatusBadge } from './components/StatusBadge';
+import { MetadataEditor } from './components/MetadataEditor';
 import { FileManager } from './components/FileManager';
 import { ChatInterface } from './components/ChatInterface';
 import { QuestionExtractor } from './components/QuestionExtractor';
@@ -63,6 +64,7 @@ function App() {
   const [benchmarkResults, setBenchmarkResults] = useState<Record<string, VerificationResult>>({});
   const [isExpandedMode, setIsExpandedMode] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
@@ -219,6 +221,30 @@ function App() {
     if (currentIndex < questionIds.length - 1) {
       handleNavigateToQuestion(questionIds[currentIndex + 1]);
     }
+  };
+
+  const handleOpenMetadataEditor = () => {
+    setIsMetadataEditorOpen(true);
+  };
+
+  const handleCloseMetadataEditor = () => {
+    setIsMetadataEditorOpen(false);
+  };
+
+  const handleSaveMetadata = (questionId: string, updatedItem: CheckpointItem) => {
+    // Update the checkpoint with the new metadata
+    // This will update the store with the modified checkpoint item
+    const updatedCheckpoint = {
+      ...checkpoint,
+      [questionId]: updatedItem,
+    };
+
+    // Use the store's method to update the checkpoint
+    loadCheckpoint({
+      version: '2.0',
+      global_rubric: null,
+      checkpoint: updatedCheckpoint,
+    });
   };
 
   // Use store getters for computed values
@@ -493,6 +519,7 @@ function App() {
                         finished={checkpointItem?.finished || false}
                         modified={isModified || false}
                         onToggleFinished={handleToggleFinished}
+                        onEditMetadata={handleOpenMetadataEditor}
                       />
                     </div>
 
@@ -620,6 +647,17 @@ function App() {
               </div>
             )}
           </>
+        )}
+
+        {/* Metadata Editor Modal */}
+        {selectedQuestion && checkpointItem && (
+          <MetadataEditor
+            isOpen={isMetadataEditorOpen}
+            onClose={handleCloseMetadataEditor}
+            checkpointItem={checkpointItem}
+            questionId={selectedQuestionId}
+            onSave={handleSaveMetadata}
+          />
         )}
 
         {/* Benchmark Tab */}
