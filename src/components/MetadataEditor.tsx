@@ -13,7 +13,7 @@ interface MetadataEditorProps {
 interface MetadataEditForm {
   finished: boolean;
   customProperties?: { [key: string]: string };
-  author?: SchemaOrgPerson;
+  author?: Partial<SchemaOrgPerson>;
   sources?: SchemaOrgCreativeWork[];
 }
 
@@ -143,7 +143,7 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
           ? formData.customProperties
           : undefined,
       // Store schema.org enhanced metadata
-      author: formData.author && formData.author.name ? formData.author : undefined,
+      author: formData.author && formData.author.name ? (formData.author as SchemaOrgPerson) : undefined,
       sources: formData.sources && formData.sources.length > 0 ? formData.sources : undefined,
     };
 
