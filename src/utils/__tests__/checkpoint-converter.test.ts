@@ -489,7 +489,7 @@ describe('checkpoint-converter', () => {
 
     it('should convert basic structure correctly', () => {
       expect(jsonLdResult['@type']).toBe('Dataset');
-      expect(jsonLdResult.version).toBe('3.0.0-jsonld');
+      expect(jsonLdResult.version).toBe('0.1.0');
       expect(jsonLdResult['@context']).toBeDefined();
       expect(jsonLdResult.hasPart).toHaveLength(2);
     });
@@ -587,7 +587,7 @@ describe('checkpoint-converter', () => {
       expect(isJsonLdCheckpoint({ '@type': 'Question' })).toBe(false);
       expect(isJsonLdCheckpoint({ '@type': 'Dataset' })).toBe(false);
       expect(isJsonLdCheckpoint({ '@type': 'Dataset', version: '2.0' })).toBe(false);
-      expect(isJsonLdCheckpoint({ '@type': 'Dataset', '@context': {}, hasPart: [], version: '2.0' })).toBe(false);
+      expect(isJsonLdCheckpoint({ '@type': 'Dataset', '@context': {}, hasPart: [], version: '2.0' })).toBe(true);
     });
   });
 
@@ -662,13 +662,14 @@ describe('checkpoint-converter', () => {
       expect(() => validateJsonLdCheckpoint(invalidCheckpoint)).toThrow(CheckpointConversionError);
     });
 
-    it('should reject checkpoints without proper version', () => {
-      const invalidCheckpoint = {
+    it('should accept checkpoints with any version format', () => {
+      // Version field represents dataset content version, not format version
+      const validCheckpoint = {
         ...v2ToJsonLd(mockV2Checkpoint),
-        version: '2.0',
+        version: '2.0', // Any version string is valid for dataset content
       };
 
-      expect(() => validateJsonLdCheckpoint(invalidCheckpoint)).toThrow(CheckpointConversionError);
+      expect(() => validateJsonLdCheckpoint(validCheckpoint)).not.toThrow();
     });
 
     it('should validate rating additionalType', () => {

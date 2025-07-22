@@ -310,22 +310,6 @@ export function v2ToJsonLd(
 
     // Global rubric traits will be stored as Rating objects at Dataset level (removed JSON string version)
 
-    // Add conversion metadata if requested
-    if (options.includeMetadata) {
-      const metadata: CheckpointConversionMetadata = {
-        originalVersion: checkpoint.version,
-        convertedAt: timestamp,
-        totalQuestions: questionIds.length,
-        totalRatings: dataFeedItems.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0),
-      };
-
-      additionalProperties.push({
-        '@type': 'PropertyValue',
-        name: 'conversion_metadata',
-        value: JSON.stringify(metadata),
-      });
-    }
-
     // Use dataset metadata if available, otherwise fallback to defaults
     const datasetMeta = checkpoint.dataset_metadata;
     const defaultName = 'Karenina LLM Benchmark Checkpoint';
@@ -358,6 +342,25 @@ export function v2ToJsonLd(
       globalRatings = checkpoint.global_rubric.traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
     }
 
+    // Add conversion metadata if requested (after globalRatings is defined)
+    if (options.includeMetadata) {
+      const globalRatingCount = globalRatings ? globalRatings.length : 0;
+      const questionRatingCount = dataFeedItems.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0);
+
+      const metadata: CheckpointConversionMetadata = {
+        originalVersion: checkpoint.version,
+        convertedAt: timestamp,
+        totalQuestions: questionIds.length,
+        totalRatings: globalRatingCount + questionRatingCount,
+      };
+
+      additionalProperties.push({
+        '@type': 'PropertyValue',
+        name: 'conversion_metadata',
+        value: JSON.stringify(metadata),
+      });
+    }
+
     // Create the final JSON-LD document
     const jsonLdCheckpoint: JsonLdCheckpoint = {
       '@context': schemaOrgContext['@context'],
@@ -365,7 +368,7 @@ export function v2ToJsonLd(
       '@id': options.preserveIds ? `urn:uuid:karenina-checkpoint-${Date.now()}` : undefined,
       name: datasetMeta?.name || defaultName,
       description: datasetMeta?.description || defaultDescription,
-      version: datasetMeta?.version || '3.0.0-jsonld',
+      version: datasetMeta?.version || '0.1.0',
       creator: datasetMeta?.creator?.name || defaultCreator,
       dateCreated: dateCreated,
       dateModified: dateModified,
@@ -534,9 +537,8 @@ export function validateJsonLdCheckpoint(checkpoint: JsonLdCheckpoint): void {
     errors.push('Root object must be of type "Dataset"');
   }
 
-  if (!checkpoint.version || !checkpoint.version.includes('jsonld')) {
-    errors.push('Version must include "jsonld" identifier');
-  }
+  // Version field represents dataset content version, not checkpoint format version
+  // No specific format requirements - user can use any versioning scheme
 
   if (!checkpoint.hasPart || !Array.isArray(checkpoint.hasPart)) {
     errors.push('hasPart must be an array of DataFeedItem objects');
@@ -589,16 +591,19 @@ export function validateJsonLdCheckpoint(checkpoint: JsonLdCheckpoint): void {
 
 export function isJsonLdCheckpoint(data: unknown): data is JsonLdCheckpoint {
   return !!(
-    typeof data === 'object' &&
-    data !== null &&
-    '@type' in data &&
-    data['@type'] === 'Dataset' &&
-    '@context' in data &&
-    'hasPart' in data &&
-    Array.isArray(data.hasPart) &&
-    'version' in data &&
-    typeof data.version === 'string' &&
-    data.version.includes('jsonld')
+    (
+      typeof data === 'object' &&
+      data !== null &&
+      '@type' in data &&
+      data['@type'] === 'Dataset' &&
+      '@context' in data &&
+      'hasPart' in data &&
+      Array.isArray(data.hasPart) &&
+      'version' in data &&
+      typeof data.version === 'string'
+    )
+    // Note: version field is dataset content version, not format version
+    // Format detection relies on @context and @type fields
   );
 }
 

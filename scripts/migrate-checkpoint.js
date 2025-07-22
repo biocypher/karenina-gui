@@ -240,18 +240,6 @@ function v2ToJsonLd(checkpoint) {
 
   // Global rubric traits will be stored as Rating objects at Dataset level (removed JSON string version)
 
-  // Add conversion metadata
-  additionalProperties.push({
-    '@type': 'PropertyValue',
-    name: 'conversion_metadata',
-    value: JSON.stringify({
-      originalVersion: checkpoint.version,
-      convertedAt: timestamp,
-      totalQuestions: questionIds.length,
-      totalRatings: dataFeedItems.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0),
-    }),
-  });
-
   // Handle timestamp logic - for migrations from legacy files, we need to handle existing dataset metadata if present
   const datasetMeta = checkpoint.dataset_metadata;
   let dateCreated, dateModified;
@@ -280,6 +268,25 @@ function v2ToJsonLd(checkpoint) {
     );
   }
 
+  // Add conversion metadata
+  // Count all ratings: global ratings + question-level ratings
+  const globalRatingCount = globalRatings ? globalRatings.length : 0;
+  const questionRatingCount = dataFeedItems.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0);
+  const totalRatings = globalRatingCount + questionRatingCount;
+
+  additionalProperties.push({
+    '@type': 'PropertyValue',
+    name: 'conversion_metadata',
+    value: JSON.stringify({
+      originalVersion: checkpoint.version,
+      convertedAt: timestamp,
+      totalQuestions: questionIds.length,
+      totalRatings: totalRatings,
+      globalRatings: globalRatingCount,
+      questionRatings: questionRatingCount,
+    }),
+  });
+
   return {
     '@context': schemaOrgContext,
     '@type': 'Dataset',
@@ -288,7 +295,7 @@ function v2ToJsonLd(checkpoint) {
     description:
       datasetMeta?.description ||
       `Migrated checkpoint containing ${questionIds.length} benchmark questions with answer templates and rubric evaluations`,
-    version: datasetMeta?.version || '3.0.0-jsonld',
+    version: datasetMeta?.version || '0.1.0',
     creator: datasetMeta?.creator?.name || 'Karenina Benchmarking System',
     dateCreated: dateCreated,
     dateModified: dateModified,
@@ -356,7 +363,9 @@ async function saveJsonLd(jsonLdData, outputPath) {
 function generateReport(v2Data, jsonLdData) {
   const originalQuestions = Object.keys(v2Data.checkpoint).length;
   const convertedQuestions = jsonLdData.hasPart.length;
-  const totalRatings = jsonLdData.hasPart.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0);
+  const globalRatings = jsonLdData.rating ? jsonLdData.rating.length : 0;
+  const questionRatings = jsonLdData.hasPart.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0);
+  const totalRatings = globalRatings + questionRatings;
 
   const finishedQuestions = Object.values(v2Data.checkpoint).filter((item) => item.finished).length;
 
@@ -374,6 +383,8 @@ function generateReport(v2Data, jsonLdData) {
       convertedQuestions,
       finishedQuestions,
       totalRatings,
+      globalRatings,
+      questionRatings,
       hasGlobalRubric,
       questionSpecificRubrics,
     },
@@ -411,7 +422,9 @@ async function migrateCheckpoint(inputPath, outputPath) {
     console.log(`✅ Migration: ${report.migration.originalFormat} → ${report.migration.targetFormat}`);
     console.log(`📊 Questions: ${report.data.originalQuestions} → ${report.data.convertedQuestions}`);
     console.log(`🏁 Finished: ${report.data.finishedQuestions}/${report.data.originalQuestions}`);
-    console.log(`⭐ Ratings: ${report.data.totalRatings} total rating objects`);
+    console.log(
+      `⭐ Ratings: ${report.data.totalRatings} total (${report.data.globalRatings} global + ${report.data.questionRatings} question-specific)`
+    );
     console.log(`🌐 Global Rubric: ${report.data.hasGlobalRubric ? '✅' : '❌'}`);
     console.log(`📝 Question Rubrics: ${report.data.questionSpecificRubrics}`);
     console.log(`🔍 Data Integrity: ${report.validation.dataIntegrity ? '✅' : '❌'}`);

@@ -25,7 +25,7 @@ describe('checkpoint-converter dataset metadata', () => {
       expect(result.name).toBe('Karenina LLM Benchmark Checkpoint');
       expect(result.description).toContain('Checkpoint containing 1 benchmark questions');
       expect(result.creator).toBe('Karenina Benchmarking System');
-      expect(result.version).toBe('3.0.0-jsonld');
+      expect(result.version).toBe('0.1.0');
       expect(result.dateCreated).toBeDefined();
       expect(result.dateModified).toBeDefined();
     });
@@ -74,7 +74,7 @@ describe('checkpoint-converter dataset metadata', () => {
 
       expect(result.name).toBe('Partial Dataset');
       expect(result.description).toContain('Checkpoint containing 1 benchmark questions'); // fallback
-      expect(result.version).toBe('3.0.0-jsonld'); // fallback
+      expect(result.version).toBe('0.1.0'); // fallback
       expect(result.creator).toBe('Karenina Benchmarking System'); // fallback
       expect(result.dateCreated).toBeDefined(); // fallback to timestamp
       expect(result.dateModified).toBeDefined(); // fallback to timestamp

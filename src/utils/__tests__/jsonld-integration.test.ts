@@ -54,7 +54,7 @@ describe('JSON-LD Integration Tests', () => {
 
       // Verify JSON-LD structure
       expect(jsonLdCheckpoint['@type']).toBe('Dataset');
-      expect(jsonLdCheckpoint.version).toBe('3.0.0-jsonld');
+      expect(jsonLdCheckpoint.version).toBe('0.1.0');
       expect(jsonLdCheckpoint.hasPart).toHaveLength(1);
 
       // Convert back to v2
