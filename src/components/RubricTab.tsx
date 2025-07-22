@@ -20,7 +20,7 @@ export const RubricTab: React.FC<RubricTabProps> = ({ questions }) => {
                        dark:from-slate-200 dark:via-blue-300 dark:to-indigo-300 
                        bg-clip-text text-transparent mb-4"
         >
-          Rubric Manager
+          Global Rubric Manager
         </h2>
         <p className="text-slate-600 dark:text-slate-300 text-lg max-w-3xl mx-auto">
           Create and manage global evaluation rubrics for your benchmarking. Generate traits using AI assistance or

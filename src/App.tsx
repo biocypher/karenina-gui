@@ -451,7 +451,7 @@ function App() {
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
-              3. Rubric Manager
+              3. Global Rubric Manager
             </button>
             <button
               onClick={() => setActiveTab('curator')}
