@@ -156,20 +156,20 @@ describe('useConfigStore', () => {
   it('handles update environment variable error', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: false,
-      json: () => Promise.resolve({ detail: 'Invalid API key format' }),
+      json: () => Promise.resolve({ detail: 'Network error occurred' }),
     });
 
     const { result } = renderHook(() => useConfigStore());
 
     await act(async () => {
       try {
-        await result.current.updateEnvVariable('INVALID_KEY', 'invalid_value');
+        await result.current.updateEnvVariable('TEST_KEY', 'test_value');
       } catch {
         // Expected to throw
       }
     });
 
-    expect(result.current.error).toBe('Invalid API key format');
+    expect(result.current.error).toBe('Network error occurred');
     expect(result.current.isSaving).toBe(false);
   });
 
