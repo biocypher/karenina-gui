@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, ChevronLeft, ChevronRight, Save, FileText, Maximize2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Save, FileText, Maximize2, Filter } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 import type { QuestionData } from '../types';
 
@@ -26,6 +26,11 @@ interface ExpandedEditorProps {
   onSave: () => void;
   onToggleFinished: () => void;
   isFinished: boolean;
+
+  // Filter support
+  questionFilter?: 'all' | 'finished' | 'unfinished';
+  onFilterChange?: (filter: 'all' | 'finished' | 'unfinished') => void;
+  hasCheckpointData?: boolean;
 }
 
 export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
@@ -44,6 +49,9 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
   onSave,
   onToggleFinished,
   isFinished,
+  questionFilter = 'all',
+  onFilterChange,
+  hasCheckpointData = false,
 }) => {
   const [showFullQuestion, setShowFullQuestion] = useState(false);
   const [showFullAnswer, setShowFullAnswer] = useState(false);
@@ -135,6 +143,22 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Filter Dropdown - only show if we have checkpoint data */}
+            {hasCheckpointData && onFilterChange && (
+              <div className="relative">
+                <select
+                  value={questionFilter}
+                  onChange={(e) => onFilterChange(e.target.value as 'all' | 'finished' | 'unfinished')}
+                  className="pl-8 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm"
+                >
+                  <option value="all">Show All</option>
+                  <option value="finished">Finished Only</option>
+                  <option value="unfinished">Unfinished Only</option>
+                </select>
+                <Filter className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-3 h-3 pointer-events-none" />
+              </div>
+            )}
           </div>
 
           {/* Center: Question Indicator */}

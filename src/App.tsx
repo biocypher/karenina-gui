@@ -9,14 +9,17 @@ import {
   ChevronRight,
   Maximize2,
   Settings,
+  Filter,
 } from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
 import { useConfigStore } from './stores/useConfigStore';
-import { QuestionData, UnifiedCheckpoint, VerificationResult } from './types';
+import { useDatasetStore } from './stores/useDatasetStore';
+import { QuestionData, UnifiedCheckpoint, VerificationResult, CheckpointItem } from './types';
 import { CodeEditor } from './components/CodeEditor';
 import { ExpandedEditor } from './components/ExpandedEditor';
 import { StatusBadge } from './components/StatusBadge';
+import { MetadataEditor } from './components/MetadataEditor';
 import { FileManager } from './components/FileManager';
 import { ChatInterface } from './components/ChatInterface';
 import { QuestionExtractor } from './components/QuestionExtractor';
@@ -36,6 +39,9 @@ function App() {
   // Configuration store
   const { loadConfiguration } = useConfigStore();
 
+  // Dataset store
+  const { metadata: datasetMetadata } = useDatasetStore();
+
   // Question store state
   const {
     questionData,
@@ -44,12 +50,12 @@ function App() {
     currentTemplate,
     loadQuestionData,
     loadCheckpoint,
+    setCheckpoint,
     saveCurrentTemplate,
     toggleFinished,
     navigateToQuestion,
     resetQuestionState,
     getQuestionIds,
-    getCurrentIndex,
     getSelectedQuestion,
     getCheckpointItem,
     getIsModified,
@@ -63,6 +69,8 @@ function App() {
   const [benchmarkResults, setBenchmarkResults] = useState<Record<string, VerificationResult>>({});
   const [isExpandedMode, setIsExpandedMode] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
+  const [questionFilter, setQuestionFilter] = useState<'all' | 'finished' | 'unfinished'>('all');
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
@@ -205,20 +213,127 @@ function App() {
     toggleFinished();
   };
 
-  // Navigation functions using store getters
-  const questionIds = getQuestionIds();
-  const currentIndex = getCurrentIndex();
+  // Navigation functions using store getters with filtering
+  const allQuestionIds = getQuestionIds();
+  const questionIds = allQuestionIds.filter((id) => {
+    if (questionFilter === 'all') return true;
+
+    const checkpointItem = checkpoint[id];
+    if (!checkpointItem) return questionFilter === 'unfinished'; // If no checkpoint, consider unfinished
+
+    if (questionFilter === 'finished') return checkpointItem.finished;
+    if (questionFilter === 'unfinished') return !checkpointItem.finished;
+
+    return true;
+  });
+
+  // Debug logging to understand filter state
+  console.log('🔍 Filter Debug:', {
+    questionFilter,
+    allQuestionIds: allQuestionIds.length,
+    filteredQuestionIds: questionIds.length,
+    selectedQuestionId,
+    selectedInFiltered: questionIds.includes(selectedQuestionId),
+  });
+
+  // Calculate current index based on filtered questions, not all questions
+  const currentIndex = questionIds.indexOf(selectedQuestionId);
+
+  // Auto-navigate when filter changes or when question status changes: select first available question in filtered list
+  const prevFilterRef = useRef(questionFilter);
+  const prevCheckpointRef = useRef(checkpoint);
+  useEffect(() => {
+    // Check if filter changed
+    const filterChanged = prevFilterRef.current !== questionFilter;
+    prevFilterRef.current = questionFilter;
+
+    // Check if the currently selected question's finished status changed
+    const currentCheckpointItem = checkpoint[selectedQuestionId];
+    const prevCheckpointItem = prevCheckpointRef.current[selectedQuestionId];
+    const selectedQuestionStatusChanged =
+      currentCheckpointItem && prevCheckpointItem && currentCheckpointItem.finished !== prevCheckpointItem.finished;
+    prevCheckpointRef.current = checkpoint;
+
+    if (filterChanged || selectedQuestionStatusChanged) {
+      console.log('🔄 Filter update triggered by:', filterChanged ? 'filter change' : 'question status change');
+      // Recompute filtered questions inside the effect to avoid dependency issues
+      const currentFilteredIds = getQuestionIds().filter((id) => {
+        if (questionFilter === 'all') return true;
+
+        const checkpointItem = checkpoint[id];
+        if (!checkpointItem) return questionFilter === 'unfinished';
+
+        if (questionFilter === 'finished') return checkpointItem.finished;
+        if (questionFilter === 'unfinished') return !checkpointItem.finished;
+
+        return true;
+      });
+
+      console.log('🔄 Filter changed to:', questionFilter, 'Available questions:', currentFilteredIds.length);
+
+      // Handle navigation based on what triggered the update
+      if (selectedQuestionStatusChanged && questionFilter !== 'all') {
+        // If current question status changed and no longer matches filter, navigate away
+        const currentQuestionStillMatches = currentFilteredIds.includes(selectedQuestionId);
+        if (!currentQuestionStillMatches) {
+          console.log('🔄 Current question no longer matches filter after status change');
+          if (currentFilteredIds.length > 0) {
+            console.log('🎯 Auto-navigating to first matching question:', currentFilteredIds[0]);
+            navigateToQuestion(currentFilteredIds[0]);
+          } else {
+            console.log('🚫 No questions match filter after status change, clearing selection');
+            navigateToQuestion('');
+          }
+        }
+      } else if (filterChanged) {
+        // Always update selection when filter changes
+        if (currentFilteredIds.length > 0) {
+          console.log('🎯 Auto-navigating to first filtered question:', currentFilteredIds[0]);
+          navigateToQuestion(currentFilteredIds[0]);
+        } else {
+          console.log('🚫 No questions match filter, clearing selection');
+          navigateToQuestion(''); // Clear selection when no questions match filter
+        }
+      }
+    }
+  }, [questionFilter, navigateToQuestion, getQuestionIds, checkpoint, selectedQuestionId]); // Include all dependencies needed for filtering
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      handleNavigateToQuestion(questionIds[currentIndex - 1]);
+      navigateToQuestion(questionIds[currentIndex - 1]);
     }
   };
 
   const handleNext = () => {
     if (currentIndex < questionIds.length - 1) {
-      handleNavigateToQuestion(questionIds[currentIndex + 1]);
+      navigateToQuestion(questionIds[currentIndex + 1]);
     }
+  };
+
+  const handleOpenMetadataEditor = () => {
+    setIsMetadataEditorOpen(true);
+  };
+
+  const handleCloseMetadataEditor = () => {
+    setIsMetadataEditorOpen(false);
+  };
+
+  const handleSaveMetadata = (questionId: string, updatedItem: CheckpointItem) => {
+    // Update the checkpoint with the new metadata
+    // Use direct checkpoint update to preserve all metadata
+    const updatedCheckpoint = {
+      ...checkpoint,
+      [questionId]: updatedItem,
+    };
+
+    // Use direct checkpoint setter to avoid full data reload
+    setCheckpoint(updatedCheckpoint);
+
+    console.log('💾 Saved metadata for question:', questionId, {
+      custom_metadata: updatedItem.custom_metadata,
+      finished: updatedItem.finished,
+      last_modified: updatedItem.last_modified,
+    });
   };
 
   // Use store getters for computed values
@@ -379,47 +494,92 @@ function App() {
         {/* Template Curator Tab */}
         {activeTab === 'curator' && (
           <>
+            {/* Dataset Info Display */}
+            {datasetMetadata.name && (
+              <div className="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-xl border border-blue-200 dark:border-blue-700 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-1">
+                      📊 {datasetMetadata.name}
+                    </h4>
+                    {datasetMetadata.description && (
+                      <p className="text-sm text-blue-700 dark:text-blue-400">{datasetMetadata.description}</p>
+                    )}
+                    <div className="flex items-center gap-4 mt-2 text-xs text-blue-600 dark:text-blue-400">
+                      {datasetMetadata.version && <span>Version: {datasetMetadata.version}</span>}
+                      {datasetMetadata.creator && <span>Creator: {datasetMetadata.creator.name}</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* File Management Section */}
             <div className="mb-8">
               <FileManager
-                onLoadQuestionData={handleLoadQuestionData}
                 onLoadCheckpoint={handleLoadCheckpoint}
                 onResetAllData={handleResetAllData}
                 checkpoint={checkpoint}
-                questionData={questionData}
               />
             </div>
 
             {/* Control Panel */}
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6 mb-8">
               <div className="grid grid-cols-1 gap-6">
-                {/* Question Dropdown */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                    <Database className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
-                    Select Question
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedQuestionId}
-                      onChange={(e) => handleQuestionChange(e.target.value)}
-                      className="block w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 font-medium shadow-sm"
-                      disabled={questionIds.length === 0}
-                    >
-                      <option value="">
-                        {questionIds.length === 0
-                          ? 'No questions available - upload data first'
-                          : 'Choose a question...'}
-                      </option>
-                      {questionIds.map((id, index) => (
-                        <option key={id} value={id}>
-                          {index + 1}. {questionData[id].question.substring(0, 60)}
-                          {questionData[id].question.length > 60 ? '...' : ''}
+                {/* Question Selection Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Question Dropdown */}
+                  <div className="lg:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                      <Database className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
+                      Select Question
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={selectedQuestionId}
+                        onChange={(e) => handleQuestionChange(e.target.value)}
+                        className="block w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 font-medium shadow-sm"
+                        disabled={questionIds.length === 0}
+                      >
+                        <option value="">
+                          {questionIds.length === 0
+                            ? allQuestionIds.length === 0
+                              ? 'No questions available - upload data first'
+                              : 'No questions match the current filter'
+                            : 'Choose a question...'}
                         </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                        {questionIds.map((id, index) => (
+                          <option key={id} value={id}>
+                            {index + 1}. {questionData[id].question.substring(0, 60)}
+                            {questionData[id].question.length > 60 ? '...' : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                    </div>
                   </div>
+
+                  {/* Filter Dropdown */}
+                  {Object.keys(checkpoint).length > 0 && (
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                        <Filter className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
+                        Filter
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={questionFilter}
+                          onChange={(e) => setQuestionFilter(e.target.value as 'all' | 'finished' | 'unfinished')}
+                          className="block w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 font-medium shadow-sm"
+                        >
+                          <option value="all">Show All</option>
+                          <option value="finished">Finished Only</option>
+                          <option value="unfinished">Unfinished Only</option>
+                        </select>
+                        <Filter className="absolute right-3 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Navigation Buttons */}
@@ -493,6 +653,7 @@ function App() {
                         finished={checkpointItem?.finished || false}
                         modified={isModified || false}
                         onToggleFinished={handleToggleFinished}
+                        onEditMetadata={handleOpenMetadataEditor}
                       />
                     </div>
 
@@ -572,16 +733,22 @@ function App() {
               <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-12 text-center">
                 <FileText className="w-16 h-16 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  {questionIds.length === 0 ? 'No Questions with Generated Templates' : 'No Question Selected'}
+                  {allQuestionIds.length === 0
+                    ? 'No Questions with Generated Templates'
+                    : questionIds.length === 0
+                      ? `No ${questionFilter === 'finished' ? 'Finished' : questionFilter === 'unfinished' ? 'Unfinished' : ''} Questions Available`
+                      : 'No Question Selected'}
                 </h3>
                 <p className="text-slate-600 dark:text-slate-300 font-medium mb-4">
-                  {questionIds.length === 0
+                  {allQuestionIds.length === 0
                     ? Object.keys(checkpoint).length > 0
                       ? 'You have loaded a checkpoint, but no question data is available. To restore your previous session, please upload the corresponding Question Data JSON file using the File Management section above.'
                       : 'The Template Curator works with questions that have generated answer templates. To get started: 1) Extract questions using the Question Extractor, 2) Generate templates using the Template Generator, 3) Use "Add to Curation" to load them here.'
-                    : 'Please select a question from the dropdown above to begin curating answer templates.'}
+                    : questionIds.length === 0
+                      ? `You have ${allQuestionIds.length} question${allQuestionIds.length === 1 ? '' : 's'} available, but none match the current "${questionFilter === 'finished' ? 'Finished Only' : questionFilter === 'unfinished' ? 'Unfinished Only' : 'Show All'}" filter. Try changing the filter to see more questions.`
+                      : 'Please select a question from the dropdown above to begin curating answer templates.'}
                 </p>
-                {questionIds.length === 0 &&
+                {allQuestionIds.length === 0 &&
                   Object.keys(checkpoint).length === 0 &&
                   Object.keys(extractedQuestions).length === 0 && (
                     <button
@@ -591,7 +758,7 @@ function App() {
                       1. Extract Questions
                     </button>
                   )}
-                {questionIds.length === 0 &&
+                {allQuestionIds.length === 0 &&
                   Object.keys(checkpoint).length === 0 &&
                   Object.keys(extractedQuestions).length > 0 && (
                     <div className="space-y-4">
@@ -609,7 +776,7 @@ function App() {
                       </button>
                     </div>
                   )}
-                {questionIds.length === 0 && Object.keys(checkpoint).length > 0 && (
+                {allQuestionIds.length === 0 && Object.keys(checkpoint).length > 0 && (
                   <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl">
                     <p className="text-amber-800 dark:text-amber-300 text-sm font-medium">
                       💡 <strong>Checkpoint Loaded:</strong> You have {Object.keys(checkpoint).length} items in your
@@ -620,6 +787,17 @@ function App() {
               </div>
             )}
           </>
+        )}
+
+        {/* Metadata Editor Modal */}
+        {selectedQuestion && checkpointItem && (
+          <MetadataEditor
+            isOpen={isMetadataEditorOpen}
+            onClose={handleCloseMetadataEditor}
+            checkpointItem={checkpointItem}
+            questionId={selectedQuestionId}
+            onSave={handleSaveMetadata}
+          />
         )}
 
         {/* Benchmark Tab */}
@@ -657,6 +835,9 @@ function App() {
           onSave={handleSave}
           onToggleFinished={handleToggleFinished}
           isFinished={checkpointItem?.finished || false}
+          questionFilter={questionFilter}
+          onFilterChange={setQuestionFilter}
+          hasCheckpointData={Object.keys(checkpoint).length > 0}
         />
       )}
 

@@ -8,6 +8,34 @@ export interface QuestionData {
   [key: string]: Question;
 }
 
+// Schema.org compliant types for enhanced metadata
+export interface SchemaOrgPerson {
+  '@type': 'Person';
+  name: string;
+  email?: string;
+  affiliation?: string;
+  url?: string;
+}
+
+export interface SchemaOrgOrganization {
+  '@type': 'Organization';
+  name: string;
+  description?: string;
+  url?: string;
+  email?: string;
+}
+
+export interface SchemaOrgCreativeWork {
+  '@type': 'CreativeWork' | 'ScholarlyArticle' | 'WebPage';
+  name: string;
+  author?: SchemaOrgPerson;
+  url?: string;
+  datePublished?: string;
+  publisher?: string;
+  identifier?: string; // DOI, ISBN, etc.
+  description?: string;
+}
+
 export interface CheckpointItem {
   // Original question data
   question: string;
@@ -21,17 +49,134 @@ export interface CheckpointItem {
 
   // Question-specific rubric
   question_rubric?: Rubric;
+
+  // Custom metadata properties
+  custom_metadata?: { [key: string]: string };
+
+  // Schema.org enhanced metadata
+  author?: SchemaOrgPerson;
+  sources?: SchemaOrgCreativeWork[];
 }
 
 export interface Checkpoint {
   [key: string]: CheckpointItem;
 }
 
-// Unified checkpoint structure that includes global rubric
+// Dataset-level metadata interface
+export interface DatasetMetadata {
+  // Basic dataset information
+  name?: string;
+  description?: string;
+  version?: string;
+  license?: string;
+  keywords?: string[];
+
+  // Schema.org compliance
+  creator?: SchemaOrgPerson | SchemaOrgOrganization;
+  publisher?: SchemaOrgOrganization;
+  datePublished?: string;
+  dateCreated?: string;
+  dateModified?: string;
+
+  // Custom properties
+  custom_properties?: { [key: string]: string };
+}
+
+// Unified checkpoint structure that includes global rubric and dataset metadata
 export interface UnifiedCheckpoint {
   version: '2.0';
   global_rubric: Rubric | null;
+  dataset_metadata?: DatasetMetadata;
   checkpoint: Checkpoint;
+}
+
+// JSON-LD Checkpoint Types (schema.org vocabulary)
+export interface JsonLdContext {
+  '@context': {
+    '@version': number;
+    '@vocab': string;
+    [key: string]: unknown;
+  };
+}
+
+export interface SchemaOrgRating {
+  '@type': 'Rating';
+  '@id'?: string;
+  name: string;
+  description?: string;
+  bestRating: number;
+  worstRating: number;
+  additionalType: 'GlobalRubricTrait' | 'QuestionSpecificRubricTrait';
+  ratingExplanation?: string;
+}
+
+export interface SchemaOrgPropertyValue {
+  '@type': 'PropertyValue';
+  name: string;
+  value: unknown;
+}
+
+export interface SchemaOrgAnswer {
+  '@type': 'Answer';
+  '@id'?: string;
+  text: string;
+}
+
+export interface SchemaOrgSoftwareSourceCode {
+  '@type': 'SoftwareSourceCode';
+  '@id'?: string;
+  name?: string;
+  text: string; // The Pydantic template code
+  programmingLanguage: 'Python';
+  codeRepository?: string;
+}
+
+export interface SchemaOrgQuestion {
+  '@type': 'Question';
+  '@id'?: string;
+  text: string; // Question text
+  acceptedAnswer: SchemaOrgAnswer;
+  hasPart: SchemaOrgSoftwareSourceCode; // Pydantic template
+  rating?: SchemaOrgRating[]; // Rubric trait evaluations
+  additionalProperty?: SchemaOrgPropertyValue[]; // metadata like finished, original_template
+}
+
+export interface SchemaOrgDataFeedItem {
+  '@type': 'DataFeedItem';
+  '@id'?: string;
+  dateCreated?: string;
+  dateModified: string; // last_modified from v2.0
+  item: SchemaOrgQuestion;
+}
+
+export interface SchemaOrgDataset extends JsonLdContext {
+  '@type': 'Dataset';
+  '@id'?: string;
+  name: string;
+  description?: string;
+  version: string; // '3.0.0-jsonld'
+  creator?: string;
+  dateCreated?: string;
+  dateModified?: string;
+  hasPart: SchemaOrgDataFeedItem[];
+  additionalProperty?: SchemaOrgPropertyValue[]; // global rubric info, format version
+}
+
+// Type alias for the complete JSON-LD checkpoint
+export type JsonLdCheckpoint = SchemaOrgDataset;
+
+// Conversion mapping types
+export interface RubricTraitToRatingMapping {
+  rubricTrait: RubricTrait;
+  ratingValue?: number; // Set when trait is evaluated
+  isEvaluated: boolean;
+}
+
+export interface CheckpointConversionMetadata {
+  originalVersion: string;
+  convertedAt: string;
+  totalQuestions: number;
+  totalRatings: number;
 }
 
 // Template Generation Types

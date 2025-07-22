@@ -1,13 +1,14 @@
 import React from 'react';
-import { CheckCircle, Circle, Edit3 } from 'lucide-react';
+import { CheckCircle, Circle, Edit3, Settings } from 'lucide-react';
 
 interface StatusBadgeProps {
   finished: boolean;
   modified: boolean;
   onToggleFinished: () => void;
+  onEditMetadata: () => void;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ finished, modified, onToggleFinished }) => {
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ finished, modified, onToggleFinished, onEditMetadata }) => {
   return (
     <div className="flex items-center gap-3">
       {/* Finished Badge */}
@@ -30,6 +31,15 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ finished, modified, on
           Modified
         </div>
       )}
+
+      {/* Edit Metadata Button */}
+      <button
+        onClick={onEditMetadata}
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 hover:from-slate-200 hover:to-slate-300 border border-slate-300 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+      >
+        <Settings className="w-4 h-4" />
+        Edit Metadata
+      </button>
     </div>
   );
 };

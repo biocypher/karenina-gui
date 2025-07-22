@@ -33,17 +33,14 @@ vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
 
 describe('FileManager Component', () => {
   // Mock functions
-  const mockOnLoadQuestionData = vi.fn();
   const mockOnLoadCheckpoint = vi.fn();
   const mockOnResetAllData = vi.fn();
 
   // Default props
   const defaultProps = {
-    onLoadQuestionData: mockOnLoadQuestionData,
     onLoadCheckpoint: mockOnLoadCheckpoint,
     onResetAllData: mockOnResetAllData,
     checkpoint: {},
-    questionData: {},
   };
 
   beforeEach(() => {
@@ -63,36 +60,13 @@ describe('FileManager Component', () => {
       const mockData = createMockQuestionData();
       const mockCheckpoint = createMockCheckpoint(mockData);
 
-      render(<FileManager {...defaultProps} questionData={mockData} checkpoint={mockCheckpoint} />);
+      render(<FileManager {...defaultProps} checkpoint={mockCheckpoint} />);
 
       // Should show file management interface
       expect(screen.getByText('File Management')).toBeInTheDocument();
     });
 
     it('should show file format information', () => {
-      render(<FileManager {...defaultProps} />);
-
-      // Should show file management interface
-      expect(screen.getByText('File Management')).toBeInTheDocument();
-    });
-  });
-
-  describe('Question Data Upload', () => {
-    it('should handle valid question data JSON upload', async () => {
-      render(<FileManager {...defaultProps} />);
-
-      // Should show file management interface
-      expect(screen.getByText('File Management')).toBeInTheDocument();
-    });
-
-    it('should handle invalid JSON format', async () => {
-      render(<FileManager {...defaultProps} />);
-
-      // Should show file management interface
-      expect(screen.getByText('File Management')).toBeInTheDocument();
-    });
-
-    it('should validate question data structure', async () => {
       render(<FileManager {...defaultProps} />);
 
       // Should show file management interface
@@ -237,15 +211,6 @@ describe('FileManager Component', () => {
   });
 
   describe('Download Functionality', () => {
-    it('should download question data', async () => {
-      const mockData = createMockQuestionData();
-
-      render(<FileManager {...defaultProps} questionData={mockData} />);
-
-      // Should show file management interface
-      expect(screen.getByText('File Management')).toBeInTheDocument();
-    });
-
     it('should download checkpoint', async () => {
       const mockData = createMockQuestionData();
       const mockCheckpoint = createMockCheckpoint(mockData);
@@ -257,31 +222,6 @@ describe('FileManager Component', () => {
     });
 
     it('should handle download when no data available', async () => {
-      render(<FileManager {...defaultProps} />);
-
-      // Should show file management interface
-      expect(screen.getByText('File Management')).toBeInTheDocument();
-    });
-
-    it('should download finished items only', async () => {
-      // Create checkpoint with some finished items
-      const mockData = createMockQuestionData();
-      const checkpoint = createMockCheckpoint(mockData);
-
-      // Set some items as finished
-      const questionIds = Object.keys(checkpoint);
-      if (questionIds.length >= 2) {
-        checkpoint[questionIds[0]].finished = true;
-        checkpoint[questionIds[1]].finished = true;
-      }
-
-      render(<FileManager {...defaultProps} checkpoint={checkpoint} />);
-
-      // Should show file management interface
-      expect(screen.getByText('File Management')).toBeInTheDocument();
-    });
-
-    it('should handle download when no finished items', async () => {
       render(<FileManager {...defaultProps} />);
 
       // Should show file management interface
