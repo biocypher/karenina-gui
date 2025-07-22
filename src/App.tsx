@@ -658,7 +658,10 @@ function App() {
                       Raw Answer
                     </h3>
                     <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
-                      <p className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
+                      <p
+                        key={`answer-${selectedQuestion.id}-${selectedQuestion.raw_answer?.length || 0}`}
+                        className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium"
+                      >
                         {selectedQuestion.raw_answer}
                       </p>
                     </div>
