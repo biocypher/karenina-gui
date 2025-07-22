@@ -91,37 +91,6 @@ export const RubricTab: React.FC<RubricTabProps> = ({ questions }) => {
             </p>
             <RubricTraitEditor />
           </div>
-
-          {/* Information Panel */}
-          <div
-            className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 
-                          rounded-xl border border-indigo-100 dark:border-indigo-800 p-6"
-          >
-            <h4 className="text-lg font-semibold text-indigo-900 dark:text-indigo-300 mb-3">
-              💡 Rubric Management Tips
-            </h4>
-            <ul className="space-y-2 text-sm text-indigo-800 dark:text-indigo-300">
-              <li>
-                • <strong>Global Rubrics:</strong> Traits created here apply to all questions in your benchmark
-              </li>
-              <li>
-                • <strong>Question-Specific Rubrics:</strong> Use the Template Curator to add rubrics for individual
-                questions
-              </li>
-              {hasQuestions && (
-                <li>
-                  • <strong>AI Generation:</strong> Let AI analyze your questions to suggest relevant evaluation
-                  criteria
-                </li>
-              )}
-              <li>
-                • <strong>Manual Editing:</strong> Fine-tune traits or create custom evaluation criteria from scratch
-              </li>
-              <li>
-                • <strong>Trait Types:</strong> Choose between boolean (yes/no), score (1-5), or text-based evaluations
-              </li>
-            </ul>
-          </div>
         </div>
       )}
     </div>
