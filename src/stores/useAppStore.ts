@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 // Define the tab types
-export type TabType = 'extractor' | 'generator' | 'curator' | 'benchmark';
+export type TabType = 'extractor' | 'generator' | 'rubric' | 'curator' | 'benchmark';
 
 // Define the application state interface
 interface AppState {
