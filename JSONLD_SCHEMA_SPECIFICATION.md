@@ -99,7 +99,7 @@ interface SchemaOrgDataFeedItem {
 - `dateModified`: Required - last modification timestamp (ISO 8601)
 - `item`: The actual Question object
 - `@id`: Optional unique identifier
-- `dateCreated`: Optional creation timestamp
+- `dateCreated`: Optional creation timestamp (when question was first added to checkpoint)
 
 ## Question Schema
 
@@ -472,6 +472,7 @@ Complete minimal example:
 | `raw_answer`      | `Answer.text`                        |
 | `answer_template` | `SoftwareSourceCode.text`            |
 | `RubricTrait`     | `Rating` with `additionalType`       |
+| `date_created`    | `DataFeedItem.dateCreated`           |
 | `last_modified`   | `DataFeedItem.dateModified`          |
 | `finished`        | `PropertyValue` with name="finished" |
 

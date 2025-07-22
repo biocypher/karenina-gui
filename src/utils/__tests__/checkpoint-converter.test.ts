@@ -38,6 +38,7 @@ const mockV2Checkpoint: UnifiedCheckpoint = {
       original_answer_template: 'class CapitalAnswer(BaseAnswer):\n    city: str = Field(description="Capital city")',
       answer_template:
         'class FranceCapitalAnswer(BaseAnswer):\n    city: str = Field(description="Capital city of France")\n    country: str = Field(description="The country")',
+      date_created: '2025-07-18T10:00:00Z',
       last_modified: '2025-07-19T12:00:00Z',
       finished: true,
       question_rubric: {

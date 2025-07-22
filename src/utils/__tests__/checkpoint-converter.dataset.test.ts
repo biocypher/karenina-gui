@@ -450,7 +450,7 @@ describe('checkpoint-converter dataset metadata', () => {
 
       const result1 = v2ToJsonLd(checkpointWithoutMetadata, { isCreation: true });
       // Small delay to ensure different timestamps
-      const delay = new Promise((resolve) => setTimeout(resolve, 1));
+      const delay = new Promise((resolve) => setTimeout(resolve, 10));
 
       return delay.then(() => {
         const result2 = v2ToJsonLd(checkpointWithoutMetadata, { isCreation: true });
@@ -459,6 +459,88 @@ describe('checkpoint-converter dataset metadata', () => {
         expect(result1.dateModified).not.toBe(result2.dateModified);
         expect(result1.dateCreated).not.toBe(result2.dateCreated);
       });
+    });
+  });
+
+  describe('DataFeedItem dateCreated field', () => {
+    it('uses date_created field from CheckpointItem when available', () => {
+      const checkpointWithDateCreated: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        checkpoint: {
+          'question-1': {
+            question: 'Test question?',
+            raw_answer: 'Test answer',
+            original_answer_template: 'class Answer(BaseModel): text: str',
+            answer_template: 'class Answer(BaseModel): text: str',
+            date_created: '2025-01-01T10:00:00Z',
+            last_modified: '2025-01-15T14:30:00Z',
+            finished: true,
+          },
+        },
+      };
+
+      const result = v2ToJsonLd(checkpointWithDateCreated);
+
+      expect(result.hasPart).toHaveLength(1);
+      const dataFeedItem = result.hasPart[0];
+
+      expect(dataFeedItem.dateCreated).toBe('2025-01-01T10:00:00Z');
+      expect(dataFeedItem.dateModified).toBe('2025-01-15T14:30:00Z');
+    });
+
+    it('falls back to last_modified when date_created is not available', () => {
+      const checkpointWithoutDateCreated: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        checkpoint: {
+          'question-1': {
+            question: 'Test question?',
+            raw_answer: 'Test answer',
+            original_answer_template: 'class Answer(BaseModel): text: str',
+            answer_template: 'class Answer(BaseModel): text: str',
+            // No date_created field
+            last_modified: '2025-01-15T14:30:00Z',
+            finished: true,
+          },
+        },
+      };
+
+      const result = v2ToJsonLd(checkpointWithoutDateCreated);
+
+      expect(result.hasPart).toHaveLength(1);
+      const dataFeedItem = result.hasPart[0];
+
+      // Both should be the same when falling back
+      expect(dataFeedItem.dateCreated).toBe('2025-01-15T14:30:00Z');
+      expect(dataFeedItem.dateModified).toBe('2025-01-15T14:30:00Z');
+    });
+
+    it('preserves DataFeedItem dateCreated during round-trip conversion', () => {
+      const originalDateCreated = '2025-01-01T10:00:00Z';
+      const originalDateModified = '2025-01-15T14:30:00Z';
+
+      const checkpointWithDates: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        checkpoint: {
+          'question-1': {
+            question: 'Test question?',
+            raw_answer: 'Test answer',
+            original_answer_template: 'class Answer(BaseModel): text: str',
+            answer_template: 'class Answer(BaseModel): text: str',
+            date_created: originalDateCreated,
+            last_modified: originalDateModified,
+            finished: true,
+          },
+        },
+      };
+
+      // Convert to JSON-LD and back
+      const jsonLd = v2ToJsonLd(checkpointWithDates);
+      const converted = jsonLdToV2(jsonLd);
+
+      // Verify the DataFeedItem dates survived the round-trip
+      const convertedItem = Object.values(converted.checkpoint)[0];
+      expect(convertedItem.date_created).toBe(originalDateCreated);
+      expect(convertedItem.last_modified).toBe(originalDateModified);
     });
   });
 });

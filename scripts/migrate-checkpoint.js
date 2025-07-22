@@ -226,6 +226,7 @@ function v2ToJsonLd(checkpoint) {
     return {
       '@type': 'DataFeedItem',
       '@id': `urn:uuid:${questionId}`,
+      dateCreated: item.date_created || item.last_modified, // Use date_created if available, fallback to last_modified
       dateModified: item.last_modified,
       item: question,
     };

@@ -301,6 +301,7 @@ export function v2ToJsonLd(
       return {
         '@type': 'DataFeedItem',
         '@id': options.preserveIds ? `urn:uuid:${questionId}` : undefined,
+        dateCreated: item.date_created || item.last_modified, // Use date_created if available, fallback to last_modified
         dateModified: item.last_modified,
         item: question,
       };
@@ -480,6 +481,7 @@ export function jsonLdToV2(
         raw_answer: question.acceptedAnswer.text,
         original_answer_template: (originalTemplateProp?.value as string) || '',
         answer_template: question.hasPart.text,
+        date_created: dataFeedItem.dateCreated, // Preserve DataFeedItem's dateCreated
         last_modified: dataFeedItem.dateModified,
         finished: (finishedProp?.value as boolean) || false,
         question_rubric: questionRubric,

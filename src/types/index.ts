@@ -44,6 +44,7 @@ export interface CheckpointItem {
 
   // Progress data
   answer_template: string;
+  date_created?: string; // When the question was first added to the checkpoint
   last_modified: string;
   finished: boolean;
 
