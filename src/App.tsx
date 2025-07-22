@@ -21,7 +21,6 @@ import { ExpandedEditor } from './components/ExpandedEditor';
 import { StatusBadge } from './components/StatusBadge';
 import { MetadataEditor } from './components/MetadataEditor';
 import { FileManager } from './components/FileManager';
-import { ChatInterface } from './components/ChatInterface';
 import { QuestionExtractor } from './components/QuestionExtractor';
 import { AnswerTemplateGenerator } from './components/AnswerTemplateGenerator';
 import { BenchmarkTab } from './components/BenchmarkTab';
@@ -463,16 +462,6 @@ function App() {
             >
               4. Benchmark
             </button>
-            <button
-              onClick={() => setActiveTab('chat')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'chat'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              5. LLM Chat
-            </button>
           </div>
         </div>
 
@@ -807,13 +796,6 @@ function App() {
             benchmarkResults={benchmarkResults}
             setBenchmarkResults={setBenchmarkResults}
           />
-        )}
-
-        {/* Chat Tab */}
-        {activeTab === 'chat' && (
-          <div className="max-w-4xl mx-auto">
-            <ChatInterface />
-          </div>
         )}
       </div>
 

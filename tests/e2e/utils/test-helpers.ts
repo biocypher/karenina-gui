@@ -14,7 +14,7 @@ export class TestHelpers {
   /**
    * Navigate to a specific tab in the application
    */
-  async navigateToTab(tabName: 'extractor' | 'generator' | 'curator' | 'chat' | 'benchmark') {
+  async navigateToTab(tabName: 'extractor' | 'generator' | 'curator' | 'benchmark') {
     const selector = SELECTORS.navigation[`${tabName}Tab` as keyof typeof SELECTORS.navigation];
     await this.page.click(selector);
     await this.page.waitForTimeout(500); // Allow tab to load
