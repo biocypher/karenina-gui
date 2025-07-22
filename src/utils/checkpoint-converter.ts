@@ -63,12 +63,14 @@ export interface ConversionOptions {
   preserveIds?: boolean; // Whether to preserve question IDs in URN format
   includeMetadata?: boolean; // Whether to include conversion metadata
   validateOutput?: boolean; // Whether to validate the converted output
+  isCreation?: boolean; // Whether this is a new checkpoint creation vs. modification
 }
 
 export const DEFAULT_CONVERSION_OPTIONS: ConversionOptions = {
   preserveIds: true,
   includeMetadata: true,
   validateOutput: true,
+  isCreation: false, // Default to update behavior (preserve existing dateCreated)
 };
 
 export function generateQuestionId(questionText: string): string {
@@ -344,6 +346,26 @@ export function v2ToJsonLd(
     const defaultDescription = `Checkpoint containing ${questionIds.length} benchmark questions with answer templates and rubric evaluations`;
     const defaultCreator = 'Karenina Benchmarking System';
 
+    // Handle timestamp logic based on context and existing metadata
+    let dateCreated: string;
+    let dateModified: string;
+
+    if (datasetMeta?.dateCreated) {
+      // Always preserve existing dateCreated - it should never change once set
+      dateCreated = datasetMeta.dateCreated;
+    } else {
+      // No existing dateCreated - this is a new checkpoint, use current time
+      dateCreated = timestamp;
+    }
+
+    if (datasetMeta?.dateModified && !options.isCreation) {
+      // For pure format conversions, preserve existing dateModified
+      dateModified = datasetMeta.dateModified;
+    } else {
+      // No existing dateModified OR this is a creation/modification - use current timestamp
+      dateModified = timestamp;
+    }
+
     // Create the final JSON-LD document
     const jsonLdCheckpoint: JsonLdCheckpoint = {
       '@context': schemaOrgContext['@context'],
@@ -353,8 +375,8 @@ export function v2ToJsonLd(
       description: datasetMeta?.description || defaultDescription,
       version: datasetMeta?.version || '3.0.0-jsonld',
       creator: datasetMeta?.creator?.name || defaultCreator,
-      dateCreated: datasetMeta?.dateCreated || timestamp,
-      dateModified: datasetMeta?.dateModified || timestamp,
+      dateCreated: dateCreated,
+      dateModified: dateModified,
       hasPart: dataFeedItems,
       additionalProperty: additionalProperties,
     };

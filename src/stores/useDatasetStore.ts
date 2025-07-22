@@ -46,6 +46,10 @@ export const useDatasetStore = create<DatasetState>((set) => ({
         // Ensure arrays and objects are properly initialized
         keywords: metadata.keywords || [],
         custom_properties: metadata.custom_properties || {},
+        // Preserve existing timestamps if provided, otherwise use defaults
+        dateCreated: metadata.dateCreated || getDefaultMetadata().dateCreated,
+        // Only set dateModified if it was explicitly provided
+        dateModified: metadata.dateModified,
       },
     }));
   },

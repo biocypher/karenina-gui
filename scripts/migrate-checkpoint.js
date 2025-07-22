@@ -260,16 +260,38 @@ function v2ToJsonLd(checkpoint) {
     }),
   });
 
+  // Handle timestamp logic - for migrations from legacy files, we need to handle existing dataset metadata if present
+  const datasetMeta = checkpoint.dataset_metadata;
+  let dateCreated, dateModified;
+
+  if (datasetMeta?.dateCreated) {
+    // Preserve existing dateCreated if it exists in the legacy file
+    dateCreated = datasetMeta.dateCreated;
+  } else {
+    // For legacy files without metadata, this is effectively a "creation" from migration perspective
+    dateCreated = timestamp;
+  }
+
+  if (datasetMeta?.dateModified) {
+    // Preserve existing dateModified if it exists
+    dateModified = datasetMeta.dateModified;
+  } else {
+    // For legacy files, migration counts as a "modification"
+    dateModified = timestamp;
+  }
+
   return {
     '@context': schemaOrgContext,
     '@type': 'Dataset',
     '@id': `urn:uuid:karenina-checkpoint-${Date.now()}`,
-    name: 'Karenina LLM Benchmark Checkpoint',
-    description: `Migrated checkpoint containing ${questionIds.length} benchmark questions with answer templates and rubric evaluations`,
-    version: '3.0.0-jsonld',
-    creator: 'Karenina Benchmarking System',
-    dateCreated: timestamp,
-    dateModified: timestamp,
+    name: datasetMeta?.name || 'Karenina LLM Benchmark Checkpoint',
+    description:
+      datasetMeta?.description ||
+      `Migrated checkpoint containing ${questionIds.length} benchmark questions with answer templates and rubric evaluations`,
+    version: datasetMeta?.version || '3.0.0-jsonld',
+    creator: datasetMeta?.creator?.name || 'Karenina Benchmarking System',
+    dateCreated: dateCreated,
+    dateModified: dateModified,
     hasPart: dataFeedItems,
     additionalProperty: additionalProperties,
   };

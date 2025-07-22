@@ -314,4 +314,151 @@ describe('checkpoint-converter dataset metadata', () => {
       // so they won't survive the roundtrip unless we add them as additionalProperty
     });
   });
+
+  describe('timestamp behavior', () => {
+    it('new checkpoints without metadata can have equal timestamps initially', () => {
+      const checkpointWithoutMetadata = { ...mockCheckpoint, dataset_metadata: undefined };
+
+      const result = v2ToJsonLd(checkpointWithoutMetadata);
+
+      // For brand new checkpoints, equal timestamps are acceptable
+      expect(result.dateCreated).toBeDefined();
+      expect(result.dateModified).toBeDefined();
+      // They could be equal for new checkpoints - this is not necessarily wrong
+    });
+
+    it('preserves dateCreated from existing metadata', () => {
+      const originalDateCreated = '2025-01-01T00:00:00Z';
+      const checkpointWithExistingDate: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        dataset_metadata: {
+          dateCreated: originalDateCreated,
+          dateModified: '2025-01-10T12:00:00Z',
+        },
+      };
+
+      const result = v2ToJsonLd(checkpointWithExistingDate);
+
+      // dateCreated should never change once set
+      expect(result.dateCreated).toBe(originalDateCreated);
+      expect(result.dateModified).toBe('2025-01-10T12:00:00Z');
+    });
+
+    it('preserves existing dateModified for pure conversions', () => {
+      const originalDateCreated = '2025-01-01T00:00:00Z';
+      const originalDateModified = '2025-01-10T12:00:00Z';
+      const checkpointWithBothDates: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        dataset_metadata: {
+          dateCreated: originalDateCreated,
+          dateModified: originalDateModified,
+        },
+      };
+
+      const result = v2ToJsonLd(checkpointWithBothDates, { isCreation: false });
+
+      // Both dates should be preserved for pure conversions
+      expect(result.dateCreated).toBe(originalDateCreated);
+      expect(result.dateModified).toBe(originalDateModified);
+    });
+
+    it('updates dateModified when isCreation flag is set', () => {
+      const originalDateCreated = '2025-01-01T00:00:00Z';
+      const originalDateModified = '2025-01-10T12:00:00Z';
+      const checkpointWithBothDates: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        dataset_metadata: {
+          dateCreated: originalDateCreated,
+          dateModified: originalDateModified,
+        },
+      };
+
+      const beforeConversion = new Date().toISOString();
+      const result = v2ToJsonLd(checkpointWithBothDates, { isCreation: true });
+      const afterConversion = new Date().toISOString();
+
+      // dateCreated should be preserved
+      expect(result.dateCreated).toBe(originalDateCreated);
+      // dateModified should be updated to current time
+      expect(result.dateModified).not.toBe(originalDateModified);
+      expect(result.dateModified >= beforeConversion).toBe(true);
+      expect(result.dateModified <= afterConversion).toBe(true);
+    });
+
+    it('handles partial metadata with missing dateCreated', () => {
+      const checkpointWithPartialMetadata: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        dataset_metadata: {
+          name: 'Test Dataset',
+          dateModified: '2025-01-10T12:00:00Z',
+          // dateCreated is missing
+        },
+      };
+
+      const result = v2ToJsonLd(checkpointWithPartialMetadata);
+
+      // Should generate new dateCreated
+      expect(result.dateCreated).toBeDefined();
+      expect(result.dateCreated).not.toBe('2025-01-10T12:00:00Z');
+      // Should preserve existing dateModified
+      expect(result.dateModified).toBe('2025-01-10T12:00:00Z');
+    });
+
+    it('handles partial metadata with missing dateModified', () => {
+      const checkpointWithPartialMetadata: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        dataset_metadata: {
+          name: 'Test Dataset',
+          dateCreated: '2025-01-01T00:00:00Z',
+          // dateModified is missing
+        },
+      };
+
+      const result = v2ToJsonLd(checkpointWithPartialMetadata);
+
+      // Should preserve existing dateCreated
+      expect(result.dateCreated).toBe('2025-01-01T00:00:00Z');
+      // Should generate new dateModified
+      expect(result.dateModified).toBeDefined();
+      expect(result.dateModified).not.toBe('2025-01-01T00:00:00Z');
+    });
+
+    it('ensures timestamps are properly preserved through round-trip conversion', () => {
+      const originalDateCreated = '2025-01-01T00:00:00Z';
+      const originalDateModified = '2025-01-15T10:30:00Z';
+
+      const checkpointWithTimestamps: UnifiedCheckpoint = {
+        ...mockCheckpoint,
+        dataset_metadata: {
+          name: 'Timestamp Test Dataset',
+          dateCreated: originalDateCreated,
+          dateModified: originalDateModified,
+        },
+      };
+
+      // Convert to JSON-LD and back
+      const jsonLd = v2ToJsonLd(checkpointWithTimestamps, { isCreation: false });
+      const converted = jsonLdToV2(jsonLd);
+
+      // Timestamps should survive round-trip conversion
+      expect(converted.dataset_metadata?.dateCreated).toBe(originalDateCreated);
+      expect(converted.dataset_metadata?.dateModified).toBe(originalDateModified);
+    });
+
+    it('generates different timestamps when creating multiple new checkpoints', () => {
+      const checkpointWithoutMetadata = { ...mockCheckpoint, dataset_metadata: undefined };
+
+      const result1 = v2ToJsonLd(checkpointWithoutMetadata, { isCreation: true });
+      // Small delay to ensure different timestamps
+      const delay = new Promise((resolve) => setTimeout(resolve, 1));
+
+      return delay.then(() => {
+        const result2 = v2ToJsonLd(checkpointWithoutMetadata, { isCreation: true });
+
+        // Different conversion calls should generate different dateModified values
+        expect(result1.dateModified).not.toBe(result2.dateModified);
+        expect(result1.dateCreated).not.toBe(result2.dateCreated);
+      });
+    });
+  });
 });

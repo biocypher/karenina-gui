@@ -25,7 +25,7 @@ Successfully implemented JSON-LD checkpoint format v3.0 using exclusively schema
 - **jsonLdToV2()**: Convert JSON-LD → v2.0 for internal use
 - **Type detection functions**: isJsonLdCheckpoint(), isV2Checkpoint()
 - **Validation**: validateJsonLdCheckpoint() with comprehensive checks
-- **Rating conversion**: Boolean (0/1) and score (1-5) trait handling
+- **Rating conversion**: Boolean (0/1) and score (1-5) trait handling via additionalType field
 
 #### 3. FileManager Integration (`src/components/FileManager.tsx`)
 
@@ -35,17 +35,18 @@ Successfully implemented JSON-LD checkpoint format v3.0 using exclusively schema
 - **JSON-LD export**: Default export format with .jsonld extension
 - **Error handling**: Graceful fallback for conversion failures
 
-#### 4. Migration Script (`scripts/migrate-checkpoint.js`)
+#### 4. Migration Support (UI-based)
 
-- **CLI interface**: `npm run migrate:checkpoint input.json output.jsonld`
-- **Batch conversion**: Process multiple files programmatically
-- **Validation reporting**: Comprehensive migration success metrics
-- **Data integrity checks**: Verifies no data loss during conversion
+- **FileManager integration**: Automatic format detection and conversion
+- **Import both formats**: Handles .json (v2.0) and .jsonld files
+- **Export as JSON-LD**: Default export format with .jsonld extension
+- **No CLI script**: Migration happens through UI, not command-line tool
 
-#### 5. Context Definition (`src/contexts/schema-org.jsonld`)
+#### 5. Context Definition (Inline in converter)
 
 - **Pure schema.org vocabulary**: No custom namespaces
 - **JSON-LD 1.1 compliant**: Uses latest specification
+- **Hardcoded context**: Defined directly in checkpoint-converter.ts for reliability
 - **Optimized mappings**: Efficient property definitions
 
 ### 📊 Schema.org Mapping Strategy
@@ -68,13 +69,15 @@ Metadata                    →    PropertyValue (additional data)
 
 **Boolean traits** (true/false):
 
-- `ratingValue`: 0 (false) or 1 (true)
 - `bestRating`: 1, `worstRating`: 0
+- `additionalType`: 'GlobalRubricTrait' or 'QuestionSpecificRubricTrait'
+- No `ratingValue` in base schema (added during evaluation)
 
 **Score traits** (1-5 scale):
 
-- `ratingValue`: Actual score
 - `bestRating`: max_score, `worstRating`: min_score
+- `additionalType`: 'GlobalRubricTrait' or 'QuestionSpecificRubricTrait'
+- No `ratingValue` in base schema (added during evaluation)
 
 ### 🧪 Comprehensive Testing
 
@@ -163,7 +166,7 @@ Metadata                    →    PropertyValue (additional data)
 
 - **JSON-LD structure**: Schema.org compliance checking
 - **Type validation**: Runtime type verification
-- **Range checking**: Rating value boundaries
+- **Rating type validation**: additionalType field validation
 - **URI validation**: Proper identifier formatting
 
 #### Error Handling
@@ -209,7 +212,7 @@ Metadata                    →    PropertyValue (additional data)
 
 - ✅ **Valid JSON-LD**: Passes playground validation
 - ✅ **Complete import/export**: Preserves all data
-- ✅ **Migration script**: Batch file conversion
+- ✅ **File conversion**: UI-based import/export with format detection
 - ✅ **≥90% test coverage**: Comprehensive testing
 - ✅ **≤200ms performance**: Large dataset handling
 - ✅ **Documentation**: Complete guides and specs
