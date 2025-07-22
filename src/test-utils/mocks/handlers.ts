@@ -112,51 +112,6 @@ export const handlers = [
     return HttpResponse.json({ success: true });
   }),
 
-  // Chat endpoint
-  http.post('/api/chat', () => {
-    return HttpResponse.json({
-      session_id: 'chat-session-123',
-      message: 'This is a mock response from the LLM.',
-      model: 'gemini-2.0-flash',
-      provider: 'google_genai',
-      timestamp: new Date().toISOString(),
-    });
-  }),
-
-  // Chat sessions endpoint
-  http.get('/api/sessions', () => {
-    return HttpResponse.json({
-      sessions: [
-        {
-          session_id: 'session-1',
-          model: 'gemini-2.0-flash',
-          provider: 'google_genai',
-          created_at: '2024-12-19T10:00:00Z',
-          last_used: '2024-12-19T10:30:00Z',
-          message_count: 5,
-        },
-      ],
-    });
-  }),
-
-  // Get specific session endpoint
-  http.get('/api/sessions/:sessionId', ({ params }) => {
-    return HttpResponse.json({
-      session_id: params.sessionId,
-      model: 'gemini-2.0-flash',
-      provider: 'google_genai',
-      messages: [
-        { type: 'human', content: 'Hello' },
-        { type: 'ai', content: 'Hi there! How can I help you?' },
-      ],
-    });
-  }),
-
-  // Delete session endpoint
-  http.delete('/api/sessions/:sessionId', () => {
-    return HttpResponse.json({ success: true });
-  }),
-
   // Rubric trait generation endpoint
   http.post('/api/generate-rubric-traits', () => {
     return HttpResponse.json({

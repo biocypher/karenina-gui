@@ -8,8 +8,6 @@ import { QuestionSelector } from './QuestionSelector';
 import { CustomPromptComposer } from './CustomPromptComposer';
 import { TemplateProgress } from './TemplateProgress';
 import { TemplateResults } from './TemplateResults';
-import RubricTraitGenerator from './RubricTraitGenerator';
-import RubricTraitEditor from './RubricTraitEditor';
 
 interface AnswerTemplateGeneratorProps {
   questions: QuestionData;
@@ -482,19 +480,6 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
           </div>
           <p className="text-red-700 dark:text-red-300 mt-2">{error}</p>
         </div>
-      )}
-
-      {/* Rubric Components */}
-      {hasQuestions && (
-        <>
-          <RubricTraitGenerator
-            questions={questions}
-            onTraitsGenerated={(traits) => {
-              console.log('Generated traits:', traits);
-            }}
-          />
-          <RubricTraitEditor />
-        </>
       )}
     </div>
   );
