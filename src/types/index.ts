@@ -159,8 +159,9 @@ export interface SchemaOrgDataset extends JsonLdContext {
   creator?: string;
   dateCreated?: string;
   dateModified?: string;
+  rating?: SchemaOrgRating[]; // Global rubric traits as Rating objects
   hasPart: SchemaOrgDataFeedItem[];
-  additionalProperty?: SchemaOrgPropertyValue[]; // global rubric info, format version
+  additionalProperty?: SchemaOrgPropertyValue[]; // format version, conversion metadata
 }
 
 // Type alias for the complete JSON-LD checkpoint

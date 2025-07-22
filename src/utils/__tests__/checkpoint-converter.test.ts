@@ -515,9 +515,18 @@ describe('checkpoint-converter', () => {
       const question = jsonLdResult.hasPart[0].item;
 
       expect(question.rating).toBeDefined();
-      expect(question.rating).toHaveLength(3); // 2 global + 1 question-specific
+      expect(question.rating).toHaveLength(1); // Only 1 question-specific (global moved to Dataset)
 
-      const accuracyRating = question.rating?.find((r) => r.name === 'Accuracy');
+      const geoAccuracyRating = question.rating?.find((r) => r.name === 'Geographic Accuracy');
+      expect(geoAccuracyRating).toBeDefined();
+      expect(geoAccuracyRating?.['@type']).toBe('Rating');
+      expect(geoAccuracyRating?.additionalType).toBe('QuestionSpecificRubricTrait');
+
+      // Global rubrics should now be at Dataset level
+      expect(jsonLdResult.rating).toBeDefined();
+      expect(jsonLdResult.rating).toHaveLength(2); // 2 global rubric traits
+
+      const accuracyRating = jsonLdResult.rating?.find((r) => r.name === 'Accuracy');
       expect(accuracyRating).toBeDefined();
       expect(accuracyRating?.['@type']).toBe('Rating');
       expect(accuracyRating?.bestRating).toBe(1);
@@ -533,14 +542,22 @@ describe('checkpoint-converter', () => {
       expect(finishedProp?.value).toBe(true);
     });
 
-    it('should include global rubric in dataset properties', () => {
+    it('should include global rubric as Rating objects at Dataset level', () => {
+      // Global rubrics should now be Rating objects, not JSON string property
+      expect(jsonLdResult.rating).toBeDefined();
+      expect(jsonLdResult.rating).toHaveLength(2);
+
+      const accuracyRating = jsonLdResult.rating?.find((r) => r.name === 'Accuracy');
+      const completenessRating = jsonLdResult.rating?.find((r) => r.name === 'Completeness');
+
+      expect(accuracyRating).toBeDefined();
+      expect(accuracyRating?.additionalType).toBe('GlobalRubricTrait');
+      expect(completenessRating).toBeDefined();
+      expect(completenessRating?.additionalType).toBe('GlobalRubricTrait');
+
+      // Verify the old JSON string property is no longer present
       const globalRubricProp = jsonLdResult.additionalProperty?.find((p) => p.name === 'global_rubric_traits');
-
-      expect(globalRubricProp).toBeDefined();
-      expect(typeof globalRubricProp?.value).toBe('string');
-
-      const traits = JSON.parse(globalRubricProp?.value as string);
-      expect(traits).toHaveLength(2);
+      expect(globalRubricProp).toBeUndefined();
     });
 
     it('should handle checkpoints without global rubric', () => {
@@ -550,7 +567,7 @@ describe('checkpoint-converter', () => {
       };
 
       const result = v2ToJsonLd(checkpointWithoutRubric);
-      expect(result.additionalProperty?.find((p) => p.name === 'global_rubric_traits')).toBeUndefined();
+      expect(result.rating).toBeUndefined();
     });
 
     it('should validate output by default', () => {

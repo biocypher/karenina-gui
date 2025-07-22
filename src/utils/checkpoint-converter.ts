@@ -275,18 +275,10 @@ export function v2ToJsonLd(
         ],
       };
 
-      // Convert rubric traits to Rating objects
+      // Convert only question-specific rubric traits to Rating objects
       const ratings: SchemaOrgRating[] = [];
 
-      // Add global rubric traits
-      if (checkpoint.global_rubric) {
-        checkpoint.global_rubric.traits.forEach((trait) => {
-          const rating = convertRubricTraitToRating(trait, 'global');
-          ratings.push(rating);
-        });
-      }
-
-      // Add question-specific rubric traits
+      // Add only question-specific rubric traits (global traits will be stored at Dataset level)
       if (item.question_rubric) {
         item.question_rubric.traits.forEach((trait) => {
           const rating = convertRubricTraitToRating(trait, 'question-specific');
@@ -316,14 +308,7 @@ export function v2ToJsonLd(
       },
     ];
 
-    // Add global rubric serialization
-    if (checkpoint.global_rubric) {
-      additionalProperties.push({
-        '@type': 'PropertyValue',
-        name: 'global_rubric_traits',
-        value: JSON.stringify(checkpoint.global_rubric.traits),
-      });
-    }
+    // Global rubric traits will be stored as Rating objects at Dataset level (removed JSON string version)
 
     // Add conversion metadata if requested
     if (options.includeMetadata) {
@@ -367,6 +352,12 @@ export function v2ToJsonLd(
       dateModified = timestamp;
     }
 
+    // Convert global rubric traits to Rating objects for Dataset level
+    let globalRatings: SchemaOrgRating[] | undefined;
+    if (checkpoint.global_rubric) {
+      globalRatings = checkpoint.global_rubric.traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
+    }
+
     // Create the final JSON-LD document
     const jsonLdCheckpoint: JsonLdCheckpoint = {
       '@context': schemaOrgContext['@context'],
@@ -378,6 +369,7 @@ export function v2ToJsonLd(
       creator: datasetMeta?.creator?.name || defaultCreator,
       dateCreated: dateCreated,
       dateModified: dateModified,
+      rating: globalRatings, // Global rubric traits as Rating objects
       hasPart: dataFeedItems,
       additionalProperty: additionalProperties,
     };
@@ -401,18 +393,15 @@ export function jsonLdToV2(
   // _options: ConversionOptions = DEFAULT_CONVERSION_OPTIONS
 ): UnifiedCheckpoint {
   try {
-    // Extract global rubric from additional properties
+    // Extract global rubric from Dataset rating array
     let globalRubric: Rubric | null = null;
-    const globalRubricProperty = jsonLdCheckpoint.additionalProperty?.find(
-      (prop) => prop.name === 'global_rubric_traits'
-    );
+    if (jsonLdCheckpoint.rating && jsonLdCheckpoint.rating.length > 0) {
+      // Filter for global rubric traits
+      const globalRatings = jsonLdCheckpoint.rating.filter((rating) => rating.additionalType === 'GlobalRubricTrait');
 
-    if (globalRubricProperty && typeof globalRubricProperty.value === 'string') {
-      try {
-        const traits = JSON.parse(globalRubricProperty.value) as RubricTrait[];
+      if (globalRatings.length > 0) {
+        const traits = globalRatings.map(convertRatingToRubricTrait);
         globalRubric = { traits };
-      } catch {
-        // Invalid JSON, ignore global rubric
       }
     }
 

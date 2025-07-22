@@ -45,7 +45,8 @@ interface JsonLdCheckpoint {
 - `description`: Dataset description
 - `creator`: Dataset creator name
 - `dateCreated`/`dateModified`: ISO 8601 timestamps
-- `additionalProperty`: Metadata storage (global rubric, conversion info)
+- `rating`: Array of Rating objects for global rubric traits
+- `additionalProperty`: Metadata storage (format version, conversion info)
 
 ## JSON-LD Context
 
@@ -255,8 +256,9 @@ interface SchemaOrgPropertyValue {
 #### Dataset-Level Properties
 
 - `checkpoint_format_version`: "3.0.0-jsonld"
-- `global_rubric_traits`: JSON string of RubricTrait[]
 - `conversion_metadata`: Conversion statistics
+
+**Note**: Global rubric traits are no longer stored as JSON strings in additionalProperty. They are now stored as Rating objects in the Dataset's `rating` array.
 
 #### Question-Level Properties
 
@@ -399,6 +401,26 @@ Complete minimal example:
   "creator": "Karenina System",
   "dateCreated": "2024-07-19T12:00:00Z",
   "dateModified": "2024-07-19T12:30:00Z",
+  "rating": [
+    {
+      "@type": "Rating",
+      "@id": "urn:uuid:rating-accuracy",
+      "name": "Accuracy",
+      "description": "Factual correctness",
+      "bestRating": 1,
+      "worstRating": 0,
+      "additionalType": "GlobalRubricTrait"
+    },
+    {
+      "@type": "Rating",
+      "@id": "urn:uuid:rating-completeness",
+      "name": "Completeness",
+      "description": "Coverage of all aspects",
+      "bestRating": 5,
+      "worstRating": 1,
+      "additionalType": "GlobalRubricTrait"
+    }
+  ],
   "hasPart": [
     {
       "@type": "DataFeedItem",
@@ -425,12 +447,12 @@ Complete minimal example:
         "rating": [
           {
             "@type": "Rating",
-            "@id": "urn:uuid:rating-accuracy",
-            "name": "Accuracy",
-            "description": "Factual correctness",
-            "bestRating": 1,
-            "worstRating": 0,
-            "additionalType": "GlobalRubricTrait"
+            "@id": "urn:uuid:rating-technical-depth",
+            "name": "Technical Depth",
+            "description": "Question-specific technical assessment",
+            "bestRating": 3,
+            "worstRating": 1,
+            "additionalType": "QuestionSpecificRubricTrait"
           }
         ],
         "additionalProperty": [
@@ -460,8 +482,16 @@ Complete minimal example:
 1. **Dataset Wrapper**: v2.0 checkpoint becomes hasPart array
 2. **Question Wrapping**: Each question wrapped in DataFeedItem
 3. **Rubric Conversion**: RubricTrait objects → Rating objects
-4. **Metadata Mapping**: Custom properties → additionalProperty array
-5. **Temporal Data**: last_modified → dateModified
+4. **Rubric Distribution**: Global rubrics → Dataset rating array, Question-specific rubrics → Question rating arrays
+5. **Metadata Mapping**: Custom properties → additionalProperty array
+6. **Temporal Data**: last_modified → dateModified
+
+### Benefits of New Structure
+
+- **No Duplication**: Global rubrics stored once at Dataset level instead of duplicated in every Question
+- **Schema Consistency**: All rubrics use identical Rating schema regardless of location
+- **File Size Reduction**: Significant space savings for checkpoints with many questions
+- **Semantic Clarity**: Clear separation between global and question-specific rubric traits
 
 ### Key Differences
 

@@ -91,7 +91,7 @@ function validateScoreValue(value, defaultValue, fieldName, traitName) {
   return value;
 }
 
-function convertRubricTraitToRating(trait, ratingValue, author = 'Global Rubric') {
+function convertRubricTraitToRating(trait, ratingValue, rubricType = 'Global Rubric') {
   let actualRatingValue;
   let bestRating;
   let worstRating;
@@ -117,6 +117,9 @@ function convertRubricTraitToRating(trait, ratingValue, author = 'Global Rubric'
     worstRating = minScore;
   }
 
+  // Determine additionalType based on rubricType parameter
+  const additionalType = rubricType === 'Global Rubric' ? 'GlobalRubricTrait' : 'QuestionSpecificRubricTrait';
+
   return {
     '@type': 'Rating',
     '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
@@ -125,7 +128,7 @@ function convertRubricTraitToRating(trait, ratingValue, author = 'Global Rubric'
     ratingValue: actualRatingValue,
     bestRating,
     worstRating,
-    author,
+    additionalType,
   };
 }
 
@@ -202,15 +205,9 @@ function v2ToJsonLd(checkpoint) {
       ],
     };
 
-    // Convert rubric traits to Rating objects
+    // Convert only question-specific rubric traits to Rating objects
+    // (global rubrics will be stored at Dataset level)
     const ratings = [];
-
-    if (checkpoint.global_rubric) {
-      checkpoint.global_rubric.traits.forEach((trait) => {
-        const rating = convertRubricTraitToRating(trait, undefined, 'Global Rubric');
-        ratings.push(rating);
-      });
-    }
 
     if (item.question_rubric) {
       item.question_rubric.traits.forEach((trait) => {
@@ -241,13 +238,7 @@ function v2ToJsonLd(checkpoint) {
     },
   ];
 
-  if (checkpoint.global_rubric) {
-    additionalProperties.push({
-      '@type': 'PropertyValue',
-      name: 'global_rubric_traits',
-      value: JSON.stringify(checkpoint.global_rubric.traits),
-    });
-  }
+  // Global rubric traits will be stored as Rating objects at Dataset level (removed JSON string version)
 
   // Add conversion metadata
   additionalProperties.push({
@@ -281,6 +272,14 @@ function v2ToJsonLd(checkpoint) {
     dateModified = timestamp;
   }
 
+  // Convert global rubric traits to Rating objects for Dataset level
+  let globalRatings;
+  if (checkpoint.global_rubric) {
+    globalRatings = checkpoint.global_rubric.traits.map((trait) =>
+      convertRubricTraitToRating(trait, undefined, 'Global Rubric')
+    );
+  }
+
   return {
     '@context': schemaOrgContext,
     '@type': 'Dataset',
@@ -293,6 +292,7 @@ function v2ToJsonLd(checkpoint) {
     creator: datasetMeta?.creator?.name || 'Karenina Benchmarking System',
     dateCreated: dateCreated,
     dateModified: dateModified,
+    rating: globalRatings, // Global rubric traits as Rating objects
     hasPart: dataFeedItems,
     additionalProperty: additionalProperties,
   };
