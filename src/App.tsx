@@ -16,7 +16,7 @@ import { useQuestionStore } from './stores/useQuestionStore';
 import { useConfigStore } from './stores/useConfigStore';
 import { useDatasetStore } from './stores/useDatasetStore';
 import { QuestionData, UnifiedCheckpoint, VerificationResult, CheckpointItem } from './types';
-import { CodeEditor } from './components/CodeEditor';
+import { CodeEditor, type CodeEditorRef } from './components/CodeEditor';
 import { ExpandedEditor } from './components/ExpandedEditor';
 import { StatusBadge } from './components/StatusBadge';
 import { MetadataEditor } from './components/MetadataEditor';
@@ -71,10 +71,12 @@ function App() {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
   const [questionFilter, setQuestionFilter] = useState<'all' | 'finished' | 'unfinished'>('all');
+  const [hasUnsavedFieldChanges, setHasUnsavedFieldChanges] = useState(false);
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
   const savedScrollPositionRef = useRef<number>(0);
+  const codeEditorRef = useRef<CodeEditorRef>(null);
 
   // Simple data loading effect - no clearing needed since state starts empty
   useEffect(() => {
@@ -82,6 +84,17 @@ function App() {
     setIsLoading(false);
     console.log('🚀 App: Fresh state initialized with session:', sessionId);
   }, [sessionId, setIsLoading]);
+
+  // Check for unsaved field changes periodically
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+      if (codeEditorRef.current) {
+        setHasUnsavedFieldChanges(codeEditorRef.current.hasUnsavedChanges());
+      }
+    }, 500); // Check every 500ms
+
+    return () => clearInterval(checkInterval);
+  }, []);
 
   // Load configuration defaults on app startup
   useEffect(() => {
@@ -204,7 +217,12 @@ function App() {
   };
 
   const handleSave = () => {
-    // Delegate to the question store
+    // First save all unsaved fields if in form editor mode
+    if (codeEditorRef.current) {
+      codeEditorRef.current.saveAllUnsavedFields();
+    }
+
+    // Then save the current template
     saveCurrentTemplate();
   };
 
@@ -640,7 +658,10 @@ function App() {
                       Raw Answer
                     </h3>
                     <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
-                      <p className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
+                      <p
+                        key={`answer-${selectedQuestion.id}-${selectedQuestion.raw_answer?.length || 0}`}
+                        className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium"
+                      >
                         {selectedQuestion.raw_answer}
                       </p>
                     </div>
@@ -688,10 +709,16 @@ function App() {
                       </button>
                       <button
                         onClick={handleSave}
-                        className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 relative"
                       >
                         <Save className="w-4 h-4" />
                         Save
+                        {hasUnsavedFieldChanges && (
+                          <span
+                            className="absolute -top-1 -right-1 h-3 w-3 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse"
+                            title="Unsaved field changes"
+                          ></span>
+                        )}
                       </button>
                       <button
                         onClick={() => setIsExpandedMode(true)}
@@ -707,6 +734,7 @@ function App() {
                   {/* Full-height editor */}
                   <div className="h-[600px]">
                     <CodeEditor
+                      ref={codeEditorRef}
                       value={currentTemplate}
                       onChange={setCurrentTemplate}
                       onSave={handleSave}
