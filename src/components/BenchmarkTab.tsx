@@ -739,6 +739,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
             <BenchmarkTable
               benchmarkResults={benchmarkResults}
+              checkpoint={checkpoint}
               onViewResult={setSelectedResult}
               onFilteredCountChange={handleFilteredCountChange}
             />

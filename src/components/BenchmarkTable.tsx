@@ -25,6 +25,7 @@ declare module '@tanstack/react-table' {
 
 interface BenchmarkTableProps {
   benchmarkResults: Record<string, VerificationResult>;
+  checkpoint?: Record<string, { raw_answer?: string; [key: string]: unknown }>;
   onViewResult: (result: VerificationResult) => void;
   onFilteredCountChange?: (filteredCount: number, totalCount: number) => void;
 }
@@ -148,12 +149,14 @@ const SortIndicator = ({ column }: { column: { getIsSorted: () => false | 'asc' 
 
 export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
   benchmarkResults,
+  checkpoint,
   onViewResult,
   onFilteredCountChange,
 }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [questionSearchText, setQuestionSearchText] = useState('');
+  const [rawAnswerSearchText, setRawAnswerSearchText] = useState('');
 
   // Convert benchmarkResults to array for table
   const data = useMemo(() => {
@@ -179,6 +182,27 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
         filterFn: 'includesString',
       }),
+      columnHelper.accessor(
+        (row) => {
+          // Access the expected raw answer from checkpoint using question_id
+          return checkpoint?.[row.question_id]?.raw_answer || '';
+        },
+        {
+          id: 'raw_answer',
+          header: 'Raw Answer',
+          cell: (info) => {
+            const value = info.getValue();
+            if (!value) return <span className="text-slate-400">N/A</span>;
+            const truncated = value.length > 100 ? value.substring(0, 100) + '...' : value;
+            return (
+              <span className="max-w-xs truncate block" title={value}>
+                {truncated}
+              </span>
+            );
+          },
+          filterFn: 'includesString',
+        }
+      ),
       columnHelper.accessor('answering_model', {
         header: 'Answering Model',
         cell: (info) => (
@@ -299,7 +323,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
       }),
     ],
-    [onViewResult]
+    [onViewResult, checkpoint]
   );
 
   const table = useReactTable({
@@ -332,12 +356,21 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
 
   // Debounced search effect
   const debouncedQuestionSearch = useDebounce(questionSearchText, 300);
+  const debouncedRawAnswerSearch = useDebounce(rawAnswerSearchText, 300);
+
   useEffect(() => {
     const questionColumn = table.getColumn('question_text');
     if (questionColumn) {
       questionColumn.setFilterValue(debouncedQuestionSearch || undefined);
     }
   }, [debouncedQuestionSearch, table]);
+
+  useEffect(() => {
+    const rawAnswerColumn = table.getColumn('raw_answer');
+    if (rawAnswerColumn) {
+      rawAnswerColumn.setFilterValue(debouncedRawAnswerSearch || undefined);
+    }
+  }, [debouncedRawAnswerSearch, table]);
 
   // Report filtered count changes to parent
   useEffect(() => {
@@ -425,6 +458,15 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
                               placeholder="Search questions..."
                               value={questionSearchText}
                               onChange={(e) => setQuestionSearchText(e.target.value)}
+                              className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                            />
+                          )}
+                          {header.id === 'raw_answer' && (
+                            <input
+                              type="text"
+                              placeholder="Search answers..."
+                              value={rawAnswerSearchText}
+                              onChange={(e) => setRawAnswerSearchText(e.target.value)}
                               className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                             />
                           )}

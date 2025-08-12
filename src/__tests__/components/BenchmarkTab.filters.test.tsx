@@ -353,4 +353,66 @@ describe('BenchmarkTab Filters and Export', () => {
       expect(jsonContent).toContain('1.5');
     });
   });
+
+  describe('Raw Answer Column', () => {
+    it('displays Raw Answer column header', async () => {
+      (global.fetch as vi.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ results: mockVerificationResults }),
+      });
+
+      render(
+        <BenchmarkTab
+          checkpoint={mockCheckpoint}
+          benchmarkResults={mockVerificationResults}
+          setBenchmarkResults={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Raw Answer')).toBeInTheDocument();
+      });
+    });
+
+    it('displays expected raw answers from checkpoint', async () => {
+      (global.fetch as vi.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ results: mockVerificationResults }),
+      });
+
+      render(
+        <BenchmarkTab
+          checkpoint={mockCheckpoint}
+          benchmarkResults={mockVerificationResults}
+          setBenchmarkResults={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        // Check that the raw answers from checkpoint are displayed (truncated)
+        expect(screen.getByText(/The answer is 4/)).toBeInTheDocument();
+        expect(screen.getByText(/The capital of France is Paris/)).toBeInTheDocument();
+      });
+    });
+
+    it('shows search filter for Raw Answer column', async () => {
+      (global.fetch as vi.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ results: mockVerificationResults }),
+      });
+
+      render(
+        <BenchmarkTab
+          checkpoint={mockCheckpoint}
+          benchmarkResults={mockVerificationResults}
+          setBenchmarkResults={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        const searchInputs = screen.getAllByPlaceholderText('Search answers...');
+        expect(searchInputs.length).toBeGreaterThan(0);
+      });
+    });
+  });
 });
