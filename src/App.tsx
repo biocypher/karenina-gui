@@ -860,6 +860,8 @@ function App() {
           onToggleFinished={handleToggleFinished}
           isFinished={checkpointItem?.finished || false}
           questionFilter={questionFilter}
+          codeEditorRef={codeEditorRef}
+          hasUnsavedFieldChanges={hasUnsavedFieldChanges}
           onFilterChange={setQuestionFilter}
           hasCheckpointData={Object.keys(checkpoint).length > 0}
         />

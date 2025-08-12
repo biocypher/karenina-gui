@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, Save, FileText, Maximize2, Filter } from 'lucide-react';
-import { CodeEditor } from './CodeEditor';
+import { CodeEditor, CodeEditorRef } from './CodeEditor';
 import type { QuestionData } from '../types';
 
 interface ExpandedEditorProps {
@@ -31,6 +31,10 @@ interface ExpandedEditorProps {
   questionFilter?: 'all' | 'finished' | 'unfinished';
   onFilterChange?: (filter: 'all' | 'finished' | 'unfinished') => void;
   hasCheckpointData?: boolean;
+
+  // Editor ref and state
+  codeEditorRef: React.RefObject<CodeEditorRef>;
+  hasUnsavedFieldChanges: boolean;
 }
 
 export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
@@ -52,6 +56,8 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
   questionFilter = 'all',
   onFilterChange,
   hasCheckpointData = false,
+  codeEditorRef,
+  hasUnsavedFieldChanges,
 }) => {
   const [showFullQuestion, setShowFullQuestion] = useState(false);
   const [showFullAnswer, setShowFullAnswer] = useState(false);
@@ -182,11 +188,17 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
 
             <button
               onClick={onSave}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors text-sm font-medium relative"
               title="Save changes (Ctrl/Cmd + S)"
             >
               <Save className="w-4 h-4" />
               Save
+              {hasUnsavedFieldChanges && (
+                <span
+                  className="absolute -top-1 -right-1 h-3 w-3 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse"
+                  title="Unsaved field changes"
+                />
+              )}
             </button>
           </div>
         </div>
@@ -271,6 +283,7 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
       <div className="flex-1 min-h-0 p-6">
         <div className="h-full">
           <CodeEditor
+            ref={codeEditorRef}
             value={value}
             onChange={onChange}
             onSave={onSave}
