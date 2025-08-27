@@ -1,6 +1,6 @@
 {
   "@context": "src/contexts/schema-org.jsonld",
-  "@type": "Dataset",
+  "@type": "DataFeed",
   "@id": "urn:uuid:karenina-checkpoint-2025-07-19",
   "name": "Karenina LLM Benchmark Checkpoint",
   "description": "A collection of benchmark questions with answer templates and rubric evaluations",
@@ -8,7 +8,7 @@
   "creator": "Karenina Benchmarking System",
   "dateCreated": "2025-07-19T10:00:00Z",
   "dateModified": "2025-07-19T15:30:00Z",
-  "hasPart": [
+  "dataFeedElement": [
     {
       "@type": "DataFeedItem",
       "@id": "urn:uuid:b1ec922f5b2e8de3178a87cb34b356db",

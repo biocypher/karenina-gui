@@ -488,14 +488,14 @@ describe('checkpoint-converter', () => {
     });
 
     it('should convert basic structure correctly', () => {
-      expect(jsonLdResult['@type']).toBe('Dataset');
+      expect(jsonLdResult['@type']).toBe('DataFeed');
       expect(jsonLdResult.version).toBe('0.1.0');
       expect(jsonLdResult['@context']).toBeDefined();
-      expect(jsonLdResult.hasPart).toHaveLength(2);
+      expect(jsonLdResult.dataFeedElement).toHaveLength(2);
     });
 
     it('should preserve question data', () => {
-      const firstItem = jsonLdResult.hasPart[0];
+      const firstItem = jsonLdResult.dataFeedElement[0];
       const question = firstItem.item;
 
       expect(question['@type']).toBe('Question');
@@ -504,7 +504,7 @@ describe('checkpoint-converter', () => {
     });
 
     it('should convert Pydantic templates to SoftwareSourceCode', () => {
-      const question = jsonLdResult.hasPart[0].item;
+      const question = jsonLdResult.dataFeedElement[0].item;
 
       expect(question.hasPart['@type']).toBe('SoftwareSourceCode');
       expect(question.hasPart.programmingLanguage).toBe('Python');
@@ -512,7 +512,7 @@ describe('checkpoint-converter', () => {
     });
 
     it('should convert rubric traits to Rating objects', () => {
-      const question = jsonLdResult.hasPart[0].item;
+      const question = jsonLdResult.dataFeedElement[0].item;
 
       expect(question.rating).toBeDefined();
       expect(question.rating).toHaveLength(1); // Only 1 question-specific (global moved to Dataset)
@@ -535,7 +535,7 @@ describe('checkpoint-converter', () => {
     });
 
     it('should preserve metadata in additionalProperty', () => {
-      const question = jsonLdResult.hasPart[0].item;
+      const question = jsonLdResult.dataFeedElement[0].item;
       const finishedProp = question.additionalProperty?.find((p) => p.name === 'finished');
 
       expect(finishedProp).toBeDefined();
@@ -585,9 +585,11 @@ describe('checkpoint-converter', () => {
       expect(isJsonLdCheckpoint(null)).toBe(false);
       expect(isJsonLdCheckpoint({})).toBe(false);
       expect(isJsonLdCheckpoint({ '@type': 'Question' })).toBe(false);
-      expect(isJsonLdCheckpoint({ '@type': 'Dataset' })).toBe(false);
-      expect(isJsonLdCheckpoint({ '@type': 'Dataset', version: '2.0' })).toBe(false);
-      expect(isJsonLdCheckpoint({ '@type': 'Dataset', '@context': {}, hasPart: [], version: '2.0' })).toBe(true);
+      expect(isJsonLdCheckpoint({ '@type': 'DataFeed' })).toBe(false);
+      expect(isJsonLdCheckpoint({ '@type': 'DataFeed', version: '2.0' })).toBe(false);
+      expect(isJsonLdCheckpoint({ '@type': 'DataFeed', '@context': {}, dataFeedElement: [], version: '2.0' })).toBe(
+        true
+      );
     });
   });
 
@@ -675,8 +677,8 @@ describe('checkpoint-converter', () => {
     it('should validate rating additionalType', () => {
       const checkpoint = v2ToJsonLd(mockV2Checkpoint);
       // Manually corrupt a rating additionalType
-      if (checkpoint.hasPart[0].item.rating) {
-        checkpoint.hasPart[0].item.rating[0].additionalType = 'InvalidType' as 'GlobalRubricTrait';
+      if (checkpoint.dataFeedElement[0].item.rating) {
+        checkpoint.dataFeedElement[0].item.rating[0].additionalType = 'InvalidType' as 'GlobalRubricTrait';
       }
 
       expect(() => validateJsonLdCheckpoint(checkpoint)).toThrow(CheckpointConversionError);
@@ -725,7 +727,7 @@ describe('checkpoint-converter', () => {
       const endTime = performance.now();
 
       expect(endTime - startTime).toBeLessThan(200); // Should complete in <200ms
-      expect(jsonLd.hasPart).toHaveLength(1000);
+      expect(jsonLd.dataFeedElement).toHaveLength(1000);
     });
   });
 
@@ -766,7 +768,7 @@ describe('checkpoint-converter', () => {
       const jsonLd = v2ToJsonLd(checkpointWithCustomMetadata);
 
       // Verify custom metadata is in the export
-      const question1 = jsonLd.hasPart[0];
+      const question1 = jsonLd.dataFeedElement[0];
       expect(question1.item.additionalProperty).toBeDefined();
 
       const customProps = question1.item.additionalProperty?.filter((prop) => prop.name.startsWith('custom_'));
@@ -777,7 +779,7 @@ describe('checkpoint-converter', () => {
       expect(customProps?.find((p) => p.name === 'custom_difficulty')?.value).toBe('easy');
 
       // Question 2 should not have custom metadata
-      const question2 = jsonLd.hasPart[1];
+      const question2 = jsonLd.dataFeedElement[1];
       const question2CustomProps = question2.item.additionalProperty?.filter((prop) => prop.name.startsWith('custom_'));
       expect(question2CustomProps).toHaveLength(0);
 
@@ -848,7 +850,7 @@ describe('checkpoint-converter', () => {
       const jsonLd = v2ToJsonLd(checkpointWithAuthor);
 
       // Verify author is exported as JSON string
-      const question1 = jsonLd.hasPart[0];
+      const question1 = jsonLd.dataFeedElement[0];
       const authorProp = question1.item.additionalProperty?.find((prop) => prop.name === 'author');
       expect(authorProp).toBeDefined();
       expect(typeof authorProp?.value).toBe('string');
@@ -909,7 +911,7 @@ describe('checkpoint-converter', () => {
       const jsonLd = v2ToJsonLd(checkpointWithSources);
 
       // Verify sources are exported as JSON string
-      const question1 = jsonLd.hasPart[0];
+      const question1 = jsonLd.dataFeedElement[0];
       const sourcesProp = question1.item.additionalProperty?.find((prop) => prop.name === 'sources');
       expect(sourcesProp).toBeDefined();
       expect(typeof sourcesProp?.value).toBe('string');
@@ -1024,7 +1026,7 @@ describe('checkpoint-converter', () => {
       expect(importedItem?.sources).toBeUndefined();
 
       // Verify no author/sources properties in JSON-LD
-      const question1 = jsonLd.hasPart[0];
+      const question1 = jsonLd.dataFeedElement[0];
       const authorProp = question1.item.additionalProperty?.find((prop) => prop.name === 'author');
       const sourcesProp = question1.item.additionalProperty?.find((prop) => prop.name === 'sources');
       expect(authorProp).toBeUndefined();
@@ -1041,7 +1043,7 @@ describe('checkpoint-converter', () => {
         creator: 'Test',
         dateCreated: '2025-01-21T14:00:00Z',
         dateModified: '2025-01-21T14:00:00Z',
-        hasPart: [
+        dataFeedElement: [
           {
             '@type': 'DataFeedItem',
             dateModified: '2025-01-21T14:00:00Z',

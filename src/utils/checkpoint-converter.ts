@@ -18,7 +18,7 @@ const schemaOrgContext = {
   '@context': {
     '@version': 1.1,
     '@vocab': 'http://schema.org/',
-    Dataset: 'Dataset',
+    DataFeed: 'DataFeed',
     DataFeedItem: 'DataFeedItem',
     Question: 'Question',
     Answer: 'Answer',
@@ -31,7 +31,7 @@ const schemaOrgContext = {
     creator: 'creator',
     dateCreated: 'dateCreated',
     dateModified: 'dateModified',
-    hasPart: { '@id': 'hasPart', '@container': '@set' },
+    dataFeedElement: { '@id': 'dataFeedElement', '@container': '@set' },
     item: { '@id': 'item', '@type': '@id' },
     text: 'text',
     acceptedAnswer: { '@id': 'acceptedAnswer', '@type': '@id' },
@@ -364,7 +364,7 @@ export function v2ToJsonLd(
     // Create the final JSON-LD document
     const jsonLdCheckpoint: JsonLdCheckpoint = {
       '@context': schemaOrgContext['@context'],
-      '@type': 'Dataset',
+      '@type': 'DataFeed',
       '@id': options.preserveIds ? `urn:uuid:karenina-checkpoint-${Date.now()}` : undefined,
       name: datasetMeta?.name || defaultName,
       description: datasetMeta?.description || defaultDescription,
@@ -373,7 +373,7 @@ export function v2ToJsonLd(
       dateCreated: dateCreated,
       dateModified: dateModified,
       rating: globalRatings, // Global rubric traits as Rating objects
-      hasPart: dataFeedItems,
+      dataFeedElement: dataFeedItems,
       additionalProperty: additionalProperties,
     };
 
@@ -411,7 +411,7 @@ export function jsonLdToV2(
     // Convert DataFeedItem objects back to CheckpointItem
     const checkpoint: { [key: string]: CheckpointItem } = {};
 
-    jsonLdCheckpoint.hasPart.forEach((dataFeedItem, index) => {
+    jsonLdCheckpoint.dataFeedElement.forEach((dataFeedItem, index) => {
       const question = dataFeedItem.item;
 
       // Generate a question ID (use index if no ID preserved)
@@ -533,19 +533,19 @@ export function validateJsonLdCheckpoint(checkpoint: JsonLdCheckpoint): void {
   const errors: string[] = [];
 
   // Validate required fields
-  if (!checkpoint['@type'] || checkpoint['@type'] !== 'Dataset') {
-    errors.push('Root object must be of type "Dataset"');
+  if (!checkpoint['@type'] || checkpoint['@type'] !== 'DataFeed') {
+    errors.push('Root object must be of type "DataFeed"');
   }
 
   // Version field represents dataset content version, not checkpoint format version
   // No specific format requirements - user can use any versioning scheme
 
-  if (!checkpoint.hasPart || !Array.isArray(checkpoint.hasPart)) {
-    errors.push('hasPart must be an array of DataFeedItem objects');
+  if (!checkpoint.dataFeedElement || !Array.isArray(checkpoint.dataFeedElement)) {
+    errors.push('dataFeedElement must be an array of DataFeedItem objects');
   }
 
   // Validate DataFeedItem objects
-  checkpoint.hasPart.forEach((item, index) => {
+  checkpoint.dataFeedElement.forEach((item, index) => {
     if (item['@type'] !== 'DataFeedItem') {
       errors.push(`Item ${index} must be of type "DataFeedItem"`);
     }
@@ -595,10 +595,10 @@ export function isJsonLdCheckpoint(data: unknown): data is JsonLdCheckpoint {
       typeof data === 'object' &&
       data !== null &&
       '@type' in data &&
-      data['@type'] === 'Dataset' &&
+      data['@type'] === 'DataFeed' &&
       '@context' in data &&
-      'hasPart' in data &&
-      Array.isArray(data.hasPart) &&
+      'dataFeedElement' in data &&
+      Array.isArray(data.dataFeedElement) &&
       'version' in data &&
       typeof data.version === 'string'
     )

@@ -152,7 +152,7 @@ function v2ToJsonLd(checkpoint) {
     creator: 'creator',
     dateCreated: 'dateCreated',
     dateModified: 'dateModified',
-    hasPart: { '@id': 'hasPart', '@container': '@set' },
+    dataFeedElement: { '@id': 'dataFeedElement', '@container': '@set' },
     item: { '@id': 'item', '@type': '@id' },
     text: 'text',
     acceptedAnswer: { '@id': 'acceptedAnswer', '@type': '@id' },
@@ -289,7 +289,7 @@ function v2ToJsonLd(checkpoint) {
 
   return {
     '@context': schemaOrgContext,
-    '@type': 'Dataset',
+    '@type': 'DataFeed',
     '@id': `urn:uuid:karenina-checkpoint-${Date.now()}`,
     name: datasetMeta?.name || 'Karenina LLM Benchmark Checkpoint',
     description:
@@ -300,7 +300,7 @@ function v2ToJsonLd(checkpoint) {
     dateCreated: dateCreated,
     dateModified: dateModified,
     rating: globalRatings, // Global rubric traits as Rating objects
-    hasPart: dataFeedItems,
+    dataFeedElement: dataFeedItems,
     additionalProperty: additionalProperties,
   };
 }
@@ -362,9 +362,9 @@ async function saveJsonLd(jsonLdData, outputPath) {
 
 function generateReport(v2Data, jsonLdData) {
   const originalQuestions = Object.keys(v2Data.checkpoint).length;
-  const convertedQuestions = jsonLdData.hasPart.length;
+  const convertedQuestions = jsonLdData.dataFeedElement.length;
   const globalRatings = jsonLdData.rating ? jsonLdData.rating.length : 0;
-  const questionRatings = jsonLdData.hasPart.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0);
+  const questionRatings = jsonLdData.dataFeedElement.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0);
   const totalRatings = globalRatings + questionRatings;
 
   const finishedQuestions = Object.values(v2Data.checkpoint).filter((item) => item.finished).length;
@@ -390,7 +390,7 @@ function generateReport(v2Data, jsonLdData) {
     },
     validation: {
       dataIntegrity: originalQuestions === convertedQuestions,
-      formatValid: jsonLdData['@type'] === 'Dataset',
+      formatValid: jsonLdData['@type'] === 'DataFeed',
       contextValid: !!jsonLdData['@context'],
     },
   };
