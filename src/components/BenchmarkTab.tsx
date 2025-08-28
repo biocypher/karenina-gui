@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Square, Download, CheckCircle, AlertCircle, BarChart3, Filter, FileDown, Trash2 } from 'lucide-react';
+import {
+  Play,
+  Square,
+  Download,
+  CheckCircle,
+  AlertCircle,
+  BarChart3,
+  Filter,
+  FileDown,
+  Trash2,
+  Settings,
+} from 'lucide-react';
 import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
@@ -11,6 +22,7 @@ import { BenchmarkTable } from './BenchmarkTable';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
 import { RubricResultsDisplay } from './RubricResultsDisplay';
 import { useRubricStore } from '../stores/useRubricStore';
+import { CustomExportDialog } from './CustomExportDialog';
 
 // Interfaces now imported from types
 
@@ -63,6 +75,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   // Filter state for table results
   const [filteredCount, setFilteredCount] = useState<number | null>(null);
   const [totalCount, setTotalCount] = useState<number>(0);
+  // Custom export dialog state
+  const [isCustomExportDialogOpen, setIsCustomExportDialogOpen] = useState(false);
   const MAX_RETRIES = 10;
 
   // Get finished templates from checkpoint
@@ -89,6 +103,20 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         setError(error);
       },
       currentRubric
+    );
+  };
+
+  // Handle custom export with field selection
+  const handleCustomExport = (selectedFields: string[], format: 'json' | 'csv') => {
+    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
+    exportFilteredResults(
+      filteredResults,
+      format,
+      (error) => {
+        setError(error);
+      },
+      currentRubric,
+      selectedFields
     );
   };
 
@@ -719,6 +747,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                       <Download className="w-3 h-3" />
                       CSV
                     </button>
+                    <button
+                      onClick={() => setIsCustomExportDialogOpen(true)}
+                      className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-200 text-sm"
+                    >
+                      <Settings className="w-3 h-3" />
+                      Customized Export
+                    </button>
                   </>
                 )}
               </div>
@@ -1004,5 +1039,16 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     }
   };
 
-  return <ErrorBoundary>{renderContent()}</ErrorBoundary>;
+  return (
+    <ErrorBoundary>
+      {renderContent()}
+      <CustomExportDialog
+        isOpen={isCustomExportDialogOpen}
+        onClose={() => setIsCustomExportDialogOpen(false)}
+        results={Object.values(benchmarkResults) as ExportableResult[]}
+        globalRubric={currentRubric}
+        onExport={handleCustomExport}
+      />
+    </ErrorBoundary>
+  );
 };
