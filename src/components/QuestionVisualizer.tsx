@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { Search, Hash, MessageSquare, FileText, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
-
-interface Question {
-  question: string;
-  raw_answer: string;
-  id?: string;
-  tags?: string[];
-}
+import {
+  Search,
+  Hash,
+  MessageSquare,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Check,
+  User,
+  Tags,
+  Link,
+} from 'lucide-react';
+import { QuestionData } from '../types';
 
 interface QuestionVisualizerProps {
-  questions: Record<string, Question>;
+  questions: QuestionData;
 }
 
 export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ questions }) => {
@@ -41,10 +47,8 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
     try {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
-      setCopiedText(text);
       setTimeout(() => {
         setCopiedId(null);
-        setCopiedText(null);
       }, 2000);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
@@ -57,6 +61,40 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
 
   const collapseAll = () => {
     setExpandedQuestions(new Set());
+  };
+
+  // Get metadata indicators for a question
+  const getMetadataIndicators = (question: QuestionData[string]) => {
+    const indicators = [];
+
+    if (question.metadata?.author) {
+      indicators.push({
+        icon: User,
+        label: 'Author',
+        color: 'text-blue-600 dark:text-blue-400',
+        bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+      });
+    }
+
+    if (question.metadata?.keywords && question.metadata.keywords.length > 0) {
+      indicators.push({
+        icon: Tags,
+        label: `${question.metadata.keywords.length} keywords`,
+        color: 'text-purple-600 dark:text-purple-400',
+        bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+      });
+    }
+
+    if (question.metadata?.url) {
+      indicators.push({
+        icon: Link,
+        label: 'URL',
+        color: 'text-green-600 dark:text-green-400',
+        bgColor: 'bg-green-100 dark:bg-green-900/30',
+      });
+    }
+
+    return indicators;
   };
 
   if (questionEntries.length === 0) {
@@ -125,6 +163,7 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
         ) : (
           filteredQuestions.map(([questionId, question], index) => {
             const isExpanded = expandedQuestions.has(questionId);
+            const metadataIndicators = getMetadataIndicators(question);
 
             return (
               <div
@@ -142,6 +181,22 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
                         <span className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">
                           #{index + 1}
                         </span>
+
+                        {/* Metadata indicators */}
+                        {metadataIndicators.map((indicator, idx) => {
+                          const Icon = indicator.icon;
+                          return (
+                            <div
+                              key={idx}
+                              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${indicator.color} ${indicator.bgColor}`}
+                              title={indicator.label}
+                            >
+                              <Icon className="w-3 h-3" />
+                              <span className="hidden sm:inline">{indicator.label}</span>
+                            </div>
+                          );
+                        })}
+
                         <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                           <Hash className="w-3 h-3" />
                           <span className="font-mono" title={questionId}>
@@ -227,6 +282,77 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
                           <p className="text-sm text-emerald-900 dark:text-emerald-200">{question.raw_answer}</p>
                         </div>
                       </div>
+
+                      {/* Metadata Section */}
+                      {question.metadata && (
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Metadata
+                          </label>
+                          <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg border border-amber-200 dark:border-amber-700 space-y-3">
+                            {question.metadata.author && (
+                              <div className="flex items-start gap-2">
+                                <User className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-medium text-amber-900 dark:text-amber-200 mb-1">Author</p>
+                                  <p className="text-sm text-amber-800 dark:text-amber-300">
+                                    {question.metadata.author.name}
+                                  </p>
+                                  {question.metadata.author.email && (
+                                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                                      {question.metadata.author.email}
+                                    </p>
+                                  )}
+                                  {question.metadata.author.affiliation && (
+                                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                                      {question.metadata.author.affiliation}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {question.metadata.url && (
+                              <div className="flex items-start gap-2">
+                                <Link className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-medium text-amber-900 dark:text-amber-200 mb-1">URL</p>
+                                  <a
+                                    href={question.metadata.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-green-700 dark:text-green-300 hover:text-green-800 dark:hover:text-green-200 underline break-all"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {question.metadata.url}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {question.metadata.keywords && question.metadata.keywords.length > 0 && (
+                              <div className="flex items-start gap-2">
+                                <Tags className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-medium text-amber-900 dark:text-amber-200 mb-2">
+                                    Keywords
+                                  </p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {question.metadata.keywords.map((keyword, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full text-xs"
+                                      >
+                                        {keyword}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -235,10 +235,15 @@ describe('MetadataEditor - Keywords Functionality', () => {
     expect(screen.getByText('empty-filtered')).toBeInTheDocument();
     expect(screen.getByText('another-trimmed')).toBeInTheDocument();
 
-    // Should not have more than expected number of keywords (original 3 + added 3)
-    const keywordTags = screen
-      .getAllByRole('button')
-      .filter((btn) => btn.className.includes('bg-purple-100') && btn.textContent?.includes('trimmed'));
-    expect(keywordTags.length).toBeGreaterThan(0);
+    // Should find keyword tags (div elements, not buttons) containing "trimmed"
+    const keywordContainer = screen.getByText('trimmed').closest('div');
+    expect(keywordContainer).toHaveClass('bg-purple-100');
+
+    // Check that all expected trimmed keywords are present
+    const trimmedKeywords = ['trimmed', 'another-trimmed'];
+    trimmedKeywords.forEach((keyword) => {
+      const keywordDiv = screen.getByText(keyword).closest('div');
+      expect(keywordDiv).toHaveClass('bg-purple-100');
+    });
   });
 });

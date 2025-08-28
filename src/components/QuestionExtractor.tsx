@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Download, Eye, Settings, CheckCircle, AlertCircle } from 'lucide-react';
 import { FilePreview } from './FilePreview';
 import { QuestionVisualizer } from './QuestionVisualizer';
+import { AdvancedExtractionPanel, MetadataColumnSettings } from './AdvancedExtractionPanel';
 import { QuestionData } from '../types';
 
 interface FileInfo {
@@ -56,6 +57,10 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
   const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'configure' | 'extract' | 'visualize'>(
     initialExtractedQuestions && Object.keys(initialExtractedQuestions).length > 0 ? 'visualize' : 'upload'
   );
+  const [advancedVisible, setAdvancedVisible] = useState(false);
+  const [metadataSettings, setMetadataSettings] = useState<MetadataColumnSettings>({
+    keywords_separator: ',',
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -190,6 +195,13 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
           question_column: selectedQuestionColumn,
           answer_column: selectedAnswerColumn,
           sheet_name: selectedSheet || null,
+          // Optional metadata columns
+          author_name_column: metadataSettings.author_name_column || null,
+          author_email_column: metadataSettings.author_email_column || null,
+          author_affiliation_column: metadataSettings.author_affiliation_column || null,
+          url_column: metadataSettings.url_column || null,
+          keywords_column: metadataSettings.keywords_column || null,
+          keywords_separator: metadataSettings.keywords_separator,
         }),
       });
 
@@ -275,6 +287,8 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
     setSelectedQuestionColumn('');
     setSelectedAnswerColumn('');
     setSelectedSheet('');
+    setAdvancedVisible(false);
+    setMetadataSettings({ keywords_separator: ',' });
     setCurrentStep('upload');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -467,7 +481,18 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              {/* Advanced Extraction Panel - Only show after basic columns are selected */}
+              {selectedQuestionColumn && selectedAnswerColumn && previewData.columns && (
+                <AdvancedExtractionPanel
+                  columns={previewData.columns}
+                  isVisible={advancedVisible}
+                  onToggle={() => setAdvancedVisible(!advancedVisible)}
+                  onSettingsChange={setMetadataSettings}
+                  previewData={previewData.data}
+                />
+              )}
+
+              <div className="flex items-center gap-4 mt-8">
                 <button
                   onClick={handleExtractQuestions}
                   disabled={!selectedQuestionColumn || !selectedAnswerColumn || isExtracting}

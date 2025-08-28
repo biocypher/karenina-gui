@@ -106,6 +106,13 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
           last_modified: existingCheckpointItem?.last_modified || new Date().toISOString(),
           finished: existingCheckpointItem?.finished || false,
           question_rubric: existingCheckpointItem?.question_rubric,
+          // Map metadata from Question to CheckpointItem (preserve existing checkpoint metadata)
+          author: existingCheckpointItem?.author ?? question.metadata?.author,
+          keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
+          // Map URL to custom metadata (CheckpointItem doesn't have direct url field)
+          custom_metadata:
+            existingCheckpointItem?.custom_metadata ??
+            (question.metadata?.url ? { url: question.metadata.url } : undefined),
         };
       });
 
@@ -137,6 +144,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
           last_modified: now,
           finished: false,
           question_rubric: undefined,
+          // Map metadata from Question to CheckpointItem
+          author: question.metadata?.author,
+          keywords: question.metadata?.keywords,
+          // Map URL to custom metadata (CheckpointItem doesn't have direct url field)
+          custom_metadata: question.metadata?.url ? { url: question.metadata.url } : undefined,
         };
       });
 
@@ -216,6 +228,12 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         last_modified: isCurrentQuestion ? now : existingCheckpointItem?.last_modified || now,
         finished: existingCheckpointItem?.finished || false,
         question_rubric: existingCheckpointItem?.question_rubric,
+        // Preserve metadata from existing checkpoint or map from Question
+        author: existingCheckpointItem?.author ?? question.metadata?.author,
+        keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
+        custom_metadata:
+          existingCheckpointItem?.custom_metadata ??
+          (question.metadata?.url ? { url: question.metadata.url } : undefined),
       };
     });
 
@@ -245,6 +263,12 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
           ? !(existingCheckpointItem?.finished || false)
           : existingCheckpointItem?.finished || false,
         question_rubric: existingCheckpointItem?.question_rubric,
+        // Preserve metadata from existing checkpoint or map from Question
+        author: existingCheckpointItem?.author ?? question.metadata?.author,
+        keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
+        custom_metadata:
+          existingCheckpointItem?.custom_metadata ??
+          (question.metadata?.url ? { url: question.metadata.url } : undefined),
       };
     });
 

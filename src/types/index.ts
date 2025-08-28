@@ -2,6 +2,11 @@ export interface Question {
   question: string;
   raw_answer: string;
   answer_template: string;
+  metadata?: {
+    author?: SchemaOrgPerson;
+    url?: string;
+    keywords?: string[];
+  };
 }
 
 export interface QuestionData {
