@@ -4,6 +4,7 @@ import type { Rubric, RubricTrait } from '../types';
 export interface ExportableResult {
   question_id: string;
   question_text: string;
+  raw_answer?: string; // Ground truth answer from checkpoint
   raw_llm_response: string;
   parsed_response?: unknown;
   verify_result?: unknown;
@@ -137,6 +138,7 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'row_index',
     'question_id',
     'question_text',
+    'raw_answer',
     'raw_llm_response',
     'parsed_response',
     'verify_result',
@@ -190,6 +192,7 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       row_index: String(index + 1),
       question_id: escapeCSVField(result.question_id),
       question_text: escapeCSVField(result.question_text),
+      raw_answer: escapeCSVField(result.raw_answer || ''),
       raw_llm_response: escapeCSVField(result.raw_llm_response),
       parsed_response: escapeCSVField(result.parsed_response ? JSON.stringify(result.parsed_response) : ''),
       verify_result: escapeCSVField(result.verify_result !== undefined ? JSON.stringify(result.verify_result) : 'N/A'),

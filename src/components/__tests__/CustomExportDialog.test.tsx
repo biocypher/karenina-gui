@@ -9,6 +9,7 @@ describe('CustomExportDialog', () => {
     {
       question_id: 'test1',
       question_text: 'Test question 1',
+      raw_answer: 'Ground truth answer 1',
       raw_llm_response: 'Test response 1',
       answering_model: 'gpt-4',
       parsing_model: 'gpt-4',
@@ -19,6 +20,7 @@ describe('CustomExportDialog', () => {
     {
       question_id: 'test2',
       question_text: 'Test question 2',
+      raw_answer: 'Ground truth answer 2',
       raw_llm_response: 'Test response 2',
       answering_model: 'claude-3',
       parsing_model: 'claude-3',

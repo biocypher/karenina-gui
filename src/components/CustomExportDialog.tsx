@@ -22,6 +22,7 @@ const FIELD_GROUPS: FieldGroup[] = [
       { key: 'row_index', label: 'Row Index', description: 'Sequential row number' },
       { key: 'question_id', label: 'Question ID', description: 'Unique identifier for the question' },
       { key: 'question_text', label: 'Question Text', description: 'The original question' },
+      { key: 'raw_answer', label: 'Raw Answer', description: 'Ground truth answer from original data' },
       { key: 'success', label: 'Success', description: 'Whether the verification was successful' },
       { key: 'execution_time', label: 'Execution Time', description: 'Time taken to process' },
       { key: 'timestamp', label: 'Timestamp', description: 'When the verification was run' },

@@ -94,7 +94,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Handle export filtered results - Fix the function to work with simple client-side export
   const handleExportFilteredResults = async (format: 'json' | 'csv') => {
-    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
+    const filteredResults = Object.values(benchmarkResults).map((result) => ({
+      ...result,
+      raw_answer: checkpoint[result.question_id]?.raw_answer,
+    })) as ExportableResult[];
 
     exportFilteredResults(
       filteredResults,
@@ -108,7 +111,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Handle custom export with field selection
   const handleCustomExport = (selectedFields: string[], format: 'json' | 'csv') => {
-    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
+    const filteredResults = Object.values(benchmarkResults).map((result) => ({
+      ...result,
+      raw_answer: checkpoint[result.question_id]?.raw_answer,
+    })) as ExportableResult[];
     exportFilteredResults(
       filteredResults,
       format,
@@ -1045,7 +1051,12 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       <CustomExportDialog
         isOpen={isCustomExportDialogOpen}
         onClose={() => setIsCustomExportDialogOpen(false)}
-        results={Object.values(benchmarkResults) as ExportableResult[]}
+        results={
+          Object.values(benchmarkResults).map((result) => ({
+            ...result,
+            raw_answer: checkpoint[result.question_id]?.raw_answer,
+          })) as ExportableResult[]
+        }
         globalRubric={currentRubric}
         onExport={handleCustomExport}
       />
