@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Tag, User, Plus, Trash2, BookOpen, Link } from 'lucide-react';
+import { X, Save, Tag, User, Plus, Trash2, BookOpen, Link, Tags } from 'lucide-react';
 import { CheckpointItem, SchemaOrgPerson, SchemaOrgCreativeWork } from '../types';
 
 interface MetadataEditorProps {
@@ -15,6 +15,7 @@ interface MetadataEditForm {
   customProperties?: { [key: string]: string };
   author?: Partial<SchemaOrgPerson>;
   sources?: SchemaOrgCreativeWork[];
+  keywords?: string[];
 }
 
 export const MetadataEditor: React.FC<MetadataEditorProps> = ({
@@ -29,6 +30,7 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
     customProperties: checkpointItem.custom_metadata || {},
     author: checkpointItem.author,
     sources: checkpointItem.sources || [],
+    keywords: checkpointItem.keywords || [],
   });
 
   const [isDirty, setIsDirty] = useState(false);
@@ -40,6 +42,7 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
       customProperties: checkpointItem.custom_metadata || {},
       author: checkpointItem.author,
       sources: checkpointItem.sources || [],
+      keywords: checkpointItem.keywords || [],
     });
     setIsDirty(false);
   }, [checkpointItem, questionId]);
@@ -132,6 +135,47 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
     setIsDirty(true);
   };
 
+  // Keywords management functions
+  const [keywordInput, setKeywordInput] = useState('');
+
+  const parseKeywordsFromString = (input: string): string[] => {
+    return input
+      .split(',')
+      .map((keyword) => keyword.trim())
+      .filter((keyword) => keyword.length > 0);
+  };
+
+  const addKeywordsFromInput = () => {
+    const newKeywords = parseKeywordsFromString(keywordInput);
+    if (newKeywords.length > 0) {
+      setFormData((prev) => {
+        const currentKeywords = prev.keywords || [];
+        const uniqueKeywords = Array.from(new Set([...currentKeywords, ...newKeywords]));
+        return {
+          ...prev,
+          keywords: uniqueKeywords,
+        };
+      });
+      setKeywordInput('');
+      setIsDirty(true);
+    }
+  };
+
+  const removeKeyword = (keywordToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      keywords: prev.keywords?.filter((keyword) => keyword !== keywordToRemove) || [],
+    }));
+    setIsDirty(true);
+  };
+
+  const handleKeywordInputKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addKeywordsFromInput();
+    }
+  };
+
   const handleSave = () => {
     const updatedItem: CheckpointItem = {
       ...checkpointItem,
@@ -145,6 +189,8 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
       // Store schema.org enhanced metadata
       author: formData.author && formData.author.name ? (formData.author as SchemaOrgPerson) : undefined,
       sources: formData.sources && formData.sources.length > 0 ? formData.sources : undefined,
+      // Store keywords
+      keywords: formData.keywords && formData.keywords.length > 0 ? formData.keywords : undefined,
     };
 
     onSave(questionId, updatedItem);
@@ -164,6 +210,7 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
       customProperties: checkpointItem.custom_metadata || {},
       author: checkpointItem.author,
       sources: checkpointItem.sources || [],
+      keywords: checkpointItem.keywords || [],
     });
     setIsDirty(false);
     onClose();
@@ -363,6 +410,66 @@ export const MetadataEditor: React.FC<MetadataEditorProps> = ({
                   No sources added. Click "Academic" or "Web" to add sources.
                 </div>
               )}
+            </div>
+
+            {/* Keywords Section */}
+            <div className="space-y-4">
+              <h4 className="text-md font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <Tags className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                Keywords
+              </h4>
+
+              <div className="bg-slate-50/50 dark:bg-slate-700/50 rounded-lg p-4 space-y-3">
+                {/* Keywords Input */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      onKeyPress={handleKeywordInputKeyPress}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/90 dark:bg-slate-800/90 text-slate-900 dark:text-white transition-colors"
+                      placeholder="Enter keywords separated by commas..."
+                    />
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Separate multiple keywords with commas. Press Enter to add.
+                    </div>
+                  </div>
+                  <button
+                    onClick={addKeywordsFromInput}
+                    disabled={!keywordInput.trim()}
+                    className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
+
+                {/* Keywords Display */}
+                {formData.keywords && formData.keywords.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.keywords.map((keyword, index) => (
+                      <div
+                        key={index}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-700"
+                      >
+                        <Tags className="w-3 h-3" />
+                        <span>{keyword}</span>
+                        <button
+                          onClick={() => removeKeyword(keyword)}
+                          className="p-0.5 ml-1 text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-100 hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-500 dark:text-slate-400 italic text-center py-4 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-lg">
+                    No keywords added. Enter keywords above to tag this question.
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Custom Properties - Enhanced with more space */}

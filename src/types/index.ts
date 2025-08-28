@@ -57,6 +57,7 @@ export interface CheckpointItem {
   // Schema.org enhanced metadata
   author?: SchemaOrgPerson;
   sources?: SchemaOrgCreativeWork[];
+  keywords?: string[];
 }
 
 export interface Checkpoint {
@@ -148,6 +149,7 @@ export interface SchemaOrgDataFeedItem {
   dateCreated?: string;
   dateModified: string; // last_modified from v2.0
   item: SchemaOrgQuestion;
+  keywords?: string[];
 }
 
 export interface SchemaOrgDataFeed extends JsonLdContext {

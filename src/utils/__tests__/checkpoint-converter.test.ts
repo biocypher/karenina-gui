@@ -1095,4 +1095,180 @@ describe('checkpoint-converter', () => {
       expect(importedItem?.sources).toBeUndefined();
     });
   });
+
+  describe('Keywords Support', () => {
+    it('should preserve keywords when converting v2 to JSON-LD', () => {
+      const v2WithKeywords: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'test-question-1': {
+            question: 'What is machine learning?',
+            raw_answer: 'Machine learning is a subset of AI.',
+            original_answer_template: 'class MLAnswer(BaseAnswer):\n    definition: str',
+            answer_template: 'class MLAnswer(BaseAnswer):\n    definition: str',
+            last_modified: '2025-07-19T12:00:00Z',
+            finished: true,
+            keywords: ['machine-learning', 'artificial-intelligence', 'computer-science'],
+          },
+        },
+      };
+
+      const jsonLd = v2ToJsonLd(v2WithKeywords, {
+        name: 'Keywords Test',
+        description: 'Test for keywords support',
+        preserveIds: true,
+      });
+
+      const dataFeedItem = jsonLd.dataFeedElement[0];
+      expect(dataFeedItem.keywords).toEqual(['machine-learning', 'artificial-intelligence', 'computer-science']);
+    });
+
+    it('should preserve keywords when converting JSON-LD to v2', () => {
+      const jsonLdWithKeywords: JsonLdCheckpoint = {
+        '@context': {
+          '@version': 1.1,
+          '@vocab': 'http://schema.org/',
+          dataFeedElement: { '@id': 'dataFeedElement', '@container': '@set' },
+          keywords: { '@id': 'keywords', '@container': '@set' },
+        },
+        '@type': 'DataFeed',
+        name: 'Keywords Test',
+        description: 'Test for keywords support',
+        version: '3.0.0-jsonld',
+        creator: 'Test Suite',
+        dateCreated: '2025-07-19T10:00:00Z',
+        dateModified: '2025-07-19T12:00:00Z',
+        dataFeedElement: [
+          {
+            '@type': 'DataFeedItem',
+            '@id': 'urn:uuid:question-1',
+            dateCreated: '2025-07-19T10:00:00Z',
+            dateModified: '2025-07-19T12:00:00Z',
+            keywords: ['react', 'javascript', 'frontend'],
+            item: {
+              '@type': 'Question',
+              text: 'What is React?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'React is a JavaScript library.',
+              },
+              hasPart: {
+                '@type': 'SoftwareSourceCode',
+                name: 'React Answer Template',
+                text: 'class ReactAnswer(BaseAnswer):\n    description: str',
+                programmingLanguage: 'Python',
+              },
+              additionalProperty: [
+                {
+                  '@type': 'PropertyValue',
+                  name: 'finished',
+                  value: true,
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      const v2 = jsonLdToV2(jsonLdWithKeywords);
+
+      // The jsonLdToV2 function generates IDs based on question text
+      const availableKeys = Object.keys(v2.checkpoint);
+      expect(availableKeys).toHaveLength(1);
+
+      // Get the question item using the generated key
+      const questionKey = availableKeys[0];
+      const questionItem = v2.checkpoint[questionKey];
+
+      expect(questionItem).toBeDefined();
+      expect(questionItem?.keywords).toEqual(['react', 'javascript', 'frontend']);
+    });
+
+    it('should handle empty keywords arrays', () => {
+      const v2WithEmptyKeywords: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'test-question-1': {
+            question: 'What is testing?',
+            raw_answer: 'Testing verifies software functionality.',
+            original_answer_template: 'class TestAnswer(BaseAnswer):\n    explanation: str',
+            answer_template: 'class TestAnswer(BaseAnswer):\n    explanation: str',
+            last_modified: '2025-07-19T12:00:00Z',
+            finished: true,
+            keywords: [],
+          },
+        },
+      };
+
+      const jsonLd = v2ToJsonLd(v2WithEmptyKeywords, {
+        name: 'Empty Keywords Test',
+        description: 'Test for empty keywords',
+        preserveIds: true,
+      });
+
+      const dataFeedItem = jsonLd.dataFeedElement[0];
+      expect(dataFeedItem.keywords).toEqual([]);
+    });
+
+    it('should handle undefined keywords', () => {
+      const v2WithoutKeywords: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'test-question-1': {
+            question: 'What is debugging?',
+            raw_answer: 'Debugging is finding and fixing errors.',
+            original_answer_template: 'class DebugAnswer(BaseAnswer):\n    process: str',
+            answer_template: 'class DebugAnswer(BaseAnswer):\n    process: str',
+            last_modified: '2025-07-19T12:00:00Z',
+            finished: true,
+          },
+        },
+      };
+
+      const jsonLd = v2ToJsonLd(v2WithoutKeywords, {
+        name: 'No Keywords Test',
+        description: 'Test without keywords',
+        preserveIds: true,
+      });
+
+      const dataFeedItem = jsonLd.dataFeedElement[0];
+      expect(dataFeedItem.keywords).toBeUndefined();
+    });
+
+    it('should round-trip keywords correctly', () => {
+      const originalKeywords = ['python', 'programming', 'software-development', 'algorithms'];
+
+      const v2: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          'roundtrip-test': {
+            question: 'What is Python?',
+            raw_answer: 'Python is a programming language.',
+            original_answer_template: 'class PythonAnswer(BaseAnswer):\n    language: str',
+            answer_template: 'class PythonAnswer(BaseAnswer):\n    language: str',
+            last_modified: '2025-07-19T12:00:00Z',
+            finished: true,
+            keywords: originalKeywords,
+          },
+        },
+      };
+
+      // Convert v2 -> JSON-LD -> v2
+      const jsonLd = v2ToJsonLd(v2, {
+        name: 'Round-trip Test',
+        description: 'Test keywords round-trip conversion',
+        preserveIds: true,
+      });
+
+      const backToV2 = jsonLdToV2(jsonLd);
+      const roundTripItem = backToV2.checkpoint['roundtrip-test'];
+
+      expect(roundTripItem).toBeDefined();
+      expect(roundTripItem?.keywords).toEqual(originalKeywords);
+    });
+  });
 });

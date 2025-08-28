@@ -53,6 +53,10 @@
     "value": "value",
     
     "url": "url",
-    "identifier": "identifier"
+    "identifier": "identifier",
+    "keywords": {
+      "@id": "keywords",
+      "@container": "@set"
+    }
   }
 }

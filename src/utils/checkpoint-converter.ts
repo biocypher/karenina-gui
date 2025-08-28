@@ -46,6 +46,7 @@ const schemaOrgContext = {
     value: 'value',
     url: 'url',
     identifier: 'identifier',
+    keywords: { '@id': 'keywords', '@container': '@set' },
   },
 };
 
@@ -296,6 +297,7 @@ export function v2ToJsonLd(
         dateCreated: item.date_created || item.last_modified, // Use date_created if available, fallback to last_modified
         dateModified: item.last_modified,
         item: question,
+        keywords: item.keywords,
       };
     });
 
@@ -482,6 +484,7 @@ export function jsonLdToV2(
         // Include schema.org enhanced metadata
         author: author,
         sources: sources,
+        keywords: dataFeedItem.keywords,
       };
 
       checkpoint[questionId] = checkpointItem;
