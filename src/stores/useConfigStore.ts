@@ -30,6 +30,12 @@ interface ConfigState {
   defaultProvider: string;
   /** Draft model name being edited in modal (e.g., 'gpt-4', 'gemini-2.0-flash') */
   defaultModel: string;
+  /** Draft async enabled setting being edited in modal */
+  defaultAsyncEnabled: boolean;
+  /** Draft async chunk size being edited in modal */
+  defaultAsyncChunkSize: number;
+  /** Draft async max workers being edited in modal */
+  defaultAsyncMaxWorkers: number | null;
 
   // ===== SAVED/PERSISTED CONFIGURATION =====
   // These values are used by generation components and only updated when saved
@@ -40,6 +46,12 @@ interface ConfigState {
   savedProvider: string;
   /** Currently saved and active model used by generation components */
   savedModel: string;
+  /** Currently saved and active async enabled setting used by generation components */
+  savedAsyncEnabled: boolean;
+  /** Currently saved and active async chunk size used by generation components */
+  savedAsyncChunkSize: number;
+  /** Currently saved and active async max workers used by generation components */
+  savedAsyncMaxWorkers: number | null;
 
   // ===== BASELINE CONFIGURATION =====
   // Original values loaded from server, used for reset functionality
@@ -49,6 +61,9 @@ interface ConfigState {
     defaultInterface: 'langchain' | 'openrouter';
     defaultProvider: string;
     defaultModel: string;
+    defaultAsyncEnabled: boolean;
+    defaultAsyncChunkSize: number;
+    defaultAsyncMaxWorkers: number | null;
   };
 
   // ===== ENVIRONMENT VARIABLES =====
@@ -88,6 +103,12 @@ interface ConfigState {
   updateDefaultProvider: (provider: string) => void;
   /** Update draft model selection */
   updateDefaultModel: (model: string) => void;
+  /** Update draft async enabled setting */
+  updateDefaultAsyncEnabled: (enabled: boolean) => void;
+  /** Update draft async chunk size */
+  updateDefaultAsyncChunkSize: (chunkSize: number) => void;
+  /** Update draft async max workers */
+  updateDefaultAsyncMaxWorkers: (maxWorkers: number | null) => void;
 
   // Persistence operations
   /** Save current working values as new defaults and update saved values */
@@ -111,16 +132,25 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   defaultInterface: 'langchain',
   defaultProvider: 'google_genai',
   defaultModel: 'gemini-2.5-flash',
+  defaultAsyncEnabled: true,
+  defaultAsyncChunkSize: 5,
+  defaultAsyncMaxWorkers: null,
 
   // Saved values (used by generation components)
   savedInterface: 'langchain',
   savedProvider: 'google_genai',
   savedModel: 'gemini-2.5-flash',
+  savedAsyncEnabled: true,
+  savedAsyncChunkSize: 5,
+  savedAsyncMaxWorkers: null,
 
   originalDefaults: {
     defaultInterface: 'langchain',
     defaultProvider: 'google_genai',
     defaultModel: 'gemini-2.5-flash',
+    defaultAsyncEnabled: true,
+    defaultAsyncChunkSize: 5,
+    defaultAsyncMaxWorkers: null,
   },
   envVariables: {},
   unmaskedEnvVariables: {},
@@ -135,7 +165,10 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     return (
       state.defaultInterface !== state.originalDefaults.defaultInterface ||
       state.defaultProvider !== state.originalDefaults.defaultProvider ||
-      state.defaultModel !== state.originalDefaults.defaultModel
+      state.defaultModel !== state.originalDefaults.defaultModel ||
+      state.defaultAsyncEnabled !== state.originalDefaults.defaultAsyncEnabled ||
+      state.defaultAsyncChunkSize !== state.originalDefaults.defaultAsyncChunkSize ||
+      state.defaultAsyncMaxWorkers !== state.originalDefaults.defaultAsyncMaxWorkers
     );
   },
 
@@ -163,13 +196,22 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         defaultInterface: defaults.default_interface,
         defaultProvider: defaults.default_provider,
         defaultModel: defaults.default_model,
+        defaultAsyncEnabled: defaults.default_async_enabled ?? true,
+        defaultAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
+        defaultAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
         savedInterface: defaults.default_interface,
         savedProvider: defaults.default_provider,
         savedModel: defaults.default_model,
+        savedAsyncEnabled: defaults.default_async_enabled ?? true,
+        savedAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
+        savedAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
         originalDefaults: {
           defaultInterface: defaults.default_interface,
           defaultProvider: defaults.default_provider,
           defaultModel: defaults.default_model,
+          defaultAsyncEnabled: defaults.default_async_enabled ?? true,
+          defaultAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
+          defaultAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
         },
         isLoading: false,
       });
@@ -212,6 +254,19 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     set({ defaultModel: model });
   },
 
+  // Update async settings
+  updateDefaultAsyncEnabled: (enabled) => {
+    set({ defaultAsyncEnabled: enabled });
+  },
+
+  updateDefaultAsyncChunkSize: (chunkSize) => {
+    set({ defaultAsyncChunkSize: chunkSize });
+  },
+
+  updateDefaultAsyncMaxWorkers: (maxWorkers) => {
+    set({ defaultAsyncMaxWorkers: maxWorkers });
+  },
+
   // Save defaults to backend
   saveDefaults: async () => {
     set({ isSavingDefaults: true, error: null });
@@ -221,6 +276,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         default_interface: state.defaultInterface,
         default_provider: state.defaultProvider,
         default_model: state.defaultModel,
+        default_async_enabled: state.defaultAsyncEnabled,
+        default_async_chunk_size: state.defaultAsyncChunkSize,
+        default_async_max_workers: state.defaultAsyncMaxWorkers,
       };
 
       const response = await fetch('/api/config/defaults', {
@@ -239,10 +297,16 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         savedInterface: state.defaultInterface,
         savedProvider: state.defaultProvider,
         savedModel: state.defaultModel,
+        savedAsyncEnabled: state.defaultAsyncEnabled,
+        savedAsyncChunkSize: state.defaultAsyncChunkSize,
+        savedAsyncMaxWorkers: state.defaultAsyncMaxWorkers,
         originalDefaults: {
           defaultInterface: state.defaultInterface,
           defaultProvider: state.defaultProvider,
           defaultModel: state.defaultModel,
+          defaultAsyncEnabled: state.defaultAsyncEnabled,
+          defaultAsyncChunkSize: state.defaultAsyncChunkSize,
+          defaultAsyncMaxWorkers: state.defaultAsyncMaxWorkers,
         },
         isSavingDefaults: false,
       });
@@ -262,6 +326,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       defaultInterface: state.originalDefaults.defaultInterface,
       defaultProvider: state.originalDefaults.defaultProvider,
       defaultModel: state.originalDefaults.defaultModel,
+      defaultAsyncEnabled: state.originalDefaults.defaultAsyncEnabled,
+      defaultAsyncChunkSize: state.originalDefaults.defaultAsyncChunkSize,
+      defaultAsyncMaxWorkers: state.originalDefaults.defaultAsyncMaxWorkers,
     });
   },
 
