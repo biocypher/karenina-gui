@@ -150,8 +150,8 @@ export interface SchemaOrgDataFeedItem {
   item: SchemaOrgQuestion;
 }
 
-export interface SchemaOrgDataset extends JsonLdContext {
-  '@type': 'Dataset';
+export interface SchemaOrgDataFeed extends JsonLdContext {
+  '@type': 'DataFeed';
   '@id'?: string;
   name: string;
   description?: string;
@@ -160,12 +160,12 @@ export interface SchemaOrgDataset extends JsonLdContext {
   dateCreated?: string;
   dateModified?: string;
   rating?: SchemaOrgRating[]; // Global rubric traits as Rating objects
-  hasPart: SchemaOrgDataFeedItem[];
+  dataFeedElement: SchemaOrgDataFeedItem[];
   additionalProperty?: SchemaOrgPropertyValue[]; // format version, conversion metadata
 }
 
 // Type alias for the complete JSON-LD checkpoint
-export type JsonLdCheckpoint = SchemaOrgDataset;
+export type JsonLdCheckpoint = SchemaOrgDataFeed;
 
 // Conversion mapping types
 export interface RubricTraitToRatingMapping {

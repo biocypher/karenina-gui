@@ -274,7 +274,7 @@ describe('Global Rubric Export', () => {
       expect(jsonLdResult.rating![0].additionalType).toBe('GlobalRubricTrait');
 
       // Check question-specific rubric is at Question level
-      const questionItem = jsonLdResult.hasPart[0];
+      const questionItem = jsonLdResult.dataFeedElement[0];
       expect(questionItem.item.rating).toBeDefined();
       expect(questionItem.item.rating).toHaveLength(1);
       expect(questionItem.item.rating![0].name).toBe('Question Depth');

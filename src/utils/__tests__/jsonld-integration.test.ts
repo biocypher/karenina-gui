@@ -53,9 +53,9 @@ describe('JSON-LD Integration Tests', () => {
       });
 
       // Verify JSON-LD structure
-      expect(jsonLdCheckpoint['@type']).toBe('Dataset');
+      expect(jsonLdCheckpoint['@type']).toBe('DataFeed');
       expect(jsonLdCheckpoint.version).toBe('0.1.0');
-      expect(jsonLdCheckpoint.hasPart).toHaveLength(1);
+      expect(jsonLdCheckpoint.dataFeedElement).toHaveLength(1);
 
       // Convert back to v2
       const reconvertedV2 = jsonLdToV2(jsonLdCheckpoint);
@@ -106,7 +106,7 @@ describe('JSON-LD Integration Tests', () => {
       };
 
       const jsonLd = v2ToJsonLd(emptyCheckpoint);
-      expect(jsonLd.hasPart).toHaveLength(0);
+      expect(jsonLd.dataFeedElement).toHaveLength(0);
 
       const reconverted = jsonLdToV2(jsonLd);
       expect(Object.keys(reconverted.checkpoint)).toHaveLength(0);
@@ -118,12 +118,12 @@ describe('JSON-LD Integration Tests', () => {
       const jsonLd = v2ToJsonLd(sampleV2Checkpoint);
 
       // Check root Dataset
-      expect(jsonLd['@type']).toBe('Dataset');
+      expect(jsonLd['@type']).toBe('DataFeed');
       expect(jsonLd['@context']).toBeDefined();
       expect(jsonLd['@context']['@vocab']).toBe('http://schema.org/');
 
       // Check DataFeedItem structure
-      const feedItem = jsonLd.hasPart[0];
+      const feedItem = jsonLd.dataFeedElement[0];
       expect(feedItem['@type']).toBe('DataFeedItem');
       expect(feedItem.item['@type']).toBe('Question');
 
@@ -160,7 +160,7 @@ describe('JSON-LD Integration Tests', () => {
       expect(jsonLd.version).toBeTruthy();
 
       // Question requirements
-      const question = jsonLd.hasPart[0].item;
+      const question = jsonLd.dataFeedElement[0].item;
       expect(question.text).toBeTruthy();
       expect(question.acceptedAnswer.text).toBeTruthy();
 
@@ -228,7 +228,7 @@ describe('JSON-LD Integration Tests', () => {
       expect(duration).toBeLessThan(200); // 200ms threshold
 
       // Verify data integrity
-      expect(jsonLd.hasPart).toHaveLength(100);
+      expect(jsonLd.dataFeedElement).toHaveLength(100);
       expect(Object.keys(reconverted.checkpoint)).toHaveLength(100);
     });
   });
@@ -255,7 +255,7 @@ describe('JSON-LD Integration Tests', () => {
       // and potentially producing empty results rather than throwing
       const invalidJsonLd = {
         '@type': 'InvalidType',
-        hasPart: [],
+        dataFeedElement: [],
         version: 'invalid',
       } as unknown as JsonLdCheckpoint;
 
@@ -285,24 +285,24 @@ describe('JSON-LD Integration Tests', () => {
 
     it('should preserve finished state and timestamps', () => {
       const jsonLd = v2ToJsonLd(sampleV2Checkpoint);
-      const question = jsonLd.hasPart[0].item;
+      const question = jsonLd.dataFeedElement[0].item;
 
       const finishedProp = question.additionalProperty?.find((p) => p.name === 'finished');
       expect(finishedProp?.value).toBe(true);
 
-      expect(jsonLd.hasPart[0].dateModified).toBe('2025-07-19T12:00:00Z');
+      expect(jsonLd.dataFeedElement[0].dateModified).toBe('2025-07-19T12:00:00Z');
     });
 
     it('should preserve Pydantic template code', () => {
       const jsonLd = v2ToJsonLd(sampleV2Checkpoint);
-      const softwareCode = jsonLd.hasPart[0].item.hasPart;
+      const softwareCode = jsonLd.dataFeedElement[0].item.hasPart;
 
       expect(softwareCode.text).toContain('class FranceCapitalAnswer');
       expect(softwareCode.programmingLanguage).toBe('Python');
       expect(softwareCode.codeRepository).toBe('karenina-benchmarks');
 
       // Verify original template is preserved in metadata
-      const originalTemplateProp = jsonLd.hasPart[0].item.additionalProperty?.find(
+      const originalTemplateProp = jsonLd.dataFeedElement[0].item.additionalProperty?.find(
         (p) => p.name === 'original_answer_template'
       );
       expect(originalTemplateProp?.value).toContain('class CapitalAnswer');
