@@ -269,6 +269,7 @@ export interface VerificationResult {
   verify_granular_result?: GranularVerificationResult;
   verify_rubric?: Record<string, number | boolean>;
   evaluation_rubric?: Rubric; // The merged rubric used for evaluation (global + question-specific)
+  keywords?: string[]; // Keywords associated with the question
   answering_model: string;
   parsing_model: string;
   execution_time: number;

@@ -203,6 +203,34 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           filterFn: 'includesString',
         }
       ),
+      columnHelper.accessor('keywords', {
+        header: 'Keywords',
+        cell: (info) => {
+          const keywords = info.getValue();
+          if (!keywords || keywords.length === 0) {
+            return <span className="text-slate-400 text-xs">N/A</span>;
+          }
+          return (
+            <div className="flex flex-wrap gap-1">
+              {keywords.slice(0, 3).map((keyword, index) => (
+                <span
+                  key={index}
+                  className="text-xs bg-teal-100 text-teal-800 dark:bg-teal-900/20 dark:text-teal-200 px-2 py-1 rounded"
+                  title={keyword}
+                >
+                  {keyword.length > 12 ? `${keyword.substring(0, 12)}...` : keyword}
+                </span>
+              ))}
+              {keywords.length > 3 && (
+                <span className="text-xs text-slate-500 dark:text-slate-400" title={keywords.slice(3).join(', ')}>
+                  +{keywords.length - 3}
+                </span>
+              )}
+            </div>
+          );
+        },
+        filterFn: 'arrIncludesSome',
+      }),
       columnHelper.accessor('answering_model', {
         header: 'Answering Model',
         cell: (info) => (

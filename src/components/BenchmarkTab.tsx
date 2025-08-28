@@ -249,6 +249,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         last_modified: item.last_modified,
         finished: true,
         question_rubric: item.question_rubric || null,
+        keywords: item.keywords || null,
       }));
 
       const requestPayload = {
