@@ -20,6 +20,7 @@ import { CodeEditor, type CodeEditorRef } from './components/CodeEditor';
 import { ExpandedEditor } from './components/ExpandedEditor';
 import { StatusBadge } from './components/StatusBadge';
 import { MetadataEditor } from './components/MetadataEditor';
+import { FewShotExamplesEditor } from './components/FewShotExamplesEditor';
 import { FileManager } from './components/FileManager';
 import { QuestionExtractor } from './components/QuestionExtractor';
 import { AnswerTemplateGenerator } from './components/AnswerTemplateGenerator';
@@ -70,6 +71,7 @@ function App() {
   const [isExpandedMode, setIsExpandedMode] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
+  const [isFewShotEditorOpen, setIsFewShotEditorOpen] = useState(false);
   const [questionFilter, setQuestionFilter] = useState<'all' | 'finished' | 'unfinished'>('all');
   const [hasUnsavedFieldChanges, setHasUnsavedFieldChanges] = useState(false);
 
@@ -334,6 +336,21 @@ function App() {
 
   const handleCloseMetadataEditor = () => {
     setIsMetadataEditorOpen(false);
+  };
+
+  const handleOpenFewShotEditor = () => {
+    setIsFewShotEditorOpen(true);
+  };
+
+  const handleCloseFewShotEditor = () => {
+    setIsFewShotEditorOpen(false);
+  };
+
+  const handleSaveFewShotExamples = (examples: Array<{ question: string; answer: string }>) => {
+    if (selectedQuestionId) {
+      updateQuestionCheckpoint(selectedQuestionId, { few_shot_examples: examples });
+      setIsFewShotEditorOpen(false);
+    }
   };
 
   const handleSaveMetadata = (questionId: string, updatedItem: CheckpointItem) => {
@@ -676,8 +693,10 @@ function App() {
                       <StatusBadge
                         finished={checkpointItem?.finished || false}
                         modified={isModified || false}
+                        fewShotExamplesCount={checkpointItem?.few_shot_examples?.length || 0}
                         onToggleFinished={handleToggleFinished}
                         onEditMetadata={handleOpenMetadataEditor}
+                        onEditFewShotExamples={handleOpenFewShotEditor}
                       />
                     </div>
 
@@ -828,6 +847,16 @@ function App() {
             checkpointItem={checkpointItem}
             questionId={selectedQuestionId}
             onSave={handleSaveMetadata}
+          />
+        )}
+
+        {/* Few-shot Examples Editor Modal */}
+        {selectedQuestion && checkpointItem && (
+          <FewShotExamplesEditor
+            isOpen={isFewShotEditorOpen}
+            examples={checkpointItem.few_shot_examples || []}
+            onSave={handleSaveFewShotExamples}
+            onClose={handleCloseFewShotEditor}
           />
         )}
 

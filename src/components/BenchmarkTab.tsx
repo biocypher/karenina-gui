@@ -42,10 +42,16 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     runName,
     rubricEnabled,
     correctnessEnabled,
+    fewShotEnabled,
+    fewShotMode,
+    fewShotK,
     setReplicateCount,
     setRunName,
     setRubricEnabled,
     setCorrectnessEnabled,
+    setFewShotEnabled,
+    setFewShotMode,
+    setFewShotK,
     addAnsweringModel,
     addParsingModel,
     removeAnsweringModel,
@@ -417,6 +423,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             finishedTemplates={finishedTemplates}
             rubricEnabled={rubricEnabled}
             correctnessEnabled={correctnessEnabled}
+            fewShotEnabled={fewShotEnabled}
+            fewShotMode={fewShotMode}
+            fewShotK={fewShotK}
             onAddAnsweringModel={addAnsweringModel}
             onAddParsingModel={addParsingModel}
             onRemoveAnsweringModel={removeAnsweringModel}
@@ -424,9 +433,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onUpdateAnsweringModel={updateAnsweringModel}
             onUpdateParsingModel={updateParsingModel}
             onTogglePromptExpanded={togglePromptExpanded}
-            onReplicateCountChange={setReplicateCount}
             onRubricEnabledChange={setRubricEnabled}
             onCorrectnessEnabledChange={setCorrectnessEnabled}
+            onFewShotEnabledChange={setFewShotEnabled}
+            onFewShotModeChange={setFewShotMode}
+            onFewShotKChange={setFewShotK}
             onManualTraceUploadSuccess={(traceCount) => {
               setError(null);
               console.log(`Successfully loaded ${traceCount} manual traces`);

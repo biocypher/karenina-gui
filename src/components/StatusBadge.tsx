@@ -1,14 +1,23 @@
 import React from 'react';
-import { CheckCircle, Circle, Edit3, Settings } from 'lucide-react';
+import { CheckCircle, Circle, Edit3, Settings, Zap } from 'lucide-react';
 
 interface StatusBadgeProps {
   finished: boolean;
   modified: boolean;
+  fewShotExamplesCount?: number;
   onToggleFinished: () => void;
   onEditMetadata: () => void;
+  onEditFewShotExamples: () => void;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ finished, modified, onToggleFinished, onEditMetadata }) => {
+export const StatusBadge: React.FC<StatusBadgeProps> = ({
+  finished,
+  modified,
+  fewShotExamplesCount = 0,
+  onToggleFinished,
+  onEditMetadata,
+  onEditFewShotExamples,
+}) => {
   return (
     <div className="flex items-center gap-3">
       {/* Finished Badge */}
@@ -31,6 +40,18 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ finished, modified, on
           Modified
         </div>
       )}
+
+      {/* Few-shot Examples Button */}
+      <button
+        onClick={onEditFewShotExamples}
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-violet-100 to-purple-100 text-violet-800 hover:from-violet-200 hover:to-purple-200 border border-violet-200 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+      >
+        <Zap className="w-4 h-4" />
+        Few-shot Examples
+        {fewShotExamplesCount > 0 && (
+          <span className="bg-violet-600 text-white text-xs px-2 py-0.5 rounded-full">{fewShotExamplesCount}</span>
+        )}
+      </button>
 
       {/* Edit Metadata Button */}
       <button

@@ -21,6 +21,9 @@ interface ConfigurationPanelProps {
   finishedTemplates?: Array<[string, unknown]>;
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
+  fewShotEnabled: boolean;
+  fewShotMode: 'all' | 'k-shot' | 'individual';
+  fewShotK: number;
   onAddAnsweringModel: () => void;
   onAddParsingModel: () => void;
   onRemoveAnsweringModel: (id: string) => void;
@@ -30,6 +33,9 @@ interface ConfigurationPanelProps {
   onTogglePromptExpanded: (modelId: string) => void;
   onRubricEnabledChange: (enabled: boolean) => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
+  onFewShotEnabledChange: (enabled: boolean) => void;
+  onFewShotModeChange: (mode: 'all' | 'k-shot' | 'individual') => void;
+  onFewShotKChange: (k: number) => void;
   onManualTraceUploadSuccess?: (traceCount: number) => void;
   onManualTraceUploadError?: (error: string) => void;
 }
@@ -43,6 +49,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   finishedTemplates,
   rubricEnabled,
   correctnessEnabled,
+  fewShotEnabled,
+  fewShotMode,
+  fewShotK,
   onAddAnsweringModel,
   onAddParsingModel,
   onRemoveAnsweringModel,
@@ -52,6 +61,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onTogglePromptExpanded,
   onRubricEnabledChange,
   onCorrectnessEnabledChange,
+  onFewShotEnabledChange,
+  onFewShotModeChange,
+  onFewShotKChange,
   onManualTraceUploadSuccess,
   onManualTraceUploadError,
 }) => {
@@ -346,7 +358,97 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 (Qualitative evaluation using defined traits)
               </span>
             </label>
+
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={fewShotEnabled}
+                onChange={(e) => onFewShotEnabledChange(e.target.checked)}
+                disabled={isRunning}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+              />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">⚡ Few-shot Prompting</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                (Use examples to improve LLM performance - disabled by default)
+              </span>
+            </label>
           </div>
+
+          {/* Few-shot Configuration */}
+          {fewShotEnabled && (
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Few-shot Mode
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="few-shot-mode"
+                      value="all"
+                      checked={fewShotMode === 'all'}
+                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'individual')}
+                      disabled={isRunning}
+                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Use all available examples</span>
+                  </label>
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="few-shot-mode"
+                      value="k-shot"
+                      checked={fewShotMode === 'k-shot'}
+                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'individual')}
+                      disabled={isRunning}
+                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Use k examples per question</span>
+                  </label>
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="few-shot-mode"
+                      value="individual"
+                      checked={fewShotMode === 'individual'}
+                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'individual')}
+                      disabled={isRunning}
+                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Per-question examples only</span>
+                  </label>
+                </div>
+              </div>
+
+              {fewShotMode === 'k-shot' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Number of Examples (k)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={fewShotK}
+                    onChange={(e) => onFewShotKChange(parseInt(e.target.value))}
+                    disabled={isRunning}
+                    className="w-24 p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Maximum number of examples to use per question (1-10)
+                  </p>
+                </div>
+              )}
+
+              <div className="p-3 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-md">
+                <p className="text-sm text-violet-800 dark:text-violet-200">
+                  <strong>Note:</strong> Few-shot examples are defined per question in the Template Curator. Questions
+                  without examples will use zero-shot prompting even when this feature is enabled.
+                </p>
+              </div>
+            </div>
+          )}
 
           {!correctnessEnabled && !rubricEnabled && (
             <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-sm text-amber-800 dark:text-amber-200">
