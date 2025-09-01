@@ -363,7 +363,7 @@ function App() {
 
         setCheckpoint(updatedCheckpoint);
       }
-      setIsFewShotEditorOpen(false);
+      // Don't close the modal - let user continue editing
     }
   };
 
