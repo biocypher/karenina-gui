@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Trash2, X, Save, FileText } from 'lucide-react';
 
@@ -50,7 +50,7 @@ export const FewShotExamplesEditor: React.FC<FewShotExamplesEditorProps> = ({ is
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, handleSave, onClose]);
 
   const addExample = () => {
     const newExample: FewShotExample = {
@@ -72,14 +72,14 @@ export const FewShotExamplesEditor: React.FC<FewShotExamplesEditorProps> = ({ is
     setHasUnsavedChanges(true);
   };
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const examplesData = localExamples
       .filter((ex) => ex.question.trim() && ex.answer.trim()) // Filter out empty examples
       .map((ex) => ({ question: ex.question, answer: ex.answer }));
 
     onSave(examplesData);
     setHasUnsavedChanges(false);
-  };
+  }, [localExamples, onSave]);
 
   if (!isOpen) return null;
 
