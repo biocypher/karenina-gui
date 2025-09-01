@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Square, Download, CheckCircle, AlertCircle, BarChart3, Filter, FileDown, Trash2 } from 'lucide-react';
+import {
+  Play,
+  Square,
+  Download,
+  CheckCircle,
+  AlertCircle,
+  BarChart3,
+  Filter,
+  FileDown,
+  Trash2,
+  Settings,
+} from 'lucide-react';
 import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
@@ -11,6 +22,7 @@ import { BenchmarkTable } from './BenchmarkTable';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
 import { RubricResultsDisplay } from './RubricResultsDisplay';
 import { useRubricStore } from '../stores/useRubricStore';
+import { CustomExportDialog } from './CustomExportDialog';
 
 // Interfaces now imported from types
 
@@ -63,6 +75,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   // Filter state for table results
   const [filteredCount, setFilteredCount] = useState<number | null>(null);
   const [totalCount, setTotalCount] = useState<number>(0);
+  // Custom export dialog state
+  const [isCustomExportDialogOpen, setIsCustomExportDialogOpen] = useState(false);
   const MAX_RETRIES = 10;
 
   // Get finished templates from checkpoint
@@ -80,7 +94,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Handle export filtered results - Fix the function to work with simple client-side export
   const handleExportFilteredResults = async (format: 'json' | 'csv') => {
-    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
+    const filteredResults = Object.values(benchmarkResults).map((result) => ({
+      ...result,
+      raw_answer: checkpoint[result.question_id]?.raw_answer,
+    })) as ExportableResult[];
 
     exportFilteredResults(
       filteredResults,
@@ -89,6 +106,23 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         setError(error);
       },
       currentRubric
+    );
+  };
+
+  // Handle custom export with field selection
+  const handleCustomExport = (selectedFields: string[], format: 'json' | 'csv') => {
+    const filteredResults = Object.values(benchmarkResults).map((result) => ({
+      ...result,
+      raw_answer: checkpoint[result.question_id]?.raw_answer,
+    })) as ExportableResult[];
+    exportFilteredResults(
+      filteredResults,
+      format,
+      (error) => {
+        setError(error);
+      },
+      currentRubric,
+      selectedFields
     );
   };
 
@@ -249,6 +283,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         last_modified: item.last_modified,
         finished: true,
         question_rubric: item.question_rubric || null,
+        keywords: item.keywords || null,
       }));
 
       const requestPayload = {
@@ -718,6 +753,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                       <Download className="w-3 h-3" />
                       CSV
                     </button>
+                    <button
+                      onClick={() => setIsCustomExportDialogOpen(true)}
+                      className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all duration-200 text-sm"
+                    >
+                      <Settings className="w-3 h-3" />
+                      Customized Export
+                    </button>
                   </>
                 )}
               </div>
@@ -824,17 +866,39 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                             </div>
                           </div>
 
-                          {/* How It Was Parsed */}
-                          {selectedResult.parsed_response && (
+                          {/* Ground Truth (Expected) */}
+                          {selectedResult.parsed_gt_response && (
                             <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">How It Was Parsed</h4>
-                              <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                Ground Truth (Expected)
+                              </h4>
+                              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                                 <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
                                   {(() => {
                                     try {
-                                      return JSON.stringify(selectedResult.parsed_response, null, 2);
+                                      return JSON.stringify(selectedResult.parsed_gt_response, null, 2);
                                     } catch {
-                                      return String(selectedResult.parsed_response);
+                                      return String(selectedResult.parsed_gt_response);
+                                    }
+                                  })()}
+                                </pre>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* LLM Extraction (Generated) */}
+                          {selectedResult.parsed_llm_response && (
+                            <div>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                LLM Extraction (Generated)
+                              </h4>
+                              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                                <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
+                                  {(() => {
+                                    try {
+                                      return JSON.stringify(selectedResult.parsed_llm_response, null, 2);
+                                    } catch {
+                                      return String(selectedResult.parsed_llm_response);
                                     }
                                   })()}
                                 </pre>
@@ -1003,5 +1067,21 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     }
   };
 
-  return <ErrorBoundary>{renderContent()}</ErrorBoundary>;
+  return (
+    <ErrorBoundary>
+      {renderContent()}
+      <CustomExportDialog
+        isOpen={isCustomExportDialogOpen}
+        onClose={() => setIsCustomExportDialogOpen(false)}
+        results={
+          Object.values(benchmarkResults).map((result) => ({
+            ...result,
+            raw_answer: checkpoint[result.question_id]?.raw_answer,
+          })) as ExportableResult[]
+        }
+        globalRubric={currentRubric}
+        onExport={handleCustomExport}
+      />
+    </ErrorBoundary>
+  );
 };

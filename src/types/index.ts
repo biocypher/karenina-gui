@@ -2,6 +2,11 @@ export interface Question {
   question: string;
   raw_answer: string;
   answer_template: string;
+  metadata?: {
+    author?: SchemaOrgPerson;
+    url?: string;
+    keywords?: string[];
+  };
 }
 
 export interface QuestionData {
@@ -57,6 +62,7 @@ export interface CheckpointItem {
   // Schema.org enhanced metadata
   author?: SchemaOrgPerson;
   sources?: SchemaOrgCreativeWork[];
+  keywords?: string[];
 }
 
 export interface Checkpoint {
@@ -148,6 +154,7 @@ export interface SchemaOrgDataFeedItem {
   dateCreated?: string;
   dateModified: string; // last_modified from v2.0
   item: SchemaOrgQuestion;
+  keywords?: string[];
 }
 
 export interface SchemaOrgDataFeed extends JsonLdContext {
@@ -257,11 +264,13 @@ export interface VerificationResult {
   error?: string;
   question_text: string;
   raw_llm_response: string;
-  parsed_response?: ParsedAnswerResponse;
+  parsed_gt_response?: Record<string, unknown>; // Ground truth from 'correct' field
+  parsed_llm_response?: Record<string, unknown>; // LLM extracted fields (excluding 'id' and 'correct')
   verify_result?: VerificationOutcome;
   verify_granular_result?: GranularVerificationResult;
   verify_rubric?: Record<string, number | boolean>;
   evaluation_rubric?: Rubric; // The merged rubric used for evaluation (global + question-specific)
+  keywords?: string[]; // Keywords associated with the question
   answering_model: string;
   parsing_model: string;
   execution_time: number;
