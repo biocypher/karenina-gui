@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Trash2, X, Save, FileText } from 'lucide-react';
 
@@ -18,12 +18,6 @@ interface FewShotExamplesEditorProps {
 export const FewShotExamplesEditor: React.FC<FewShotExamplesEditorProps> = ({ isOpen, examples, onSave, onClose }) => {
   const [localExamples, setLocalExamples] = useState<FewShotExample[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const onSaveRef = useRef(onSave);
-
-  // Keep ref updated with latest onSave
-  useEffect(() => {
-    onSaveRef.current = onSave;
-  }, [onSave]);
 
   // Initialize local examples from props
   useEffect(() => {
@@ -40,9 +34,9 @@ export const FewShotExamplesEditor: React.FC<FewShotExamplesEditorProps> = ({ is
 
   // Handle keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
+    if (!isOpen) return;
 
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
         return;
@@ -50,13 +44,19 @@ export const FewShotExamplesEditor: React.FC<FewShotExamplesEditorProps> = ({ is
 
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        handleSave();
+        // Call save logic directly to avoid stale closure
+        const examplesData = localExamples
+          .filter((ex) => ex.question.trim() && ex.answer.trim())
+          .map((ex) => ({ question: ex.question, answer: ex.answer }));
+
+        onSave(examplesData);
+        setHasUnsavedChanges(false);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleSave, onClose]);
+  }, [isOpen, localExamples, onSave, onClose]);
 
   const addExample = () => {
     const newExample: FewShotExample = {
@@ -78,14 +78,14 @@ export const FewShotExamplesEditor: React.FC<FewShotExamplesEditorProps> = ({ is
     setHasUnsavedChanges(true);
   };
 
-  const handleSave = useCallback(() => {
+  const handleSave = () => {
     const examplesData = localExamples
       .filter((ex) => ex.question.trim() && ex.answer.trim()) // Filter out empty examples
       .map((ex) => ({ question: ex.question, answer: ex.answer }));
 
-    onSaveRef.current(examplesData);
+    onSave(examplesData);
     setHasUnsavedChanges(false);
-  }, [localExamples]);
+  };
 
   if (!isOpen) return null;
 
