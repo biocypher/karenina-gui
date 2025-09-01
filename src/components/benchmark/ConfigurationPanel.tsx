@@ -341,7 +341,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 disabled={isRunning}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
               />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">☑ Correctness</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Correctness</span>
               <span className="text-xs text-slate-500 dark:text-slate-400">(Basic answer validation and parsing)</span>
             </label>
 
@@ -353,7 +353,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 disabled={isRunning}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
               />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">☑ Rubric</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Rubric</span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 (Qualitative evaluation using defined traits)
               </span>
@@ -367,9 +367,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 disabled={isRunning}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
               />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">⚡ Few-shot Prompting</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Few-shot Prompting</span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                (Use examples to improve LLM performance - disabled by default)
+                (Use examples to improve LLM performance)
               </span>
             </label>
           </div>

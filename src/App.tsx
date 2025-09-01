@@ -348,7 +348,21 @@ function App() {
 
   const handleSaveFewShotExamples = (examples: Array<{ question: string; answer: string }>) => {
     if (selectedQuestionId) {
-      updateQuestionCheckpoint(selectedQuestionId, { few_shot_examples: examples });
+      // Update the checkpoint with the new few-shot examples
+      const currentCheckpointItem = checkpoint[selectedQuestionId];
+      if (currentCheckpointItem) {
+        const updatedItem = {
+          ...currentCheckpointItem,
+          few_shot_examples: examples,
+        };
+
+        const updatedCheckpoint = {
+          ...checkpoint,
+          [selectedQuestionId]: updatedItem,
+        };
+
+        setCheckpoint(updatedCheckpoint);
+      }
       setIsFewShotEditorOpen(false);
     }
   };
