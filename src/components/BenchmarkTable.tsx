@@ -203,6 +203,46 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           filterFn: 'includesString',
         }
       ),
+      columnHelper.accessor('parsed_gt_response', {
+        header: 'Ground Truth',
+        cell: (info) => {
+          const value = info.getValue();
+          if (!value || Object.keys(value).length === 0) {
+            return <span className="text-slate-400 text-xs">N/A</span>;
+          }
+          const jsonString = JSON.stringify(value);
+          const truncated = jsonString.length > 50 ? jsonString.substring(0, 50) + '...' : jsonString;
+          return (
+            <span
+              className="max-w-xs truncate block text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200 px-2 py-1 rounded cursor-help"
+              title={JSON.stringify(value, null, 2)}
+            >
+              {truncated}
+            </span>
+          );
+        },
+        filterFn: 'includesString',
+      }),
+      columnHelper.accessor('parsed_llm_response', {
+        header: 'LLM Extraction',
+        cell: (info) => {
+          const value = info.getValue();
+          if (!value || Object.keys(value).length === 0) {
+            return <span className="text-slate-400 text-xs">N/A</span>;
+          }
+          const jsonString = JSON.stringify(value);
+          const truncated = jsonString.length > 50 ? jsonString.substring(0, 50) + '...' : jsonString;
+          return (
+            <span
+              className="max-w-xs truncate block text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200 px-2 py-1 rounded cursor-help"
+              title={JSON.stringify(value, null, 2)}
+            >
+              {truncated}
+            </span>
+          );
+        },
+        filterFn: 'includesString',
+      }),
       columnHelper.accessor('keywords', {
         header: 'Keywords',
         cell: (info) => {

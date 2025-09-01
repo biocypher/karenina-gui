@@ -6,7 +6,8 @@ export interface ExportableResult {
   question_text: string;
   raw_answer?: string; // Ground truth answer from checkpoint
   raw_llm_response: string;
-  parsed_response?: unknown;
+  parsed_gt_response?: Record<string, unknown>; // Ground truth from 'correct' field
+  parsed_llm_response?: Record<string, unknown>; // LLM extracted fields (excluding 'id' and 'correct')
   verify_result?: unknown;
   verify_granular_result?: unknown;
   verify_rubric?: Record<string, number | boolean>;
@@ -140,7 +141,8 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'question_text',
     'raw_answer',
     'raw_llm_response',
-    'parsed_response',
+    'parsed_gt_answer',
+    'parsed_llm_answer',
     'verify_result',
     'verify_granular_result',
     ...globalRubricHeaders,
@@ -194,7 +196,8 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       question_text: escapeCSVField(result.question_text),
       raw_answer: escapeCSVField(result.raw_answer || ''),
       raw_llm_response: escapeCSVField(result.raw_llm_response),
-      parsed_response: escapeCSVField(result.parsed_response ? JSON.stringify(result.parsed_response) : ''),
+      parsed_gt_answer: escapeCSVField(result.parsed_gt_response ? JSON.stringify(result.parsed_gt_response) : ''),
+      parsed_llm_answer: escapeCSVField(result.parsed_llm_response ? JSON.stringify(result.parsed_llm_response) : ''),
       verify_result: escapeCSVField(result.verify_result !== undefined ? JSON.stringify(result.verify_result) : 'N/A'),
       verify_granular_result: escapeCSVField(
         result.verify_granular_result !== undefined ? JSON.stringify(result.verify_granular_result) : 'N/A'

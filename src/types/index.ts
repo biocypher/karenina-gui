@@ -264,7 +264,8 @@ export interface VerificationResult {
   error?: string;
   question_text: string;
   raw_llm_response: string;
-  parsed_response?: ParsedAnswerResponse;
+  parsed_gt_response?: Record<string, unknown>; // Ground truth from 'correct' field
+  parsed_llm_response?: Record<string, unknown>; // LLM extracted fields (excluding 'id' and 'correct')
   verify_result?: VerificationOutcome;
   verify_granular_result?: GranularVerificationResult;
   verify_rubric?: Record<string, number | boolean>;

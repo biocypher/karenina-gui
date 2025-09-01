@@ -32,7 +32,16 @@ const FIELD_GROUPS: FieldGroup[] = [
     name: 'LLM Response Data',
     fields: [
       { key: 'raw_llm_response', label: 'Raw LLM Response', description: 'Original response from the LLM' },
-      { key: 'parsed_response', label: 'Parsed Response', description: 'Structured parsed response' },
+      {
+        key: 'parsed_gt_answer',
+        label: 'Ground Truth Answer',
+        description: 'Expected response from the "correct" field',
+      },
+      {
+        key: 'parsed_llm_answer',
+        label: 'LLM Extracted Answer',
+        description: 'Structured data extracted by the parsing model',
+      },
       { key: 'answering_model', label: 'Answering Model', description: 'Model used for answering' },
       { key: 'parsing_model', label: 'Parsing Model', description: 'Model used for parsing' },
       { key: 'answering_replicate', label: 'Answering Replicate', description: 'Replicate number for answering' },
