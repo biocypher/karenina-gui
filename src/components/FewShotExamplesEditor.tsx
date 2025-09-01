@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Trash2, X, Save, FileText } from 'lucide-react';
 
@@ -18,6 +18,12 @@ interface FewShotExamplesEditorProps {
 export const FewShotExamplesEditor: React.FC<FewShotExamplesEditorProps> = ({ isOpen, examples, onSave, onClose }) => {
   const [localExamples, setLocalExamples] = useState<FewShotExample[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const onSaveRef = useRef(onSave);
+
+  // Keep ref updated with latest onSave
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   // Initialize local examples from props
   useEffect(() => {
@@ -77,9 +83,9 @@ export const FewShotExamplesEditor: React.FC<FewShotExamplesEditorProps> = ({ is
       .filter((ex) => ex.question.trim() && ex.answer.trim()) // Filter out empty examples
       .map((ex) => ({ question: ex.question, answer: ex.answer }));
 
-    onSave(examplesData);
+    onSaveRef.current(examplesData);
     setHasUnsavedChanges(false);
-  }, [localExamples, onSave]);
+  }, [localExamples]);
 
   if (!isOpen) return null;
 
