@@ -737,7 +737,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
                             {/* Show few-shot indicator when custom mode is active and question has examples */}
                             {fewShotEnabled &&
-                              fewShotMode === 'individual' &&
+                              fewShotMode === 'custom' &&
                               item.few_shot_examples &&
                               item.few_shot_examples.length > 0 && (
                                 <div className="mt-2">

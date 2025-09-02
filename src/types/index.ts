@@ -260,7 +260,7 @@ export interface VerificationConfig {
   rubric_enabled?: boolean;
   rubric_trait_names?: string[];
   few_shot_enabled?: boolean;
-  few_shot_mode?: 'all' | 'k-shot' | 'individual';
+  few_shot_mode?: 'all' | 'k-shot' | 'custom';
   few_shot_k?: number;
 }
 

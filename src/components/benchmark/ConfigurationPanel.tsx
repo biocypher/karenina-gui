@@ -22,7 +22,7 @@ interface ConfigurationPanelProps {
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
   fewShotEnabled: boolean;
-  fewShotMode: 'all' | 'k-shot' | 'individual';
+  fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
   onAddAnsweringModel: () => void;
   onAddParsingModel: () => void;
@@ -34,7 +34,7 @@ interface ConfigurationPanelProps {
   onRubricEnabledChange: (enabled: boolean) => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
   onFewShotEnabledChange: (enabled: boolean) => void;
-  onFewShotModeChange: (mode: 'all' | 'k-shot' | 'individual') => void;
+  onFewShotModeChange: (mode: 'all' | 'k-shot' | 'custom') => void;
   onFewShotKChange: (k: number) => void;
   onManualTraceUploadSuccess?: (traceCount: number) => void;
   onManualTraceUploadError?: (error: string) => void;
@@ -388,7 +388,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                       name="few-shot-mode"
                       value="all"
                       checked={fewShotMode === 'all'}
-                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'individual')}
+                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'custom')}
                       disabled={isRunning}
                       className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
                     />
@@ -400,7 +400,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                       name="few-shot-mode"
                       value="k-shot"
                       checked={fewShotMode === 'k-shot'}
-                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'individual')}
+                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'custom')}
                       disabled={isRunning}
                       className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
                     />
@@ -410,9 +410,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                     <input
                       type="radio"
                       name="few-shot-mode"
-                      value="individual"
-                      checked={fewShotMode === 'individual'}
-                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'individual')}
+                      value="custom"
+                      checked={fewShotMode === 'custom'}
+                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'custom')}
                       disabled={isRunning}
                       className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
                     />

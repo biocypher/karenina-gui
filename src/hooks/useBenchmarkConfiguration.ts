@@ -11,7 +11,7 @@ export interface BenchmarkConfiguration {
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
   fewShotEnabled: boolean;
-  fewShotMode: 'all' | 'k-shot' | 'individual';
+  fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
 }
 
@@ -77,7 +77,7 @@ export const useBenchmarkConfiguration = () => {
   const [rubricEnabled, setRubricEnabled] = useState<boolean>(false);
   const [correctnessEnabled, setCorrectnessEnabled] = useState<boolean>(true);
   const [fewShotEnabled, setFewShotEnabled] = useState<boolean>(false);
-  const [fewShotMode, setFewShotMode] = useState<'all' | 'k-shot' | 'individual'>('all');
+  const [fewShotMode, setFewShotMode] = useState<'all' | 'k-shot' | 'custom'>('all');
   const [fewShotK, setFewShotK] = useState<number>(3);
 
   // Model management functions
