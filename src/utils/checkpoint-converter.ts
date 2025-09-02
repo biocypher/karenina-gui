@@ -265,6 +265,16 @@ export function v2ToJsonLd(
                 },
               ]
             : []),
+          // Include few-shot examples as JSON string if present
+          ...(item.few_shot_examples && item.few_shot_examples.length > 0
+            ? [
+                {
+                  '@type': 'PropertyValue' as const,
+                  name: 'few_shot_examples',
+                  value: JSON.stringify(item.few_shot_examples),
+                },
+              ]
+            : []),
           // Include custom metadata if present
           ...(item.custom_metadata
             ? Object.entries(item.custom_metadata).map(([key, value]) => ({
@@ -426,10 +436,12 @@ export function jsonLdToV2(
       );
       const authorProp = question.additionalProperty?.find((prop) => prop.name === 'author');
       const sourcesProp = question.additionalProperty?.find((prop) => prop.name === 'sources');
+      const fewShotProp = question.additionalProperty?.find((prop) => prop.name === 'few_shot_examples');
 
       // Parse schema.org enhanced metadata
       let author: SchemaOrgPerson | undefined;
       let sources: SchemaOrgCreativeWork[] | undefined;
+      let fewShotExamples: Array<{ question: string; answer: string }> | undefined;
 
       if (authorProp && typeof authorProp.value === 'string') {
         try {
@@ -444,6 +456,14 @@ export function jsonLdToV2(
           sources = JSON.parse(sourcesProp.value);
         } catch {
           // Invalid JSON, ignore sources
+        }
+      }
+
+      if (fewShotProp && typeof fewShotProp.value === 'string') {
+        try {
+          fewShotExamples = JSON.parse(fewShotProp.value);
+        } catch {
+          // Invalid JSON, ignore few-shot examples
         }
       }
 
@@ -484,6 +504,7 @@ export function jsonLdToV2(
         // Include schema.org enhanced metadata
         author: author,
         sources: sources,
+        few_shot_examples: fewShotExamples,
         keywords: dataFeedItem.keywords,
       };
 

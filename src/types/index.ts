@@ -56,6 +56,9 @@ export interface CheckpointItem {
   // Question-specific rubric
   question_rubric?: Rubric;
 
+  // Few-shot examples for improved prompting
+  few_shot_examples?: Array<{ question: string; answer: string }>;
+
   // Custom metadata properties
   custom_metadata?: { [key: string]: string };
 
@@ -256,6 +259,9 @@ export interface VerificationConfig {
   replicate_count: number;
   rubric_enabled?: boolean;
   rubric_trait_names?: string[];
+  few_shot_enabled?: boolean;
+  few_shot_mode?: 'all' | 'k-shot' | 'custom';
+  few_shot_k?: number;
 }
 
 export interface VerificationResult {

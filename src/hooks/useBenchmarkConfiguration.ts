@@ -10,6 +10,9 @@ export interface BenchmarkConfiguration {
   runName: string;
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
+  fewShotEnabled: boolean;
+  fewShotMode: 'all' | 'k-shot' | 'custom';
+  fewShotK: number;
 }
 
 export const useBenchmarkConfiguration = () => {
@@ -41,25 +44,29 @@ export const useBenchmarkConfiguration = () => {
 
   // Update default models when saved config store defaults change
   useEffect(() => {
-    setAnsweringModels(models => 
-      models.map((model, index) => 
-        index === 0 ? {
-          ...model,
-          interface: savedInterface,
-          model_provider: savedProvider,
-          model_name: savedModel,
-        } : model
+    setAnsweringModels((models) =>
+      models.map((model, index) =>
+        index === 0
+          ? {
+              ...model,
+              interface: savedInterface,
+              model_provider: savedProvider,
+              model_name: savedModel,
+            }
+          : model
       )
     );
 
-    setParsingModels(models => 
-      models.map((model, index) => 
-        index === 0 ? {
-          ...model,
-          interface: savedInterface,
-          model_provider: savedProvider,
-          model_name: savedModel,
-        } : model
+    setParsingModels((models) =>
+      models.map((model, index) =>
+        index === 0
+          ? {
+              ...model,
+              interface: savedInterface,
+              model_provider: savedProvider,
+              model_name: savedModel,
+            }
+          : model
       )
     );
   }, [savedInterface, savedProvider, savedModel]);
@@ -69,6 +76,9 @@ export const useBenchmarkConfiguration = () => {
   const [runName, setRunName] = useState<string>('');
   const [rubricEnabled, setRubricEnabled] = useState<boolean>(false);
   const [correctnessEnabled, setCorrectnessEnabled] = useState<boolean>(true);
+  const [fewShotEnabled, setFewShotEnabled] = useState<boolean>(false);
+  const [fewShotMode, setFewShotMode] = useState<'all' | 'k-shot' | 'custom'>('all');
+  const [fewShotK, setFewShotK] = useState<number>(3);
 
   // Model management functions
   const addAnsweringModel = () => {
@@ -192,6 +202,9 @@ export const useBenchmarkConfiguration = () => {
     parsing_models: parsingModels,
     replicate_count: replicateCount,
     rubric_enabled: rubricEnabled,
+    few_shot_enabled: fewShotEnabled,
+    few_shot_mode: fewShotMode,
+    few_shot_k: fewShotK,
   });
 
   return {
@@ -203,12 +216,18 @@ export const useBenchmarkConfiguration = () => {
     runName,
     rubricEnabled,
     correctnessEnabled,
+    fewShotEnabled,
+    fewShotMode,
+    fewShotK,
 
     // Setters
     setReplicateCount,
     setRunName,
     setRubricEnabled,
     setCorrectnessEnabled,
+    setFewShotEnabled,
+    setFewShotMode,
+    setFewShotK,
 
     // Model management functions
     addAnsweringModel,
