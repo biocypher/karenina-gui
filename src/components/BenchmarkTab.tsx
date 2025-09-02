@@ -10,6 +10,8 @@ import {
   FileDown,
   Trash2,
   Settings,
+  ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
@@ -74,6 +76,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Test selection state
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
+
+  // Few-shot custom selection state
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
+  const [customFewShotSelections, setCustomFewShotSelections] = useState<Record<string, Set<number>>>({});
 
   // Add state for polling retry count
   const [, setRetryCount] = useState(0);
@@ -360,6 +366,33 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       newSelected.add(questionId);
     }
     setSelectedTests(newSelected);
+  };
+
+  // Few-shot example selection handlers
+  const handleToggleQuestionExpansion = (questionId: string) => {
+    const newExpanded = new Set(expandedQuestions);
+    if (newExpanded.has(questionId)) {
+      newExpanded.delete(questionId);
+    } else {
+      newExpanded.add(questionId);
+    }
+    setExpandedQuestions(newExpanded);
+  };
+
+  const handleToggleExampleSelection = (questionId: string, exampleIndex: number) => {
+    const currentSelections = customFewShotSelections[questionId] || new Set<number>();
+    const newSelections = new Set(currentSelections);
+
+    if (newSelections.has(exampleIndex)) {
+      newSelections.delete(exampleIndex);
+    } else {
+      newSelections.add(exampleIndex);
+    }
+
+    setCustomFewShotSelections({
+      ...customFewShotSelections,
+      [questionId]: newSelections,
+    });
   };
 
   // Get all unfiltered results for statistics
@@ -701,6 +734,60 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                         <td className="py-3 px-4">
                           <div className="text-slate-900 dark:text-slate-100 font-medium">
                             {getQuestionPreview(item.question)}
+
+                            {/* Show few-shot indicator when custom mode is active and question has examples */}
+                            {fewShotEnabled &&
+                              fewShotMode === 'individual' &&
+                              item.few_shot_examples &&
+                              item.few_shot_examples.length > 0 && (
+                                <div className="mt-2">
+                                  <button
+                                    onClick={() => handleToggleQuestionExpansion(questionId)}
+                                    disabled={isRunning}
+                                    className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 disabled:opacity-50"
+                                  >
+                                    {expandedQuestions.has(questionId) ? (
+                                      <ChevronDown className="w-4 h-4" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4" />
+                                    )}
+                                    Custom Examples ({item.few_shot_examples.length} available)
+                                  </button>
+
+                                  {/* Expanded example selection */}
+                                  {expandedQuestions.has(questionId) && (
+                                    <div className="mt-2 p-3 bg-violet-50 dark:bg-violet-900/20 rounded border border-violet-200 dark:border-violet-800">
+                                      <div className="text-xs text-violet-700 dark:text-violet-300 mb-2 font-medium">
+                                        Select examples to use for few-shot prompting:
+                                      </div>
+                                      <div className="space-y-2">
+                                        {item.few_shot_examples.map((example, index) => (
+                                          <label key={index} className="flex items-start gap-2 text-xs">
+                                            <input
+                                              type="checkbox"
+                                              checked={customFewShotSelections[questionId]?.has(index) || false}
+                                              onChange={() => handleToggleExampleSelection(questionId, index)}
+                                              disabled={isRunning}
+                                              className="mt-0.5 rounded border-violet-300 dark:border-violet-600 text-violet-600"
+                                            />
+                                            <span className="text-slate-600 dark:text-slate-300">
+                                              <strong>Q:</strong> {example.question?.substring(0, 50)}
+                                              {example.question?.length > 50 ? '...' : ''}
+                                              <br />
+                                              <strong>A:</strong> {example.answer?.substring(0, 50)}
+                                              {example.answer?.length > 50 ? '...' : ''}
+                                            </span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                      <div className="mt-2 text-xs text-violet-600 dark:text-violet-400">
+                                        Selected: {customFewShotSelections[questionId]?.size || 0} of{' '}
+                                        {item.few_shot_examples.length}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-slate-600 dark:text-slate-300">

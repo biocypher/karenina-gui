@@ -416,7 +416,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                       disabled={isRunning}
                       className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
                     />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Per-question examples only</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Custom examples selection</span>
                   </label>
                 </div>
               </div>

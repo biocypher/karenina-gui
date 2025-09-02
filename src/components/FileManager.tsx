@@ -210,8 +210,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         `✅ Checkpoint downloaded successfully!\n\n` +
           `📊 Format: JSON-LD v3.0 (schema.org)\n` +
           `📁 File: karenina_checkpoint_${timestamp}.jsonld\n` +
-          `📦 Contains: ${itemCount} questions${rubricInfo}\n\n` +
-          `🎉 Your data is now in semantic web format and compatible with linked data tools!`
+          `📦 Contains: ${itemCount} questions${rubricInfo}`
       );
     } catch (conversionError) {
       console.error('❌ Failed to convert checkpoint to JSON-LD:', conversionError);
