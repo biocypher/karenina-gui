@@ -811,6 +811,36 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             )}
           </Card>
 
+          {/* Help message for custom few-shot mode */}
+          {fewShotEnabled && fewShotMode === 'custom' && (
+            <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">i</span>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">Custom Examples Selection Mode</h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                    You've selected custom examples selection. To use this feature:
+                  </p>
+                  <ol className="text-sm text-blue-800 dark:text-blue-200 list-decimal list-inside space-y-1">
+                    <li>
+                      Go to the <strong>Template Curator</strong> tab
+                    </li>
+                    <li>Select a question and click "Edit Few-shot Examples" in the status badge</li>
+                    <li>Add example question-answer pairs for that question</li>
+                    <li>Return to this tab - questions with examples will show expandable selection controls</li>
+                  </ol>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                    Questions without few-shot examples will use zero-shot prompting even when this feature is enabled.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Test Results Table */}
           <Card>
             <div className="flex items-center justify-between mb-4">
