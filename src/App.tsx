@@ -351,6 +351,12 @@ function App() {
       // Update the checkpoint with the new few-shot examples
       const currentCheckpointItem = checkpoint[selectedQuestionId];
       if (currentCheckpointItem) {
+        console.log('Debug: Saving few-shot examples:', {
+          questionId: selectedQuestionId,
+          exampleCount: examples.length,
+          examples: examples,
+        });
+
         const updatedItem = {
           ...currentCheckpointItem,
           few_shot_examples: examples,
@@ -361,6 +367,7 @@ function App() {
           [selectedQuestionId]: updatedItem,
         };
 
+        console.log('Debug: Updated checkpoint item:', updatedItem);
         setCheckpoint(updatedCheckpoint);
       }
       // Don't close the modal - let user continue editing
