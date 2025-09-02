@@ -228,6 +228,8 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         last_modified: isCurrentQuestion ? now : existingCheckpointItem?.last_modified || now,
         finished: existingCheckpointItem?.finished || false,
         question_rubric: existingCheckpointItem?.question_rubric,
+        // Preserve few-shot examples from existing checkpoint
+        few_shot_examples: existingCheckpointItem?.few_shot_examples,
         // Preserve metadata from existing checkpoint or map from Question
         author: existingCheckpointItem?.author ?? question.metadata?.author,
         keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
