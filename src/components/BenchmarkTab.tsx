@@ -94,18 +94,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   // Get finished templates from checkpoint
   const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
 
-  // Debug: Log few-shot examples in finished templates
-  React.useEffect(() => {
-    console.log('Debug: Finished templates with few-shot examples:');
-    finishedTemplates.forEach(([questionId, item]) => {
-      console.log(`${questionId}:`, {
-        hasFewShotExamples: !!item.few_shot_examples,
-        exampleCount: item.few_shot_examples?.length || 0,
-        examples: item.few_shot_examples,
-      });
-    });
-  }, [finishedTemplates]);
-
   const getQuestionPreview = (text: string) => {
     return text.length > 60 ? text.substring(0, 60) + '...' : text;
   };
@@ -746,24 +734,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                         <td className="py-3 px-4">
                           <div className="text-slate-900 dark:text-slate-100 font-medium">
                             {getQuestionPreview(item.question)}
-
-                            {/* Debug: Log the condition values */}
-                            {(() => {
-                              const shouldShow =
-                                fewShotEnabled &&
-                                fewShotMode === 'custom' &&
-                                item.few_shot_examples &&
-                                item.few_shot_examples.length > 0;
-                              console.log(`Debug for ${questionId}:`, {
-                                fewShotEnabled,
-                                fewShotMode,
-                                hasExamples: !!item.few_shot_examples,
-                                exampleCount: item.few_shot_examples?.length || 0,
-                                shouldShow,
-                                item: item,
-                              });
-                              return null;
-                            })()}
 
                             {/* Show few-shot indicator when custom mode is active and question has examples */}
                             {fewShotEnabled &&
