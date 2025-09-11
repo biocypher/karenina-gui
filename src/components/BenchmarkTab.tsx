@@ -62,6 +62,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     updateParsingModel,
     togglePromptExpanded,
     getVerificationConfig,
+    getAsyncConfig,
   } = useBenchmarkConfiguration();
 
   // Rubric store
@@ -303,6 +304,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         question_ids: idsToRun,
         finished_templates: templatesData,
         run_name: runName.trim() || undefined, // Send run name if provided
+        async_config: getAsyncConfig(), // Include async configuration from config store
       };
 
       const response = await fetch(API_ENDPOINTS.START_VERIFICATION, {
