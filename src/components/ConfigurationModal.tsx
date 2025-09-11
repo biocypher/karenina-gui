@@ -31,7 +31,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
     updateEnvFileContents,
     removeEnvVariable,
   } = useConfigStore();
-  
+
   const [activeTab, setActiveTab] = useState<'defaults' | 'env'>('defaults');
   const [envFileContent, setEnvFileContent] = useState('');
   const [isEditingEnv, setIsEditingEnv] = useState(false);
@@ -40,7 +40,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
   const [newEnvValue, setNewEnvValue] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  
+
   // Load configuration when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -50,14 +50,14 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
       setLocalError(null);
     }
   }, [isOpen, loadConfiguration]);
-  
+
   // Clear success state when user makes changes
   useEffect(() => {
     if (saveSuccess && hasUnsavedDefaults()) {
       setSaveSuccess(false);
     }
   }, [defaultInterface, defaultProvider, defaultModel, saveSuccess, hasUnsavedDefaults]);
-  
+
   // Load .env file content
   const loadEnvFileContent = async () => {
     try {
@@ -70,7 +70,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
       console.error('Failed to load .env file:', error);
     }
   };
-  
+
   // Handle saving .env file content
   const handleSaveEnvFile = async () => {
     setLocalError(null);
@@ -81,7 +81,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
       setLocalError(error instanceof Error ? error.message : 'Failed to save .env file');
     }
   };
-  
+
   // Handle saving defaults
   const handleSaveDefaults = async () => {
     setLocalError(null);
@@ -95,21 +95,21 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
       setLocalError(error instanceof Error ? error.message : 'Failed to save defaults');
     }
   };
-  
+
   // Handle resetting defaults
   const handleResetDefaults = () => {
     resetDefaults();
     setSaveSuccess(false);
     setLocalError(null);
   };
-  
+
   // Handle adding new environment variable
   const handleAddEnvVariable = async () => {
     if (!newEnvKey.trim()) {
       setLocalError('Environment variable key is required');
       return;
     }
-    
+
     setLocalError(null);
     try {
       await updateEnvVariable(newEnvKey, newEnvValue);
@@ -120,7 +120,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
       setLocalError(error instanceof Error ? error.message : 'Failed to add environment variable');
     }
   };
-  
+
   // Handle removing environment variable
   const handleRemoveEnvVariable = async (key: string) => {
     setLocalError(null);
@@ -131,14 +131,12 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
       setLocalError(error instanceof Error ? error.message : 'Failed to remove environment variable');
     }
   };
-  
+
   const renderDefaultsTab = () => (
     <div className="space-y-6">
       {/* Default Interface Selection */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Default LLM Interface
-        </label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default LLM Interface</label>
         <div className="flex gap-4">
           <label className="flex items-center">
             <input
@@ -162,14 +160,12 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
           </label>
         </div>
       </div>
-      
+
       {/* Provider and Model Selection */}
       {defaultInterface === 'langchain' ? (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Default Provider
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default Provider</label>
             <input
               type="text"
               value={defaultProvider}
@@ -181,9 +177,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Default Model
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default Model</label>
             <input
               type="text"
               value={defaultModel}
@@ -211,7 +205,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
           />
         </div>
       )}
-      
+
       {/* Save/Reset Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-600">
         <div className="flex items-center gap-2">
@@ -227,7 +221,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
             </button>
           )}
         </div>
-        
+
         <div className="flex items-center gap-3">
           {/* Success feedback */}
           {saveSuccess && (
@@ -236,7 +230,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
               <span className="text-sm">Saved successfully!</span>
             </div>
           )}
-          
+
           {/* Save button */}
           <button
             onClick={handleSaveDefaults}
@@ -259,18 +253,17 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
           </button>
         </div>
       </div>
-      
+
       {/* Note about defaults */}
       <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900 p-3 rounded-md">
         <p>
-          <strong>Note:</strong> When you save these defaults, they will be applied to all generation 
-          interfaces (Chat, Template Generator, Benchmark) immediately. This affects both new and 
-          existing configurations.
+          <strong>Note:</strong> When you save these defaults, they will be applied to all generation interfaces (Chat,
+          Template Generator, Benchmark) immediately. This affects both new and existing configurations.
         </p>
       </div>
     </div>
   );
-  
+
   const renderEnvTab = () => (
     <div className="space-y-4">
       {/* Toggle between view modes */}
@@ -298,7 +291,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
           {isEditingEnv ? 'Cancel Edit' : 'Edit Raw File'}
         </button>
       </div>
-      
+
       {isEditingEnv ? (
         <div className="space-y-4">
           <textarea
@@ -333,6 +326,37 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Ground Truth Exposure Toggle */}
+          <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                  Parser Ground Truth Exposure
+                </h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                  When enabled, the parser model receives ground truth information to help with semantic matching. Use
+                  carefully - this information is for disambiguation only and should not influence parsing accuracy.
+                </p>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={envVariables.KARENINA_EXPOSE_GROUND_TRUTH === 'true'}
+                      onChange={(e) => {
+                        const newValue = e.target.checked ? 'true' : 'false';
+                        updateEnvVariable('KARENINA_EXPOSE_GROUND_TRUTH', newValue);
+                      }}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      Expose ground truth to parser
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Environment Variables List */}
           <div className="space-y-3">
             {Object.entries(envVariables).map(([key, value]) => (
@@ -347,10 +371,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
                     </span>
                     <span className="text-gray-400 dark:text-gray-500 flex-shrink-0">=</span>
                     <span className="font-mono text-sm text-gray-600 dark:text-gray-400 break-all overflow-hidden">
-                      {showApiKeys && key.endsWith('_API_KEY') ? 
-                        (unmaskedEnvVariables[key] || value) : 
-                        value
-                      }
+                      {showApiKeys && key.endsWith('_API_KEY') ? unmaskedEnvVariables[key] || value : value}
                     </span>
                   </div>
                 </div>
@@ -365,12 +386,10 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
               </div>
             ))}
           </div>
-          
+
           {/* Add New Variable */}
           <div className="border-t border-gray-200 dark:border-gray-600 pt-6 mt-6">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-              Add New Variable
-            </h4>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Add New Variable</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="text"
@@ -404,25 +423,20 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
           </div>
         </div>
       )}
-      
+
       {/* Warning about API keys */}
       <div className="text-sm text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900 p-3 rounded-md">
         <p className="font-medium">Security Notice:</p>
         <p>
-          API keys are sensitive information. Make sure to keep them secure and never share them publicly.
-          Changes to API keys will require a server restart to take effect.
+          API keys are sensitive information. Make sure to keep them secure and never share them publicly. Changes to
+          API keys will require a server restart to take effect.
         </p>
       </div>
     </div>
   );
-  
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Configuration"
-      size="lg"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Configuration" size="lg">
       {/* Tabs */}
       <div className="border-b dark:border-gray-700 mb-6">
         <nav className="-mb-px flex space-x-8">
@@ -448,14 +462,14 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
           </button>
         </nav>
       </div>
-      
+
       {/* Error Display */}
       {(error || localError) && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-md">
           {error || localError}
         </div>
       )}
-      
+
       {/* Tab Content */}
       {isLoading ? (
         <div className="text-center py-8">
@@ -464,8 +478,10 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
             Loading configuration...
           </div>
         </div>
+      ) : activeTab === 'defaults' ? (
+        renderDefaultsTab()
       ) : (
-        activeTab === 'defaults' ? renderDefaultsTab() : renderEnvTab()
+        renderEnvTab()
       )}
     </Modal>
   );
