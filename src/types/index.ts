@@ -289,6 +289,11 @@ export interface VerificationResult {
   parsing_model_id?: string;
   answering_replicate?: number;
   parsing_replicate?: number;
+  // Embedding check metadata
+  embedding_check_performed?: boolean;
+  embedding_similarity_score?: number;
+  embedding_override_applied?: boolean;
+  embedding_model_used?: string;
 }
 
 export interface VerificationProgress {

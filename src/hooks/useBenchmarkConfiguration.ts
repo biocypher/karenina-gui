@@ -17,7 +17,8 @@ export interface BenchmarkConfiguration {
 
 export const useBenchmarkConfiguration = () => {
   // Get saved defaults from config store (not working draft values)
-  const { savedInterface, savedProvider, savedModel } = useConfigStore();
+  const { savedInterface, savedProvider, savedModel, savedAsyncEnabled, savedAsyncChunkSize, savedAsyncMaxWorkers } =
+    useConfigStore();
 
   const [answeringModels, setAnsweringModels] = useState<ModelConfiguration[]>([
     {
@@ -207,6 +208,13 @@ export const useBenchmarkConfiguration = () => {
     few_shot_k: fewShotK,
   });
 
+  // Get async configuration for API calls
+  const getAsyncConfig = () => ({
+    enabled: savedAsyncEnabled,
+    chunk_size: savedAsyncChunkSize,
+    max_workers: savedAsyncMaxWorkers,
+  });
+
   return {
     // State
     answeringModels,
@@ -240,5 +248,6 @@ export const useBenchmarkConfiguration = () => {
 
     // Utility functions
     getVerificationConfig,
+    getAsyncConfig,
   };
 };

@@ -23,6 +23,11 @@ export interface ExportableResult {
   timestamp: string;
   run_name?: string;
   job_id?: string;
+  // Embedding check metadata
+  embedding_check_performed?: boolean;
+  embedding_similarity_score?: number;
+  embedding_override_applied?: boolean;
+  embedding_model_used?: string;
 }
 
 /**
@@ -160,6 +165,11 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'timestamp',
     'run_name',
     'job_id',
+    // Embedding check fields
+    'embedding_check_performed',
+    'embedding_similarity_score',
+    'embedding_override_applied',
+    'embedding_model_used',
   ];
 
   // Filter headers based on selected fields if provided
@@ -215,6 +225,11 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       timestamp: escapeCSVField(result.timestamp),
       run_name: escapeCSVField(result.run_name || ''),
       job_id: escapeCSVField(result.job_id || ''),
+      // Embedding check fields
+      embedding_check_performed: escapeCSVField(result.embedding_check_performed || false),
+      embedding_similarity_score: escapeCSVField(result.embedding_similarity_score || ''),
+      embedding_override_applied: escapeCSVField(result.embedding_override_applied || false),
+      embedding_model_used: escapeCSVField(result.embedding_model_used || ''),
     };
 
     // Add global rubric values
