@@ -294,7 +294,6 @@ export interface VerificationResult {
   embedding_similarity_score?: number;
   embedding_override_applied?: boolean;
   embedding_model_used?: string;
-  semantic_check_details?: string;
 }
 
 export interface VerificationProgress {

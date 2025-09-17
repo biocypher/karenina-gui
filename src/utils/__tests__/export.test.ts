@@ -48,7 +48,6 @@ describe('Export Utils', () => {
       embedding_similarity_score: 0.95,
       embedding_override_applied: false,
       embedding_model_used: 'all-MiniLM-L6-v2',
-      semantic_check_details: 'High similarity, no override needed',
     },
     {
       question_id: 'q2',
@@ -70,7 +69,6 @@ describe('Export Utils', () => {
       embedding_similarity_score: 0.72,
       embedding_override_applied: true,
       embedding_model_used: 'all-MiniLM-L6-v2',
-      semantic_check_details: 'Below threshold but semantically equivalent',
     },
   ];
 
@@ -358,20 +356,17 @@ describe('Export Utils', () => {
       expect(lines[0]).toContain('embedding_similarity_score');
       expect(lines[0]).toContain('embedding_override_applied');
       expect(lines[0]).toContain('embedding_model_used');
-      expect(lines[0]).toContain('semantic_check_details');
 
       // Check that embedding values are in the data rows
       expect(lines[1]).toContain('true'); // embedding_check_performed for first result
       expect(lines[1]).toContain('0.95'); // embedding_similarity_score for first result
       expect(lines[1]).toContain('false'); // embedding_override_applied for first result
       expect(lines[1]).toContain('all-MiniLM-L6-v2'); // embedding_model_used for first result
-      expect(lines[1]).toContain('High similarity, no override needed'); // semantic_check_details for first result
 
       // Check second result
       expect(lines[2]).toContain('true'); // embedding_check_performed for second result
       expect(lines[2]).toContain('0.72'); // embedding_similarity_score for second result
       expect(lines[2]).toContain('true'); // embedding_override_applied for second result (this one was overridden)
-      expect(lines[2]).toContain('Below threshold but semantically equivalent'); // semantic_check_details for second result
     });
   });
 

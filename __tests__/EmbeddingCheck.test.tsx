@@ -55,7 +55,6 @@ const createMockResult = (overrides: Partial<VerificationResult> = {}): Verifica
   embedding_similarity_score: null,
   embedding_override_applied: false,
   embedding_model_used: null,
-  semantic_check_details: null,
   ...overrides,
 });
 
@@ -87,7 +86,6 @@ describe('EmbeddingCheck UI Components', () => {
         embedding_check_performed: true,
         embedding_similarity_score: 0.75,
         embedding_model_used: 'all-MiniLM-L6-v2',
-        semantic_check_details: 'Similarity 0.750 below threshold 0.850',
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -121,7 +119,6 @@ describe('EmbeddingCheck UI Components', () => {
         embedding_similarity_score: 0.92,
         embedding_override_applied: true,
         embedding_model_used: 'all-MiniLM-L6-v2',
-        semantic_check_details: 'LLM semantic check result: YES - These responses are semantically equivalent',
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -150,7 +147,6 @@ describe('EmbeddingCheck UI Components', () => {
         embedding_similarity_score: 0.6,
         embedding_override_applied: false,
         embedding_model_used: 'all-MiniLM-L6-v2',
-        semantic_check_details: 'Similarity 0.600 below threshold 0.850',
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -175,7 +171,6 @@ describe('EmbeddingCheck UI Components', () => {
         embedding_check_performed: true,
         embedding_similarity_score: null, // Missing score
         embedding_model_used: null, // Missing model
-        semantic_check_details: null, // Missing details
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -268,14 +263,12 @@ describe('EmbeddingCheck Data Types', () => {
       embedding_similarity_score: 0.85,
       embedding_override_applied: false,
       embedding_model_used: 'test-model',
-      semantic_check_details: 'test details',
     });
 
     expect(typeof mockResult.embedding_check_performed).toBe('boolean');
     expect(typeof mockResult.embedding_similarity_score).toBe('number');
     expect(typeof mockResult.embedding_override_applied).toBe('boolean');
     expect(typeof mockResult.embedding_model_used).toBe('string');
-    expect(typeof mockResult.semantic_check_details).toBe('string');
   });
 
   it('should handle null/undefined embedding values', () => {
@@ -284,13 +277,11 @@ describe('EmbeddingCheck Data Types', () => {
       embedding_similarity_score: null,
       embedding_override_applied: false,
       embedding_model_used: null,
-      semantic_check_details: null,
     });
 
     expect(mockResult.embedding_check_performed).toBe(false);
     expect(mockResult.embedding_similarity_score).toBeNull();
     expect(mockResult.embedding_override_applied).toBe(false);
     expect(mockResult.embedding_model_used).toBeNull();
-    expect(mockResult.semantic_check_details).toBeNull();
   });
 });

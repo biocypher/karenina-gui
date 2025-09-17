@@ -94,11 +94,6 @@ const FIELD_GROUPS: FieldGroup[] = [
         label: 'Embedding Model Used',
         description: 'Name of the sentence transformer model used for similarity computation',
       },
-      {
-        key: 'semantic_check_details',
-        label: 'Semantic Check Details',
-        description: 'Details from the semantic equivalence check performed by the LLM',
-      },
     ],
   },
 ];

@@ -1131,19 +1131,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                     </p>
                                   </div>
                                 )}
-
-                                {selectedResult.semantic_check_details && (
-                                  <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                      Semantic Check Details:
-                                    </h5>
-                                    <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                      <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                        {selectedResult.semantic_check_details}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           )}
