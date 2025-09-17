@@ -71,6 +71,36 @@ const FIELD_GROUPS: FieldGroup[] = [
       { key: 'job_id', label: 'Job ID', description: 'Unique job identifier' },
     ],
   },
+  {
+    name: 'Embedding Check Results',
+    fields: [
+      {
+        key: 'embedding_check_performed',
+        label: 'Embedding Check Performed',
+        description: 'Whether embedding similarity check was attempted',
+      },
+      {
+        key: 'embedding_similarity_score',
+        label: 'Embedding Similarity Score',
+        description: 'Cosine similarity score between embeddings (0.0 to 1.0)',
+      },
+      {
+        key: 'embedding_override_applied',
+        label: 'Embedding Override Applied',
+        description: 'Whether embedding check overrode the original verification result',
+      },
+      {
+        key: 'embedding_model_used',
+        label: 'Embedding Model Used',
+        description: 'Name of the sentence transformer model used for similarity computation',
+      },
+      {
+        key: 'semantic_check_details',
+        label: 'Semantic Check Details',
+        description: 'Details from the semantic equivalence check performed by the LLM',
+      },
+    ],
+  },
 ];
 
 export const CustomExportDialog: React.FC<CustomExportDialogProps> = ({
