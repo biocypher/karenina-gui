@@ -43,6 +43,12 @@ describe('Export Utils', () => {
       timestamp: '2023-01-01T00:00:00Z',
       run_name: 'test-run',
       job_id: 'job-123',
+      // Embedding check metadata
+      embedding_check_performed: true,
+      embedding_similarity_score: 0.95,
+      embedding_override_applied: false,
+      embedding_model_used: 'all-MiniLM-L6-v2',
+      semantic_check_details: 'High similarity, no override needed',
     },
     {
       question_id: 'q2',
@@ -59,6 +65,12 @@ describe('Export Utils', () => {
       error: 'Parse error',
       execution_time: 0.8,
       timestamp: '2023-01-01T00:01:00Z',
+      // Embedding check metadata
+      embedding_check_performed: true,
+      embedding_similarity_score: 0.72,
+      embedding_override_applied: true,
+      embedding_model_used: 'all-MiniLM-L6-v2',
+      semantic_check_details: 'Below threshold but semantically equivalent',
     },
   ];
 
@@ -335,6 +347,31 @@ describe('Export Utils', () => {
       expect(lines[2]).toContain('false'); // Conciseness
       expect(lines[2]).toContain(''); // Directness missing (empty)
       expect(lines[2]).toContain(''); // extra_trait missing (empty)
+    });
+
+    it('should include embedding check fields in CSV export', () => {
+      const csv = exportToCSV(mockResults);
+      const lines = csv.split('\n');
+
+      // Check that embedding fields are in the header
+      expect(lines[0]).toContain('embedding_check_performed');
+      expect(lines[0]).toContain('embedding_similarity_score');
+      expect(lines[0]).toContain('embedding_override_applied');
+      expect(lines[0]).toContain('embedding_model_used');
+      expect(lines[0]).toContain('semantic_check_details');
+
+      // Check that embedding values are in the data rows
+      expect(lines[1]).toContain('true'); // embedding_check_performed for first result
+      expect(lines[1]).toContain('0.95'); // embedding_similarity_score for first result
+      expect(lines[1]).toContain('false'); // embedding_override_applied for first result
+      expect(lines[1]).toContain('all-MiniLM-L6-v2'); // embedding_model_used for first result
+      expect(lines[1]).toContain('High similarity, no override needed'); // semantic_check_details for first result
+
+      // Check second result
+      expect(lines[2]).toContain('true'); // embedding_check_performed for second result
+      expect(lines[2]).toContain('0.72'); // embedding_similarity_score for second result
+      expect(lines[2]).toContain('true'); // embedding_override_applied for second result (this one was overridden)
+      expect(lines[2]).toContain('Below threshold but semantically equivalent'); // semantic_check_details for second result
     });
   });
 
