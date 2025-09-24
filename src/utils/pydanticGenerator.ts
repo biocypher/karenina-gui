@@ -17,18 +17,20 @@ export function generatePydanticCode(classDef: PydanticClassDefinition): string 
     lines.push(`    """${classDef.docstring}"""`);
   }
 
-  // Generate fields
-  if (classDef.fields.length === 0 && classDef.methods.length === 0) {
+  // Generate fields (excluding regex fields which are handled in model_post_init)
+  const regularFields = classDef.fields.filter((field) => field.type !== 'regex');
+
+  if (regularFields.length === 0 && classDef.methods.length === 0) {
     lines.push('    pass');
   } else {
-    // Add fields
-    for (const field of classDef.fields) {
+    // Add regular fields (excluding regex)
+    for (const field of regularFields) {
       const fieldLine = generateFieldDefinition(field);
       lines.push(fieldLine);
     }
 
     // Add blank line between fields and methods if both exist
-    if (classDef.fields.length > 0 && classDef.methods.length > 0) {
+    if (regularFields.length > 0 && classDef.methods.length > 0) {
       lines.push('');
     }
 
@@ -164,6 +166,30 @@ function generateMethodDefinition(method: PydanticMethod): string[] {
 }
 
 /**
+ * Format a regex pattern for Python code (escape quotes and backslashes)
+ */
+function formatRegexPattern(pattern: string): string {
+  // Use raw string for regex patterns to avoid double escaping
+  return `r"${pattern.replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * Format regex expected value for Python code
+ */
+function formatRegexExpected(expected: string | number | string[]): string {
+  if (typeof expected === 'string') {
+    return `"${expected.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  } else if (typeof expected === 'number') {
+    return String(expected);
+  } else if (Array.isArray(expected)) {
+    const items = expected.map((item) => `"${String(item).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+    return `[${items.join(', ')}]`;
+  } else {
+    return `"${String(expected)}"`;
+  }
+}
+
+/**
  * Generate the correct Python type annotation based on field definition
  */
 export function generatePythonType(field: PydanticFieldDefinition): string {
@@ -215,19 +241,43 @@ export function generateModelPostInit(
 ): string {
   const lines: string[] = ['    def model_post_init(self, __context):'];
 
-  if (fields.length === 0) {
+  // Separate regular fields from regex fields
+  const regularFields = fields.filter((field) => field.type !== 'regex');
+  const regexFields = fields.filter((field) => field.type === 'regex');
+
+  // Generate self.correct for regular fields
+  if (regularFields.length === 0) {
     lines.push('        self.correct = {}');
-  } else if (correctValuePattern === 'single' || (correctValuePattern === undefined && fields.length === 1)) {
+  } else if (correctValuePattern === 'single' || (correctValuePattern === undefined && regularFields.length === 1)) {
     // Single field pattern: self.correct = value
-    const field = fields[0];
+    const field = regularFields[0];
     const correctValue = field.correctValue !== undefined ? field.correctValue : getDefaultCorrectValue(field);
     lines.push(`        self.correct = ${formatCorrectValue(correctValue, field)}`);
   } else {
     // Multiple field pattern: self.correct = {"field": value, ...}
     lines.push('        self.correct = {');
-    for (const field of fields) {
+    for (const field of regularFields) {
       const correctValue = field.correctValue !== undefined ? field.correctValue : getDefaultCorrectValue(field);
       lines.push(`            "${field.name}": ${formatCorrectValue(correctValue, field)},`);
+    }
+    lines.push('        }');
+  }
+
+  // Generate self.regex for regex fields (if any)
+  if (regexFields.length > 0) {
+    lines.push('');
+    lines.push('        # Regex validations applied to full trace text');
+    lines.push('        self.regex = {');
+    for (const field of regexFields) {
+      const pattern = field.regexPattern || '';
+      const expected = field.regexExpected || '';
+      const matchType = field.regexMatchType || 'exact';
+
+      lines.push(`            "${field.name}": {`);
+      lines.push(`                "pattern": ${formatRegexPattern(pattern)},`);
+      lines.push(`                "expected": ${formatRegexExpected(expected)},`);
+      lines.push(`                "match_type": "${matchType}"`);
+      lines.push('            },');
     }
     lines.push('        }');
   }
@@ -319,11 +369,14 @@ export function generateVerifyMethod(
 ): string {
   const lines: string[] = ['    def verify(self) -> bool:'];
 
-  if (fields.length === 0) {
+  // Only consider regular fields for verify method, not regex fields
+  const regularFields = fields.filter((field) => field.type !== 'regex');
+
+  if (regularFields.length === 0) {
     lines.push('        return True');
-  } else if (correctValuePattern === 'single' || (correctValuePattern === undefined && fields.length === 1)) {
+  } else if (correctValuePattern === 'single' || (correctValuePattern === undefined && regularFields.length === 1)) {
     // Single field pattern: compare with self.correct directly
-    const field = fields[0];
+    const field = regularFields[0];
     if (field.type === 'list') {
       lines.push(`        return set(self.${field.name}) == set(self.correct)`);
     } else {
@@ -332,7 +385,7 @@ export function generateVerifyMethod(
   } else {
     // Multiple field pattern: compare with self.correct dict
     const conditions: string[] = [];
-    for (const field of fields) {
+    for (const field of regularFields) {
       if (field.type === 'list') {
         conditions.push(`set(self.${field.name}) == set(self.correct["${field.name}"])`);
       } else {
@@ -354,12 +407,15 @@ export function generateVerifyGranularMethod(
 ): string {
   const lines: string[] = ['    def verify_granular(self) -> float:'];
 
-  // Check if we have any list fields that need special handling
-  const hasListFields = fields.some((field) => field.type === 'list');
+  // Only consider regular fields for granular verification, not regex fields
+  const regularFields = fields.filter((field) => field.type !== 'regex');
 
-  if (fields.length === 1 && fields[0].type === 'list') {
+  // Check if we have any list fields that need special handling
+  const hasListFields = regularFields.some((field) => field.type === 'list');
+
+  if (regularFields.length === 1 && regularFields[0].type === 'list') {
     // Single list field - use the special list scoring logic
-    const field = fields[0];
+    const field = regularFields[0];
     const correctSource = correctValuePattern === 'single' ? 'self.correct' : `self.correct["${field.name}"]`;
 
     lines.push('        score = 0');
@@ -369,7 +425,7 @@ export function generateVerifyGranularMethod(
     lines.push('                score += 1');
     lines.push('            n_params += 1');
     lines.push('        return score / n_params if n_params > 0 else 0.0');
-  } else if (fields.length <= 1 && !hasListFields) {
+  } else if (regularFields.length <= 1 && !hasListFields) {
     // Single non-list field - simple binary scoring
     lines.push('        return 1.0 if self.verify() else 0.0');
   } else if (correctValuePattern === 'single') {
@@ -381,7 +437,7 @@ export function generateVerifyGranularMethod(
     lines.push('        score = 0');
     lines.push('        n_params = 0');
 
-    for (const field of fields) {
+    for (const field of regularFields) {
       if (field.type === 'list') {
         // Special list field scoring: count correct items found
         lines.push(`        # Score list field: ${field.name}`);

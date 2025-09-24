@@ -367,7 +367,7 @@ export interface GranularVerificationResult {
 }
 
 // Pydantic Model Editor Types
-export type PydanticFieldType = 'str' | 'int' | 'float' | 'bool' | 'date' | 'literal' | 'list';
+export type PydanticFieldType = 'str' | 'int' | 'float' | 'bool' | 'date' | 'literal' | 'list' | 'regex';
 
 export interface PydanticFieldDefinition {
   name: string;
@@ -386,6 +386,10 @@ export interface PydanticFieldDefinition {
     min?: number;
     max?: number;
   };
+  // Regex-specific properties (only used when type === 'regex')
+  regexPattern?: string; // The regex pattern to apply
+  regexExpected?: string | number | string[]; // Expected result from regex matching
+  regexMatchType?: 'exact' | 'contains' | 'count' | 'all'; // Type of regex matching
 }
 
 export interface PydanticMethod {

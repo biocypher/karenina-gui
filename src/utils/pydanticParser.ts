@@ -372,6 +372,9 @@ function extractCorrectValuesIntoFields(fields: PydanticFieldDefinition[], metho
       field.correctValue = parseCorrectValue(valueStr, field.type);
     }
   }
+
+  // Extract regex patterns from self.regex assignments
+  extractRegexPatterns(fields, code);
 }
 
 /**
@@ -499,4 +502,77 @@ export function validatePydanticClass(classDef: PydanticClassDefinition): string
   }
 
   return errors;
+}
+
+/**
+ * Extract regex patterns from self.regex assignments in model_post_init
+ */
+function extractRegexPatterns(fields: PydanticFieldDefinition[], code: string): void {
+  // Look for self.regex = { ... } pattern
+  const regexPattern = /self\.regex\s*=\s*\{([\s\S]*?)\}/;
+  const regexMatch = code.match(regexPattern);
+
+  if (!regexMatch) {
+    return; // No regex patterns found
+  }
+
+  const regexContent = regexMatch[1];
+
+  // Extract each regex field: "name": { "pattern": "...", "expected": "...", "match_type": "..." }
+  const regexFieldPattern = /"([^"]+)":\s*\{([\s\S]*?)\}(?:\s*,)?/g;
+
+  let match;
+  while ((match = regexFieldPattern.exec(regexContent)) !== null) {
+    const fieldName = match[1].trim();
+    const fieldContent = match[2];
+
+    // Extract individual properties within the regex field
+    const patternMatch = fieldContent.match(/"pattern":\s*r?"([^"]+)"/);
+    const expectedMatch = fieldContent.match(/"expected":\s*([^,}]+)/);
+    const matchTypeMatch = fieldContent.match(/"match_type":\s*"([^"]+)"/);
+
+    if (patternMatch) {
+      // Create a regex field definition
+      const regexField: PydanticFieldDefinition = {
+        name: fieldName,
+        type: 'regex',
+        pythonType: '', // Not used for regex fields
+        required: false, // Not used for regex fields
+        regexPattern: patternMatch[1],
+        regexExpected: parseRegexExpected(expectedMatch ? expectedMatch[1].trim() : ''),
+        regexMatchType: (matchTypeMatch ? matchTypeMatch[1] : 'exact') as 'exact' | 'contains' | 'count' | 'all',
+      };
+
+      fields.push(regexField);
+    }
+  }
+}
+
+/**
+ * Parse regex expected value from string
+ */
+function parseRegexExpected(expectedStr: string): string | number | string[] {
+  expectedStr = expectedStr.replace(/,$/, ''); // Remove trailing comma
+
+  if (expectedStr.startsWith('[') && expectedStr.endsWith(']')) {
+    // Parse array
+    try {
+      return JSON.parse(expectedStr);
+    } catch {
+      // Fallback parsing for arrays
+      const items = expectedStr
+        .slice(1, -1)
+        .split(',')
+        .map(
+          (item) => item.trim().replace(/^["']|["']$/g, '') // Remove quotes
+        );
+      return items;
+    }
+  } else if (expectedStr.match(/^\d+$/)) {
+    // Parse number
+    return parseInt(expectedStr, 10);
+  } else {
+    // Parse string (remove quotes)
+    return expectedStr.replace(/^["']|["']$/g, '');
+  }
 }
