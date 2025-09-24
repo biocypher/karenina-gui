@@ -519,7 +519,8 @@ function extractRegexPatterns(fields: PydanticFieldDefinition[], code: string): 
   const regexContent = regexMatch[1];
 
   // Extract each regex field: "name": { "pattern": "...", "expected": "...", "match_type": "..." }
-  const regexFieldPattern = /"([^"]+)":\s*\{([\s\S]*?)\}(?:\s*,)?/g;
+  // Handle both cases: fields with closing braces and fields that end at the parent's closing brace
+  const regexFieldPattern = /"([^"]+)":\s*\{([\s\S]*?)(?:\}(?:\s*,)?|$)/g;
 
   let match;
   while ((match = regexFieldPattern.exec(regexContent)) !== null) {

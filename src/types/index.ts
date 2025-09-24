@@ -294,6 +294,12 @@ export interface VerificationResult {
   embedding_similarity_score?: number;
   embedding_override_applied?: boolean;
   embedding_model_used?: string;
+  // Regex validation metadata
+  regex_validations_performed?: boolean;
+  regex_validation_results?: Record<string, boolean>;
+  regex_validation_details?: Record<string, Record<string, unknown>>;
+  regex_overall_success?: boolean;
+  regex_extraction_results?: Record<string, unknown>;
 }
 
 export interface VerificationProgress {
