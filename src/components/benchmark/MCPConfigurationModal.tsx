@@ -1,14 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Search, CheckSquare, Square, Loader2, AlertCircle, CheckCircle, Settings } from 'lucide-react';
+import {
+  X,
+  Plus,
+  Trash2,
+  Search,
+  CheckSquare,
+  Square,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  Settings,
+} from 'lucide-react';
 import { MCPConfiguration, MCPServer, MCPTool, MCPValidationRequest, MCPValidationResponse } from '../../types';
 
 interface MCPConfigurationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (config: { mcp_urls_dict: Record<string, string>; mcp_tool_filter: string[] }) => void;
+  onSave: (config: {
+    mcp_urls_dict: Record<string, string>;
+    mcp_tool_filter: string[];
+    mcp_validated_servers?: Record<string, string>;
+  }) => void;
   initialConfig?: {
     mcp_urls_dict?: Record<string, string>;
     mcp_tool_filter?: string[];
+    mcp_validated_servers?: Record<string, string>;
   };
 }
 
@@ -30,18 +46,36 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     if (isOpen && initialConfig) {
       const servers: MCPServer[] = [];
       const selectedTools = new Set(initialConfig.mcp_tool_filter || []);
+      const validatedServers = new Set(Object.keys(initialConfig.mcp_validated_servers || {}));
 
       if (initialConfig.mcp_urls_dict) {
         Object.entries(initialConfig.mcp_urls_dict).forEach(([name, url]) => {
           servers.push({
-            name,
+            name, // Use the key from mcp_urls_dict as the server name
             url,
-            status: 'idle', // Will be validated automatically
+            status: 'idle', // Will be auto-validated if it was previously validated
           });
         });
       }
 
       setConfiguration({ servers, selectedTools });
+
+      // Auto-validate servers that were previously validated
+      if (validatedServers.size > 0) {
+        servers.forEach((server, index) => {
+          if (validatedServers.has(server.name)) {
+            // Delay validation slightly to avoid race condition with state setting
+            // Capture the index in closure to avoid issues with async execution
+            const serverIndex = index;
+            setTimeout(
+              () => {
+                validateServer(serverIndex);
+              },
+              100 + index * 50
+            ); // Stagger validations to avoid overwhelming the server
+          }
+        });
+      }
     } else if (isOpen && !initialConfig) {
       setConfiguration({
         servers: [],
@@ -58,20 +92,20 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
       url: '',
       status: 'idle',
     };
-    setConfiguration(prev => ({
+    setConfiguration((prev) => ({
       ...prev,
       servers: [...prev.servers, newServer],
     }));
   };
 
   const removeServer = (index: number) => {
-    setConfiguration(prev => {
+    setConfiguration((prev) => {
       const newServers = prev.servers.filter((_, i) => i !== index);
       // Remove tools from this server from selectedTools
       const serverToRemove = prev.servers[index];
       const newSelectedTools = new Set(prev.selectedTools);
       if (serverToRemove.tools) {
-        serverToRemove.tools.forEach(tool => {
+        serverToRemove.tools.forEach((tool) => {
           newSelectedTools.delete(tool.name);
         });
       }
@@ -83,11 +117,15 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
   };
 
   const updateServer = (index: number, field: keyof MCPServer, value: string) => {
-    setConfiguration(prev => ({
+    setConfiguration((prev) => ({
       ...prev,
       servers: prev.servers.map((server, i) =>
         i === index
-          ? { ...server, [field]: value, ...(field === 'url' && { status: 'idle' as const, tools: undefined, error: undefined }) }
+          ? {
+              ...server,
+              [field]: value,
+              ...(field === 'url' && { status: 'idle' as const, tools: undefined, error: undefined }),
+            }
           : server
       ),
     }));
@@ -100,11 +138,9 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     setIsValidating(server.name);
 
     // Update server status to validating
-    setConfiguration(prev => ({
+    setConfiguration((prev) => ({
       ...prev,
-      servers: prev.servers.map((s, i) =>
-        i === index ? { ...s, status: 'validating', error: undefined } : s
-      ),
+      servers: prev.servers.map((s, i) => (i === index ? { ...s, status: 'validating', error: undefined } : s)),
     }));
 
     try {
@@ -123,7 +159,7 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
       const data: MCPValidationResponse = await response.json();
 
-      setConfiguration(prev => ({
+      setConfiguration((prev) => ({
         ...prev,
         servers: prev.servers.map((s, i) =>
           i === index
@@ -137,7 +173,7 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
         ),
       }));
     } catch (error) {
-      setConfiguration(prev => ({
+      setConfiguration((prev) => ({
         ...prev,
         servers: prev.servers.map((s, i) =>
           i === index
@@ -156,23 +192,43 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
   const getAllTools = (): MCPTool[] => {
     return configuration.servers
-      .filter(server => server.status === 'valid' && server.tools)
-      .flatMap(server => server.tools!);
+      .filter((server) => server.status === 'valid' && server.tools)
+      .flatMap((server) => server.tools!);
+  };
+
+  // Get all tools including previously selected ones (even if servers aren't validated)
+  const getAllToolsIncludingSelected = (): MCPTool[] => {
+    const availableTools = getAllTools();
+    const availableToolNames = new Set(availableTools.map((t) => t.name));
+
+    // Create phantom tools for previously selected tools that aren't currently available
+    const phantomTools: MCPTool[] = [];
+    configuration.selectedTools.forEach((toolName) => {
+      if (!availableToolNames.has(toolName)) {
+        phantomTools.push({
+          name: toolName,
+          description: '(Previously selected - server needs revalidation)',
+          phantom: true, // Custom property to indicate this is a phantom tool
+        });
+      }
+    });
+
+    return [...availableTools, ...phantomTools];
   };
 
   const getFilteredTools = (): MCPTool[] => {
-    const tools = getAllTools();
+    const tools = getAllToolsIncludingSelected();
     if (!searchTerm) return tools;
 
     return tools.filter(
-      tool =>
+      (tool) =>
         tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   };
 
   const toggleTool = (toolName: string) => {
-    setConfiguration(prev => {
+    setConfiguration((prev) => {
       const newSelectedTools = new Set(prev.selectedTools);
       if (newSelectedTools.has(toolName)) {
         newSelectedTools.delete(toolName);
@@ -185,18 +241,18 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
   const selectAllTools = () => {
     const allTools = getFilteredTools();
-    setConfiguration(prev => {
+    setConfiguration((prev) => {
       const newSelectedTools = new Set(prev.selectedTools);
-      allTools.forEach(tool => newSelectedTools.add(tool.name));
+      allTools.forEach((tool) => newSelectedTools.add(tool.name));
       return { ...prev, selectedTools: newSelectedTools };
     });
   };
 
   const selectNoTools = () => {
     const filteredTools = getFilteredTools();
-    setConfiguration(prev => {
+    setConfiguration((prev) => {
       const newSelectedTools = new Set(prev.selectedTools);
-      filteredTools.forEach(tool => newSelectedTools.delete(tool.name));
+      filteredTools.forEach((tool) => newSelectedTools.delete(tool.name));
       return { ...prev, selectedTools: newSelectedTools };
     });
   };
@@ -204,24 +260,31 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
   const handleSave = () => {
     // Convert configuration back to the format expected by the backend
     const mcp_urls_dict: Record<string, string> = {};
+    const mcp_validated_servers: Record<string, string> = {}; // Track servers that have been validated
+
     configuration.servers
-      .filter(server => {
+      .filter((server) => {
         // Include servers that are valid, or servers that have name and URL
         // (which means they were previously saved and are being revalidated)
         return (server.status === 'valid' || (server.name && server.url)) && server.name && server.url;
       })
-      .forEach(server => {
+      .forEach((server) => {
         mcp_urls_dict[server.name] = server.url;
+        // Track servers that are currently valid (have been validated)
+        if (server.status === 'valid') {
+          mcp_validated_servers[server.name] = server.url;
+        }
       });
 
     const mcp_tool_filter = Array.from(configuration.selectedTools);
 
-    onSave({ mcp_urls_dict, mcp_tool_filter });
+    onSave({ mcp_urls_dict, mcp_tool_filter, mcp_validated_servers });
   };
 
   // Allow saving if we have servers with name/URL (tools selection is optional)
-  const canSave = configuration.servers.some(server => server.name && server.url);
-  const totalTools = getAllTools().length;
+  const canSave = configuration.servers.some((server) => server.name && server.url);
+  const totalTools = getAllToolsIncludingSelected().length;
+  const availableTools = getAllTools().length; // Tools from validated servers only
   const selectedCount = configuration.selectedTools.size;
   const filteredTools = getFilteredTools();
 
@@ -242,7 +305,9 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
                 <h2 className="text-xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 dark:from-slate-100 dark:via-blue-100 dark:to-purple-100 bg-clip-text text-transparent">
                   MCP Configuration
                 </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Configure Model Context Protocol servers and tools</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Configure Model Context Protocol servers and tools
+                </p>
               </div>
             </div>
             <button
@@ -260,100 +325,94 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
           <div className="mb-8">
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                MCP Servers
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">MCP Servers</h3>
               <div className="flex-1 h-px bg-gradient-to-r from-slate-300/50 to-transparent dark:from-slate-600/50"></div>
             </div>
 
             <div className="space-y-4">
               {configuration.servers.map((server, index) => (
-                <div
-                  key={index}
-                  className="relative group"
-                >
+                <div key={index} className="relative group">
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 via-purple-500/10 to-cyan-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm"></div>
-                  <div className="relative border border-slate-200/60 dark:border-slate-600/60 rounded-xl p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Name:
-                      </label>
-                      <input
-                        type="text"
-                        value={server.name}
-                        onChange={(e) => updateServer(index, 'name', e.target.value)}
-                        className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white/80 dark:bg-slate-700/80 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200 backdrop-blur-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        URL:
-                      </label>
-                      <input
-                        type="url"
-                        value={server.url}
-                        onChange={(e) => updateServer(index, 'url', e.target.value)}
-                        className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white/80 dark:bg-slate-700/80 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200 backdrop-blur-sm"
-                        placeholder="https://mcp.example.com/mcp/"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => validateServer(index)}
-                        disabled={!server.name || !server.url || isValidating === server.name}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed text-sm flex items-center space-x-2 transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
-                      >
-                        {isValidating === server.name ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <span className="font-medium">Validate</span>
-                        )}
-                      </button>
-
-                      {/* Status indicator */}
-                      {server.status === 'valid' && (
-                        <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 border border-green-200 dark:border-green-700 rounded-lg">
-                          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                            Valid ({server.tools?.length || 0} tools)
-                          </span>
-                        </div>
-                      )}
-                      {server.status === 'invalid' && (
-                        <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-                          <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                          <span className="text-sm font-medium text-red-700 dark:text-red-300">Invalid</span>
-                        </div>
-                      )}
-                      {server.status === 'validating' && (
-                        <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
-                          <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
-                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Validating...</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => removeServer(index)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 group"
-                    >
-                      <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    </button>
-                  </div>
-
-                  {server.error && (
-                    <div className="mt-3 p-3 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border border-red-200 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300 backdrop-blur-sm">
-                      <div className="flex items-start space-x-2">
-                        <AlertCircle className="w-4 h-4 mt-0.5 text-red-500" />
-                        <div>{server.error}</div>
+                  <div className="relative border border-slate-200/60 dark:border-slate-600/60 rounded-xl p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-200 shadow-sm hover:shadow-md">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                          Name:
+                        </label>
+                        <input
+                          type="text"
+                          value={server.name}
+                          onChange={(e) => updateServer(index, 'name', e.target.value)}
+                          className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white/80 dark:bg-slate-700/80 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200 backdrop-blur-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                          URL:
+                        </label>
+                        <input
+                          type="url"
+                          value={server.url}
+                          onChange={(e) => updateServer(index, 'url', e.target.value)}
+                          className="w-full p-3 border border-slate-200 dark:border-slate-600 rounded-lg bg-white/80 dark:bg-slate-700/80 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200 backdrop-blur-sm"
+                          placeholder="https://mcp.example.com/mcp/"
+                        />
                       </div>
                     </div>
-                  )}
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => validateServer(index)}
+                          disabled={!server.name || !server.url || isValidating === server.name}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed text-sm flex items-center space-x-2 transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
+                        >
+                          {isValidating === server.name ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <span className="font-medium">Validate</span>
+                          )}
+                        </button>
+
+                        {/* Status indicator */}
+                        {server.status === 'valid' && (
+                          <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 border border-green-200 dark:border-green-700 rounded-lg">
+                            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                              Valid ({server.tools?.length || 0} tools)
+                            </span>
+                          </div>
+                        )}
+                        {server.status === 'invalid' && (
+                          <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                            <span className="text-sm font-medium text-red-700 dark:text-red-300">Invalid</span>
+                          </div>
+                        )}
+                        {server.status === 'validating' && (
+                          <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Validating...</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => removeServer(index)}
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 group"
+                      >
+                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                      </button>
+                    </div>
+
+                    {server.error && (
+                      <div className="mt-3 p-3 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border border-red-200 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300 backdrop-blur-sm">
+                        <div className="flex items-start space-x-2">
+                          <AlertCircle className="w-4 h-4 mt-0.5 text-red-500" />
+                          <div>{server.error}</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -369,16 +428,15 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
           </div>
 
           {/* Available Tools Section */}
-          {totalTools > 0 && (
+          {(totalTools > 0 || configuration.selectedTools.size > 0) && (
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                  Available Tools
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Available Tools</h3>
                 <div className="flex-1 h-px bg-gradient-to-r from-slate-300/50 to-transparent dark:from-slate-600/50"></div>
                 <div className="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-700 rounded-full text-xs font-medium text-purple-700 dark:text-purple-300">
-                  {totalTools} discovered
+                  {availableTools} available
+                  {totalTools > availableTools ? `, ${totalTools - availableTools} previously selected` : ''}
                 </div>
               </div>
 
@@ -417,16 +475,10 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
                 {/* Tools list */}
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {filteredTools.map((tool) => (
-                    <div
-                      key={tool.name}
-                      className="group relative"
-                    >
+                    <div key={tool.name} className="group relative">
                       <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/10 via-pink-500/5 to-blue-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 blur-sm"></div>
                       <div className="relative flex items-start space-x-3 p-3 hover:bg-white/60 dark:hover:bg-slate-800/60 rounded-lg transition-all duration-200 backdrop-blur-sm border border-transparent group-hover:border-slate-200/50 dark:group-hover:border-slate-600/50">
-                        <button
-                          onClick={() => toggleTool(tool.name)}
-                          className="mt-0.5 group/checkbox"
-                        >
+                        <button onClick={() => toggleTool(tool.name)} className="mt-0.5 group/checkbox">
                           {configuration.selectedTools.has(tool.name) ? (
                             <div className="relative">
                               <CheckSquare className="w-5 h-5 text-purple-500 group-hover/checkbox:text-purple-600 transition-colors" />
@@ -454,7 +506,8 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
               <div className="mt-3 flex items-center justify-between">
                 <div className="text-sm text-slate-500 dark:text-slate-400">
-                  Selected: <span className="font-medium text-slate-700 dark:text-slate-300">{selectedCount}</span> of <span className="font-medium text-slate-700 dark:text-slate-300">{totalTools}</span> tools
+                  Selected: <span className="font-medium text-slate-700 dark:text-slate-300">{selectedCount}</span> of{' '}
+                  <span className="font-medium text-slate-700 dark:text-slate-300">{totalTools}</span> tools
                 </div>
                 {selectedCount > 0 && (
                   <div className="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border border-purple-200 dark:border-purple-700 rounded-full text-xs font-medium text-purple-700 dark:text-purple-300">

@@ -14,6 +14,7 @@ interface ModelConfiguration {
   // MCP (Model Context Protocol) configuration
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
+  mcp_validated_servers?: Record<string, string>;
 }
 
 interface ConfigurationPanelProps {
@@ -76,10 +77,14 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     modelId: null,
   });
 
-  const handleMCPSave = (config: { mcp_urls_dict: Record<string, string>; mcp_tool_filter: string[] }) => {
+  const handleMCPSave = (config: {
+    mcp_urls_dict: Record<string, string>;
+    mcp_tool_filter: string[];
+    mcp_validated_servers?: Record<string, string>;
+  }) => {
     if (mcpModalState.modelId) {
       // Find if this is an answering or parsing model and update accordingly
-      const answeringModel = answeringModels.find(m => m.id === mcpModalState.modelId);
+      const answeringModel = answeringModels.find((m) => m.id === mcpModalState.modelId);
       if (answeringModel) {
         onUpdateAnsweringModel(mcpModalState.modelId, config);
       }
@@ -89,11 +94,14 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
   const getCurrentMCPConfig = () => {
     if (!mcpModalState.modelId) return undefined;
-    const model = answeringModels.find(m => m.id === mcpModalState.modelId);
-    return model ? {
-      mcp_urls_dict: model.mcp_urls_dict,
-      mcp_tool_filter: model.mcp_tool_filter,
-    } : undefined;
+    const model = answeringModels.find((m) => m.id === mcpModalState.modelId);
+    return model
+      ? {
+          mcp_urls_dict: model.mcp_urls_dict,
+          mcp_tool_filter: model.mcp_tool_filter,
+          mcp_validated_servers: model.mcp_validated_servers,
+        }
+      : undefined;
   };
 
   const renderModelConfiguration = (model: ModelConfiguration, index: number, isAnswering: boolean) => (
