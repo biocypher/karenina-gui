@@ -303,24 +303,27 @@ export const FieldEditor = forwardRef<FieldEditorRef, FieldEditorProps>(
                   <option value="date">Date</option>
                   <option value="literal">Multiple Choice</option>
                   <option value="list">List</option>
+                  <option value="regex">Regex Validation</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Description Field - Full Width */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-              Field Description
-            </label>
-            <textarea
-              value={localField.description || ''}
-              onChange={(e) => handleLocalFieldChange({ description: e.target.value })}
-              rows={3}
-              className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3"
-              placeholder="Describe what this field represents..."
-            />
-          </div>
+          {/* Description Field - Full Width (Hidden for regex fields) */}
+          {localField.type !== 'regex' && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                Field Description
+              </label>
+              <textarea
+                value={localField.description || ''}
+                onChange={(e) => handleLocalFieldChange({ description: e.target.value })}
+                rows={3}
+                className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3"
+                placeholder="Describe what this field represents..."
+              />
+            </div>
+          )}
 
           {/* Type-Specific Configuration */}
           {localField.type === 'literal' && (
@@ -371,6 +374,119 @@ export const FieldEditor = forwardRef<FieldEditorRef, FieldEditorProps>(
             </div>
           )}
 
+          {localField.type === 'regex' && (
+            <div className="space-y-6">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                  <svg
+                    className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div className="text-sm text-amber-800 dark:text-amber-200">
+                    <p className="font-semibold mb-1">Regex Validation</p>
+                    <p>
+                      This validates patterns against the full LLM response text during verification. It does not create
+                      a Pydantic field - only the pattern matching logic is added to the template.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Regex Pattern */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                  Regex Pattern
+                </label>
+                <input
+                  type="text"
+                  value={localField.regexPattern || ''}
+                  onChange={(e) => handleLocalFieldChange({ regexPattern: e.target.value })}
+                  className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3 font-mono"
+                  placeholder="Enter regex pattern (e.g., \\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b)"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                  Regular expression to match against the full LLM response text
+                </p>
+              </div>
+
+              {/* Match Type */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                  Match Type
+                </label>
+                <select
+                  value={localField.regexMatchType || 'exact'}
+                  onChange={(e) =>
+                    handleLocalFieldChange({ regexMatchType: e.target.value as 'exact' | 'contains' | 'count' | 'all' })
+                  }
+                  className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3"
+                >
+                  <option value="exact">Exact - Find one specific match</option>
+                  <option value="contains">Contains - Pattern found somewhere</option>
+                  <option value="count">Count - Specific number of matches</option>
+                  <option value="all">All - All expected items must be present</option>
+                </select>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                  How to evaluate the regex matches against expected results
+                </p>
+              </div>
+
+              {/* Expected Value (dynamic based on match type) */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                  Expected Result
+                </label>
+                {(localField.regexMatchType === 'exact' ||
+                  localField.regexMatchType === 'contains' ||
+                  !localField.regexMatchType) && (
+                  <input
+                    type="text"
+                    value={typeof localField.regexExpected === 'string' ? localField.regexExpected : ''}
+                    onChange={(e) => handleLocalFieldChange({ regexExpected: e.target.value })}
+                    className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3"
+                    placeholder="Expected match text"
+                  />
+                )}
+                {localField.regexMatchType === 'count' && (
+                  <input
+                    type="number"
+                    min="0"
+                    value={typeof localField.regexExpected === 'number' ? localField.regexExpected : 0}
+                    onChange={(e) => handleLocalFieldChange({ regexExpected: parseInt(e.target.value) || 0 })}
+                    className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3"
+                    placeholder="Expected number of matches"
+                  />
+                )}
+                {localField.regexMatchType === 'all' && (
+                  <div className="space-y-3">
+                    <textarea
+                      value={Array.isArray(localField.regexExpected) ? localField.regexExpected.join('\n') : ''}
+                      onChange={(e) => {
+                        const lines = e.target.value.split('\n').filter((line) => line.trim());
+                        handleLocalFieldChange({ regexExpected: lines });
+                      }}
+                      rows={4}
+                      className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3"
+                      placeholder="Enter each expected match on a new line"
+                    />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      All of these items must be found in the regex matches
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {localField.type === 'list' && (
             <div>
               <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
@@ -397,26 +513,30 @@ export const FieldEditor = forwardRef<FieldEditorRef, FieldEditorProps>(
             </div>
           )}
 
-          {/* Correct Value Section */}
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-6 border border-emerald-200 dark:border-emerald-700">
-            <label className="block text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-3">
-              Correct Answer Value
-              <span className="ml-2 text-xs font-normal text-emerald-600 dark:text-emerald-400">
-                (This value will be used in model_post_init for verification)
-              </span>
-            </label>
-            {renderCorrectValueInput()}
-          </div>
+          {/* Correct Value Section (Hidden for regex fields) */}
+          {localField.type !== 'regex' && (
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-6 border border-emerald-200 dark:border-emerald-700">
+              <label className="block text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-3">
+                Correct Answer Value
+                <span className="ml-2 text-xs font-normal text-emerald-600 dark:text-emerald-400">
+                  (This value will be used in model_post_init for verification)
+                </span>
+              </label>
+              {renderCorrectValueInput()}
+            </div>
+          )}
 
-          {/* Python Type Display */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-              Generated Python Type
-            </label>
-            <code className="block w-full px-4 py-3 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-mono text-slate-800 dark:text-slate-200">
-              {localField.pythonType}
-            </code>
-          </div>
+          {/* Python Type Display (Hidden for regex fields) */}
+          {localField.type !== 'regex' && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                Generated Python Type
+              </label>
+              <code className="block w-full px-4 py-3 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-mono text-slate-800 dark:text-slate-200">
+                {localField.pythonType}
+              </code>
+            </div>
+          )}
 
           {/* Validation Messages */}
           {(nameValidation.errors.length > 0 ||
@@ -573,6 +693,9 @@ function generatePythonTypeFromField(field: PydanticFieldDefinition): string {
       break;
     case 'list':
       baseType = `List[${field.listItemType || 'str'}]`;
+      break;
+    case 'regex':
+      baseType = 'regex'; // Not used for actual Python type, just for display
       break;
     default:
       baseType = 'str';

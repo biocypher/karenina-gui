@@ -1036,6 +1036,57 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                             </div>
                           )}
 
+                          {/* Regex Ground Truth (Expected) */}
+                          {selectedResult.regex_validation_details && (
+                            <div>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                Regex Ground Truth (Expected)
+                              </h4>
+                              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                                <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
+                                  {(() => {
+                                    try {
+                                      const regexGroundTruth: Record<string, Record<string, unknown>> = {};
+                                      Object.entries(selectedResult.regex_validation_details).forEach(
+                                        ([fieldName, details]) => {
+                                          regexGroundTruth[fieldName] = {
+                                            pattern: details.pattern,
+                                            expected: details.expected,
+                                            match_type: details.match_type,
+                                          };
+                                        }
+                                      );
+                                      return JSON.stringify(regexGroundTruth, null, 2);
+                                    } catch {
+                                      return String(selectedResult.regex_validation_details);
+                                    }
+                                  })()}
+                                </pre>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Regex Extraction (Generated) */}
+                          {selectedResult.regex_extraction_results &&
+                            Object.keys(selectedResult.regex_extraction_results).length > 0 && (
+                              <div>
+                                <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                  Regex Extraction (Generated)
+                                </h4>
+                                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3">
+                                  <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
+                                    {(() => {
+                                      try {
+                                        return JSON.stringify(selectedResult.regex_extraction_results, null, 2);
+                                      } catch {
+                                        return String(selectedResult.regex_extraction_results);
+                                      }
+                                    })()}
+                                  </pre>
+                                </div>
+                              </div>
+                            )}
+
                           {/* Verification Results */}
                           {selectedResult.verify_result && (
                             <div>

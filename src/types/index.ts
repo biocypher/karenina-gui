@@ -294,6 +294,12 @@ export interface VerificationResult {
   embedding_similarity_score?: number;
   embedding_override_applied?: boolean;
   embedding_model_used?: string;
+  // Regex validation metadata
+  regex_validations_performed?: boolean;
+  regex_validation_results?: Record<string, boolean>;
+  regex_validation_details?: Record<string, Record<string, unknown>>;
+  regex_overall_success?: boolean;
+  regex_extraction_results?: Record<string, unknown>;
 }
 
 export interface VerificationProgress {
@@ -367,7 +373,7 @@ export interface GranularVerificationResult {
 }
 
 // Pydantic Model Editor Types
-export type PydanticFieldType = 'str' | 'int' | 'float' | 'bool' | 'date' | 'literal' | 'list';
+export type PydanticFieldType = 'str' | 'int' | 'float' | 'bool' | 'date' | 'literal' | 'list' | 'regex';
 
 export interface PydanticFieldDefinition {
   name: string;
@@ -386,6 +392,10 @@ export interface PydanticFieldDefinition {
     min?: number;
     max?: number;
   };
+  // Regex-specific properties (only used when type === 'regex')
+  regexPattern?: string; // The regex pattern to apply
+  regexExpected?: string | number | string[]; // Expected result from regex matching
+  regexMatchType?: 'exact' | 'contains' | 'count' | 'all'; // Type of regex matching
 }
 
 export interface PydanticMethod {

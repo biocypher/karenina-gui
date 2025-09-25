@@ -5,7 +5,6 @@ import { useTemplateStore } from '../stores/useTemplateStore';
 import { useConfigStore } from '../stores/useConfigStore';
 import { handleApiError } from '../utils/errorHandler';
 import { QuestionSelector } from './QuestionSelector';
-import { CustomPromptComposer } from './CustomPromptComposer';
 import { TemplateProgress } from './TemplateProgress';
 import { TemplateResults } from './TemplateResults';
 
@@ -26,7 +25,6 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
   // Template store state
   const {
     config,
-    customSystemPrompt,
     selectedQuestions,
     isGenerating,
     progress,
@@ -35,7 +33,6 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     jobId,
     generatedTemplates,
     setConfig,
-    setCustomSystemPrompt,
     setSelectedQuestions,
     setError,
     initializeSelection,
@@ -295,19 +292,11 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
         </div>
       )}
 
-      {/* Custom Prompt Composer */}
-      {hasQuestions && <CustomPromptComposer questions={questions} onPromptGenerated={setCustomSystemPrompt} />}
-
       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">Answer Template Generation</h2>
         <p className="text-slate-600 dark:text-slate-300 mb-6">
           Generate answer templates from extracted questions using various LLM providers. Select which questions to
           process and configure the generation parameters.
-          {customSystemPrompt && (
-            <span className="block mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-              ✅ Using custom system prompt for generation.
-            </span>
-          )}
           {pendingQuestionsCount < totalQuestions && (
             <span className="block mt-2 text-sm font-medium text-blue-600 dark:text-blue-400">
               Showing {pendingQuestionsCount} pending questions (out of {totalQuestions} total).

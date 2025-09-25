@@ -13,7 +13,6 @@ import { handleApiError } from '../utils/errorHandler';
 interface TemplateState {
   // Configuration state
   config: TemplateGenerationConfig;
-  customSystemPrompt: string | null;
 
   // Selection state
   selectedQuestions: Set<string>;
@@ -31,7 +30,6 @@ interface TemplateState {
 
   // Actions
   setConfig: (config: TemplateGenerationConfig) => void;
-  setCustomSystemPrompt: (prompt: string | null) => void;
   setSelectedQuestions: (questions: Set<string>) => void;
   setError: (error: string | null) => void;
 
@@ -69,7 +67,6 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     temperature: 0.1,
     interface: 'langchain',
   },
-  customSystemPrompt: null,
   selectedQuestions: new Set(),
   hasInitialized: false,
   isGenerating: false,
@@ -81,7 +78,6 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
   // Basic setters
   setConfig: (config: TemplateGenerationConfig) => set(() => ({ config })),
-  setCustomSystemPrompt: (customSystemPrompt: string | null) => set(() => ({ customSystemPrompt })),
   setSelectedQuestions: (selectedQuestions: Set<string>) => set(() => ({ selectedQuestions })),
   setError: (error: string | null) => set(() => ({ error })),
 
@@ -137,7 +133,6 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
           // Add timestamp to ensure backend treats this as a fresh request
           _cache_bust: Date.now(),
         },
-        custom_system_prompt: state.customSystemPrompt,
         force_regenerate: forceRegenerate,
       };
 
@@ -297,7 +292,6 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         temperature: 0.1,
         interface: 'langchain',
       },
-      customSystemPrompt: null,
       selectedQuestions: new Set(),
       hasInitialized: false,
       isGenerating: false,

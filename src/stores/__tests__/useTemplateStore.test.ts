@@ -88,7 +88,6 @@ describe('useTemplateStore', () => {
 
       expect(store.config.model_provider).toBe('google_genai');
       expect(store.config.model_name).toBe('gemini-2.0-flash');
-      expect(store.customSystemPrompt).toBe(null);
       expect(store.selectedQuestions.size).toBe(0);
       expect(store.hasInitialized).toBe(false);
       expect(store.isGenerating).toBe(false);
@@ -103,14 +102,6 @@ describe('useTemplateStore', () => {
       store.setConfig(mockConfig);
 
       expect(useTemplateStore.getState().config).toEqual(mockConfig);
-    });
-
-    it('should update custom system prompt', () => {
-      const store = useTemplateStore.getState();
-
-      store.setCustomSystemPrompt('Custom prompt');
-
-      expect(useTemplateStore.getState().customSystemPrompt).toBe('Custom prompt');
     });
   });
 
@@ -322,7 +313,6 @@ describe('useTemplateStore', () => {
       // Set up some state
       store.setConfig(mockConfig);
       store.setSelectedQuestions(new Set(['q1']));
-      store.setCustomSystemPrompt('test');
       useTemplateStore.setState({
         isGenerating: true,
         generatedTemplates: { q1: mockGeneratedTemplate },
@@ -334,7 +324,6 @@ describe('useTemplateStore', () => {
       const state = useTemplateStore.getState();
       expect(state.config.model_provider).toBe('google_genai');
       expect(state.selectedQuestions.size).toBe(0);
-      expect(state.customSystemPrompt).toBe(null);
       expect(state.isGenerating).toBe(false);
       expect(state.generatedTemplates).toEqual({});
       expect(state.hasInitialized).toBe(false);
