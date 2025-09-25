@@ -36,7 +36,7 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
           servers.push({
             name,
             url,
-            status: 'idle',
+            status: 'idle', // Will be validated automatically
           });
         });
       }
@@ -49,6 +49,27 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
       });
     }
   }, [isOpen, initialConfig]);
+
+  // Auto-validate servers that were loaded from saved configuration
+  useEffect(() => {
+    if (isOpen && initialConfig && configuration.servers.length > 0) {
+      // Only auto-validate if we have servers that need validation
+      const serversToValidate = configuration.servers.filter(
+        server => server.status === 'idle' && server.name && server.url
+      );
+
+      if (serversToValidate.length > 0) {
+        // Validate each server
+        serversToValidate.forEach((server, index) => {
+          // Find the actual index in the configuration.servers array
+          const actualIndex = configuration.servers.findIndex(s => s.name === server.name && s.url === server.url);
+          if (actualIndex !== -1) {
+            validateServer(actualIndex);
+          }
+        });
+      }
+    }
+  }, [configuration.servers, isOpen, initialConfig]);
 
   const addServer = () => {
     const newServer: MCPServer = {
@@ -203,7 +224,11 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     // Convert configuration back to the format expected by the backend
     const mcp_urls_dict: Record<string, string> = {};
     configuration.servers
-      .filter(server => server.status === 'valid' && server.name && server.url)
+      .filter(server => {
+        // Include servers that are valid, or servers that have name and URL
+        // (which means they were previously saved and are being revalidated)
+        return (server.status === 'valid' || (server.name && server.url)) && server.name && server.url;
+      })
       .forEach(server => {
         mcp_urls_dict[server.name] = server.url;
       });
@@ -213,7 +238,13 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     onSave({ mcp_urls_dict, mcp_tool_filter });
   };
 
-  const canSave = configuration.servers.some(server => server.status === 'valid') && configuration.selectedTools.size > 0;
+  // Allow saving if we have servers and selected tools, or if at least one server is valid with selected tools
+  const canSave = (
+    // Either we have valid servers with selected tools
+    (configuration.servers.some(server => server.status === 'valid') && configuration.selectedTools.size > 0) ||
+    // Or we have servers from saved config that are being revalidated and previously selected tools
+    (initialConfig && configuration.servers.length > 0 && configuration.selectedTools.size > 0)
+  );
   const totalTools = getAllTools().length;
   const selectedCount = configuration.selectedTools.size;
   const filteredTools = getFilteredTools();
