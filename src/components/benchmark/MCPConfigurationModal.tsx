@@ -219,8 +219,8 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     onSave({ mcp_urls_dict, mcp_tool_filter });
   };
 
-  // Allow saving if we have servers with name/URL and selected tools (regardless of validation status)
-  const canSave = configuration.servers.some(server => server.name && server.url) && configuration.selectedTools.size > 0;
+  // Allow saving if we have servers with name/URL (tools selection is optional)
+  const canSave = configuration.servers.some(server => server.name && server.url);
   const totalTools = getAllTools().length;
   const selectedCount = configuration.selectedTools.size;
   const filteredTools = getFilteredTools();
@@ -255,7 +255,7 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)] bg-gradient-to-b from-transparent to-slate-50/30 dark:to-slate-900/30">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] bg-gradient-to-b from-transparent to-slate-50/30 dark:to-slate-900/30">
           {/* MCP Servers Section */}
           <div className="mb-8">
             <div className="flex items-center space-x-2 mb-4">
@@ -479,10 +479,14 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
             <button
               onClick={handleSave}
               disabled={!canSave}
-              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 font-medium"
+              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 font-medium"
             >
               Save Configuration
             </button>
+            {/* Debug info - remove after testing */}
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Servers: {configuration.servers.length}, Selected: {selectedCount}, canSave: {canSave.toString()}
+            </div>
           </div>
         </div>
       </div>
