@@ -1,7 +1,8 @@
-import React from 'react';
-import { BarChart3, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { BarChart3, Plus, Trash2, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { ManualTraceUpload } from '../ManualTraceUpload';
+import { MCPConfigurationModal } from './MCPConfigurationModal';
 
 interface ModelConfiguration {
   id: string;
@@ -10,6 +11,9 @@ interface ModelConfiguration {
   temperature: number;
   interface: 'langchain' | 'openrouter' | 'manual';
   system_prompt: string;
+  // MCP (Model Context Protocol) configuration
+  mcp_urls_dict?: Record<string, string>;
+  mcp_tool_filter?: string[];
 }
 
 interface ConfigurationPanelProps {
@@ -67,6 +71,31 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onManualTraceUploadSuccess,
   onManualTraceUploadError,
 }) => {
+  const [mcpModalState, setMcpModalState] = useState<{ isOpen: boolean; modelId: string | null }>({
+    isOpen: false,
+    modelId: null,
+  });
+
+  const handleMCPSave = (config: { mcp_urls_dict: Record<string, string>; mcp_tool_filter: string[] }) => {
+    if (mcpModalState.modelId) {
+      // Find if this is an answering or parsing model and update accordingly
+      const answeringModel = answeringModels.find(m => m.id === mcpModalState.modelId);
+      if (answeringModel) {
+        onUpdateAnsweringModel(mcpModalState.modelId, config);
+      }
+    }
+    setMcpModalState({ isOpen: false, modelId: null });
+  };
+
+  const getCurrentMCPConfig = () => {
+    if (!mcpModalState.modelId) return undefined;
+    const model = answeringModels.find(m => m.id === mcpModalState.modelId);
+    return model ? {
+      mcp_urls_dict: model.mcp_urls_dict,
+      mcp_tool_filter: model.mcp_tool_filter,
+    } : undefined;
+  };
+
   const renderModelConfiguration = (model: ModelConfiguration, index: number, isAnswering: boolean) => (
     <div key={model.id} className="border border-slate-200 dark:border-slate-600 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
@@ -255,6 +284,25 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               {model.system_prompt.length > 60 ? model.system_prompt.substring(0, 60) + '...' : model.system_prompt}
             </div>
           )}
+        </div>
+      )}
+
+      {/* MCP Configuration - Show only for answering models */}
+      {isAnswering && model.interface !== 'manual' && (
+        <div className="mt-3">
+          <button
+            onClick={() => setMcpModalState({ isOpen: true, modelId: model.id })}
+            className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center space-x-2 disabled:opacity-50"
+            disabled={isRunning}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Configure MCP</span>
+            {model.mcp_tool_filter && model.mcp_tool_filter.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
+                {model.mcp_tool_filter.length} tools
+              </span>
+            )}
+          </button>
         </div>
       )}
 
@@ -471,6 +519,14 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           (one for each model combination × replicate).
         </p>
       </div>
+
+      {/* MCP Configuration Modal */}
+      <MCPConfigurationModal
+        isOpen={mcpModalState.isOpen}
+        onClose={() => setMcpModalState({ isOpen: false, modelId: null })}
+        onSave={handleMCPSave}
+        initialConfig={getCurrentMCPConfig()}
+      />
     </>
   );
 };
