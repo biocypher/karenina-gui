@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Search, CheckSquare, Square, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Plus, Trash2, Search, CheckSquare, Square, Loader2, AlertCircle, CheckCircle, Settings } from 'lucide-react';
 import { MCPConfiguration, MCPServer, MCPTool, MCPValidationRequest, MCPValidationResponse } from '../../types';
 
 interface MCPConfigurationModalProps {
