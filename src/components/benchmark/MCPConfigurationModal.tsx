@@ -50,26 +50,7 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     }
   }, [isOpen, initialConfig]);
 
-  // Auto-validate servers that were loaded from saved configuration
-  useEffect(() => {
-    if (isOpen && initialConfig && configuration.servers.length > 0) {
-      // Only auto-validate if we have servers that need validation
-      const serversToValidate = configuration.servers.filter(
-        server => server.status === 'idle' && server.name && server.url
-      );
-
-      if (serversToValidate.length > 0) {
-        // Validate each server
-        serversToValidate.forEach((server, index) => {
-          // Find the actual index in the configuration.servers array
-          const actualIndex = configuration.servers.findIndex(s => s.name === server.name && s.url === server.url);
-          if (actualIndex !== -1) {
-            validateServer(actualIndex);
-          }
-        });
-      }
-    }
-  }, [configuration.servers, isOpen, initialConfig]);
+  // Removed auto-validation - validation now happens only when user clicks "Validate"
 
   const addServer = () => {
     const newServer: MCPServer = {
@@ -238,13 +219,8 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     onSave({ mcp_urls_dict, mcp_tool_filter });
   };
 
-  // Allow saving if we have servers and selected tools, or if at least one server is valid with selected tools
-  const canSave = (
-    // Either we have valid servers with selected tools
-    (configuration.servers.some(server => server.status === 'valid') && configuration.selectedTools.size > 0) ||
-    // Or we have servers from saved config that are being revalidated and previously selected tools
-    (initialConfig && configuration.servers.length > 0 && configuration.selectedTools.size > 0)
-  );
+  // Allow saving if we have servers with name/URL and selected tools (regardless of validation status)
+  const canSave = configuration.servers.some(server => server.name && server.url) && configuration.selectedTools.size > 0;
   const totalTools = getAllTools().length;
   const selectedCount = configuration.selectedTools.size;
   const filteredTools = getFilteredTools();
