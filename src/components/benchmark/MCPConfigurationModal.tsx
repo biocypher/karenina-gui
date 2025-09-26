@@ -38,6 +38,10 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     servers: [],
     selectedTools: new Set(),
   });
+  const [initialConfiguration, setInitialConfiguration] = useState<MCPConfiguration>({
+    servers: [],
+    selectedTools: new Set(),
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [isValidating, setIsValidating] = useState<string | null>(null);
 
@@ -58,7 +62,9 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
         });
       }
 
-      setConfiguration({ servers, selectedTools });
+      const newConfiguration = { servers, selectedTools };
+      setConfiguration(newConfiguration);
+      setInitialConfiguration({ servers: [...servers], selectedTools: new Set(selectedTools) });
 
       // Auto-validate servers that were previously validated
       if (validatedServers.size > 0) {
@@ -77,10 +83,12 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
         });
       }
     } else if (isOpen && !initialConfig) {
-      setConfiguration({
+      const emptyConfiguration = {
         servers: [],
         selectedTools: new Set(),
-      });
+      };
+      setConfiguration(emptyConfiguration);
+      setInitialConfiguration({ servers: [], selectedTools: new Set() });
     }
   }, [isOpen, initialConfig]);
 
@@ -257,6 +265,30 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     });
   };
 
+  // Check if configuration has changed from initial state
+  const hasConfigurationChanged = (): boolean => {
+    // Compare server configurations (name and url only, ignore status and tools)
+    const currentServers = configuration.servers.map((s) => ({ name: s.name, url: s.url }));
+    const initialServers = initialConfiguration.servers.map((s) => ({ name: s.name, url: s.url }));
+
+    // Check if server arrays are different
+    if (currentServers.length !== initialServers.length) {
+      return true;
+    }
+
+    const serversChanged = currentServers.some((currentServer, index) => {
+      const initialServer = initialServers[index];
+      return currentServer.name !== initialServer.name || currentServer.url !== initialServer.url;
+    });
+
+    // Check if selected tools have changed
+    const selectedToolsChanged =
+      configuration.selectedTools.size !== initialConfiguration.selectedTools.size ||
+      Array.from(configuration.selectedTools).some((tool) => !initialConfiguration.selectedTools.has(tool));
+
+    return serversChanged || selectedToolsChanged;
+  };
+
   const handleSave = () => {
     // Convert configuration back to the format expected by the backend
     const mcp_urls_dict: Record<string, string> = {};
@@ -281,8 +313,8 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
     onSave({ mcp_urls_dict, mcp_tool_filter, mcp_validated_servers });
   };
 
-  // Allow saving if we have servers with name/URL (tools selection is optional)
-  const canSave = configuration.servers.some((server) => server.name && server.url);
+  // Allow saving if configuration has changed from initial state
+  const canSave = hasConfigurationChanged();
   const totalTools = getAllToolsIncludingSelected().length;
   const availableTools = getAllTools().length; // Tools from validated servers only
   const selectedCount = configuration.selectedTools.size;
@@ -536,10 +568,6 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
             >
               Save Configuration
             </button>
-            {/* Debug info - remove after testing */}
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              Servers: {configuration.servers.length}, Selected: {selectedCount}, canSave: {canSave.toString()}
-            </div>
           </div>
         </div>
       </div>
