@@ -10,8 +10,17 @@ import {
   AlertCircle,
   CheckCircle,
   Settings,
+  Zap,
 } from 'lucide-react';
-import { MCPConfiguration, MCPServer, MCPTool, MCPValidationRequest, MCPValidationResponse } from '../../types';
+import {
+  MCPConfiguration,
+  MCPServer,
+  MCPTool,
+  MCPValidationRequest,
+  MCPValidationResponse,
+  MCPPresetConfig,
+  MCPPresetsResponse,
+} from '../../types';
 
 interface MCPConfigurationModalProps {
   isOpen: boolean;
@@ -44,6 +53,39 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [isValidating, setIsValidating] = useState<string | null>(null);
+  const [presetConfigs, setPresetConfigs] = useState<Record<string, MCPPresetConfig>>({});
+  const [presetError, setPresetError] = useState<string | null>(null);
+  const [serverToValidate, setServerToValidate] = useState<number | null>(null);
+
+  // Fetch preset configurations
+  const fetchPresetConfigs = async () => {
+    try {
+      setPresetError(null); // Clear previous errors
+      const response = await fetch('/api/get-mcp-preset-configs');
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: MCPPresetsResponse = await response.json();
+
+      setPresetConfigs(data.presets || {});
+      if (data.error) {
+        setPresetError(`MCP_CONFIG parsing error: ${data.error}`);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          setPresetError('Network error: Cannot connect to server. Please check if the server is running.');
+        } else {
+          setPresetError(`Failed to load preset configurations: ${error.message}`);
+        }
+      } else {
+        setPresetError('Failed to load preset configurations: Unknown error occurred');
+      }
+      setPresetConfigs({}); // Clear presets on error
+    }
+  };
 
   // Initialize configuration from props
   useEffect(() => {
@@ -90,9 +132,64 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
       setConfiguration(emptyConfiguration);
       setInitialConfiguration({ servers: [], selectedTools: new Set() });
     }
+
+    // Fetch preset configurations when modal opens
+    if (isOpen) {
+      fetchPresetConfigs();
+    }
   }, [isOpen, initialConfig]);
 
+  // Handle auto-validation when serverToValidate changes
+  useEffect(() => {
+    if (serverToValidate !== null && configuration.servers[serverToValidate]) {
+      validateServer(serverToValidate);
+      setServerToValidate(null);
+    }
+  }, [serverToValidate, configuration.servers]);
+
   // Removed auto-validation - validation now happens only when user clicks "Validate"
+
+  const addPresetServer = async (presetConfig: MCPPresetConfig) => {
+    // Check if server with this name or URL already exists
+    const existingByName = configuration.servers.find((s) => s.name === presetConfig.name);
+    const existingByUrl = configuration.servers.find((s) => s.url === presetConfig.url);
+
+    if (existingByName) {
+      // Update existing server with preset URL
+      const serverIndex = configuration.servers.findIndex((s) => s.name === presetConfig.name);
+      updateServer(serverIndex, 'url', presetConfig.url);
+      // Trigger auto-validation
+      setServerToValidate(serverIndex);
+      return;
+    }
+
+    if (existingByUrl) {
+      // Update existing server name to match preset
+      const serverIndex = configuration.servers.findIndex((s) => s.url === presetConfig.url);
+      updateServer(serverIndex, 'name', presetConfig.name);
+      // Trigger auto-validation
+      setServerToValidate(serverIndex);
+      return;
+    }
+
+    // Add new server from preset
+    const newServer: MCPServer = {
+      name: presetConfig.name,
+      url: presetConfig.url,
+      status: 'idle',
+      presetTools: presetConfig.tools, // Track preset tools for auto-selection
+    };
+
+    setConfiguration((prev) => {
+      const newServers = [...prev.servers, newServer];
+      // Trigger auto-validation for the new server
+      setServerToValidate(newServers.length - 1);
+      return {
+        ...prev,
+        servers: newServers,
+      };
+    });
+  };
 
   const addServer = () => {
     const newServer: MCPServer = {
@@ -167,9 +264,8 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
       const data: MCPValidationResponse = await response.json();
 
-      setConfiguration((prev) => ({
-        ...prev,
-        servers: prev.servers.map((s, i) =>
+      setConfiguration((prev) => {
+        const updatedServers = prev.servers.map((s, i) =>
           i === index
             ? {
                 ...s,
@@ -178,8 +274,27 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
                 error: data.error,
               }
             : s
-        ),
-      }));
+        );
+
+        // Auto-select preset tools if this was a preset server and validation succeeded
+        const updatedSelectedTools = new Set(prev.selectedTools);
+        if (data.success && prev.servers[index]?.presetTools) {
+          const presetTools = prev.servers[index].presetTools!;
+          const availableToolNames = new Set((data.tools || []).map((t) => t.name));
+
+          // Add preset tools that are available on the server
+          presetTools.forEach((toolName) => {
+            if (availableToolNames.has(toolName)) {
+              updatedSelectedTools.add(toolName);
+            }
+          });
+        }
+
+        return {
+          servers: updatedServers,
+          selectedTools: updatedSelectedTools,
+        };
+      });
     } catch (error) {
       setConfiguration((prev) => ({
         ...prev,
@@ -353,6 +468,61 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] bg-gradient-to-b from-transparent to-slate-50/30 dark:to-slate-900/30">
+          {/* Quick Configuration Section */}
+          {Object.keys(presetConfigs).length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-1 h-6 bg-gradient-to-b from-yellow-500 to-orange-500 rounded-full"></div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Quick Configuration</h3>
+                <div className="flex-1 h-px bg-gradient-to-r from-slate-300/50 to-transparent dark:from-slate-600/50"></div>
+                <div className="px-3 py-1 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border border-yellow-200 dark:border-yellow-700 rounded-full text-xs font-medium text-yellow-700 dark:text-yellow-300">
+                  {Object.keys(presetConfigs).length} available
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                {Object.values(presetConfigs).map((preset) => (
+                  <button
+                    key={preset.name}
+                    onClick={() => addPresetServer(preset)}
+                    className="group relative p-4 border border-slate-200/60 dark:border-slate-600/60 rounded-xl bg-gradient-to-br from-yellow-50/50 to-orange-50/50 dark:from-yellow-900/20 dark:to-orange-900/20 hover:from-yellow-100/80 dark:hover:from-yellow-800/40 hover:to-orange-100/80 dark:hover:to-orange-800/40 backdrop-blur-sm transition-all duration-200 shadow-sm hover:shadow-md text-left"
+                  >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-500/20 via-orange-500/10 to-yellow-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm"></div>
+                    <div className="relative">
+                      <div className="flex items-start space-x-3 mb-2">
+                        <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg shadow-lg">
+                          <Zap className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-slate-900 dark:text-slate-100 group-hover:text-yellow-900 dark:group-hover:text-yellow-100 transition-colors truncate">
+                            {preset.name}
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{preset.url}</div>
+                        </div>
+                      </div>
+                      {preset.tools && preset.tools.length > 0 && (
+                        <div className="flex items-center space-x-1">
+                          <div className="text-xs text-slate-600 dark:text-slate-400">
+                            {preset.tools.length} specific tools
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {presetError && (
+                <div className="mb-4 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg text-sm text-yellow-700 dark:text-yellow-300 backdrop-blur-sm">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="w-4 h-4 mt-0.5 text-yellow-500" />
+                    <div>{presetError}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* MCP Servers Section */}
           <div className="mb-8">
             <div className="flex items-center space-x-2 mb-4">

@@ -440,6 +440,7 @@ export interface MCPServer {
   status: 'idle' | 'validating' | 'valid' | 'invalid';
   tools?: MCPTool[];
   error?: string;
+  presetTools?: string[]; // Tools to auto-select from preset configuration
 }
 
 export interface MCPConfiguration {
@@ -455,5 +456,16 @@ export interface MCPValidationRequest {
 export interface MCPValidationResponse {
   success: boolean;
   tools?: MCPTool[];
+  error?: string;
+}
+
+export interface MCPPresetConfig {
+  name: string;
+  url: string;
+  tools?: string[];
+}
+
+export interface MCPPresetsResponse {
+  presets: Record<string, MCPPresetConfig>;
   error?: string;
 }
