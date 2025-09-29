@@ -142,6 +142,9 @@ export const useBenchmarkConfiguration = () => {
                 // Clear both provider and model_name for manual
                 updatedModel.model_provider = '';
                 updatedModel.model_name = '';
+                // Clear MCP configuration for manual interface (not supported)
+                updatedModel.mcp_urls_dict = undefined;
+                updatedModel.mcp_tool_filter = undefined;
                 break;
             }
           }
