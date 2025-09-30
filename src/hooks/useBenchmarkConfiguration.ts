@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ModelConfiguration } from '../types';
 import { useConfigStore } from '../stores/useConfigStore';
+import { useBenchmarkStore } from '../stores/useBenchmarkStore';
 
 export interface BenchmarkConfiguration {
   answeringModels: ModelConfiguration[];
@@ -19,6 +20,20 @@ export const useBenchmarkConfiguration = () => {
   // Get saved defaults from config store (not working draft values)
   const { savedInterface, savedProvider, savedModel, savedAsyncEnabled, savedAsyncChunkSize, savedAsyncMaxWorkers } =
     useConfigStore();
+
+  // Get evaluation settings from benchmark store (persists across tab switches)
+  const {
+    rubricEnabled,
+    correctnessEnabled,
+    fewShotEnabled,
+    fewShotMode,
+    fewShotK,
+    setRubricEnabled,
+    setCorrectnessEnabled,
+    setFewShotEnabled,
+    setFewShotMode,
+    setFewShotK,
+  } = useBenchmarkStore();
 
   const [answeringModels, setAnsweringModels] = useState<ModelConfiguration[]>([
     {
@@ -75,11 +90,6 @@ export const useBenchmarkConfiguration = () => {
   const [replicateCount, setReplicateCount] = useState<number>(1);
   const [expandedPrompts, setExpandedPrompts] = useState<Set<string>>(new Set());
   const [runName, setRunName] = useState<string>('');
-  const [rubricEnabled, setRubricEnabled] = useState<boolean>(false);
-  const [correctnessEnabled, setCorrectnessEnabled] = useState<boolean>(true);
-  const [fewShotEnabled, setFewShotEnabled] = useState<boolean>(false);
-  const [fewShotMode, setFewShotMode] = useState<'all' | 'k-shot' | 'custom'>('all');
-  const [fewShotK, setFewShotK] = useState<number>(3);
 
   // Model management functions
   const addAnsweringModel = () => {
