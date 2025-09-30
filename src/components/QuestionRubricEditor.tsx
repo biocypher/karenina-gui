@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useQuestionStore } from '../stores/useQuestionStore';
-import { RubricTrait, TraitKind, Rubric } from '../types';
+import { RubricTrait, TraitKind, Rubric, ManualRubricTrait } from '../types';
+
+type TraitType = 'llm-boolean' | 'llm-score' | 'manual-regex';
 
 interface QuestionRubricEditorProps {
   questionId: string;
@@ -16,6 +18,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   const [questionRubric, setQuestionRubricState] = useState<Rubric | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [traitTypeToAdd, setTraitTypeToAdd] = useState<TraitType>('llm-boolean');
 
   // Load question rubric when questionId changes
   useEffect(() => {
@@ -31,6 +34,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     if (isInitialized && !questionRubric) {
       setQuestionRubricState({
         traits: [],
+        manual_traits: [],
       });
     }
   }, [isInitialized, questionRubric]);
@@ -38,32 +42,56 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   const handleAddTrait = () => {
     if (!questionRubric) return;
 
-    const newTrait: RubricTrait = {
-      name: `Question Trait ${questionRubric.traits.length + 1}`,
-      description: '',
-      kind: 'boolean',
-    };
+    const totalTraits = questionRubric.traits.length + (questionRubric.manual_traits?.length || 0);
+    const globalLLMNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
+    const globalManualNames = (globalRubric?.manual_traits || []).map((t) => t.name.toLowerCase());
+    const questionLLMNames = questionRubric.traits.map((t) => t.name.toLowerCase());
+    const questionManualNames = (questionRubric.manual_traits || []).map((t) => t.name.toLowerCase());
+    const allExistingNames = [...globalLLMNames, ...globalManualNames, ...questionLLMNames, ...questionManualNames];
 
-    // Check for conflicts with global rubric traits
-    const globalTraitNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
-    const questionTraitNames = questionRubric.traits.map((t) => t.name.toLowerCase());
+    if (traitTypeToAdd === 'manual-regex') {
+      const newManualTrait: ManualRubricTrait = {
+        name: `Question Manual Trait ${totalTraits + 1}`,
+        description: '',
+        pattern: '',
+        case_sensitive: true,
+        invert_result: false,
+      };
 
-    if (
-      globalTraitNames.includes(newTrait.name.toLowerCase()) ||
-      questionTraitNames.includes(newTrait.name.toLowerCase())
-    ) {
-      setLastError(`Trait with name "${newTrait.name}" already exists`);
-      return;
+      if (allExistingNames.includes(newManualTrait.name.toLowerCase())) {
+        setLastError(`Trait with name "${newManualTrait.name}" already exists`);
+        return;
+      }
+
+      const updatedRubric = {
+        ...questionRubric,
+        manual_traits: [...(questionRubric.manual_traits || []), newManualTrait],
+      };
+
+      setQuestionRubricState(updatedRubric);
+      setQuestionRubric(questionId, updatedRubric);
+      setLastError(null);
+    } else {
+      const newTrait: RubricTrait = {
+        name: `Question Trait ${totalTraits + 1}`,
+        description: '',
+        kind: traitTypeToAdd === 'llm-boolean' ? 'boolean' : 'score',
+      };
+
+      if (allExistingNames.includes(newTrait.name.toLowerCase())) {
+        setLastError(`Trait with name "${newTrait.name}" already exists`);
+        return;
+      }
+
+      const updatedRubric = {
+        ...questionRubric,
+        traits: [...questionRubric.traits, newTrait],
+      };
+
+      setQuestionRubricState(updatedRubric);
+      setQuestionRubric(questionId, updatedRubric);
+      setLastError(null);
     }
-
-    const updatedRubric = {
-      ...questionRubric,
-      traits: [...questionRubric.traits, newTrait],
-    };
-
-    setQuestionRubricState(updatedRubric);
-    setQuestionRubric(questionId, updatedRubric);
-    setLastError(null);
   };
 
   const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
@@ -83,14 +111,17 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       }
     }
 
-    // Check for trait name conflicts
+    // Check for trait name conflicts across all traits
     if (field === 'name') {
-      const globalTraitNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
-      const questionTraitNames = questionRubric.traits
+      const globalLLMNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
+      const globalManualNames = (globalRubric?.manual_traits || []).map((t) => t.name.toLowerCase());
+      const questionLLMNames = questionRubric.traits
         .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
         .filter(Boolean);
+      const questionManualNames = (questionRubric.manual_traits || []).map((t) => t.name.toLowerCase());
+      const allExistingNames = [...globalLLMNames, ...globalManualNames, ...questionLLMNames, ...questionManualNames];
 
-      if (globalTraitNames.includes(value.toLowerCase()) || questionTraitNames.includes(value.toLowerCase())) {
+      if (allExistingNames.includes(value.toLowerCase())) {
         setLastError(`Trait with name "${value}" already exists`);
         return;
       }
@@ -116,9 +147,51 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     setLastError(null);
   };
 
+  const handleManualTraitChange = (index: number, field: keyof ManualRubricTrait, value: string | boolean) => {
+    if (!questionRubric?.manual_traits || index < 0 || index >= questionRubric.manual_traits.length) return;
+
+    const currentTrait = questionRubric.manual_traits[index];
+    const updatedTrait: ManualRubricTrait = { ...currentTrait, [field]: value };
+
+    // Check for name conflicts if changing name
+    if (field === 'name') {
+      const globalLLMNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
+      const globalManualNames = (globalRubric?.manual_traits || []).map((t) => t.name.toLowerCase());
+      const questionLLMNames = questionRubric.traits.map((t) => t.name.toLowerCase());
+      const questionManualNames = questionRubric.manual_traits
+        .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
+        .filter(Boolean);
+      const allExistingNames = [...globalLLMNames, ...globalManualNames, ...questionLLMNames, ...questionManualNames];
+
+      if (allExistingNames.includes(String(value).toLowerCase())) {
+        setLastError(`Trait with name "${value}" already exists`);
+        return;
+      }
+    }
+
+    const updatedManualTraits = [...questionRubric.manual_traits];
+    updatedManualTraits[index] = updatedTrait;
+
+    const updatedRubric = { ...questionRubric, manual_traits: updatedManualTraits };
+    setQuestionRubricState(updatedRubric);
+    setQuestionRubric(questionId, updatedRubric);
+    setLastError(null);
+  };
+
+  const handleRemoveManualTrait = (index: number) => {
+    if (!questionRubric?.manual_traits || index < 0 || index >= questionRubric.manual_traits.length) return;
+
+    const updatedManualTraits = questionRubric.manual_traits.filter((_, i) => i !== index);
+    const updatedRubric = { ...questionRubric, manual_traits: updatedManualTraits };
+
+    setQuestionRubricState(updatedRubric);
+    setQuestionRubric(questionId, updatedRubric);
+    setLastError(null);
+  };
+
   const handleClearRubric = () => {
     clearQuestionRubric(questionId);
-    setQuestionRubricState({ traits: [] });
+    setQuestionRubricState({ traits: [], manual_traits: [] });
     setLastError(null);
   };
 
@@ -150,23 +223,32 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       </div>
 
       {/* Global Rubric Summary */}
-      {globalRubric && globalRubric.traits.length > 0 && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-          <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-            Global Rubric Traits (will be included in evaluation)
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            {globalRubric.traits.map((trait, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 rounded-md text-xs font-medium"
-              >
-                {trait.name} ({trait.kind})
-              </span>
-            ))}
+      {globalRubric &&
+        (globalRubric.traits.length > 0 || (globalRubric.manual_traits && globalRubric.manual_traits.length > 0)) && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+              Global Rubric Traits (will be included in evaluation)
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {globalRubric.traits.map((trait, index) => (
+                <span
+                  key={`llm-${index}`}
+                  className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 rounded-md text-xs font-medium"
+                >
+                  {trait.name} ({trait.kind})
+                </span>
+              ))}
+              {(globalRubric.manual_traits || []).map((trait, index) => (
+                <span
+                  key={`manual-${index}`}
+                  className="px-2 py-1 bg-amber-100 dark:bg-amber-800 text-amber-800 dark:text-amber-100 rounded-md text-xs font-medium"
+                >
+                  {trait.name} (manual)
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Question-Specific Traits */}
       <div className="space-y-3 mb-4">
@@ -296,16 +378,130 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
           </div>
         ))}
 
-        {/* Add Trait Button */}
-        <button
-          onClick={handleAddTrait}
-          className="flex items-center justify-center w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-600 
-                     rounded-lg text-slate-600 dark:text-slate-400 hover:border-indigo-400 dark:hover:border-indigo-500 
-                     hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all duration-200"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add question-specific trait
-        </button>
+        {/* Manual (Regex) Traits */}
+        {(questionRubric.manual_traits || []).map((trait, index) => (
+          <div
+            key={`manual-${index}`}
+            className="bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+          >
+            <div className="grid grid-cols-12 gap-4 items-start">
+              {/* Trait Name */}
+              <div className="col-span-3">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trait Name</label>
+                <input
+                  type="text"
+                  value={trait.name}
+                  onChange={(e) => handleManualTraitChange(index, 'name', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="e.g., Contains Error"
+                />
+              </div>
+
+              {/* Trait Type Display */}
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trait Type</label>
+                <div
+                  className="px-3 py-2 text-sm border border-amber-300 dark:border-amber-700 rounded-md
+                               bg-amber-100 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100 font-medium"
+                >
+                  Manual (Regex)
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="col-span-6">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Trait Description
+                </label>
+                <input
+                  type="text"
+                  value={trait.description || ''}
+                  onChange={(e) => handleManualTraitChange(index, 'description', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="What does this regex check for?"
+                />
+              </div>
+
+              {/* Delete Button */}
+              <div className="col-span-1 flex justify-end mt-6">
+                <button
+                  onClick={() => handleRemoveManualTrait(index)}
+                  className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
+                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                  title="Delete manual trait"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Regex Pattern */}
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Regex Pattern</label>
+              <input
+                type="text"
+                value={trait.pattern || ''}
+                onChange={(e) => handleManualTraitChange(index, 'pattern', e.target.value)}
+                className="w-full px-3 py-2 text-sm font-mono border border-slate-300 dark:border-slate-600 rounded-md
+                           bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                           focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                placeholder="e.g., \berror\b"
+              />
+            </div>
+
+            {/* Options */}
+            <div className="mt-4 flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={trait.case_sensitive ?? true}
+                  onChange={(e) => handleManualTraitChange(index, 'case_sensitive', e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-300">Case Sensitive</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={trait.invert_result ?? false}
+                  onChange={(e) => handleManualTraitChange(index, 'invert_result', e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-300">Invert Result</span>
+              </label>
+            </div>
+          </div>
+        ))}
+
+        {/* Add Trait Section with Type Selector */}
+        <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4">
+          <div className="flex items-center gap-4">
+            <select
+              value={traitTypeToAdd}
+              onChange={(e) => setTraitTypeToAdd(e.target.value as TraitType)}
+              className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                         bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                         focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            >
+              <option value="llm-boolean">Binary (LLM)</option>
+              <option value="llm-score">Score (LLM)</option>
+              <option value="manual-regex">Manual (Regex)</option>
+            </select>
+            <button
+              onClick={handleAddTrait}
+              className="flex-1 flex items-center justify-center py-2 text-slate-600 dark:text-slate-400
+                         hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10
+                         rounded-md transition-all duration-200"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add question-specific trait
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Error Display */}
@@ -351,13 +547,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Global Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {globalRubric?.traits.length || 0}
+                {(globalRubric?.traits.length || 0) + (globalRubric?.manual_traits?.length || 0)}
               </span>
             </div>
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Question Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {questionRubric.traits.length}
+                {questionRubric.traits.length + (questionRubric.manual_traits?.length || 0)}
               </span>
             </div>
           </div>
@@ -365,7 +561,10 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Total Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {(globalRubric?.traits.length || 0) + questionRubric.traits.length}
+                {(globalRubric?.traits.length || 0) +
+                  (globalRubric?.manual_traits?.length || 0) +
+                  questionRubric.traits.length +
+                  (questionRubric.manual_traits?.length || 0)}
               </span>
             </div>
             <div className="flex items-center">
@@ -384,6 +583,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                     {questionRubric.traits.filter((t) => t.kind === 'score').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full mr-1"></span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {questionRubric.manual_traits?.length || 0}
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">manual</span>
                 </span>
               </div>
             </div>

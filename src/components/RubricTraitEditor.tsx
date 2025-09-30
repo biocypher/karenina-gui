@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
-import { RubricTrait, TraitKind } from '../types';
+import { RubricTrait, TraitKind, ManualRubricTrait } from '../types';
+
+type TraitType = 'llm-boolean' | 'llm-score' | 'manual-regex';
 
 export default function RubricTraitEditor() {
   const {
@@ -11,27 +13,46 @@ export default function RubricTraitEditor() {
     addTrait,
     updateTrait,
     removeTrait,
+    addManualTrait,
+    updateManualTrait,
+    removeManualTrait,
     saveRubric,
     clearError,
     setCurrentRubric,
   } = useRubricStore();
+
+  const [traitTypeToAdd, setTraitTypeToAdd] = useState<TraitType>('llm-boolean');
 
   // Initialize with default rubric if none exists
   useEffect(() => {
     if (!currentRubric) {
       setCurrentRubric({
         traits: [],
+        manual_traits: [],
       });
     }
   }, [currentRubric, setCurrentRubric]);
 
   const handleAddTrait = () => {
-    const newTrait: RubricTrait = {
-      name: `Trait ${(currentRubric?.traits.length || 0) + 1}`,
-      description: '',
-      kind: 'boolean',
-    };
-    addTrait(newTrait);
+    const totalTraits = (currentRubric?.traits.length || 0) + (currentRubric?.manual_traits?.length || 0);
+
+    if (traitTypeToAdd === 'manual-regex') {
+      const newManualTrait: ManualRubricTrait = {
+        name: `Manual Trait ${totalTraits + 1}`,
+        description: '',
+        pattern: '',
+        case_sensitive: true,
+        invert_result: false,
+      };
+      addManualTrait(newManualTrait);
+    } else {
+      const newTrait: RubricTrait = {
+        name: `Trait ${totalTraits + 1}`,
+        description: '',
+        kind: traitTypeToAdd === 'llm-boolean' ? 'boolean' : 'score',
+      };
+      addTrait(newTrait);
+    }
   };
 
   const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
@@ -54,11 +75,23 @@ export default function RubricTraitEditor() {
     updateTrait(index, updatedTrait);
   };
 
+  const handleManualTraitChange = (index: number, field: keyof ManualRubricTrait, value: string | boolean) => {
+    if (!currentRubric?.manual_traits || index < 0 || index >= currentRubric.manual_traits.length) return;
+
+    const currentTrait = currentRubric.manual_traits[index];
+    const updatedTrait: ManualRubricTrait = { ...currentTrait, [field]: value };
+
+    updateManualTrait(index, updatedTrait);
+  };
+
   const handleSaveRubric = async () => {
     if (!currentRubric) return;
 
-    // Validate rubric before saving
-    if (currentRubric.traits.length === 0) {
+    // Validate rubric before saving (must have at least one trait of any type)
+    if (
+      currentRubric.traits.length === 0 &&
+      (!currentRubric.manual_traits || currentRubric.manual_traits.length === 0)
+    ) {
       return;
     }
 
@@ -82,6 +115,7 @@ export default function RubricTraitEditor() {
 
       {/* Traits List */}
       <div className="space-y-3 mb-4">
+        {/* LLM-based Traits */}
         {currentRubric.traits.map((trait, index) => (
           <div
             key={index}
@@ -218,16 +252,146 @@ export default function RubricTraitEditor() {
           </div>
         ))}
 
-        {/* Add Trait Button */}
-        <button
-          onClick={handleAddTrait}
-          className="flex items-center justify-center w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-600 
-                     rounded-lg text-slate-600 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500 
-                     hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add trait
-        </button>
+        {/* Manual (Regex) Traits */}
+        {(currentRubric.manual_traits || []).map((trait, index) => (
+          <div
+            key={`manual-${index}`}
+            className="bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+          >
+            <div className="grid grid-cols-12 gap-4 items-start">
+              {/* Trait Name */}
+              <div className="col-span-3">
+                <label
+                  htmlFor={`manual-trait-name-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Trait Name
+                </label>
+                <input
+                  id={`manual-trait-name-${index}`}
+                  type="text"
+                  value={trait.name}
+                  onChange={(e) => handleManualTraitChange(index, 'name', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="e.g., Contains Error"
+                />
+              </div>
+
+              {/* Trait Type Display */}
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trait Type</label>
+                <div
+                  className="px-3 py-2 text-sm border border-amber-300 dark:border-amber-700 rounded-md
+                               bg-amber-100 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100 font-medium"
+                >
+                  Manual (Regex)
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="col-span-6">
+                <label
+                  htmlFor={`manual-trait-description-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Trait Description
+                </label>
+                <input
+                  id={`manual-trait-description-${index}`}
+                  type="text"
+                  value={trait.description || ''}
+                  onChange={(e) => handleManualTraitChange(index, 'description', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="What does this regex check for?"
+                />
+              </div>
+
+              {/* Delete Button */}
+              <div className="col-span-1 flex justify-end mt-6">
+                <button
+                  onClick={() => removeManualTrait(index)}
+                  className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
+                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                  title="Delete manual trait"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Regex Pattern */}
+            <div className="mt-4">
+              <label
+                htmlFor={`manual-trait-pattern-${index}`}
+                className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+              >
+                Regex Pattern
+              </label>
+              <input
+                id={`manual-trait-pattern-${index}`}
+                type="text"
+                value={trait.pattern || ''}
+                onChange={(e) => handleManualTraitChange(index, 'pattern', e.target.value)}
+                className="w-full px-3 py-2 text-sm font-mono border border-slate-300 dark:border-slate-600 rounded-md
+                           bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="e.g., \berror\b"
+              />
+            </div>
+
+            {/* Options */}
+            <div className="mt-4 flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={trait.case_sensitive ?? true}
+                  onChange={(e) => handleManualTraitChange(index, 'case_sensitive', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-300">Case Sensitive</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={trait.invert_result ?? false}
+                  onChange={(e) => handleManualTraitChange(index, 'invert_result', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-300">Invert Result</span>
+              </label>
+            </div>
+          </div>
+        ))}
+
+        {/* Add Trait Section with Type Selector */}
+        <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4">
+          <div className="flex items-center gap-4">
+            <select
+              value={traitTypeToAdd}
+              onChange={(e) => setTraitTypeToAdd(e.target.value as TraitType)}
+              className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                         bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="llm-boolean">Binary (LLM)</option>
+              <option value="llm-score">Score (LLM)</option>
+              <option value="manual-regex">Manual (Regex)</option>
+            </select>
+            <button
+              onClick={handleAddTrait}
+              className="flex-1 flex items-center justify-center py-2 text-slate-600 dark:text-slate-400
+                         hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10
+                         rounded-md transition-all duration-200"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add trait
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Error Display */}
@@ -260,7 +424,7 @@ export default function RubricTraitEditor() {
       </div>
 
       {/* Rubric Summary */}
-      {currentRubric.traits.length > 0 && (
+      {(currentRubric.traits.length > 0 || (currentRubric.manual_traits && currentRubric.manual_traits.length > 0)) && (
         <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
             <svg
@@ -282,7 +446,7 @@ export default function RubricTraitEditor() {
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Total Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {currentRubric.traits.length}
+                {currentRubric.traits.length + (currentRubric.manual_traits?.length || 0)}
               </span>
             </div>
             <div className="flex items-center">
@@ -301,6 +465,13 @@ export default function RubricTraitEditor() {
                     {currentRubric.traits.filter((t) => t.kind === 'score').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full mr-1"></span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {currentRubric.manual_traits?.length || 0}
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">manual</span>
                 </span>
               </div>
             </div>
