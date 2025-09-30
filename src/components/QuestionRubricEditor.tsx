@@ -70,10 +70,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       const manualTrait = questionRubric.manual_traits?.[index];
       if (!manualTrait) return;
 
-      handleRemoveManualTrait(index);
-
       if (newType === 'manual') return; // Already manual
 
+      // Create converted trait
       const convertedTrait: RubricTrait = {
         name: manualTrait.name,
         description: manualTrait.description || '',
@@ -81,9 +80,14 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
         ...(newType === 'score' && { min_score: 1, max_score: 5 }),
       };
 
+      // Update both arrays atomically
+      const updatedManualTraits = questionRubric.manual_traits.filter((_, i) => i !== index);
+      const updatedTraits = [...questionRubric.traits, convertedTrait];
+
       const updatedRubric = {
         ...questionRubric,
-        traits: [...questionRubric.traits, convertedTrait],
+        traits: updatedTraits,
+        manual_traits: updatedManualTraits,
       };
 
       setQuestionRubricState(updatedRubric);
@@ -95,7 +99,6 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
       if (newType === 'manual') {
         // Convert to manual trait
-        handleRemoveTrait(index);
         const convertedTrait: ManualRubricTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
@@ -104,9 +107,21 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
           invert_result: false,
         };
 
+        // Insert at beginning of manual_traits to maintain visual proximity
+        const insertPosition = 0;
+
+        // Update both arrays atomically
+        const updatedTraits = questionRubric.traits.filter((_, i) => i !== index);
+        const updatedManualTraits = [
+          ...questionRubric.manual_traits.slice(0, insertPosition),
+          convertedTrait,
+          ...questionRubric.manual_traits.slice(insertPosition),
+        ];
+
         const updatedRubric = {
           ...questionRubric,
-          manual_traits: [...(questionRubric.manual_traits || []), convertedTrait],
+          traits: updatedTraits,
+          manual_traits: updatedManualTraits,
         };
 
         setQuestionRubricState(updatedRubric);

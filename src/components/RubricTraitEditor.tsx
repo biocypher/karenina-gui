@@ -13,7 +13,6 @@ export default function RubricTraitEditor() {
     addTrait,
     updateTrait,
     removeTrait,
-    addManualTrait,
     updateManualTrait,
     removeManualTrait,
     saveRubric,
@@ -54,17 +53,25 @@ export default function RubricTraitEditor() {
       const manualTrait = currentRubric.manual_traits?.[index];
       if (!manualTrait) return;
 
-      removeManualTrait(index);
-
       if (newType === 'manual') return; // Already manual
 
+      // Create converted trait
       const convertedTrait: RubricTrait = {
         name: manualTrait.name,
         description: manualTrait.description || '',
         kind: newType as TraitKind,
         ...(newType === 'score' && { min_score: 1, max_score: 5 }),
       };
-      addTrait(convertedTrait);
+
+      // Update both arrays atomically
+      const updatedManualTraits = currentRubric.manual_traits.filter((_, i) => i !== index);
+      const updatedTraits = [...currentRubric.traits, convertedTrait];
+
+      setCurrentRubric({
+        ...currentRubric,
+        traits: updatedTraits,
+        manual_traits: updatedManualTraits,
+      });
     } else {
       // Converting from LLM trait
       const llmTrait = currentRubric.traits[index];
@@ -72,7 +79,6 @@ export default function RubricTraitEditor() {
 
       if (newType === 'manual') {
         // Convert to manual trait
-        removeTrait(index);
         const convertedTrait: ManualRubricTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
@@ -80,7 +86,23 @@ export default function RubricTraitEditor() {
           case_sensitive: true,
           invert_result: false,
         };
-        addManualTrait(convertedTrait);
+
+        // Insert at position 0 of manual_traits so it appears right after remaining LLM traits
+        const insertPosition = 0;
+
+        // Update both arrays atomically
+        const updatedTraits = currentRubric.traits.filter((_, i) => i !== index);
+        const updatedManualTraits = [
+          ...currentRubric.manual_traits.slice(0, insertPosition),
+          convertedTrait,
+          ...currentRubric.manual_traits.slice(insertPosition),
+        ];
+
+        setCurrentRubric({
+          ...currentRubric,
+          traits: updatedTraits,
+          manual_traits: updatedManualTraits,
+        });
       } else {
         // Change LLM trait type (boolean <-> score)
         const updatedTrait: RubricTrait = {
