@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, XMarkIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
 import { RubricTrait, TraitKind, ManualRubricTrait } from '../types';
 
-type TraitType = 'llm-boolean' | 'llm-score' | 'manual-regex';
+type TraitType = 'boolean' | 'score' | 'manual';
 
 export default function RubricTraitEditor() {
   const {
@@ -21,7 +21,8 @@ export default function RubricTraitEditor() {
     setCurrentRubric,
   } = useRubricStore();
 
-  const [traitTypeToAdd, setTraitTypeToAdd] = useState<TraitType>('llm-boolean');
+  const [showRegexExamples, setShowRegexExamples] = useState<number | null>(null);
+  const [showInvertTooltip, setShowInvertTooltip] = useState<number | null>(null);
 
   // Initialize with default rubric if none exists
   useEffect(() => {
@@ -36,22 +37,60 @@ export default function RubricTraitEditor() {
   const handleAddTrait = () => {
     const totalTraits = (currentRubric?.traits.length || 0) + (currentRubric?.manual_traits?.length || 0);
 
-    if (traitTypeToAdd === 'manual-regex') {
-      const newManualTrait: ManualRubricTrait = {
-        name: `Manual Trait ${totalTraits + 1}`,
-        description: '',
-        pattern: '',
-        case_sensitive: true,
-        invert_result: false,
+    // Always add Binary trait by default - user can change type via dropdown
+    const newTrait: RubricTrait = {
+      name: `Trait ${totalTraits + 1}`,
+      description: '',
+      kind: 'boolean',
+    };
+    addTrait(newTrait);
+  };
+
+  const handleTraitTypeChange = (index: number, newType: TraitType, isManual: boolean) => {
+    if (!currentRubric) return;
+
+    if (isManual) {
+      // Converting from manual trait
+      const manualTrait = currentRubric.manual_traits?.[index];
+      if (!manualTrait) return;
+
+      removeManualTrait(index);
+
+      if (newType === 'manual') return; // Already manual
+
+      const convertedTrait: RubricTrait = {
+        name: manualTrait.name,
+        description: manualTrait.description || '',
+        kind: newType as TraitKind,
+        ...(newType === 'score' && { min_score: 1, max_score: 5 }),
       };
-      addManualTrait(newManualTrait);
+      addTrait(convertedTrait);
     } else {
-      const newTrait: RubricTrait = {
-        name: `Trait ${totalTraits + 1}`,
-        description: '',
-        kind: traitTypeToAdd === 'llm-boolean' ? 'boolean' : 'score',
-      };
-      addTrait(newTrait);
+      // Converting from LLM trait
+      const llmTrait = currentRubric.traits[index];
+      if (!llmTrait) return;
+
+      if (newType === 'manual') {
+        // Convert to manual trait
+        removeTrait(index);
+        const convertedTrait: ManualRubricTrait = {
+          name: llmTrait.name,
+          description: llmTrait.description || '',
+          pattern: '',
+          case_sensitive: true,
+          invert_result: false,
+        };
+        addManualTrait(convertedTrait);
+      } else {
+        // Change LLM trait type (boolean <-> score)
+        const updatedTrait: RubricTrait = {
+          ...llmTrait,
+          kind: newType as TraitKind,
+          ...(newType === 'score' && { min_score: 1, max_score: 5 }),
+          ...(newType === 'boolean' && { min_score: undefined, max_score: undefined }),
+        };
+        updateTrait(index, updatedTrait);
+      }
     }
   };
 
@@ -144,7 +183,7 @@ export default function RubricTraitEditor() {
                 />
               </div>
 
-              {/* Trait Kind Selector */}
+              {/* Trait Type Selector */}
               <div className="col-span-2">
                 <label
                   htmlFor={`trait-type-${index}`}
@@ -156,8 +195,8 @@ export default function RubricTraitEditor() {
                   <select
                     id={`trait-type-${index}`}
                     value={trait.kind}
-                    onChange={(e) => handleTraitChange(index, 'kind', e.target.value as TraitKind)}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
+                    onChange={(e) => handleTraitTypeChange(index, e.target.value as TraitType, false)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
                                bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
                                focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8
                                hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
@@ -165,6 +204,7 @@ export default function RubricTraitEditor() {
                   >
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
+                    <option value="manual">Manual (Regex)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,14 +319,34 @@ export default function RubricTraitEditor() {
                 />
               </div>
 
-              {/* Trait Type Display */}
+              {/* Trait Type Selector */}
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trait Type</label>
-                <div
-                  className="px-3 py-2 text-sm border border-amber-300 dark:border-amber-700 rounded-md
-                               bg-amber-100 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100 font-medium"
+                <label
+                  htmlFor={`manual-trait-type-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                 >
-                  Manual (Regex)
+                  Trait Type
+                </label>
+                <div className="relative">
+                  <select
+                    id={`manual-trait-type-${index}`}
+                    value="manual"
+                    onChange={(e) => handleTraitTypeChange(index, e.target.value as TraitType, true)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                               bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8
+                               hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
+                    aria-label="Trait type"
+                  >
+                    <option value="boolean">Binary</option>
+                    <option value="score">Score</option>
+                    <option value="manual">Manual (Regex)</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
 
@@ -325,12 +385,85 @@ export default function RubricTraitEditor() {
 
             {/* Regex Pattern */}
             <div className="mt-4">
-              <label
-                htmlFor={`manual-trait-pattern-${index}`}
-                className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-              >
-                Regex Pattern
-              </label>
+              <div className="flex items-center gap-2 mb-1">
+                <label
+                  htmlFor={`manual-trait-pattern-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Regex Pattern
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowRegexExamples(showRegexExamples === index ? null : index)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    title="Show regex examples"
+                  >
+                    <QuestionMarkCircleIcon className="h-4 w-4" />
+                  </button>
+                  {showRegexExamples === index && (
+                    <div className="absolute left-0 top-6 z-50 w-96 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Regex Examples</h4>
+                        <button
+                          onClick={() => setShowRegexExamples(null)}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="space-y-3 text-xs">
+                        <div>
+                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">\berror\b</div>
+                          <div className="text-slate-600 dark:text-slate-400">Matches the word "error"</div>
+                        </div>
+                        <div>
+                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">^Answer:</div>
+                          <div className="text-slate-600 dark:text-slate-400">Text must start with "Answer:"</div>
+                        </div>
+                        <div>
+                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                            correct\.$
+                          </div>
+                          <div className="text-slate-600 dark:text-slate-400">Text must end with "correct."</div>
+                        </div>
+                        <div>
+                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                            (?&lt;=Explanation:).*
+                          </div>
+                          <div className="text-slate-600 dark:text-slate-400">
+                            Checks if text contains "Explanation:" followed by content
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                            &lt;answer&gt;(.*?)&lt;/answer&gt;
+                          </div>
+                          <div className="text-slate-600 dark:text-slate-400">
+                            Checks if content is wrapped in &lt;answer&gt; tags
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                            Explanation:.*\bcorrect\b
+                          </div>
+                          <div className="text-slate-600 dark:text-slate-400">
+                            Checks if "correct" appears after "Explanation:"
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                            &lt;answer&gt;.*\byes\b.*&lt;/answer&gt;
+                          </div>
+                          <div className="text-slate-600 dark:text-slate-400">
+                            Checks if "yes" appears between &lt;answer&gt; tags
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               <input
                 id={`manual-trait-pattern-${index}`}
                 type="text"
@@ -354,44 +487,70 @@ export default function RubricTraitEditor() {
                 />
                 <span className="text-sm text-slate-700 dark:text-slate-300">Case Sensitive</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={trait.invert_result ?? false}
-                  onChange={(e) => handleManualTraitChange(index, 'invert_result', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-slate-700 dark:text-slate-300">Invert Result</span>
-              </label>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={trait.invert_result ?? false}
+                    onChange={(e) => handleManualTraitChange(index, 'invert_result', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Invert Result</span>
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowInvertTooltip(showInvertTooltip === index ? null : index)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    title="What does invert result mean?"
+                  >
+                    <QuestionMarkCircleIcon className="h-4 w-4" />
+                  </button>
+                  {showInvertTooltip === index && (
+                    <div className="absolute left-0 top-6 z-50 w-72 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Invert Result</h4>
+                        <button
+                          onClick={() => setShowInvertTooltip(null)}
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="text-xs text-slate-600 dark:text-slate-400 space-y-2">
+                        <p>When enabled, the boolean result of the regex match is inverted:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>
+                            <span className="font-semibold">Match found</span> → Returns{' '}
+                            <span className="font-mono text-red-600 dark:text-red-400">false</span>
+                          </li>
+                          <li>
+                            <span className="font-semibold">No match</span> → Returns{' '}
+                            <span className="font-mono text-green-600 dark:text-green-400">true</span>
+                          </li>
+                        </ul>
+                        <p className="mt-2 text-slate-500 dark:text-slate-500 italic">
+                          Useful for checking that a pattern does NOT appear in the text.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         ))}
 
-        {/* Add Trait Section with Type Selector */}
-        <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4">
-          <div className="flex items-center gap-4">
-            <select
-              value={traitTypeToAdd}
-              onChange={(e) => setTraitTypeToAdd(e.target.value as TraitType)}
-              className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                         bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            >
-              <option value="llm-boolean">Binary (LLM)</option>
-              <option value="llm-score">Score (LLM)</option>
-              <option value="manual-regex">Manual (Regex)</option>
-            </select>
-            <button
-              onClick={handleAddTrait}
-              className="flex-1 flex items-center justify-center py-2 text-slate-600 dark:text-slate-400
-                         hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10
-                         rounded-md transition-all duration-200"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add trait
-            </button>
-          </div>
-        </div>
+        {/* Add Trait Button */}
+        <button
+          onClick={handleAddTrait}
+          className="flex items-center justify-center w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-600
+                     rounded-lg text-slate-600 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500
+                     hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200"
+        >
+          <PlusIcon className="h-5 w-5 mr-2" />
+          Add trait
+        </button>
       </div>
 
       {/* Error Display */}
