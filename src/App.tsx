@@ -10,11 +10,14 @@ import {
   Maximize2,
   Settings,
   Filter,
+  Search,
+  Plus,
 } from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
 import { useConfigStore } from './stores/useConfigStore';
 import { useDatasetStore } from './stores/useDatasetStore';
+import { useRubricStore } from './stores/useRubricStore';
 import { QuestionData, UnifiedCheckpoint, VerificationResult, CheckpointItem } from './types';
 import { CodeEditor, type CodeEditorRef } from './components/CodeEditor';
 import { ExpandedEditor } from './components/ExpandedEditor';
@@ -22,12 +25,14 @@ import { StatusBadge } from './components/StatusBadge';
 import { MetadataEditor } from './components/MetadataEditor';
 import { FewShotExamplesEditor } from './components/FewShotExamplesEditor';
 import { FileManager } from './components/FileManager';
+import { AddQuestionModal } from './components/AddQuestionModal';
 import { QuestionExtractor } from './components/QuestionExtractor';
 import { AnswerTemplateGenerator } from './components/AnswerTemplateGenerator';
-import { RubricTab } from './components/RubricTab';
 import { BenchmarkTab } from './components/BenchmarkTab';
 import { ThemeToggle } from './components/ThemeToggle';
 import QuestionRubricEditor from './components/QuestionRubricEditor';
+import RubricTraitGenerator from './components/RubricTraitGenerator';
+import RubricTraitEditor from './components/RubricTraitEditor';
 import { ConfigurationModal } from './components/ConfigurationModal';
 import { formatTimestamp, forceResetAllData } from './utils/dataLoader';
 
@@ -43,6 +48,9 @@ function App() {
   // Dataset store
   const { metadata: datasetMetadata } = useDatasetStore();
 
+  // Rubric store
+  const { currentRubric } = useRubricStore();
+
   // Question store state
   const {
     questionData,
@@ -56,6 +64,7 @@ function App() {
     toggleFinished,
     navigateToQuestion,
     resetQuestionState,
+    addNewQuestion,
     getQuestionIds,
     getSelectedQuestion,
     getCheckpointItem,
@@ -73,7 +82,9 @@ function App() {
   const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
   const [isFewShotEditorOpen, setIsFewShotEditorOpen] = useState(false);
   const [questionFilter, setQuestionFilter] = useState<'all' | 'finished' | 'unfinished'>('all');
+  const [questionSearchTerm, setQuestionSearchTerm] = useState('');
   const [hasUnsavedFieldChanges, setHasUnsavedFieldChanges] = useState(false);
+  const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
@@ -236,6 +247,21 @@ function App() {
   // Navigation functions using store getters with filtering
   const allQuestionIds = getQuestionIds();
   const questionIds = allQuestionIds.filter((id) => {
+    // First apply search filter
+    if (questionSearchTerm.trim()) {
+      const searchLower = questionSearchTerm.toLowerCase();
+      const question = questionData[id];
+      if (!question) return false;
+
+      const matchesSearch =
+        question.question.toLowerCase().includes(searchLower) ||
+        question.raw_answer.toLowerCase().includes(searchLower) ||
+        id.toLowerCase().includes(searchLower);
+
+      if (!matchesSearch) return false;
+    }
+
+    // Then apply status filter
     if (questionFilter === 'all') return true;
 
     const checkpointItem = checkpoint[id];
@@ -259,13 +285,16 @@ function App() {
   // Calculate current index based on filtered questions, not all questions
   const currentIndex = questionIds.indexOf(selectedQuestionId);
 
-  // Auto-navigate when filter changes or when question status changes: select first available question in filtered list
+  // Auto-navigate when filter or search changes, or when question status changes: select first available question in filtered list
   const prevFilterRef = useRef(questionFilter);
+  const prevSearchRef = useRef(questionSearchTerm);
   const prevCheckpointRef = useRef(checkpoint);
   useEffect(() => {
-    // Check if filter changed
+    // Check if filter or search changed
     const filterChanged = prevFilterRef.current !== questionFilter;
+    const searchChanged = prevSearchRef.current !== questionSearchTerm;
     prevFilterRef.current = questionFilter;
+    prevSearchRef.current = questionSearchTerm;
 
     // Check if the currently selected question's finished status changed
     const currentCheckpointItem = checkpoint[selectedQuestionId];
@@ -274,10 +303,28 @@ function App() {
       currentCheckpointItem && prevCheckpointItem && currentCheckpointItem.finished !== prevCheckpointItem.finished;
     prevCheckpointRef.current = checkpoint;
 
-    if (filterChanged || selectedQuestionStatusChanged) {
-      console.log('🔄 Filter update triggered by:', filterChanged ? 'filter change' : 'question status change');
+    if (filterChanged || searchChanged || selectedQuestionStatusChanged) {
+      console.log(
+        '🔄 Filter update triggered by:',
+        filterChanged ? 'filter change' : searchChanged ? 'search change' : 'question status change'
+      );
       // Recompute filtered questions inside the effect to avoid dependency issues
       const currentFilteredIds = getQuestionIds().filter((id) => {
+        // Apply search filter
+        if (questionSearchTerm.trim()) {
+          const searchLower = questionSearchTerm.toLowerCase();
+          const question = questionData[id];
+          if (!question) return false;
+
+          const matchesSearch =
+            question.question.toLowerCase().includes(searchLower) ||
+            question.raw_answer.toLowerCase().includes(searchLower) ||
+            id.toLowerCase().includes(searchLower);
+
+          if (!matchesSearch) return false;
+        }
+
+        // Apply status filter
         if (questionFilter === 'all') return true;
 
         const checkpointItem = checkpoint[id];
@@ -289,7 +336,14 @@ function App() {
         return true;
       });
 
-      console.log('🔄 Filter changed to:', questionFilter, 'Available questions:', currentFilteredIds.length);
+      console.log(
+        '🔄 Filter/Search changed - Filter:',
+        questionFilter,
+        'Search:',
+        questionSearchTerm,
+        'Available questions:',
+        currentFilteredIds.length
+      );
 
       // Handle navigation based on what triggered the update
       if (selectedQuestionStatusChanged && questionFilter !== 'all') {
@@ -305,18 +359,26 @@ function App() {
             navigateToQuestion('');
           }
         }
-      } else if (filterChanged) {
-        // Always update selection when filter changes
+      } else if (filterChanged || searchChanged) {
+        // Always update selection when filter or search changes
         if (currentFilteredIds.length > 0) {
-          console.log('🎯 Auto-navigating to first filtered question:', currentFilteredIds[0]);
+          console.log('🎯 Auto-navigating to first filtered/searched question:', currentFilteredIds[0]);
           navigateToQuestion(currentFilteredIds[0]);
         } else {
-          console.log('🚫 No questions match filter, clearing selection');
-          navigateToQuestion(''); // Clear selection when no questions match filter
+          console.log('🚫 No questions match filter/search, clearing selection');
+          navigateToQuestion(''); // Clear selection when no questions match filter/search
         }
       }
     }
-  }, [questionFilter, navigateToQuestion, getQuestionIds, checkpoint, selectedQuestionId]); // Include all dependencies needed for filtering
+  }, [
+    questionFilter,
+    questionSearchTerm,
+    navigateToQuestion,
+    getQuestionIds,
+    checkpoint,
+    selectedQuestionId,
+    questionData,
+  ]); // Include all dependencies needed for filtering
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
@@ -383,6 +445,12 @@ function App() {
       finished: updatedItem.finished,
       last_modified: updatedItem.last_modified,
     });
+  };
+
+  const handleAddNewQuestion = (question: string, rawAnswer: string, author?: string, keywords?: string[]) => {
+    const newQuestionId = addNewQuestion(question, rawAnswer, author, keywords);
+    setIsAddQuestionModalOpen(false);
+    console.log(`✅ Successfully added new question: ${newQuestionId}`);
   };
 
   // Use store getters for computed values
@@ -493,16 +561,6 @@ function App() {
               2. Template Generator
             </button>
             <button
-              onClick={() => setActiveTab('rubric')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'rubric'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              3. Global Rubric Manager
-            </button>
-            <button
               onClick={() => setActiveTab('curator')}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === 'curator'
@@ -510,7 +568,7 @@ function App() {
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
-              4. Template Curator
+              3. Template Curator
             </button>
             <button
               onClick={() => setActiveTab('benchmark')}
@@ -520,7 +578,7 @@ function App() {
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
-              5. Benchmark
+              4. Benchmark
             </button>
           </div>
         </div>
@@ -539,9 +597,6 @@ function App() {
             onSwitchToCurator={() => setActiveTab('curator')}
           />
         )}
-
-        {/* Rubric Manager Tab */}
-        {activeTab === 'rubric' && <RubricTab questions={extractedQuestions} />}
 
         {/* Template Curator Tab */}
         {activeTab === 'curator' && (
@@ -578,6 +633,56 @@ function App() {
             {/* Control Panel */}
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6 mb-8">
               <div className="grid grid-cols-1 gap-6">
+                {/* Search Bar and Add Question Button */}
+                <div className="flex items-end gap-4">
+                  {/* Search Bar */}
+                  {allQuestionIds.length > 0 && (
+                    <div className="flex-1">
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                        <Search className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
+                        Search Questions
+                      </label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-5 h-5" />
+                        <input
+                          type="text"
+                          placeholder="Search by question, answer, or ID..."
+                          value={questionSearchTerm}
+                          onChange={(e) => setQuestionSearchTerm(e.target.value)}
+                          className="w-full pl-11 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium shadow-sm"
+                        />
+                      </div>
+                      {questionSearchTerm && (
+                        <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                          {questionIds.length === 0 ? (
+                            <span className="text-amber-600 dark:text-amber-400">No questions match your search</span>
+                          ) : (
+                            <span>
+                              Showing {questionIds.length} of {allQuestionIds.length} questions
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Add Question Button */}
+                  <div className={allQuestionIds.length > 0 ? '' : 'flex-1'}>
+                    {allQuestionIds.length > 0 && (
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 opacity-0 pointer-events-none">
+                        Spacer
+                      </label>
+                    )}
+                    <button
+                      onClick={() => setIsAddQuestionModalOpen(true)}
+                      className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 text-white rounded-xl transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Question
+                    </button>
+                  </div>
+                </div>
+
                 {/* Question Selection Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   {/* Question Dropdown */}
@@ -597,7 +702,9 @@ function App() {
                           {questionIds.length === 0
                             ? allQuestionIds.length === 0
                               ? 'No questions available - upload data first'
-                              : 'No questions match the current filter'
+                              : questionSearchTerm
+                                ? 'No questions match your search'
+                                : 'No questions match the current filter'
                             : 'Choose a question...'}
                         </option>
                         {questionIds.map((id, index) => (
@@ -690,7 +797,7 @@ function App() {
                     </h3>
                     <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
                       <p
-                        key={`answer-${selectedQuestion.id}-${selectedQuestion.raw_answer?.length || 0}`}
+                        key={`answer-${selectedQuestionId}-${selectedQuestion.raw_answer?.length || 0}`}
                         className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium"
                       >
                         {selectedQuestion.raw_answer}
@@ -850,6 +957,57 @@ function App() {
                 )}
               </div>
             )}
+
+            {/* Global Rubric Management Section */}
+            {(Object.keys(questionData).length > 0 || currentRubric) && (
+              <div className="mt-8 space-y-8">
+                <div className="text-center mb-4">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-800 via-purple-900 to-indigo-900 dark:from-slate-200 dark:via-purple-300 dark:to-indigo-300 bg-clip-text text-transparent mb-2">
+                    Global Rubric Management
+                  </h2>
+                  <p className="text-slate-600 dark:text-slate-300 text-sm max-w-3xl mx-auto">
+                    Create and manage global evaluation rubrics for benchmarking. These traits will be used across all
+                    questions.
+                  </p>
+                </div>
+
+                {/* AI-Powered Trait Generator - Only show if we have questions */}
+                {Object.keys(questionData).length > 0 && (
+                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                        AI-Powered Trait Generation
+                      </h3>
+                    </div>
+                    <p className="text-slate-600 dark:text-slate-300 mb-6">
+                      Use AI to automatically generate evaluation traits based on your questions and answers. The AI
+                      will analyze patterns and suggest relevant rubric criteria.
+                    </p>
+                    <RubricTraitGenerator
+                      questions={questionData}
+                      onTraitsGenerated={(traits) => {
+                        console.log('Generated traits:', traits);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Rubric Trait Editor - Always show when section is visible */}
+                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Manual Trait Editor</h3>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 mb-6">
+                    {currentRubric && currentRubric.traits.length > 0
+                      ? `Editing ${currentRubric.traits.length + (currentRubric.manual_traits?.length || 0)} global rubric traits. These traits are available for evaluation across all questions in your benchmark suite.`
+                      : 'Manually create, edit, and organize global rubric traits. These traits will be available for evaluation across all questions in your benchmark suite.'}
+                  </p>
+                  <RubricTraitEditor />
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -873,6 +1031,13 @@ function App() {
             onClose={handleCloseFewShotEditor}
           />
         )}
+
+        {/* Add Question Modal */}
+        <AddQuestionModal
+          isOpen={isAddQuestionModalOpen}
+          onClose={() => setIsAddQuestionModalOpen(false)}
+          onAdd={handleAddNewQuestion}
+        />
 
         {/* Benchmark Tab */}
         {activeTab === 'benchmark' && (

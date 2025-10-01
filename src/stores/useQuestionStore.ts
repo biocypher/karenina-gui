@@ -24,6 +24,7 @@ interface QuestionState {
   toggleFinished: () => void;
   navigateToQuestion: (questionId: string) => void;
   resetQuestionState: () => void;
+  addNewQuestion: (question: string, rawAnswer: string, author?: string, keywords?: string[]) => string;
 
   // Question rubric management
   getQuestionRubric: (questionId: string) => Rubric | null;
@@ -299,6 +300,73 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       currentTemplate: '',
       dataSource: 'default',
     }));
+  },
+
+  addNewQuestion: (question: string, rawAnswer: string, author?: string, keywords?: string[]) => {
+    const state = get();
+
+    // Generate UUID for the question
+    const questionId = crypto.randomUUID();
+
+    // Generate basic Pydantic template
+    const questionPreview = question.length > 50 ? question.substring(0, 50) + '...' : question;
+    const basicTemplate = `class Answer(BaseModel):
+    """Answer to the question: ${questionPreview}"""
+    answer: str = Field(description="The answer to the question")`;
+
+    const now = new Date().toISOString();
+
+    // Create new question entry
+    const newQuestion: QuestionData[string] = {
+      question,
+      raw_answer: rawAnswer,
+      answer_template: basicTemplate,
+      ...(author || keywords
+        ? {
+            metadata: {
+              ...(author ? { author: { '@type': 'Person' as const, name: author } } : {}),
+              ...(keywords ? { keywords } : {}),
+            },
+          }
+        : {}),
+    };
+
+    // Create checkpoint item
+    const newCheckpointItem = {
+      question,
+      raw_answer: rawAnswer,
+      original_answer_template: basicTemplate,
+      answer_template: basicTemplate,
+      last_modified: now,
+      date_created: now,
+      finished: false,
+      question_rubric: undefined,
+      few_shot_examples: undefined,
+      ...(author ? { author: { '@type': 'Person' as const, name: author } } : {}),
+      ...(keywords ? { keywords } : {}),
+    };
+
+    // Update state with new question
+    const updatedQuestionData = {
+      ...state.questionData,
+      [questionId]: newQuestion,
+    };
+
+    const updatedCheckpoint = {
+      ...state.checkpoint,
+      [questionId]: newCheckpointItem,
+    };
+
+    set(() => ({
+      questionData: updatedQuestionData,
+      checkpoint: updatedCheckpoint,
+      selectedQuestionId: questionId,
+      currentTemplate: basicTemplate,
+      dataSource: 'uploaded',
+    }));
+
+    console.log(`✅ Added new question with ID: ${questionId}`);
+    return questionId;
   },
 
   // Computed getters
