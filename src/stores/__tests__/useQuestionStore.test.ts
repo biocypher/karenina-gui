@@ -361,4 +361,163 @@ describe('useQuestionStore', () => {
       expect(result.current.dataSource).toBe('default');
     });
   });
+
+  describe('addNewQuestion', () => {
+    it('should add a new question with required fields only', () => {
+      const { result } = renderHook(() => useQuestionStore());
+
+      let questionId: string;
+      act(() => {
+        questionId = result.current.addNewQuestion('What is 2+2?', 'The answer is 4');
+      });
+
+      // Verify question was added to questionData
+      expect(result.current.questionData[questionId!]).toBeDefined();
+      expect(result.current.questionData[questionId!].question).toBe('What is 2+2?');
+      expect(result.current.questionData[questionId!].raw_answer).toBe('The answer is 4');
+
+      // Verify question was added to checkpoint
+      expect(result.current.checkpoint[questionId!]).toBeDefined();
+      expect(result.current.checkpoint[questionId!].question).toBe('What is 2+2?');
+      expect(result.current.checkpoint[questionId!].raw_answer).toBe('The answer is 4');
+      expect(result.current.checkpoint[questionId!].finished).toBe(false);
+
+      // Verify question is auto-selected
+      expect(result.current.selectedQuestionId).toBe(questionId!);
+
+      // Verify data source is set to 'uploaded'
+      expect(result.current.dataSource).toBe('uploaded');
+    });
+
+    it('should add a new question with all optional fields', () => {
+      const { result } = renderHook(() => useQuestionStore());
+
+      let questionId: string;
+      act(() => {
+        questionId = result.current.addNewQuestion('What is 2+2?', 'The answer is 4', 'John Doe', ['math', 'basic']);
+      });
+
+      // Verify metadata was added to questionData
+      expect(result.current.questionData[questionId!].metadata).toBeDefined();
+      expect(result.current.questionData[questionId!].metadata?.author?.name).toBe('John Doe');
+      expect(result.current.questionData[questionId!].metadata?.keywords).toEqual(['math', 'basic']);
+
+      // Verify metadata was added to checkpoint
+      expect(result.current.checkpoint[questionId!].author?.name).toBe('John Doe');
+      expect(result.current.checkpoint[questionId!].keywords).toEqual(['math', 'basic']);
+    });
+
+    it('should generate a basic Pydantic template', () => {
+      const { result } = renderHook(() => useQuestionStore());
+
+      let questionId: string;
+      act(() => {
+        questionId = result.current.addNewQuestion('What is 2+2?', 'The answer is 4');
+      });
+
+      const template = result.current.questionData[questionId!].answer_template;
+      expect(template).toContain('class Answer(BaseModel)');
+      expect(template).toContain('answer: str');
+      expect(template).toContain('Field(description="The answer to the question")');
+
+      // Verify template is also in checkpoint
+      expect(result.current.checkpoint[questionId!].answer_template).toBe(template);
+      expect(result.current.checkpoint[questionId!].original_answer_template).toBe(template);
+    });
+
+    it('should generate a UUID for the question', () => {
+      const { result } = renderHook(() => useQuestionStore());
+
+      let questionId1: string;
+      let questionId2: string;
+
+      act(() => {
+        questionId1 = result.current.addNewQuestion('Question 1', 'Answer 1');
+        questionId2 = result.current.addNewQuestion('Question 2', 'Answer 2');
+      });
+
+      // Verify UUIDs are different
+      expect(questionId1).not.toBe(questionId2);
+
+      // Verify UUIDs match UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      expect(questionId1).toMatch(uuidRegex);
+      expect(questionId2).toMatch(uuidRegex);
+    });
+
+    it('should set timestamps correctly', () => {
+      const { result } = renderHook(() => useQuestionStore());
+
+      const beforeTime = new Date().toISOString();
+
+      let questionId: string;
+      act(() => {
+        questionId = result.current.addNewQuestion('What is 2+2?', 'The answer is 4');
+      });
+
+      const afterTime = new Date().toISOString();
+
+      const checkpointItem = result.current.checkpoint[questionId!];
+      expect(checkpointItem.date_created).toBeDefined();
+      expect(checkpointItem.last_modified).toBeDefined();
+
+      // Verify timestamps are in valid range
+      expect(checkpointItem.date_created! >= beforeTime).toBe(true);
+      expect(checkpointItem.date_created! <= afterTime).toBe(true);
+      expect(checkpointItem.last_modified >= beforeTime).toBe(true);
+      expect(checkpointItem.last_modified <= afterTime).toBe(true);
+    });
+
+    it('should set currentTemplate to the generated template', () => {
+      const { result } = renderHook(() => useQuestionStore());
+
+      let questionId: string;
+      act(() => {
+        questionId = result.current.addNewQuestion('What is 2+2?', 'The answer is 4');
+      });
+
+      const expectedTemplate = result.current.questionData[questionId!].answer_template;
+      expect(result.current.currentTemplate).toBe(expectedTemplate);
+    });
+
+    it('should truncate long questions in template docstring', () => {
+      const { result } = renderHook(() => useQuestionStore());
+
+      const longQuestion = 'A'.repeat(100);
+
+      let questionId: string;
+      act(() => {
+        questionId = result.current.addNewQuestion(longQuestion, 'Answer');
+      });
+
+      const template = result.current.questionData[questionId!].answer_template;
+
+      // Should truncate at 50 chars and add ellipsis
+      expect(template).toContain('A'.repeat(50) + '...');
+      expect(template).not.toContain('A'.repeat(51));
+    });
+
+    it('should add multiple questions independently', () => {
+      const { result } = renderHook(() => useQuestionStore());
+
+      let questionId1: string;
+      let questionId2: string;
+
+      act(() => {
+        questionId1 = result.current.addNewQuestion('Question 1', 'Answer 1');
+        questionId2 = result.current.addNewQuestion('Question 2', 'Answer 2');
+      });
+
+      // Verify both questions exist
+      expect(Object.keys(result.current.questionData).length).toBe(2);
+      expect(Object.keys(result.current.checkpoint).length).toBe(2);
+
+      // Verify second question is selected
+      expect(result.current.selectedQuestionId).toBe(questionId2);
+
+      // Verify questions have correct data
+      expect(result.current.questionData[questionId1!].question).toBe('Question 1');
+      expect(result.current.questionData[questionId2!].question).toBe('Question 2');
+    });
+  });
 });
