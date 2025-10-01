@@ -52,33 +52,31 @@ export const useBenchmarkConfiguration = () => {
   } = useBenchmarkStore();
 
   // Update default models when saved config store defaults change
+  // This effect intentionally does NOT depend on answeringModels/parsingModels
+  // to avoid resetting user configurations on every re-render
   useEffect(() => {
-    setAnsweringModels(
-      answeringModels.map((model, index) =>
-        index === 0
-          ? {
-              ...model,
-              interface: savedInterface,
-              model_provider: savedProvider,
-              model_name: savedModel,
-            }
-          : model
-      )
-    );
+    // Only update if the store is empty (initial load)
+    if (answeringModels.length === 1 && parsingModels.length === 1) {
+      setAnsweringModels([
+        {
+          ...answeringModels[0],
+          interface: savedInterface,
+          model_provider: savedProvider,
+          model_name: savedModel,
+        },
+      ]);
 
-    setParsingModels(
-      parsingModels.map((model, index) =>
-        index === 0
-          ? {
-              ...model,
-              interface: savedInterface,
-              model_provider: savedProvider,
-              model_name: savedModel,
-            }
-          : model
-      )
-    );
-  }, [savedInterface, savedProvider, savedModel, setAnsweringModels, setParsingModels]);
+      setParsingModels([
+        {
+          ...parsingModels[0],
+          interface: savedInterface,
+          model_provider: savedProvider,
+          model_name: savedModel,
+        },
+      ]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedInterface, savedProvider, savedModel]);
 
   // Model management functions - wrap store functions with additional logic
   const addAnsweringModel = () => {
