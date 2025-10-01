@@ -131,8 +131,8 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
       }
     };
 
-    // Track unsaved changes for a specific field
-    const handleFieldUnsavedChange = (index: number, hasUnsaved: boolean) => {
+    // Track unsaved changes for a specific field (memoized to prevent infinite loops)
+    const handleFieldUnsavedChange = useCallback((index: number, hasUnsaved: boolean) => {
       setFieldsWithUnsavedChanges((prev) => {
         const newSet = new Set(prev);
         if (hasUnsaved) {
@@ -142,7 +142,7 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
         }
         return newSet;
       });
-    };
+    }, []);
 
     // Save all fields with unsaved changes
     const saveAllUnsavedFields = useCallback(() => {

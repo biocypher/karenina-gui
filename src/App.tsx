@@ -285,10 +285,10 @@ function App() {
   // Calculate current index based on filtered questions, not all questions
   const currentIndex = questionIds.indexOf(selectedQuestionId);
 
-  // Auto-navigate when filter or search changes, or when question status changes: select first available question in filtered list
+  // Auto-navigate when filter or search changes ONLY (removed status change logic to prevent infinite loops)
   const prevFilterRef = useRef(questionFilter);
   const prevSearchRef = useRef(questionSearchTerm);
-  const prevCheckpointRef = useRef(checkpoint);
+
   useEffect(() => {
     // Check if filter or search changed
     const filterChanged = prevFilterRef.current !== questionFilter;
@@ -296,20 +296,13 @@ function App() {
     prevFilterRef.current = questionFilter;
     prevSearchRef.current = questionSearchTerm;
 
-    // Check if the currently selected question's finished status changed
-    const currentCheckpointItem = checkpoint[selectedQuestionId];
-    const prevCheckpointItem = prevCheckpointRef.current[selectedQuestionId];
-    const selectedQuestionStatusChanged =
-      currentCheckpointItem && prevCheckpointItem && currentCheckpointItem.finished !== prevCheckpointItem.finished;
-    prevCheckpointRef.current = checkpoint;
+    // Only respond to deliberate filter/search changes, not data updates
+    if (filterChanged || searchChanged) {
+      console.log('🔄 Filter/Search changed - Filter:', questionFilter, 'Search:', questionSearchTerm);
 
-    if (filterChanged || searchChanged || selectedQuestionStatusChanged) {
-      console.log(
-        '🔄 Filter update triggered by:',
-        filterChanged ? 'filter change' : searchChanged ? 'search change' : 'question status change'
-      );
-      // Recompute filtered questions inside the effect to avoid dependency issues
-      const currentFilteredIds = getQuestionIds().filter((id) => {
+      // Get current question IDs from questionData directly (not from store function which isn't stable)
+      const allIds = Object.keys(questionData);
+      const currentFilteredIds = allIds.filter((id) => {
         // Apply search filter
         if (questionSearchTerm.trim()) {
           const searchLower = questionSearchTerm.toLowerCase();
@@ -336,49 +329,16 @@ function App() {
         return true;
       });
 
-      console.log(
-        '🔄 Filter/Search changed - Filter:',
-        questionFilter,
-        'Search:',
-        questionSearchTerm,
-        'Available questions:',
-        currentFilteredIds.length
-      );
-
-      // Handle navigation based on what triggered the update
-      if (selectedQuestionStatusChanged && questionFilter !== 'all') {
-        // If current question status changed and no longer matches filter, navigate away
-        const currentQuestionStillMatches = currentFilteredIds.includes(selectedQuestionId);
-        if (!currentQuestionStillMatches) {
-          console.log('🔄 Current question no longer matches filter after status change');
-          if (currentFilteredIds.length > 0) {
-            console.log('🎯 Auto-navigating to first matching question:', currentFilteredIds[0]);
-            navigateToQuestion(currentFilteredIds[0]);
-          } else {
-            console.log('🚫 No questions match filter after status change, clearing selection');
-            navigateToQuestion('');
-          }
-        }
-      } else if (filterChanged || searchChanged) {
-        // Always update selection when filter or search changes
-        if (currentFilteredIds.length > 0) {
-          console.log('🎯 Auto-navigating to first filtered/searched question:', currentFilteredIds[0]);
-          navigateToQuestion(currentFilteredIds[0]);
-        } else {
-          console.log('🚫 No questions match filter/search, clearing selection');
-          navigateToQuestion(''); // Clear selection when no questions match filter/search
-        }
+      // Navigate to first matching question or clear selection
+      if (currentFilteredIds.length > 0) {
+        console.log('🎯 Auto-navigating to first filtered/searched question:', currentFilteredIds[0]);
+        navigateToQuestion(currentFilteredIds[0]);
+      } else {
+        console.log('🚫 No questions match filter/search, clearing selection');
+        navigateToQuestion('');
       }
     }
-  }, [
-    questionFilter,
-    questionSearchTerm,
-    navigateToQuestion,
-    getQuestionIds,
-    checkpoint,
-    selectedQuestionId,
-    questionData,
-  ]); // Include all dependencies needed for filtering
+  }, [questionFilter, questionSearchTerm]); // Only primitive filter/search values - store functions and data excluded to prevent loops!
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
