@@ -25,6 +25,7 @@ import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
 import { RubricResultsDisplay } from './RubricResultsDisplay';
 import { useRubricStore } from '../stores/useRubricStore';
 import { CustomExportDialog } from './CustomExportDialog';
+import { SearchableTextDisplay } from './SearchableTextDisplay';
 
 // Interfaces now imported from types
 
@@ -989,11 +990,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                             <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
                               Raw LLM Response (Generated)
                             </h4>
-                            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                              <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
-                                {selectedResult.raw_llm_response || 'N/A'}
-                              </pre>
-                            </div>
+                            <SearchableTextDisplay
+                              text={selectedResult.raw_llm_response || 'N/A'}
+                              className="text-slate-800 dark:text-slate-200"
+                            />
                           </div>
 
                           {/* Ground Truth (Expected) */}
