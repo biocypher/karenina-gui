@@ -31,12 +31,20 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
     // Refs for field editors
     const fieldRefs = useRef<Map<number, FieldEditorRef>>(new Map());
 
+    // Guard against re-entry during internal updates
+    const isUpdatingRef = useRef(false);
+
     // Always auto-generate methods and use multiple field pattern
     const isAutoGenerateMethods = true;
     const defaultCorrectValuePattern: 'single' | 'multiple' = 'multiple';
 
     // Parse the code when it changes
     useEffect(() => {
+      // Skip if we're in the middle of an internal update
+      if (isUpdatingRef.current) {
+        return;
+      }
+
       const parseResult = parsePydanticClass(code);
       if (parseResult.success && parseResult.classDefinition) {
         // Ensure defaults are set
@@ -61,6 +69,9 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
     // Generate new code when class definition changes
     const updateCode = (newClassDef: PydanticClassDefinition) => {
       try {
+        // Set flag to prevent re-entry during this update
+        isUpdatingRef.current = true;
+
         // Auto-generate methods if enabled
         if (isAutoGenerateMethods) {
           const methods: PydanticMethod[] = [];
@@ -105,6 +116,11 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
 
         const newCode = generatePydanticCode(newClassDef);
         onChange(newCode);
+
+        // Clear flag after a short delay to allow the onChange to propagate
+        setTimeout(() => {
+          isUpdatingRef.current = false;
+        }, 0);
 
         // Auto-save after field changes
         if (onSave) {
