@@ -310,7 +310,10 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     // Generate basic Pydantic template
     const questionPreview = question.length > 50 ? question.substring(0, 50) + '...' : question;
-    const basicTemplate = `class Answer(BaseModel):
+    const basicTemplate = `from karenina.schemas.answer_class import BaseAnswer
+from pydantic import Field
+
+class Answer(BaseAnswer):
     """Answer to the question: ${questionPreview}"""
     answer: str = Field(description="The answer to the question")`;
 

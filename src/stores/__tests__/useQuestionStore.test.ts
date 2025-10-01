@@ -416,7 +416,13 @@ describe('useQuestionStore', () => {
       });
 
       const template = result.current.questionData[questionId!].answer_template;
-      expect(template).toContain('class Answer(BaseModel)');
+
+      // Verify imports are included
+      expect(template).toContain('from karenina.schemas.answer_class import BaseAnswer');
+      expect(template).toContain('from pydantic import Field');
+
+      // Verify class definition uses BaseAnswer
+      expect(template).toContain('class Answer(BaseAnswer)');
       expect(template).toContain('answer: str');
       expect(template).toContain('Field(description="The answer to the question")');
 
