@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import {
   Rubric,
   RubricTrait,
+  ManualRubricTrait,
   RubricTraitGenerationRequest,
   RubricTraitGenerationResponse,
   RubricTraitGenerationConfig,
@@ -32,6 +33,11 @@ interface RubricState {
   removeTrait: (index: number) => void;
   reorderTraits: (startIndex: number, endIndex: number) => void;
 
+  // Manual trait actions
+  addManualTrait: (trait: ManualRubricTrait) => void;
+  updateManualTrait: (index: number, trait: ManualRubricTrait) => void;
+  removeManualTrait: (index: number) => void;
+
   // Configuration actions
   setConfig: (config: RubricTraitGenerationConfig) => void;
 
@@ -49,6 +55,7 @@ interface RubricState {
 
 const defaultRubric: Rubric = {
   traits: [],
+  manual_traits: [],
 };
 
 export const useRubricStore = create<RubricState>((set, get) => ({
@@ -75,8 +82,11 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     const { currentRubric } = get();
     const rubric = currentRubric || defaultRubric;
 
-    // Check for duplicate names
-    const existingNames = rubric.traits.map((t) => t.name.toLowerCase());
+    // Check for duplicate names across both LLM and manual traits
+    const llmNames = rubric.traits.map((t) => t.name.toLowerCase());
+    const manualNames = (rubric.manual_traits || []).map((t) => t.name.toLowerCase());
+    const existingNames = [...llmNames, ...manualNames];
+
     if (existingNames.includes(trait.name.toLowerCase())) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
@@ -98,10 +108,10 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       return;
     }
 
-    // Check for duplicate names (excluding current trait)
-    const existingNames = currentRubric.traits
-      .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
-      .filter(Boolean);
+    // Check for duplicate names (excluding current trait, checking both LLM and manual traits)
+    const llmNames = currentRubric.traits.map((t, i) => (i !== index ? t.name.toLowerCase() : null)).filter(Boolean);
+    const manualNames = (currentRubric.manual_traits || []).map((t) => t.name.toLowerCase());
+    const existingNames = [...llmNames, ...manualNames];
 
     if (existingNames.includes(trait.name.toLowerCase())) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
@@ -141,6 +151,72 @@ export const useRubricStore = create<RubricState>((set, get) => ({
 
     set({
       currentRubric: { ...currentRubric, traits },
+      lastError: null,
+    });
+  },
+
+  // Manual trait actions
+  addManualTrait: (trait) => {
+    const { currentRubric } = get();
+    const rubric = currentRubric || defaultRubric;
+
+    // Check for duplicate names across both LLM and manual traits
+    const llmNames = rubric.traits.map((t) => t.name.toLowerCase());
+    const manualNames = (rubric.manual_traits || []).map((t) => t.name.toLowerCase());
+    const existingNames = [...llmNames, ...manualNames];
+
+    if (existingNames.includes(trait.name.toLowerCase())) {
+      set({ lastError: `Trait with name "${trait.name}" already exists` });
+      return;
+    }
+
+    set({
+      currentRubric: {
+        ...rubric,
+        manual_traits: [...(rubric.manual_traits || []), trait],
+      },
+      lastError: null,
+    });
+  },
+
+  updateManualTrait: (index, trait) => {
+    const { currentRubric } = get();
+    if (!currentRubric || !currentRubric.manual_traits || index < 0 || index >= currentRubric.manual_traits.length) {
+      set({ lastError: 'Invalid manual trait index' });
+      return;
+    }
+
+    // Check for duplicate names (excluding current manual trait, checking both LLM and manual traits)
+    const llmNames = currentRubric.traits.map((t) => t.name.toLowerCase());
+    const manualNames = currentRubric.manual_traits
+      .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
+      .filter(Boolean);
+    const existingNames = [...llmNames, ...manualNames];
+
+    if (existingNames.includes(trait.name.toLowerCase())) {
+      set({ lastError: `Trait with name "${trait.name}" already exists` });
+      return;
+    }
+
+    const updatedManualTraits = [...currentRubric.manual_traits];
+    updatedManualTraits[index] = trait;
+
+    set({
+      currentRubric: { ...currentRubric, manual_traits: updatedManualTraits },
+      lastError: null,
+    });
+  },
+
+  removeManualTrait: (index) => {
+    const { currentRubric } = get();
+    if (!currentRubric || !currentRubric.manual_traits || index < 0 || index >= currentRubric.manual_traits.length) {
+      set({ lastError: 'Invalid manual trait index' });
+      return;
+    }
+
+    const updatedManualTraits = currentRubric.manual_traits.filter((_, i) => i !== index);
+    set({
+      currentRubric: { ...currentRubric, manual_traits: updatedManualTraits },
       lastError: null,
     });
   },
@@ -223,6 +299,12 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     const { currentRubric } = get();
     if (!currentRubric) {
       set({ lastError: 'No rubric to save' });
+      return;
+    }
+
+    // Validate that we have at least one trait (LLM or manual)
+    if (!currentRubric.traits.length && !(currentRubric.manual_traits && currentRubric.manual_traits.length)) {
+      set({ lastError: 'Rubric must have at least one trait' });
       return;
     }
 

@@ -330,8 +330,18 @@ export interface RubricTrait {
   max_score?: number; // For score traits
 }
 
+export interface ManualRubricTrait {
+  name: string;
+  description?: string;
+  pattern?: string; // Regex pattern (mutually exclusive with callable_name)
+  callable_name?: string; // Callable function name (mutually exclusive with pattern)
+  case_sensitive?: boolean; // Whether pattern matching should be case sensitive (default: true)
+  invert_result?: boolean; // Whether to invert the boolean result (default: false)
+}
+
 export interface Rubric {
   traits: RubricTrait[];
+  manual_traits?: ManualRubricTrait[];
 }
 
 // Rubric Trait Generation Configuration
