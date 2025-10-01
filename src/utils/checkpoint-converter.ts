@@ -7,6 +7,7 @@ import {
   SchemaOrgPropertyValue,
   CheckpointItem,
   RubricTrait,
+  ManualRubricTrait,
   Rubric,
   CheckpointConversionMetadata,
   SchemaOrgPerson,
@@ -295,6 +296,15 @@ export function v2ToJsonLd(
           const rating = convertRubricTraitToRating(trait, 'question-specific');
           ratings.push(rating);
         });
+
+        // Add question-specific manual_traits to additionalProperty if present
+        if (item.question_rubric.manual_traits && item.question_rubric.manual_traits.length > 0) {
+          question.additionalProperty.push({
+            '@type': 'PropertyValue' as const,
+            name: 'question_manual_rubric_traits',
+            value: JSON.stringify(item.question_rubric.manual_traits),
+          });
+        }
       }
 
       if (ratings.length > 0) {
@@ -352,6 +362,15 @@ export function v2ToJsonLd(
     let globalRatings: SchemaOrgRating[] | undefined;
     if (checkpoint.global_rubric) {
       globalRatings = checkpoint.global_rubric.traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
+    }
+
+    // Add global manual_traits to additionalProperties if present
+    if (checkpoint.global_rubric?.manual_traits && checkpoint.global_rubric.manual_traits.length > 0) {
+      additionalProperties.push({
+        '@type': 'PropertyValue',
+        name: 'global_manual_rubric_traits',
+        value: JSON.stringify(checkpoint.global_rubric.manual_traits),
+      });
     }
 
     // Add conversion metadata if requested (after globalRatings is defined)
@@ -417,6 +436,29 @@ export function jsonLdToV2(
       if (globalRatings.length > 0) {
         const traits = globalRatings.map(convertRatingToRubricTrait);
         globalRubric = { traits };
+      }
+    }
+
+    // Extract global manual_traits from additionalProperty
+    let globalManualTraits: ManualRubricTrait[] | undefined;
+    const globalManualTraitsProp = jsonLdCheckpoint.additionalProperty?.find(
+      (prop) => prop.name === 'global_manual_rubric_traits'
+    );
+    if (globalManualTraitsProp && typeof globalManualTraitsProp.value === 'string') {
+      try {
+        globalManualTraits = JSON.parse(globalManualTraitsProp.value);
+      } catch {
+        // Invalid JSON, ignore manual traits
+      }
+    }
+
+    // Merge manual_traits into global rubric
+    if (globalManualTraits && globalManualTraits.length > 0) {
+      if (globalRubric) {
+        globalRubric.manual_traits = globalManualTraits;
+      } else {
+        // Create rubric with only manual traits
+        globalRubric = { traits: [], manual_traits: globalManualTraits };
       }
     }
 
@@ -487,6 +529,26 @@ export function jsonLdToV2(
           questionRubric = {
             traits: questionSpecificRatings.map(convertRatingToRubricTrait),
           };
+        }
+      }
+
+      // Extract question-specific manual_traits from additionalProperty
+      const questionManualTraitsProp = question.additionalProperty?.find(
+        (prop) => prop.name === 'question_manual_rubric_traits'
+      );
+      if (questionManualTraitsProp && typeof questionManualTraitsProp.value === 'string') {
+        try {
+          const manualTraits: ManualRubricTrait[] = JSON.parse(questionManualTraitsProp.value);
+          if (manualTraits.length > 0) {
+            if (questionRubric) {
+              questionRubric.manual_traits = manualTraits;
+            } else {
+              // Create rubric with only manual traits
+              questionRubric = { traits: [], manual_traits: manualTraits };
+            }
+          }
+        } catch {
+          // Invalid JSON, ignore manual traits
         }
       }
 

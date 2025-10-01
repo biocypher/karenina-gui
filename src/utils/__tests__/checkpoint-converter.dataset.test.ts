@@ -229,16 +229,17 @@ describe('checkpoint-converter dataset metadata', () => {
     it('preserves all metadata values regardless of content', () => {
       const jsonLdCheckpoint: JsonLdCheckpoint = {
         '@context': { '@vocab': 'http://schema.org/' },
-        '@type': 'Dataset',
+        '@type': 'DataFeed',
         name: 'Custom Name', // custom
         description: 'Checkpoint containing 1 benchmark questions with answer templates and rubric evaluations', // default
         version: '3.0.0-jsonld', // default
         creator: 'Custom Creator', // custom
         dateCreated: '2025-01-15T00:00:00Z',
         dateModified: '2025-01-16T00:00:00Z',
-        hasPart: [
+        dataFeedElement: [
           {
             '@type': 'DataFeedItem',
+            dateCreated: '2025-01-20T10:00:00Z',
             dateModified: '2025-01-20T10:00:00Z',
             item: {
               '@type': 'Question',
@@ -252,6 +253,18 @@ describe('checkpoint-converter dataset metadata', () => {
                 text: 'class Answer(BaseModel): capital: str',
                 programmingLanguage: 'Python',
               },
+              additionalProperty: [
+                {
+                  '@type': 'PropertyValue',
+                  name: 'finished',
+                  value: true,
+                },
+                {
+                  '@type': 'PropertyValue',
+                  name: 'original_answer_template',
+                  value: 'class Answer(BaseModel): capital: str',
+                },
+              ],
             },
           },
         ],
@@ -481,8 +494,8 @@ describe('checkpoint-converter dataset metadata', () => {
 
       const result = v2ToJsonLd(checkpointWithDateCreated);
 
-      expect(result.hasPart).toHaveLength(1);
-      const dataFeedItem = result.hasPart[0];
+      expect(result.dataFeedElement).toHaveLength(1);
+      const dataFeedItem = result.dataFeedElement[0];
 
       expect(dataFeedItem.dateCreated).toBe('2025-01-01T10:00:00Z');
       expect(dataFeedItem.dateModified).toBe('2025-01-15T14:30:00Z');
@@ -506,8 +519,8 @@ describe('checkpoint-converter dataset metadata', () => {
 
       const result = v2ToJsonLd(checkpointWithoutDateCreated);
 
-      expect(result.hasPart).toHaveLength(1);
-      const dataFeedItem = result.hasPart[0];
+      expect(result.dataFeedElement).toHaveLength(1);
+      const dataFeedItem = result.dataFeedElement[0];
 
       // Both should be the same when falling back
       expect(dataFeedItem.dateCreated).toBe('2025-01-15T14:30:00Z');
