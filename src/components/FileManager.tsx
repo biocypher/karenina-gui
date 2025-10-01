@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Download, Database, RotateCcw, Settings } from 'lucide-react';
-import { Checkpoint, UnifiedCheckpoint, JsonLdCheckpoint } from '../types';
+import { Upload, Download, Database, RotateCcw, Settings, Sparkles } from 'lucide-react';
+import { Checkpoint, UnifiedCheckpoint, JsonLdCheckpoint, DatasetMetadata } from '../types';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
+import { useQuestionStore } from '../stores/useQuestionStore';
 import { DatasetMetadataEditor } from './DatasetMetadataEditor';
+import { NewBenchmarkModal } from './NewBenchmarkModal';
 import {
   v2ToJsonLd,
   jsonLdToV2,
@@ -23,10 +25,12 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
   // Dataset metadata editor state
   const [isDatasetEditorOpen, setIsDatasetEditorOpen] = useState(false);
+  const [isNewBenchmarkModalOpen, setIsNewBenchmarkModalOpen] = useState(false);
 
-  // Get current rubric and dataset metadata from stores
-  const { currentRubric } = useRubricStore();
-  const { metadata: datasetMetadata } = useDatasetStore();
+  // Get stores
+  const { currentRubric, reset: resetRubric } = useRubricStore();
+  const { metadata: datasetMetadata, setMetadata } = useDatasetStore();
+  const { resetQuestionState } = useQuestionStore();
 
   const handleCheckpointUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -226,6 +230,36 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
     }
   };
 
+  const handleCreateNewBenchmark = (metadata: DatasetMetadata) => {
+    // Confirm with user before clearing data
+    const confirmed = confirm(
+      '⚠️ This will clear all current data and create a new benchmark.\n\n' +
+        'Are you sure you want to proceed? Any unsaved work will be lost.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    // Reset all stores
+    resetQuestionState();
+    resetRubric();
+
+    // Set new dataset metadata
+    setMetadata(metadata);
+
+    // Close modal
+    setIsNewBenchmarkModalOpen(false);
+
+    // Notify user
+    alert(
+      `✅ New benchmark "${metadata.name}" created successfully!\n\n` +
+        'You can now add questions, generate templates, and build your benchmark suite.'
+    );
+
+    console.log('✨ Created new benchmark:', metadata.name);
+  };
+
   // Count finished items
   const finishedCount = Object.values(checkpoint).filter((item) => item.finished).length;
 
@@ -297,6 +331,15 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
             </div>
           )}
 
+          {/* Create New Benchmark */}
+          <button
+            onClick={() => setIsNewBenchmarkModalOpen(true)}
+            className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-700 dark:to-purple-700 dark:hover:from-indigo-800 dark:hover:to-purple-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <Sparkles className="w-4 h-4" />
+            Create New Benchmark
+          </button>
+
           {/* Reset All Data */}
           <button
             onClick={onResetAllData}
@@ -337,6 +380,13 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
           // We just need to close the modal
           console.log('✅ Dataset metadata updated');
         }}
+      />
+
+      {/* New Benchmark Modal */}
+      <NewBenchmarkModal
+        isOpen={isNewBenchmarkModalOpen}
+        onClose={() => setIsNewBenchmarkModalOpen(false)}
+        onCreate={handleCreateNewBenchmark}
       />
     </div>
   );
