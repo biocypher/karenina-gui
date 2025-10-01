@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { ModelConfiguration } from '../types';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useBenchmarkStore } from '../stores/useBenchmarkStore';
@@ -21,13 +21,29 @@ export const useBenchmarkConfiguration = () => {
   const { savedInterface, savedProvider, savedModel, savedAsyncEnabled, savedAsyncChunkSize, savedAsyncMaxWorkers } =
     useConfigStore();
 
-  // Get evaluation settings from benchmark store (persists across tab switches)
+  // Get all configuration from benchmark store (persists across tab switches)
   const {
+    answeringModels,
+    parsingModels,
+    replicateCount,
+    runName,
+    expandedPrompts,
     rubricEnabled,
     correctnessEnabled,
     fewShotEnabled,
     fewShotMode,
     fewShotK,
+    setAnsweringModels,
+    setParsingModels,
+    addAnsweringModel: storeAddAnsweringModel,
+    addParsingModel: storeAddParsingModel,
+    removeAnsweringModel: storeRemoveAnsweringModel,
+    removeParsingModel: storeRemoveParsingModel,
+    updateAnsweringModel: storeUpdateAnsweringModel,
+    updateParsingModel: storeUpdateParsingModel,
+    setReplicateCount,
+    setRunName,
+    togglePromptExpanded: storeTogglePromptExpanded,
     setRubricEnabled,
     setCorrectnessEnabled,
     setFewShotEnabled,
@@ -35,33 +51,10 @@ export const useBenchmarkConfiguration = () => {
     setFewShotK,
   } = useBenchmarkStore();
 
-  const [answeringModels, setAnsweringModels] = useState<ModelConfiguration[]>([
-    {
-      id: 'answering-1',
-      model_provider: 'google_genai',
-      model_name: 'gemini-2.5-flash',
-      temperature: 0.1,
-      interface: 'langchain',
-      system_prompt: 'You are an expert assistant. Answer the question accurately and concisely.',
-    },
-  ]);
-
-  const [parsingModels, setParsingModels] = useState<ModelConfiguration[]>([
-    {
-      id: 'parsing-1',
-      model_provider: 'google_genai',
-      model_name: 'gemini-2.5-flash',
-      temperature: 0.1,
-      interface: 'langchain',
-      system_prompt:
-        'You are a validation assistant. Parse and validate responses against the given Pydantic template.',
-    },
-  ]);
-
   // Update default models when saved config store defaults change
   useEffect(() => {
-    setAnsweringModels((models) =>
-      models.map((model, index) =>
+    setAnsweringModels(
+      answeringModels.map((model, index) =>
         index === 0
           ? {
               ...model,
@@ -73,8 +66,8 @@ export const useBenchmarkConfiguration = () => {
       )
     );
 
-    setParsingModels((models) =>
-      models.map((model, index) =>
+    setParsingModels(
+      parsingModels.map((model, index) =>
         index === 0
           ? {
               ...model,
@@ -85,13 +78,9 @@ export const useBenchmarkConfiguration = () => {
           : model
       )
     );
-  }, [savedInterface, savedProvider, savedModel]);
+  }, [savedInterface, savedProvider, savedModel, setAnsweringModels, setParsingModels]);
 
-  const [replicateCount, setReplicateCount] = useState<number>(1);
-  const [expandedPrompts, setExpandedPrompts] = useState<Set<string>>(new Set());
-  const [runName, setRunName] = useState<string>('');
-
-  // Model management functions
+  // Model management functions - wrap store functions with additional logic
   const addAnsweringModel = () => {
     const newModel: ModelConfiguration = {
       id: `answering-${Date.now()}`,
@@ -101,7 +90,7 @@ export const useBenchmarkConfiguration = () => {
       interface: savedInterface,
       system_prompt: 'You are an expert assistant. Answer the question accurately and concisely.',
     };
-    setAnsweringModels([...answeringModels, newModel]);
+    storeAddAnsweringModel(newModel);
   };
 
   const addParsingModel = () => {
@@ -114,100 +103,74 @@ export const useBenchmarkConfiguration = () => {
       system_prompt:
         'You are a validation assistant. Parse and validate responses against the given Pydantic template.',
     };
-    setParsingModels([...parsingModels, newModel]);
+    storeAddParsingModel(newModel);
   };
 
   const removeAnsweringModel = (id: string) => {
-    if (answeringModels.length > 1) {
-      setAnsweringModels(answeringModels.filter((model) => model.id !== id));
-    }
+    storeRemoveAnsweringModel(id);
   };
 
   const removeParsingModel = (id: string) => {
-    if (parsingModels.length > 1) {
-      setParsingModels(parsingModels.filter((model) => model.id !== id));
-    }
+    storeRemoveParsingModel(id);
   };
 
   const updateAnsweringModel = (id: string, updates: Partial<ModelConfiguration>) => {
-    setAnsweringModels(
-      answeringModels.map((model) => {
-        if (model.id === id) {
-          const updatedModel = { ...model, ...updates };
-
-          // Handle interface switching - clear non-relevant fields and set defaults
-          if (updates.interface) {
-            switch (updates.interface) {
-              case 'langchain':
-                // Ensure provider has a default value for langchain
-                if (!updatedModel.model_provider) {
-                  updatedModel.model_provider = savedProvider;
-                }
-                break;
-              case 'openrouter':
-                // Clear provider field for openrouter (not needed)
-                updatedModel.model_provider = '';
-                break;
-              case 'manual':
-                // Clear both provider and model_name for manual
-                updatedModel.model_provider = '';
-                updatedModel.model_name = '';
-                // Clear MCP configuration for manual interface (not supported)
-                updatedModel.mcp_urls_dict = undefined;
-                updatedModel.mcp_tool_filter = undefined;
-                break;
-            }
+    // Handle interface switching - clear non-relevant fields and set defaults
+    const processedUpdates = { ...updates };
+    if (updates.interface) {
+      switch (updates.interface) {
+        case 'langchain':
+          // Ensure provider has a default value for langchain
+          if (!processedUpdates.model_provider) {
+            processedUpdates.model_provider = savedProvider;
           }
+          break;
+        case 'openrouter':
+          // Clear provider field for openrouter (not needed)
+          processedUpdates.model_provider = '';
+          break;
+        case 'manual':
+          // Clear both provider and model_name for manual
+          processedUpdates.model_provider = '';
+          processedUpdates.model_name = '';
+          // Clear MCP configuration for manual interface (not supported)
+          processedUpdates.mcp_urls_dict = undefined;
+          processedUpdates.mcp_tool_filter = undefined;
+          break;
+      }
+    }
 
-          return updatedModel;
-        }
-        return model;
-      })
-    );
+    storeUpdateAnsweringModel(id, processedUpdates);
   };
 
   const updateParsingModel = (id: string, updates: Partial<ModelConfiguration>) => {
-    setParsingModels(
-      parsingModels.map((model) => {
-        if (model.id === id) {
-          const updatedModel = { ...model, ...updates };
-
-          // Handle interface switching - clear non-relevant fields and set defaults
-          if (updates.interface) {
-            switch (updates.interface) {
-              case 'langchain':
-                // Ensure provider has a default value for langchain
-                if (!updatedModel.model_provider) {
-                  updatedModel.model_provider = savedProvider;
-                }
-                break;
-              case 'openrouter':
-                // Clear provider field for openrouter (not needed)
-                updatedModel.model_provider = '';
-                break;
-              case 'manual':
-                // For parsing models, manual interface should behave like openrouter
-                // (parsing models don't support manual interface according to the UI)
-                updatedModel.model_provider = '';
-                break;
-            }
+    // Handle interface switching - clear non-relevant fields and set defaults
+    const processedUpdates = { ...updates };
+    if (updates.interface) {
+      switch (updates.interface) {
+        case 'langchain':
+          // Ensure provider has a default value for langchain
+          if (!processedUpdates.model_provider) {
+            processedUpdates.model_provider = savedProvider;
           }
+          break;
+        case 'openrouter':
+          // Clear provider field for openrouter (not needed)
+          processedUpdates.model_provider = '';
+          break;
+        case 'manual':
+          // For parsing models, manual interface should behave like openrouter
+          // (parsing models don't support manual interface according to the UI)
+          processedUpdates.model_provider = '';
+          break;
+      }
+    }
 
-          return updatedModel;
-        }
-        return model;
-      })
-    );
+    storeUpdateParsingModel(id, processedUpdates);
   };
 
   const togglePromptExpanded = (modelId: string) => {
-    const newExpanded = new Set(expandedPrompts);
-    if (newExpanded.has(modelId)) {
-      newExpanded.delete(modelId);
-    } else {
-      newExpanded.add(modelId);
-    }
-    setExpandedPrompts(newExpanded);
+    storeTogglePromptExpanded(modelId);
   };
 
   // Get configuration for API calls
