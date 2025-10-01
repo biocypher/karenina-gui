@@ -116,6 +116,13 @@ export const SearchableTextDisplay: React.FC<SearchableTextDisplayProps> = ({ te
     setRegexError(null);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && matches.length > 0) {
+      e.preventDefault();
+      goToNextMatch();
+    }
+  };
+
   // Custom highlight renderer for react-highlight-words
   const highlightStyle = (text: string, index: number) => {
     const isCurrentMatch = index === currentMatchIndex;
@@ -155,6 +162,7 @@ export const SearchableTextDisplay: React.FC<SearchableTextDisplayProps> = ({ te
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Search in response..."
               className="w-full pl-10 pr-10 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm"
             />

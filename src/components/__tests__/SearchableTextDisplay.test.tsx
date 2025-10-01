@@ -261,6 +261,119 @@ Special characters: @#$% and symbols work too.`;
     });
   });
 
+  describe('Keyboard Navigation', () => {
+    it('navigates to next match when Enter key is pressed', async () => {
+      render(<SearchableTextDisplay text={sampleText} />);
+      const searchInput = screen.getByPlaceholderText('Search in response...');
+
+      fireEvent.change(searchInput, { target: { value: 'search' } });
+
+      await waitFor(() => {
+        expect(getMatchCounter(1, 2)).toBeInTheDocument();
+      });
+
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+
+      await waitFor(() => {
+        expect(getMatchCounter(2, 2)).toBeInTheDocument();
+      });
+    });
+
+    it('wraps to first match when Enter is pressed on last match', async () => {
+      render(<SearchableTextDisplay text={sampleText} />);
+      const searchInput = screen.getByPlaceholderText('Search in response...');
+
+      fireEvent.change(searchInput, { target: { value: 'search' } });
+
+      await waitFor(() => {
+        expect(getMatchCounter(1, 2)).toBeInTheDocument();
+      });
+
+      // Press Enter to go to match 2
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+
+      await waitFor(() => {
+        expect(getMatchCounter(2, 2)).toBeInTheDocument();
+      });
+
+      // Press Enter again to wrap back to match 1
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+
+      await waitFor(() => {
+        expect(getMatchCounter(1, 2)).toBeInTheDocument();
+      });
+    });
+
+    it('does not navigate when Enter is pressed with no matches', async () => {
+      render(<SearchableTextDisplay text={sampleText} />);
+      const searchInput = screen.getByPlaceholderText('Search in response...');
+
+      fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('No matches found')).toBeInTheDocument();
+      });
+
+      // Press Enter - should not cause any errors
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+
+      // Should still show no matches
+      expect(screen.getByText('No matches found')).toBeInTheDocument();
+    });
+
+    it('combines keyboard and button navigation correctly', async () => {
+      render(<SearchableTextDisplay text={sampleText} />);
+      const searchInput = screen.getByPlaceholderText('Search in response...');
+
+      fireEvent.change(searchInput, { target: { value: 'search' } });
+
+      await waitFor(() => {
+        expect(getMatchCounter(1, 2)).toBeInTheDocument();
+      });
+
+      // Use Enter key to go to match 2
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+
+      await waitFor(() => {
+        expect(getMatchCounter(2, 2)).toBeInTheDocument();
+      });
+
+      // Use Previous button to go back to match 1
+      const prevButton = screen.getByTitle('Previous match');
+      fireEvent.click(prevButton);
+
+      await waitFor(() => {
+        expect(getMatchCounter(1, 2)).toBeInTheDocument();
+      });
+
+      // Use Enter key again
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+
+      await waitFor(() => {
+        expect(getMatchCounter(2, 2)).toBeInTheDocument();
+      });
+    });
+
+    it('does not interfere with other keys', async () => {
+      render(<SearchableTextDisplay text={sampleText} />);
+      const searchInput = screen.getByPlaceholderText('Search in response...');
+
+      fireEvent.change(searchInput, { target: { value: 'search' } });
+
+      await waitFor(() => {
+        expect(getMatchCounter(1, 2)).toBeInTheDocument();
+      });
+
+      // Press other keys - should not navigate
+      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(searchInput, { key: 'Space', code: 'Space' });
+      fireEvent.keyDown(searchInput, { key: 'Tab', code: 'Tab' });
+
+      // Should still be on match 1
+      expect(getMatchCounter(1, 2)).toBeInTheDocument();
+    });
+  });
+
   describe('Clear Search', () => {
     it('shows clear button when search term exists', async () => {
       render(<SearchableTextDisplay text={sampleText} />);
