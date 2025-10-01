@@ -69,7 +69,7 @@ export const NewBenchmarkModal: React.FC<NewBenchmarkModalProps> = ({ isOpen, on
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Create New Benchmark" size="lg">
-      <div className="space-y-6">
+      <div className="space-y-6 min-h-0">
         {/* Instructions */}
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-200 dark:border-indigo-700 rounded-lg p-4">
           <div className="flex items-start gap-3">
