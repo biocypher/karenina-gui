@@ -6,6 +6,9 @@ interface DatasetState {
   // Dataset metadata
   metadata: DatasetMetadata;
 
+  // Benchmark lifecycle tracking
+  isBenchmarkInitialized: boolean;
+
   // Actions
   setMetadata: (metadata: DatasetMetadata) => void;
   updateField: <K extends keyof DatasetMetadata>(field: K, value: DatasetMetadata[K]) => void;
@@ -15,6 +18,8 @@ interface DatasetState {
   removeCustomProperty: (key: string) => void;
   updateCustomProperty: (key: string, value: string) => void;
   resetMetadata: () => void;
+  markBenchmarkAsInitialized: () => void;
+  resetBenchmarkState: () => void;
 
   // Helper actions for complex fields
   setCreator: (creator: SchemaOrgPerson | SchemaOrgOrganization) => void;
@@ -36,6 +41,7 @@ const getDefaultMetadata = (): DatasetMetadata => ({
 export const useDatasetStore = create<DatasetState>((set) => ({
   // Initial state
   metadata: getDefaultMetadata(),
+  isBenchmarkInitialized: false,
 
   // Actions
   setMetadata: (metadata: DatasetMetadata) => {
@@ -137,6 +143,18 @@ export const useDatasetStore = create<DatasetState>((set) => ({
   resetMetadata: () => {
     set(() => ({
       metadata: getDefaultMetadata(),
+    }));
+  },
+
+  markBenchmarkAsInitialized: () => {
+    set(() => ({
+      isBenchmarkInitialized: true,
+    }));
+  },
+
+  resetBenchmarkState: () => {
+    set(() => ({
+      isBenchmarkInitialized: false,
     }));
   },
 

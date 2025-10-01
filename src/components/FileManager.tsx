@@ -29,7 +29,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
   // Get stores
   const { currentRubric, reset: resetRubric } = useRubricStore();
-  const { metadata: datasetMetadata, setMetadata } = useDatasetStore();
+  const { metadata: datasetMetadata, setMetadata, markBenchmarkAsInitialized } = useDatasetStore();
   const { resetQuestionState } = useQuestionStore();
 
   const handleCheckpointUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,6 +117,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
         // Load checkpoint into question store
         onLoadCheckpoint(unifiedCheckpoint);
+
+        // Mark benchmark as initialized since we're loading a checkpoint
+        const { markBenchmarkAsInitialized } = useDatasetStore.getState();
+        markBenchmarkAsInitialized();
 
         // Load dataset metadata into dataset store if present
         if (unifiedCheckpoint.dataset_metadata) {
@@ -248,6 +252,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
     // Set new dataset metadata
     setMetadata(metadata);
 
+    // Mark benchmark as initialized
+    markBenchmarkAsInitialized();
+
     // Close modal
     setIsNewBenchmarkModalOpen(false);
 
@@ -315,13 +322,13 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
             Actions
           </h4>
 
-          {/* Dataset Metadata Button */}
+          {/* Create New Benchmark */}
           <button
-            onClick={() => setIsDatasetEditorOpen(true)}
-            className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 dark:from-blue-700 dark:to-cyan-700 dark:hover:from-blue-800 dark:hover:to-cyan-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            onClick={() => setIsNewBenchmarkModalOpen(true)}
+            className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-700 dark:to-purple-700 dark:hover:from-indigo-800 dark:hover:to-purple-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
-            <Settings className="w-4 h-4" />
-            Dataset Metadata
+            <Sparkles className="w-4 h-4" />
+            Create New Benchmark
           </button>
 
           {/* Dataset Name Display */}
@@ -331,13 +338,13 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
             </div>
           )}
 
-          {/* Create New Benchmark */}
+          {/* Dataset Metadata Button */}
           <button
-            onClick={() => setIsNewBenchmarkModalOpen(true)}
-            className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-700 dark:to-purple-700 dark:hover:from-indigo-800 dark:hover:to-purple-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            onClick={() => setIsDatasetEditorOpen(true)}
+            className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 dark:from-blue-700 dark:to-cyan-700 dark:hover:from-blue-800 dark:hover:to-cyan-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
-            <Sparkles className="w-4 h-4" />
-            Create New Benchmark
+            <Settings className="w-4 h-4" />
+            Dataset Metadata
           </button>
 
           {/* Reset All Data */}

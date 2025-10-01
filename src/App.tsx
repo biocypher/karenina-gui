@@ -46,7 +46,7 @@ function App() {
   const { loadConfiguration } = useConfigStore();
 
   // Dataset store
-  const { metadata: datasetMetadata } = useDatasetStore();
+  const { metadata: datasetMetadata, resetBenchmarkState, isBenchmarkInitialized } = useDatasetStore();
 
   // Rubric store
   const { currentRubric } = useRubricStore();
@@ -195,6 +195,7 @@ function App() {
       // Reset stores
       resetQuestionState();
       resetAppState();
+      resetBenchmarkState();
 
       console.log('🧹 All data has been reset');
     }
@@ -635,7 +636,13 @@ function App() {
                     )}
                     <button
                       onClick={() => setIsAddQuestionModalOpen(true)}
-                      className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 text-white rounded-xl transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      disabled={!isBenchmarkInitialized}
+                      title={
+                        !isBenchmarkInitialized
+                          ? 'Please load a checkpoint or create a new benchmark before adding questions'
+                          : 'Add a new question manually'
+                      }
+                      className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none disabled:opacity-50"
                     >
                       <Plus className="w-4 h-4" />
                       Add Question
