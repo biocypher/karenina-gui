@@ -26,8 +26,7 @@ import { MetadataEditor } from './components/MetadataEditor';
 import { FewShotExamplesEditor } from './components/FewShotExamplesEditor';
 import { FileManager } from './components/FileManager';
 import { AddQuestionModal } from './components/AddQuestionModal';
-import { QuestionExtractor } from './components/QuestionExtractor';
-import { AnswerTemplateGenerator } from './components/AnswerTemplateGenerator';
+import { TemplateGenerationTab } from './components/TemplateGenerationTab';
 import { BenchmarkTab } from './components/BenchmarkTab';
 import { ThemeToggle } from './components/ThemeToggle';
 import QuestionRubricEditor from './components/QuestionRubricEditor';
@@ -148,17 +147,6 @@ function App() {
   const handleLoadQuestionData = (data: QuestionData) => {
     // Delegate to the question store
     loadQuestionData(data);
-  };
-
-  const handleExtractedQuestions = (questions: QuestionData) => {
-    setExtractedQuestions(questions);
-    // Don't automatically load extracted questions into the curator
-    // They only have placeholder templates, not actual generated ones
-    // Users must use the Template Generator to create actual templates
-    // and then use "Add to Curation" to load them into the curator
-    console.log(
-      `✅ Extracted ${Object.keys(questions).length} questions. Use Template Generator to create answer templates.`
-    );
   };
 
   const handleTemplatesGenerated = (combinedData: QuestionData) => {
@@ -502,16 +490,6 @@ function App() {
           {/* Tab Navigation */}
           <div className="mt-6 flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-1 border border-white/30 dark:border-slate-700/30 shadow-sm w-fit">
             <button
-              onClick={() => setActiveTab('extractor')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'extractor'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              1. Question Extractor
-            </button>
-            <button
               onClick={() => setActiveTab('generator')}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === 'generator'
@@ -519,7 +497,7 @@ function App() {
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
-              2. Template Generator
+              1. Template Generation
             </button>
             <button
               onClick={() => setActiveTab('curator')}
@@ -529,7 +507,7 @@ function App() {
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
-              3. Template Curator
+              2. Template Curator
             </button>
             <button
               onClick={() => setActiveTab('benchmark')}
@@ -539,21 +517,15 @@ function App() {
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
-              4. Benchmark
+              3. Benchmark
             </button>
           </div>
         </div>
 
         {/* Tab Content */}
-        {/* Question Extractor Tab - Now First */}
-        {activeTab === 'extractor' && (
-          <QuestionExtractor onQuestionsExtracted={handleExtractedQuestions} extractedQuestions={extractedQuestions} />
-        )}
-
-        {/* Template Generator Tab */}
+        {/* Template Generation Tab - Combines Question Extraction and Template Generation */}
         {activeTab === 'generator' && (
-          <AnswerTemplateGenerator
-            questions={extractedQuestions}
+          <TemplateGenerationTab
             onTemplatesGenerated={handleTemplatesGenerated}
             onSwitchToCurator={() => setActiveTab('curator')}
           />
@@ -881,7 +853,7 @@ function App() {
                   {allQuestionIds.length === 0
                     ? Object.keys(checkpoint).length > 0
                       ? 'You have loaded a checkpoint, but no question data is available. To restore your previous session, please upload the corresponding Question Data JSON file using the File Management section above.'
-                      : 'The Template Curator works with questions that have generated answer templates. To get started: 1) Extract questions using the Question Extractor, 2) Generate templates using the Template Generator, 3) Use "Add to Curation" to load them here.'
+                      : 'The Template Curator works with questions that have generated answer templates. To get started: 1) Go to Template Generation tab, 2) Extract questions and generate templates, 3) Use "Add to Curation" to load them here.'
                     : questionIds.length === 0
                       ? `You have ${allQuestionIds.length} question${allQuestionIds.length === 1 ? '' : 's'} available, but none match the current "${questionFilter === 'finished' ? 'Finished Only' : questionFilter === 'unfinished' ? 'Unfinished Only' : 'Show All'}" filter. Try changing the filter to see more questions.`
                       : 'Please select a question from the dropdown above to begin curating answer templates.'}
@@ -890,10 +862,10 @@ function App() {
                   Object.keys(checkpoint).length === 0 &&
                   Object.keys(extractedQuestions).length === 0 && (
                     <button
-                      onClick={() => setActiveTab('extractor')}
+                      onClick={() => setActiveTab('generator')}
                       className="px-6 py-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors font-medium mr-3"
                     >
-                      1. Extract Questions
+                      1. Go to Template Generation
                     </button>
                   )}
                 {allQuestionIds.length === 0 &&
@@ -910,7 +882,7 @@ function App() {
                         onClick={() => setActiveTab('generator')}
                         className="px-6 py-3 bg-emerald-600 dark:bg-emerald-700 text-white rounded-xl hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-colors font-medium"
                       >
-                        2. Generate Templates
+                        1. Go to Template Generation
                       </button>
                     </div>
                   )}

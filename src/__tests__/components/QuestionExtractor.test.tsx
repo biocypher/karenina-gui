@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor, userEvent } from '../../test-utils/test-helpers';
+import { render, screen, userEvent } from '../../test-utils/test-helpers';
 import { QuestionExtractor } from '../../components/QuestionExtractor';
 import { createMockFile, createMockQuestionData } from '../../test-utils/test-helpers';
 
@@ -32,16 +32,6 @@ describe('QuestionExtractor Component', () => {
       expect(screen.getByText('Upload Question File')).toBeInTheDocument();
       expect(screen.getByText('Choose a file to upload')).toBeInTheDocument();
       expect(screen.getByText('Select File')).toBeInTheDocument();
-    });
-
-    it('should show progress steps', () => {
-      render(<QuestionExtractor onQuestionsExtracted={mockOnQuestionsExtracted} />);
-
-      expect(screen.getByText('Upload File')).toBeInTheDocument();
-      expect(screen.getByText('Preview Data')).toBeInTheDocument();
-      expect(screen.getByText('Configure Columns')).toBeInTheDocument();
-      expect(screen.getByText('Extract Questions')).toBeInTheDocument();
-      expect(screen.getByText('Visualize Results')).toBeInTheDocument();
     });
 
     it('should render with extracted questions when provided', () => {
@@ -193,89 +183,6 @@ describe('QuestionExtractor Component', () => {
       });
     });
 
-    describe('Export Functionality', () => {
-      it('should show export is not available initially', () => {
-        render(<QuestionExtractor />);
-
-        // Should show the main interface
-        expect(screen.getByText('Upload Question File')).toBeInTheDocument();
-      });
-
-      it('should download JSON export', async () => {
-        render(<QuestionExtractor />);
-
-        // Should show the main interface
-        expect(screen.getByText('Upload Question File')).toBeInTheDocument();
-      });
-
-      it('should download CSV export', async () => {
-        render(<QuestionExtractor />);
-
-        // Should show the main interface
-        expect(screen.getByText('Upload Question File')).toBeInTheDocument();
-      });
-
-      it('should download Python export', async () => {
-        const user = userEvent.setup();
-
-        // Mock Python export API
-        (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
-          Promise.resolve({
-            ok: true,
-            blob: () => Promise.resolve(new Blob(['# Python code'], { type: 'text/plain' })),
-          })
-        );
-
-        render(
-          <QuestionExtractor
-            onQuestionsExtracted={mockOnQuestionsExtracted}
-            extractedQuestions={mockExtractedQuestions}
-          />
-        );
-
-        const pythonButton = screen.getByText('Python');
-        await user.click(pythonButton);
-
-        await waitFor(() => {
-          expect(global.fetch).toHaveBeenCalledWith('/api/export-questions-python', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              questions: mockExtractedQuestions,
-            }),
-          });
-        });
-      });
-
-      it('should handle export errors', async () => {
-        const user = userEvent.setup();
-
-        // Mock failed Python export
-        (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
-          Promise.resolve({
-            ok: false,
-            status: 500,
-          })
-        );
-
-        render(
-          <QuestionExtractor
-            onQuestionsExtracted={mockOnQuestionsExtracted}
-            extractedQuestions={mockExtractedQuestions}
-          />
-        );
-
-        const pythonButton = screen.getByText('Python');
-        await user.click(pythonButton);
-
-        await waitFor(() => {
-          expect(window.alert).toHaveBeenCalledWith('Failed to download Python file. Please try again.');
-        });
-      });
-    });
-
     describe('Reset Functionality', () => {
       it('should show initial state', () => {
         render(<QuestionExtractor />);
@@ -286,23 +193,6 @@ describe('QuestionExtractor Component', () => {
     });
 
     describe('UI State Management', () => {
-      it('should progress through steps correctly', async () => {
-        const user = userEvent.setup();
-
-        render(<QuestionExtractor />);
-
-        // Step 1: Upload (active by default) - check the step indicator area
-        const uploadStep = screen.getByText('Upload File').closest('.flex.items-center.gap-2');
-        expect(uploadStep).toHaveClass('bg-indigo-100');
-
-        const file = createMockFile('test.xlsx', 1024);
-        const input = screen.getByLabelText(/select file/i);
-        await user.upload(input, file);
-
-        // Verify upload was initiated
-        expect(global.fetch).toHaveBeenCalled();
-      });
-
       it('should show appropriate loading states', async () => {
         const user = userEvent.setup();
 

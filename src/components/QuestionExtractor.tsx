@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Download, Eye, Settings, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Settings, CheckCircle, AlertCircle } from 'lucide-react';
 import { FilePreview } from './FilePreview';
 import { QuestionVisualizer } from './QuestionVisualizer';
 import { AdvancedExtractionPanel, MetadataColumnSettings } from './AdvancedExtractionPanel';
@@ -227,59 +227,6 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
     }
   };
 
-  const handleDownloadQuestions = () => {
-    if (!extractedQuestions?.questions_data) return;
-
-    const dataStr = JSON.stringify(extractedQuestions.questions_data, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `extracted_questions_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadPython = async () => {
-    if (!extractedQuestions?.questions_data) return;
-
-    try {
-      const response = await fetch('/api/export-questions-python', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          questions: extractedQuestions.questions_data,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to export Python file');
-      }
-
-      // Get the file blob
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `questions_${new Date().toISOString().split('T')[0]}.py`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading Python file:', error);
-      alert('Failed to download Python file. Please try again.');
-    }
-  };
-
   const handleReset = () => {
     setUploadedFile(null);
     setPreviewData(null);
@@ -295,62 +242,8 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
     }
   };
 
-  const getStepStatus = (step: string) => {
-    const steps = ['upload', 'preview', 'configure', 'extract', 'visualize'];
-    const currentIndex = steps.indexOf(currentStep);
-    const stepIndex = steps.indexOf(step);
-
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'active';
-    return 'pending';
-  };
-
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Progress Steps */}
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-        <div className="flex items-center justify-between relative">
-          {[
-            { key: 'upload', label: 'Upload File', icon: Upload },
-            { key: 'preview', label: 'Preview Data', icon: Eye },
-            { key: 'configure', label: 'Configure Columns', icon: Settings },
-            { key: 'extract', label: 'Extract Questions', icon: FileText },
-            { key: 'visualize', label: 'Visualize Results', icon: CheckCircle },
-          ].map((step, index) => {
-            const status = getStepStatus(step.key);
-            const Icon = step.icon;
-
-            return (
-              <React.Fragment key={step.key}>
-                <div className="flex items-center z-10">
-                  <div
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
-                      status === 'completed'
-                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                        : status === 'active'
-                          ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{step.label}</span>
-                  </div>
-                </div>
-                {index < 4 && (
-                  <div
-                    className={`flex-1 h-0.5 mx-4 ${
-                      getStepStatus(['upload', 'preview', 'configure', 'extract', 'visualize'][index + 1]) !== 'pending'
-                        ? 'bg-emerald-300 dark:bg-emerald-600'
-                        : 'bg-slate-300 dark:bg-slate-600'
-                    }`}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Step 1: File Upload */}
       {currentStep === 'upload' && (
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-8">
@@ -532,20 +425,6 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={handleDownloadQuestions}
-                  className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-xl hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors flex items-center gap-2 font-medium"
-                >
-                  <Download className="w-4 h-4" />
-                  JSON
-                </button>
-                <button
-                  onClick={handleDownloadPython}
-                  className="px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors flex items-center gap-2 font-medium"
-                >
-                  <Download className="w-4 h-4" />
-                  Python
-                </button>
                 <button
                   onClick={handleReset}
                   className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"

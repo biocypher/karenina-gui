@@ -11,7 +11,7 @@ describe('useAppStore', () => {
   it('should initialize with default values', () => {
     const { result } = renderHook(() => useAppStore());
 
-    expect(result.current.activeTab).toBe('extractor');
+    expect(result.current.activeTab).toBe('generator');
     expect(result.current.isLoading).toBe(false);
     expect(result.current.sessionId).toMatch(/^karenina_\d+_[a-z0-9]+$/);
   });
@@ -52,7 +52,7 @@ describe('useAppStore', () => {
       result.current.resetAppState();
     });
 
-    expect(result.current.activeTab).toBe('extractor');
+    expect(result.current.activeTab).toBe('generator');
     expect(result.current.isLoading).toBe(false);
     // Session ID should be regenerated
     expect(result.current.sessionId).not.toBe(originalSessionId);

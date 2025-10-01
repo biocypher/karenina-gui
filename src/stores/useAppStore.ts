@@ -26,7 +26,7 @@ const generateSessionId = (): string => {
 // Create the store
 export const useAppStore = create<AppState>((set) => ({
   // Initial state
-  activeTab: 'extractor',
+  activeTab: 'generator',
   isLoading: false,
   sessionId: generateSessionId(),
 
@@ -35,7 +35,7 @@ export const useAppStore = create<AppState>((set) => ({
   setIsLoading: (loading: boolean) => set(() => ({ isLoading: loading })),
   resetAppState: () =>
     set(() => ({
-      activeTab: 'extractor',
+      activeTab: 'generator',
       isLoading: false,
       sessionId: generateSessionId(),
     })),
