@@ -58,7 +58,21 @@ Global rubrics can also be created with the help of AI. By analyzing questions, 
 
 ## File and Version Management
 
-Because benchmarks evolve over time, the curator includes a robust checkpoint system. Saving a checkpoint exports all templates, metadata, rubrics, and few-shot examples into a JSON-LD file that can later be reloaded in full. You may export the entire state, only selected questions, or just the Python template code. Restoring from a checkpoint validates the structure before merging or replacing your current data. If you ever need a completely fresh start, a reset function clears all loaded content—though not without a confirmation step to avoid accidental loss.
+Because benchmarks evolve over time, the curator includes a robust checkpoint system. Saving a checkpoint exports all templates, metadata, rubrics, and few-shot examples into a JSON-LD file that can later be reloaded in full. You may export the entire state, only selected questions, or just the Python template code. Restoring from a checkpoint validates the structure before merging or replacing your current data.
+
+### Database Management
+
+In addition to file-based checkpoints, the curator supports persistent database storage for benchmarks and verification results:
+
+- **Manage Database Button:** Access database operations through the "Manage Database" button in the File Management panel.
+- **Connect to Database:** Browse for a local SQLite database file or enter a connection string for PostgreSQL or other database types.
+- **Create New Database:** Initialize a new database at a specified location with proper schema setup.
+- **Load from Database:** Browse available benchmarks in a connected database and load them directly into the curator.
+- **Auto-Save Verification Results:** When a benchmark is loaded from a database, all subsequent verification results are automatically saved to that database by default. This behavior can be disabled by setting the `AUTOSAVE_DATABASE` environment variable to `false`.
+
+Database storage provides a centralized, structured approach to managing benchmarks and their verification history, making it easier to track progress over time and share results across teams.
+
+If you ever need a completely fresh start, a reset function clears all loaded content—though not without a confirmation step to avoid accidental loss.
 
 ## Visual Status Indicators
 
