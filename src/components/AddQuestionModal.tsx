@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X, Settings, Loader2, Sparkles } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
@@ -56,23 +56,6 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
       interface: savedInterface as 'langchain' | 'openrouter',
     }));
   }, [savedProvider, savedModel, savedInterface]);
-
-  // Ref for settings dropdown
-  const settingsRef = useRef<HTMLDivElement>(null);
-
-  // Close settings dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
-        setIsSettingsOpen(false);
-      }
-    };
-
-    if (isSettingsOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isSettingsOpen]);
 
   // Poll for generation progress
   useEffect(() => {
@@ -321,128 +304,124 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
 
         {/* Template Generation Section */}
         <div className="border-t border-slate-200 dark:border-slate-600 pt-4">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <button
-                  onClick={handleGenerateTemplate}
-                  disabled={!question.trim() || !rawAnswer.trim() || isGenerating}
-                  className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Generate Answer Template
-                    </>
-                  )}
-                </button>
+          <div className="space-y-4">
+            {/* Button Row */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleGenerateTemplate}
+                disabled={!question.trim() || !rawAnswer.trim() || isGenerating}
+                className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Generate Answer Template
+                  </>
+                )}
+              </button>
 
-                {/* Settings Icon */}
-                <div className="relative" ref={settingsRef}>
-                  <button
-                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                    disabled={isGenerating}
-                    className="p-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Generation settings"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </button>
+              {/* Settings Toggle Button */}
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                disabled={isGenerating}
+                className="p-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Generation settings"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
 
-                  {/* Settings Dropdown */}
-                  {isSettingsOpen && (
-                    <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg p-4 z-50">
-                      <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                        Generation Settings
-                      </h4>
+            {/* Collapsible Settings Panel */}
+            {isSettingsOpen && (
+              <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600 rounded-lg p-4 space-y-4">
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Generation Settings</h4>
 
-                      {/* Interface Selection */}
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                          Interface
-                        </label>
-                        <div className="flex gap-4">
-                          <label className="flex items-center text-slate-900 dark:text-white">
-                            <input
-                              type="radio"
-                              value="langchain"
-                              checked={config.interface === 'langchain'}
-                              onChange={(e) =>
-                                setConfig({ ...config, interface: e.target.value as 'langchain' | 'openrouter' })
-                              }
-                              className="mr-2"
-                            />
-                            LangChain
-                          </label>
-                          <label className="flex items-center text-slate-900 dark:text-white">
-                            <input
-                              type="radio"
-                              value="openrouter"
-                              checked={config.interface === 'openrouter'}
-                              onChange={(e) =>
-                                setConfig({ ...config, interface: e.target.value as 'langchain' | 'openrouter' })
-                              }
-                              className="mr-2"
-                            />
-                            OpenRouter
-                          </label>
-                        </div>
-                      </div>
+                {/* Interface Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Interface</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center text-slate-900 dark:text-white">
+                      <input
+                        type="radio"
+                        value="langchain"
+                        checked={config.interface === 'langchain'}
+                        onChange={(e) =>
+                          setConfig({ ...config, interface: e.target.value as 'langchain' | 'openrouter' })
+                        }
+                        className="mr-2"
+                      />
+                      LangChain
+                    </label>
+                    <label className="flex items-center text-slate-900 dark:text-white">
+                      <input
+                        type="radio"
+                        value="openrouter"
+                        checked={config.interface === 'openrouter'}
+                        onChange={(e) =>
+                          setConfig({ ...config, interface: e.target.value as 'langchain' | 'openrouter' })
+                        }
+                        className="mr-2"
+                      />
+                      OpenRouter
+                    </label>
+                  </div>
+                </div>
 
-                      {/* Provider (for LangChain) */}
-                      {config.interface === 'langchain' && (
-                        <div className="mb-3">
-                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Provider
-                          </label>
-                          <input
-                            type="text"
-                            value={config.model_provider}
-                            onChange={(e) => setConfig({ ...config, model_provider: e.target.value })}
-                            placeholder="e.g., openai, google_genai, anthropic"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                          />
-                        </div>
-                      )}
+                {/* Provider (for LangChain) */}
+                {config.interface === 'langchain' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Provider
+                    </label>
+                    <input
+                      type="text"
+                      value={config.model_provider}
+                      onChange={(e) => setConfig({ ...config, model_provider: e.target.value })}
+                      placeholder="e.g., openai, google_genai, anthropic"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    />
+                  </div>
+                )}
 
-                      {/* Model Name */}
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                          Model Name
-                        </label>
-                        <input
-                          type="text"
-                          value={config.model_name}
-                          onChange={(e) => setConfig({ ...config, model_name: e.target.value })}
-                          placeholder={config.interface === 'openrouter' ? 'e.g., openai/gpt-4' : 'e.g., gpt-4.1-mini'}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                        />
-                      </div>
+                {/* Model Name */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Model Name
+                  </label>
+                  <input
+                    type="text"
+                    value={config.model_name}
+                    onChange={(e) => setConfig({ ...config, model_name: e.target.value })}
+                    placeholder={config.interface === 'openrouter' ? 'e.g., openai/gpt-4' : 'e.g., gpt-4.1-mini'}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
 
-                      {/* Temperature */}
-                      <div className="mb-2">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                          Temperature: {config.temperature}
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={config.temperature}
-                          onChange={(e) => setConfig({ ...config, temperature: parseFloat(e.target.value) })}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
+                {/* Temperature */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Temperature: {config.temperature}
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    value={config.temperature}
+                    onChange={(e) => setConfig({ ...config, temperature: parseFloat(e.target.value) })}
+                    className="w-full"
+                  />
                 </div>
               </div>
+            )}
 
+            {/* Status Messages */}
+            <div>
               {/* Status Messages */}
               {generatedTemplate && (
                 <div className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
