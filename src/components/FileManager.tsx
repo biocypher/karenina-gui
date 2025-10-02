@@ -6,6 +6,7 @@ import { useDatasetStore } from '../stores/useDatasetStore';
 import { useQuestionStore } from '../stores/useQuestionStore';
 import { DatasetMetadataEditor } from './DatasetMetadataEditor';
 import { NewBenchmarkModal } from './NewBenchmarkModal';
+import { DatabaseManagerModal } from './DatabaseManagerModal';
 import {
   v2ToJsonLd,
   jsonLdToV2,
@@ -26,10 +27,11 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
   // Dataset metadata editor state
   const [isDatasetEditorOpen, setIsDatasetEditorOpen] = useState(false);
   const [isNewBenchmarkModalOpen, setIsNewBenchmarkModalOpen] = useState(false);
+  const [isDatabaseManagerOpen, setIsDatabaseManagerOpen] = useState(false);
 
   // Get stores
   const { currentRubric, reset: resetRubric } = useRubricStore();
-  const { metadata: datasetMetadata, setMetadata, markBenchmarkAsInitialized } = useDatasetStore();
+  const { metadata: datasetMetadata, setMetadata, markBenchmarkAsInitialized, setStorageUrl } = useDatasetStore();
   const { resetQuestionState } = useQuestionStore();
 
   const handleCheckpointUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -267,6 +269,17 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
     console.log('✨ Created new benchmark:', metadata.name);
   };
 
+  const handleDatabaseCheckpointLoad = (loadedCheckpoint: UnifiedCheckpoint, storageUrl?: string) => {
+    // Store the storage URL if provided
+    if (storageUrl) {
+      setStorageUrl(storageUrl);
+      console.log('📁 Database storage URL set:', storageUrl);
+    }
+
+    // Load the checkpoint
+    onLoadCheckpoint(loadedCheckpoint);
+  };
+
   // Count finished items
   const finishedCount = Object.values(checkpoint).filter((item) => item.finished).length;
 
@@ -329,6 +342,15 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
           >
             <Sparkles className="w-4 h-4" />
             Create New Benchmark
+          </button>
+
+          {/* Manage Database */}
+          <button
+            onClick={() => setIsDatabaseManagerOpen(true)}
+            className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <Database className="w-4 h-4" />
+            Manage Database
           </button>
 
           {/* Dataset Name Display */}
@@ -394,6 +416,13 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         isOpen={isNewBenchmarkModalOpen}
         onClose={() => setIsNewBenchmarkModalOpen(false)}
         onCreate={handleCreateNewBenchmark}
+      />
+
+      {/* Database Manager Modal */}
+      <DatabaseManagerModal
+        isOpen={isDatabaseManagerOpen}
+        onClose={() => setIsDatabaseManagerOpen(false)}
+        onLoadCheckpoint={handleDatabaseCheckpointLoad}
       />
     </div>
   );

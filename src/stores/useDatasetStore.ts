@@ -6,11 +6,15 @@ interface DatasetState {
   // Dataset metadata
   metadata: DatasetMetadata;
 
+  // Database storage URL (for auto-save functionality)
+  storageUrl: string | null;
+
   // Benchmark lifecycle tracking
   isBenchmarkInitialized: boolean;
 
   // Actions
   setMetadata: (metadata: DatasetMetadata) => void;
+  setStorageUrl: (url: string | null) => void;
   updateField: <K extends keyof DatasetMetadata>(field: K, value: DatasetMetadata[K]) => void;
   addKeyword: (keyword: string) => void;
   removeKeyword: (keyword: string) => void;
@@ -41,6 +45,7 @@ const getDefaultMetadata = (): DatasetMetadata => ({
 export const useDatasetStore = create<DatasetState>((set) => ({
   // Initial state
   metadata: getDefaultMetadata(),
+  storageUrl: null,
   isBenchmarkInitialized: false,
 
   // Actions
@@ -58,6 +63,10 @@ export const useDatasetStore = create<DatasetState>((set) => ({
         dateModified: metadata.dateModified,
       },
     }));
+  },
+
+  setStorageUrl: (url: string | null) => {
+    set({ storageUrl: url });
   },
 
   updateField: <K extends keyof DatasetMetadata>(field: K, value: DatasetMetadata[K]) => {
