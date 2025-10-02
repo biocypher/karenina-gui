@@ -45,7 +45,12 @@ function App() {
   const { loadConfiguration } = useConfigStore();
 
   // Dataset store
-  const { metadata: datasetMetadata, resetBenchmarkState, isBenchmarkInitialized } = useDatasetStore();
+  const {
+    metadata: datasetMetadata,
+    resetBenchmarkState,
+    isBenchmarkInitialized,
+    markBenchmarkAsInitialized,
+  } = useDatasetStore();
 
   // Rubric store
   const { currentRubric } = useRubricStore();
@@ -155,6 +160,9 @@ function App() {
     if (Object.keys(combinedData).length > 0) {
       // Load the combined data into the main question data for the curator
       handleLoadQuestionData(combinedData);
+
+      // Mark benchmark as initialized so "Add Question" button becomes enabled
+      markBenchmarkAsInitialized();
 
       console.log(
         `✅ Loaded ${Object.keys(combinedData).length} questions with successfully generated templates into curator`
