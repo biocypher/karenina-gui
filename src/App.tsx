@@ -28,6 +28,7 @@ import { FileManager } from './components/FileManager';
 import { AddQuestionModal } from './components/AddQuestionModal';
 import { TemplateGenerationTab } from './components/TemplateGenerationTab';
 import { BenchmarkTab } from './components/BenchmarkTab';
+import { DocsTab } from './components/DocsTab';
 import { ThemeToggle } from './components/ThemeToggle';
 import QuestionRubricEditor from './components/QuestionRubricEditor';
 import RubricTraitGenerator from './components/RubricTraitGenerator';
@@ -535,6 +536,16 @@ function App() {
             >
               3. Benchmark
             </button>
+            <button
+              onClick={() => setActiveTab('docs')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'docs'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              4. Docs
+            </button>
           </div>
         </div>
 
@@ -1002,6 +1013,9 @@ function App() {
             setBenchmarkResults={setBenchmarkResults}
           />
         )}
+
+        {/* Docs Tab */}
+        {activeTab === 'docs' && <DocsTab />}
       </div>
 
       {/* Expanded Editor Overlay */}
