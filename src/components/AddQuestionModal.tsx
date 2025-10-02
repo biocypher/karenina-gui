@@ -90,9 +90,35 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
             // Extract the generated template from the result
             if (progressData.result && Object.keys(progressData.result).length > 0) {
               const firstQuestionId = Object.keys(progressData.result)[0];
-              const template = progressData.result[firstQuestionId];
-              setGeneratedTemplate(template);
-              setGenerationError(null);
+              const resultObj = progressData.result[firstQuestionId];
+
+              // Extract and validate template code from result object
+              let extractedTemplate: string | null = null;
+
+              if (resultObj && typeof resultObj === 'object') {
+                // Result is an object with template_code field (current API)
+                if ('template_code' in resultObj && typeof resultObj.template_code === 'string') {
+                  extractedTemplate = resultObj.template_code.trim();
+                }
+              } else if (typeof resultObj === 'string') {
+                // Fallback: result is already a string (backwards compatibility)
+                extractedTemplate = resultObj.trim();
+              }
+
+              // Validate we got a valid template
+              if (extractedTemplate && extractedTemplate.length > 0) {
+                setGeneratedTemplate(extractedTemplate);
+                setGenerationError(null);
+                console.log('✅ Template extracted successfully:', extractedTemplate.substring(0, 50) + '...');
+              } else {
+                // Generation succeeded but template is invalid
+                const errorMsg =
+                  (resultObj && typeof resultObj === 'object' && 'error' in resultObj && resultObj.error) ||
+                  'Generated template was empty';
+                setGenerationError(String(errorMsg));
+                setGeneratedTemplate(null);
+                console.warn('⚠️ Template generation completed but template is invalid:', errorMsg);
+              }
             }
           } else if (progressData.status === 'failed') {
             setIsGenerating(false);

@@ -326,6 +326,12 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         ? keywords.filter((k) => typeof k === 'string' && k.trim().length > 0)
         : undefined;
 
+    // Validate generated template is a non-empty string
+    const validGeneratedTemplate =
+      typeof generatedTemplate === 'string' && generatedTemplate.trim().length > 0
+        ? generatedTemplate.trim()
+        : undefined;
+
     // Generate basic Pydantic template
     const questionPreview = question.length > 50 ? question.substring(0, 50) + '...' : question;
     const basicTemplate = `from karenina.schemas.answer_class import BaseAnswer
@@ -336,7 +342,14 @@ class Answer(BaseAnswer):
     answer: str = Field(description="The answer to the question")`;
 
     // Use generated template if provided, otherwise use basic template
-    const templateToUse = generatedTemplate || basicTemplate;
+    const templateToUse = validGeneratedTemplate || basicTemplate;
+
+    // Log template source for debugging
+    if (validGeneratedTemplate) {
+      console.log('📝 Using LLM-generated template for new question');
+    } else if (generatedTemplate) {
+      console.warn('⚠️ LLM template was invalid, falling back to basic template');
+    }
 
     const now = new Date().toISOString();
 
