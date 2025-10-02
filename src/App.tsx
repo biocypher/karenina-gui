@@ -396,10 +396,18 @@ function App() {
     });
   };
 
-  const handleAddNewQuestion = (question: string, rawAnswer: string, author?: string, keywords?: string[]) => {
-    const newQuestionId = addNewQuestion(question, rawAnswer, author, keywords);
+  const handleAddNewQuestion = (
+    question: string,
+    rawAnswer: string,
+    author?: string,
+    keywords?: string[],
+    generatedTemplate?: string
+  ) => {
+    const newQuestionId = addNewQuestion(question, rawAnswer, author, keywords, generatedTemplate);
     setIsAddQuestionModalOpen(false);
-    console.log(`✅ Successfully added new question: ${newQuestionId}`);
+    console.log(
+      `✅ Successfully added new question: ${newQuestionId}${generatedTemplate ? ' with LLM-generated template' : ''}`
+    );
   };
 
   // Use store getters for computed values

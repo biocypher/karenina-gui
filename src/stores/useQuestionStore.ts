@@ -24,7 +24,13 @@ interface QuestionState {
   toggleFinished: () => void;
   navigateToQuestion: (questionId: string) => void;
   resetQuestionState: () => void;
-  addNewQuestion: (question: string, rawAnswer: string, author?: string, keywords?: string[]) => string;
+  addNewQuestion: (
+    question: string,
+    rawAnswer: string,
+    author?: string,
+    keywords?: string[],
+    generatedTemplate?: string
+  ) => string;
 
   // Question rubric management
   getQuestionRubric: (questionId: string) => Rubric | null;
@@ -302,7 +308,13 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     }));
   },
 
-  addNewQuestion: (question: string, rawAnswer: string, author?: string, keywords?: string[]) => {
+  addNewQuestion: (
+    question: string,
+    rawAnswer: string,
+    author?: string,
+    keywords?: string[],
+    generatedTemplate?: string
+  ) => {
     const state = get();
 
     // Generate UUID for the question
@@ -317,13 +329,16 @@ class Answer(BaseAnswer):
     """Answer to the question: ${questionPreview}"""
     answer: str = Field(description="The answer to the question")`;
 
+    // Use generated template if provided, otherwise use basic template
+    const templateToUse = generatedTemplate || basicTemplate;
+
     const now = new Date().toISOString();
 
     // Create new question entry
     const newQuestion: QuestionData[string] = {
       question,
       raw_answer: rawAnswer,
-      answer_template: basicTemplate,
+      answer_template: templateToUse,
       ...(author || keywords
         ? {
             metadata: {
@@ -338,8 +353,8 @@ class Answer(BaseAnswer):
     const newCheckpointItem = {
       question,
       raw_answer: rawAnswer,
-      original_answer_template: basicTemplate,
-      answer_template: basicTemplate,
+      original_answer_template: templateToUse,
+      answer_template: templateToUse,
       last_modified: now,
       date_created: now,
       finished: false,
