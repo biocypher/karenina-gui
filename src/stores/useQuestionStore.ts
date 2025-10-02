@@ -320,6 +320,12 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     // Generate UUID for the question
     const questionId = crypto.randomUUID();
 
+    // Validate and sanitize keywords
+    const validKeywords =
+      keywords && Array.isArray(keywords) && keywords.length > 0
+        ? keywords.filter((k) => typeof k === 'string' && k.trim().length > 0)
+        : undefined;
+
     // Generate basic Pydantic template
     const questionPreview = question.length > 50 ? question.substring(0, 50) + '...' : question;
     const basicTemplate = `from karenina.schemas.answer_class import BaseAnswer
@@ -339,11 +345,11 @@ class Answer(BaseAnswer):
       question,
       raw_answer: rawAnswer,
       answer_template: templateToUse,
-      ...(author || keywords
+      ...(author || validKeywords
         ? {
             metadata: {
               ...(author ? { author: { '@type': 'Person' as const, name: author } } : {}),
-              ...(keywords ? { keywords } : {}),
+              ...(validKeywords ? { keywords: validKeywords } : {}),
             },
           }
         : {}),
@@ -361,7 +367,7 @@ class Answer(BaseAnswer):
       question_rubric: undefined,
       few_shot_examples: undefined,
       ...(author ? { author: { '@type': 'Person' as const, name: author } } : {}),
-      ...(keywords ? { keywords } : {}),
+      ...(validKeywords && validKeywords.length > 0 ? { keywords: validKeywords } : {}),
     };
 
     // Update state with new question
@@ -379,7 +385,7 @@ class Answer(BaseAnswer):
       questionData: updatedQuestionData,
       checkpoint: updatedCheckpoint,
       selectedQuestionId: questionId,
-      currentTemplate: basicTemplate,
+      currentTemplate: templateToUse,
       dataSource: 'uploaded',
     }));
 
