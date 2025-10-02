@@ -24,6 +24,13 @@ interface QuestionState {
   toggleFinished: () => void;
   navigateToQuestion: (questionId: string) => void;
   resetQuestionState: () => void;
+  addNewQuestion: (
+    question: string,
+    rawAnswer: string,
+    author?: string,
+    keywords?: string[],
+    generatedTemplate?: string
+  ) => string;
 
   // Question rubric management
   getQuestionRubric: (questionId: string) => Rubric | null;
@@ -299,6 +306,104 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       currentTemplate: '',
       dataSource: 'default',
     }));
+  },
+
+  addNewQuestion: (
+    question: string,
+    rawAnswer: string,
+    author?: string,
+    keywords?: string[],
+    generatedTemplate?: string
+  ) => {
+    const state = get();
+
+    // Generate UUID for the question
+    const questionId = crypto.randomUUID();
+
+    // Validate and sanitize keywords
+    const validKeywords =
+      keywords && Array.isArray(keywords) && keywords.length > 0
+        ? keywords.filter((k) => typeof k === 'string' && k.trim().length > 0)
+        : undefined;
+
+    // Validate generated template is a non-empty string
+    const validGeneratedTemplate =
+      typeof generatedTemplate === 'string' && generatedTemplate.trim().length > 0
+        ? generatedTemplate.trim()
+        : undefined;
+
+    // Generate basic Pydantic template
+    const questionPreview = question.length > 50 ? question.substring(0, 50) + '...' : question;
+    const basicTemplate = `from karenina.schemas.answer_class import BaseAnswer
+from pydantic import Field
+
+class Answer(BaseAnswer):
+    """Answer to the question: ${questionPreview}"""
+    answer: str = Field(description="The answer to the question")`;
+
+    // Use generated template if provided, otherwise use basic template
+    const templateToUse = validGeneratedTemplate || basicTemplate;
+
+    // Log template source for debugging
+    if (validGeneratedTemplate) {
+      console.log('📝 Using LLM-generated template for new question');
+    } else if (generatedTemplate) {
+      console.warn('⚠️ LLM template was invalid, falling back to basic template');
+    }
+
+    const now = new Date().toISOString();
+
+    // Create new question entry
+    const newQuestion: QuestionData[string] = {
+      question,
+      raw_answer: rawAnswer,
+      answer_template: templateToUse,
+      ...(author || validKeywords
+        ? {
+            metadata: {
+              ...(author ? { author: { '@type': 'Person' as const, name: author } } : {}),
+              ...(validKeywords ? { keywords: validKeywords } : {}),
+            },
+          }
+        : {}),
+    };
+
+    // Create checkpoint item
+    const newCheckpointItem = {
+      question,
+      raw_answer: rawAnswer,
+      original_answer_template: templateToUse,
+      answer_template: templateToUse,
+      last_modified: now,
+      date_created: now,
+      finished: false,
+      question_rubric: undefined,
+      few_shot_examples: undefined,
+      ...(author ? { author: { '@type': 'Person' as const, name: author } } : {}),
+      ...(validKeywords && validKeywords.length > 0 ? { keywords: validKeywords } : {}),
+    };
+
+    // Update state with new question
+    const updatedQuestionData = {
+      ...state.questionData,
+      [questionId]: newQuestion,
+    };
+
+    const updatedCheckpoint = {
+      ...state.checkpoint,
+      [questionId]: newCheckpointItem,
+    };
+
+    set(() => ({
+      questionData: updatedQuestionData,
+      checkpoint: updatedCheckpoint,
+      selectedQuestionId: questionId,
+      currentTemplate: templateToUse,
+      dataSource: 'uploaded',
+    }));
+
+    console.log(`✅ Added new question with ID: ${questionId}`);
+    return questionId;
   },
 
   // Computed getters

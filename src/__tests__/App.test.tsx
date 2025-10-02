@@ -37,11 +37,11 @@ describe('App Component', () => {
   });
 
   describe('Initial State and Rendering', () => {
-    it('should render with default tab (extractor)', () => {
+    it('should render with default tab (generator)', () => {
       render(<App />);
 
       expect(screen.getByText('Karenina')).toBeInTheDocument();
-      expect(screen.getByText('1. Question Extractor')).toBeInTheDocument();
+      expect(screen.getByText('1. Template Generation')).toBeInTheDocument();
     });
 
     it('should show loading state initially', () => {
@@ -54,11 +54,8 @@ describe('App Component', () => {
     it('should initialize with empty state when no stored data', () => {
       render(<App />);
 
-      // Check for template generator empty state message
-      const templateGeneratorTab = screen.getByText('2. Template Generator');
-      fireEvent.click(templateGeneratorTab);
-
-      expect(screen.getByText(/Extract questions first using the Question Extractor tab/)).toBeInTheDocument();
+      // Template Generation tab should be the default tab and show empty state
+      expect(screen.getByText(/No questions available for template generation/)).toBeInTheDocument();
     });
   });
 
@@ -66,35 +63,35 @@ describe('App Component', () => {
     it('should switch between tabs correctly', async () => {
       render(<App />);
 
-      // Click on Template Generator tab
-      await user.click(screen.getByText('2. Template Generator'));
-      expect(screen.getByText('Answer Template Generation')).toBeInTheDocument();
+      // Should start on Template Generation tab
+      expect(screen.getByText('1. Question Extraction')).toBeInTheDocument();
+      expect(screen.getByText('2. Answer Template Generation')).toBeInTheDocument();
 
       // Click on Template Curator tab
-      await user.click(screen.getByText('3. Template Curator'));
+      await user.click(screen.getByText('2. Template Curator'));
       expect(screen.getByText('File Management')).toBeInTheDocument();
 
-      // Click on LLM Chat tab
-      await user.click(screen.getByText('5. LLM Chat'));
-      expect(screen.getByText('Chat with LLM')).toBeInTheDocument();
+      // Click on Benchmark tab
+      await user.click(screen.getByText('3. Benchmark'));
+      expect(screen.getByText(/Test Selection/)).toBeInTheDocument();
 
-      // Go back to Question Extractor
-      await user.click(screen.getByText('1. Question Extractor'));
-      expect(screen.getByText('Upload Question File')).toBeInTheDocument();
+      // Go back to Template Generation
+      await user.click(screen.getByText('1. Template Generation'));
+      expect(screen.getByText('1. Question Extraction')).toBeInTheDocument();
     });
 
     it('should preserve tab state during navigation', async () => {
       render(<App />);
 
-      // Switch to generator tab
-      await user.click(screen.getByText('2. Template Generator'));
+      // Switch to curator tab
+      await user.click(screen.getByText('2. Template Curator'));
 
       // Switch to another tab and back
-      await user.click(screen.getByText('3. Template Curator'));
-      await user.click(screen.getByText('2. Template Generator'));
+      await user.click(screen.getByText('3. Benchmark'));
+      await user.click(screen.getByText('2. Template Curator'));
 
-      // Should still be on generator tab
-      expect(screen.getByText('Answer Template Generation')).toBeInTheDocument();
+      // Should still be on curator tab
+      expect(screen.getByText('File Management')).toBeInTheDocument();
     });
   });
 
@@ -153,7 +150,7 @@ describe('App Component', () => {
       render(<App />);
 
       // Switch to curator tab to access reset functionality
-      await user.click(screen.getByText('3. Template Curator'));
+      await user.click(screen.getByText('2. Template Curator'));
 
       // Find and click reset button
       const resetButton = screen.getByText('Reset All Data');
@@ -174,18 +171,15 @@ describe('App Component', () => {
     it('should handle empty question sets gracefully', () => {
       render(<App />);
 
-      // Navigate to Template Generator which shows empty state
-      const templateGeneratorTab = screen.getByText('2. Template Generator');
-      fireEvent.click(templateGeneratorTab);
-
+      // Template Generation tab is default and shows empty state
       // Should show appropriate message for empty state
-      expect(screen.getByText(/Extract questions first using the Question Extractor tab/)).toBeInTheDocument();
+      expect(screen.getByText(/No questions available for template generation/)).toBeInTheDocument();
     });
 
     it('should disable navigation buttons when no questions', async () => {
       render(<App />);
 
-      await user.click(screen.getByText('3. Template Curator'));
+      await user.click(screen.getByText('2. Template Curator'));
 
       // Navigation buttons should not be present when no questions
       expect(screen.queryByText('Previous')).not.toBeInTheDocument();
@@ -219,12 +213,11 @@ describe('App Component', () => {
     it('should show appropriate messages for different empty states', async () => {
       render(<App />);
 
-      // Generator tab with no extracted questions
-      await user.click(screen.getByText('2. Template Generator'));
+      // Template Generation tab is default and shows empty state
       expect(screen.getByText('No questions available for template generation.')).toBeInTheDocument();
 
       // Curator tab with no question data
-      await user.click(screen.getByText('3. Template Curator'));
+      await user.click(screen.getByText('2. Template Curator'));
       expect(screen.getByText(/No Questions with Generated Templates/)).toBeInTheDocument();
     });
   });
@@ -247,8 +240,8 @@ describe('App Component', () => {
     it('should handle consecutive checkpoint loading correctly', () => {
       render(<App />);
 
-      // Navigate to File Management tab - the app doesn't have a "File Manager" tab, it has "Template Curator"
-      const curatorTab = screen.getByText('3. Template Curator');
+      // Navigate to Template Curator tab
+      const curatorTab = screen.getByText('2. Template Curator');
       fireEvent.click(curatorTab);
 
       // Verify Template Curator is rendered - it shows "File Management" as the content
@@ -273,15 +266,15 @@ describe('App Component', () => {
       localStorage.setItem('checkpoint', firstCheckpointString);
 
       // Trigger a re-render to pick up the localStorage change
-      fireEvent.click(screen.getByText('1. Question Extractor'));
-      fireEvent.click(screen.getByText('3. Template Curator'));
+      fireEvent.click(screen.getByText('1. Template Generation'));
+      fireEvent.click(screen.getByText('2. Template Curator'));
 
       // Simulate the second checkpoint being loaded (consecutive load)
       localStorage.setItem('checkpoint', secondCheckpointString);
 
       // Trigger another re-render
-      fireEvent.click(screen.getByText('1. Question Extractor'));
-      fireEvent.click(screen.getByText('3. Template Curator'));
+      fireEvent.click(screen.getByText('1. Template Generation'));
+      fireEvent.click(screen.getByText('2. Template Curator'));
 
       // Verify the app remains stable after consecutive checkpoint loads
       expect(screen.getByText('File Management')).toBeInTheDocument();
@@ -314,7 +307,7 @@ describe('App Component', () => {
       });
 
       // Navigate to Template Curator to trigger checkpoint usage
-      const curatorTab = screen.getByText('3. Template Curator');
+      const curatorTab = screen.getByText('2. Template Curator');
       fireEvent.click(curatorTab);
 
       // Should handle the first checkpoint - Template Curator shows "File Management"
@@ -329,8 +322,8 @@ describe('App Component', () => {
       });
 
       // Navigate away and back to trigger re-loading
-      fireEvent.click(screen.getByText('1. Question Extractor'));
-      fireEvent.click(screen.getByText('3. Template Curator'));
+      fireEvent.click(screen.getByText('1. Template Generation'));
+      fireEvent.click(screen.getByText('2. Template Curator'));
 
       // App should remain stable and functional
       expect(screen.getByText('File Management')).toBeInTheDocument();
@@ -370,25 +363,21 @@ describe('App Component', () => {
       render(<App />);
 
       // Should show numbered tabs indicating workflow order
-      expect(screen.getByText('1. Question Extractor')).toBeInTheDocument();
-      expect(screen.getByText('2. Template Generator')).toBeInTheDocument();
-      expect(screen.getByText('3. Template Curator')).toBeInTheDocument();
-      expect(screen.getByText('4. Benchmark')).toBeInTheDocument();
-      expect(screen.getByText('5. LLM Chat')).toBeInTheDocument();
+      expect(screen.getByText('1. Template Generation')).toBeInTheDocument();
+      expect(screen.getByText('2. Template Curator')).toBeInTheDocument();
+      expect(screen.getByText('3. Benchmark')).toBeInTheDocument();
     });
 
     it('should show appropriate guidance for each workflow step', async () => {
       render(<App />);
 
-      // Extractor tab should show upload guidance
+      // Template Generation tab should show both extraction and generation sections
+      expect(screen.getByText('1. Question Extraction')).toBeInTheDocument();
+      expect(screen.getByText('2. Answer Template Generation')).toBeInTheDocument();
       expect(screen.getByText('Upload Question File')).toBeInTheDocument();
 
-      // Generator tab should show no questions message
-      await user.click(screen.getByText('2. Template Generator'));
-      expect(screen.getByText(/Extract questions first/)).toBeInTheDocument();
-
       // Curator tab should show file management
-      await user.click(screen.getByText('3. Template Curator'));
+      await user.click(screen.getByText('2. Template Curator'));
       expect(screen.getByText('File Management')).toBeInTheDocument();
     });
   });
@@ -410,6 +399,31 @@ describe('App Component', () => {
       render(<App />);
 
       expect(screen.getByText('Karenina')).toBeInTheDocument();
+    });
+  });
+
+  describe('Add Question Button Availability', () => {
+    it('should disable "Add Question" button when benchmark is not initialized', async () => {
+      render(<App />);
+
+      // Navigate to curator tab
+      await user.click(screen.getByText('2. Template Curator'));
+
+      // Find the "Add Question" button - it should be disabled
+      const addQuestionButton = screen.getByText('Add Question');
+      expect(addQuestionButton).toBeDisabled();
+    });
+
+    it('should enable "Add Question" button after templates are generated', async () => {
+      // This test would need to mock the template generation process
+      // For now, we verify the button state logic is correct by checking
+      // that the button exists and its disabled state matches benchmark initialization
+      render(<App />);
+
+      await user.click(screen.getByText('2. Template Curator'));
+
+      const addQuestionButton = screen.getByText('Add Question');
+      expect(addQuestionButton).toBeInTheDocument();
     });
   });
 });

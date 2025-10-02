@@ -31,12 +31,20 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
     // Refs for field editors
     const fieldRefs = useRef<Map<number, FieldEditorRef>>(new Map());
 
+    // Guard against re-entry during internal updates
+    const isUpdatingRef = useRef(false);
+
     // Always auto-generate methods and use multiple field pattern
     const isAutoGenerateMethods = true;
     const defaultCorrectValuePattern: 'single' | 'multiple' = 'multiple';
 
     // Parse the code when it changes
     useEffect(() => {
+      // Skip if we're in the middle of an internal update
+      if (isUpdatingRef.current) {
+        return;
+      }
+
       const parseResult = parsePydanticClass(code);
       if (parseResult.success && parseResult.classDefinition) {
         // Ensure defaults are set
@@ -61,6 +69,9 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
     // Generate new code when class definition changes
     const updateCode = (newClassDef: PydanticClassDefinition) => {
       try {
+        // Set flag to prevent re-entry during this update
+        isUpdatingRef.current = true;
+
         // Auto-generate methods if enabled
         if (isAutoGenerateMethods) {
           const methods: PydanticMethod[] = [];
@@ -106,6 +117,11 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
         const newCode = generatePydanticCode(newClassDef);
         onChange(newCode);
 
+        // Clear flag after a short delay to allow the onChange to propagate
+        setTimeout(() => {
+          isUpdatingRef.current = false;
+        }, 0);
+
         // Auto-save after field changes
         if (onSave) {
           onSave();
@@ -115,8 +131,8 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
       }
     };
 
-    // Track unsaved changes for a specific field
-    const handleFieldUnsavedChange = (index: number, hasUnsaved: boolean) => {
+    // Track unsaved changes for a specific field (memoized to prevent infinite loops)
+    const handleFieldUnsavedChange = useCallback((index: number, hasUnsaved: boolean) => {
       setFieldsWithUnsavedChanges((prev) => {
         const newSet = new Set(prev);
         if (hasUnsaved) {
@@ -126,7 +142,7 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
         }
         return newSet;
       });
-    };
+    }, []);
 
     // Save all fields with unsaved changes
     const saveAllUnsavedFields = useCallback(() => {

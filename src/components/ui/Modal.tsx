@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -10,16 +11,9 @@ interface ModalProps {
   className?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-  size = 'md',
-  className = '',
-}) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md', className = '' }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  
+
   // Handle ESC key press
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -27,18 +21,18 @@ export const Modal: React.FC<ModalProps> = ({
         onClose();
       }
     };
-    
+
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
-  
+
   // Handle click outside
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
-  
+
   // Focus trap
   useEffect(() => {
     if (isOpen && modalRef.current) {
@@ -47,10 +41,10 @@ export const Modal: React.FC<ModalProps> = ({
       );
       const firstElement = focusableElements[0] as HTMLElement;
       const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-      
+
       // Focus first element
       firstElement?.focus();
-      
+
       const handleTab = (e: KeyboardEvent) => {
         if (e.key === 'Tab') {
           if (e.shiftKey) {
@@ -66,24 +60,24 @@ export const Modal: React.FC<ModalProps> = ({
           }
         }
       };
-      
+
       document.addEventListener('keydown', handleTab);
       return () => document.removeEventListener('keydown', handleTab);
     }
   }, [isOpen]);
-  
+
   if (!isOpen) return null;
-  
+
   const sizeClasses = {
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
   };
-  
-  return (
+
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50 p-4 overflow-y-auto"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -92,8 +86,8 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         ref={modalRef}
         className={`
-          relative w-full ${sizeClasses[size]} max-h-[90vh] 
-          bg-white dark:bg-gray-800 rounded-lg shadow-xl 
+          relative w-full ${sizeClasses[size]} max-h-[calc(100vh-2rem)] my-auto
+          bg-white dark:bg-gray-800 rounded-lg shadow-xl
           flex flex-col ${className}
         `}
       >
@@ -111,12 +105,12 @@ export const Modal: React.FC<ModalProps> = ({
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

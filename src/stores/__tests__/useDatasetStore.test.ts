@@ -6,9 +6,10 @@ import type { DatasetMetadata, SchemaOrgPerson, SchemaOrgOrganization } from '..
 describe('useDatasetStore', () => {
   beforeEach(() => {
     // Reset the store before each test
-    const { resetMetadata } = useDatasetStore.getState();
+    const { resetMetadata, resetBenchmarkState } = useDatasetStore.getState();
     act(() => {
       resetMetadata();
+      resetBenchmarkState();
     });
   });
 
@@ -249,5 +250,39 @@ describe('useDatasetStore', () => {
     });
 
     expect(result.current.metadata.dateModified).not.toBe(originalDateModified);
+  });
+
+  it('initializes with benchmark not initialized', () => {
+    const { result } = renderHook(() => useDatasetStore());
+
+    expect(result.current.isBenchmarkInitialized).toBe(false);
+  });
+
+  it('marks benchmark as initialized', () => {
+    const { result } = renderHook(() => useDatasetStore());
+
+    act(() => {
+      result.current.markBenchmarkAsInitialized();
+    });
+
+    expect(result.current.isBenchmarkInitialized).toBe(true);
+  });
+
+  it('resets benchmark state', () => {
+    const { result } = renderHook(() => useDatasetStore());
+
+    // First mark as initialized
+    act(() => {
+      result.current.markBenchmarkAsInitialized();
+    });
+
+    expect(result.current.isBenchmarkInitialized).toBe(true);
+
+    // Then reset
+    act(() => {
+      result.current.resetBenchmarkState();
+    });
+
+    expect(result.current.isBenchmarkInitialized).toBe(false);
   });
 });

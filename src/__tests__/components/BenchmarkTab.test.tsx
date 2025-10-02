@@ -365,13 +365,13 @@ describe('BenchmarkTab', () => {
 
     // Check individual checkboxes are present
     const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(5); // 2 evaluation settings + 1 select all + 2 individual tests
+    expect(checkboxes).toHaveLength(6); // 3 evaluation settings + 1 select all + 2 individual tests
 
     // Initially nothing selected
     expect(screen.getByText('Run Selected (0 × 1 = 0)')).toBeInTheDocument();
 
     // Select first test
-    fireEvent.click(checkboxes[3]); // First test checkbox (indexes 0,1=evaluation, 2=select all, 3=first test)
+    fireEvent.click(checkboxes[4]); // First test checkbox (indexes 0,1,2=evaluation, 3=select all, 4=first test)
     await waitFor(() => {
       expect(screen.getByText('Run Selected (1 × 1 = 1)')).toBeInTheDocument();
     });

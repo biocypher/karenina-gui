@@ -53,7 +53,7 @@ export const FieldEditor = forwardRef<FieldEditorRef, FieldEditorProps>(
     // Notify parent when unsaved changes state changes
     useEffect(() => {
       onUnsavedChangesChange?.(hasUnsavedChanges);
-    }, [hasUnsavedChanges, onUnsavedChangesChange]);
+    }, [hasUnsavedChanges]); // Removed onUnsavedChangesChange from deps to prevent infinite loops from inline functions
 
     // Expose methods via ref
     useImperativeHandle(
