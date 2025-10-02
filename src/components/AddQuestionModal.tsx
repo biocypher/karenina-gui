@@ -89,8 +89,11 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
             setJobId(null);
             // Extract the generated template from the result
             if (progressData.result && Object.keys(progressData.result).length > 0) {
-              const firstQuestionId = Object.keys(progressData.result)[0];
-              const resultObj = progressData.result[firstQuestionId];
+              // API returns: { templates: { question_id: { template_code, ... } }, ... }
+              // Extract templates object (with fallback for old API format)
+              const templates = progressData.result.templates || progressData.result;
+              const firstQuestionId = Object.keys(templates)[0];
+              const resultObj = templates[firstQuestionId];
 
               // Extract and validate template code from result object
               let extractedTemplate: string | null = null;
