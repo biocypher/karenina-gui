@@ -24,6 +24,7 @@ import { BenchmarkTable } from './BenchmarkTable';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
 import { RubricResultsDisplay } from './RubricResultsDisplay';
 import { useRubricStore } from '../stores/useRubricStore';
+import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
 import { SearchableTextDisplay } from './SearchableTextDisplay';
 
@@ -68,6 +69,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Rubric store
   const { currentRubric } = useRubricStore();
+  const { storageUrl } = useDatasetStore();
 
   // Verification state
   const [isRunning, setIsRunning] = useState(false);
@@ -306,6 +308,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         finished_templates: templatesData,
         run_name: runName.trim() || undefined, // Send run name if provided
         async_config: getAsyncConfig(), // Include async configuration from config store
+        storage_url: storageUrl || undefined, // Include storage URL for database auto-save
       };
 
       const response = await fetch(API_ENDPOINTS.START_VERIFICATION, {
