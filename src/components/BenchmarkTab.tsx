@@ -69,7 +69,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Rubric store
   const { currentRubric } = useRubricStore();
-  const { storageUrl } = useDatasetStore();
+  const { storageUrl, metadata } = useDatasetStore();
 
   // Verification state
   const [isRunning, setIsRunning] = useState(false);
@@ -309,6 +309,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         run_name: runName.trim() || undefined, // Send run name if provided
         async_config: getAsyncConfig(), // Include async configuration from config store
         storage_url: storageUrl || undefined, // Include storage URL for database auto-save
+        benchmark_name: metadata?.name || undefined, // Include benchmark name for database auto-save
       };
 
       const response = await fetch(API_ENDPOINTS.START_VERIFICATION, {

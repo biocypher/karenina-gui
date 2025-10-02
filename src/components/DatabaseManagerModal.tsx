@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from './ui/Modal';
 import { Database, FolderOpen, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { UnifiedCheckpoint } from '../types';
@@ -25,6 +25,19 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({ isOp
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connected' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Reset state when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setStorageUrl('');
+      setBenchmarks([]);
+      setSelectedBenchmark(null);
+      setIsConnecting(false);
+      setIsLoading(false);
+      setConnectionStatus('idle');
+      setErrorMessage('');
+    }
+  }, [isOpen]);
 
   const handleConnect = async () => {
     if (!storageUrl.trim()) {
