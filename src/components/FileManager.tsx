@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Download, Database, RotateCcw, Settings, Sparkles } from 'lucide-react';
+import { Upload, Download, Database, RotateCcw, Settings, Sparkles, Save } from 'lucide-react';
 import { Checkpoint, UnifiedCheckpoint, JsonLdCheckpoint, DatasetMetadata } from '../types';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
@@ -291,44 +291,64 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
       </h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Checkpointing Section */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
-            <Database className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            Checkpointing
-          </h4>
+        {/* Left Column: Checkpointing + Database */}
+        <div className="space-y-6">
+          {/* Checkpointing Section */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
+              <Save className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              Checkpointing
+            </h4>
 
-          {/* Checkpoint Upload */}
-          <div>
-            <input
-              ref={checkpointFileInputRef}
-              type="file"
-              accept=".json,.jsonld"
-              onChange={handleCheckpointUpload}
-              className="hidden"
-              id="checkpoint-upload"
-            />
-            <label
-              htmlFor="checkpoint-upload"
-              className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium cursor-pointer shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            {/* Checkpoint Upload */}
+            <div>
+              <input
+                ref={checkpointFileInputRef}
+                type="file"
+                accept=".json,.jsonld"
+                onChange={handleCheckpointUpload}
+                className="hidden"
+                id="checkpoint-upload"
+              />
+              <label
+                htmlFor="checkpoint-upload"
+                className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium cursor-pointer shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <Upload className="w-4 h-4" />
+                Upload Checkpoint
+              </label>
+            </div>
+
+            {/* Checkpoint Download */}
+            <button
+              onClick={downloadCheckpoint}
+              disabled={Object.keys(checkpoint).length === 0}
+              className="w-full px-4 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 dark:from-amber-700 dark:to-orange-700 dark:hover:from-amber-800 dark:hover:to-orange-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
             >
-              <Upload className="w-4 h-4" />
-              Upload Checkpoint
-            </label>
+              <Download className="w-4 h-4" />
+              Download Checkpoint
+            </button>
           </div>
 
-          {/* Checkpoint Download */}
-          <button
-            onClick={downloadCheckpoint}
-            disabled={Object.keys(checkpoint).length === 0}
-            className="w-full px-4 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 dark:from-amber-700 dark:to-orange-700 dark:hover:from-amber-800 dark:hover:to-orange-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
-          >
-            <Download className="w-4 h-4" />
-            Download Checkpoint
-          </button>
+          {/* Database Section */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
+              <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              Database
+            </h4>
+
+            {/* Manage Database */}
+            <button
+              onClick={() => setIsDatabaseManagerOpen(true)}
+              className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <Database className="w-4 h-4" />
+              Manage Database
+            </button>
+          </div>
         </div>
 
-        {/* Actions Section */}
+        {/* Right Column: Actions */}
         <div className="space-y-4">
           <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
             <Settings className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -342,15 +362,6 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
           >
             <Sparkles className="w-4 h-4" />
             Create New Benchmark
-          </button>
-
-          {/* Manage Database */}
-          <button
-            onClick={() => setIsDatabaseManagerOpen(true)}
-            className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-          >
-            <Database className="w-4 h-4" />
-            Manage Database
           </button>
 
           {/* Dataset Name Display */}
