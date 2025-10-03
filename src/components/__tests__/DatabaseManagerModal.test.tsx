@@ -72,7 +72,7 @@ describe('DatabaseManagerModal', () => {
     // First one should be the tab button
     expect(tabs[0]).toHaveClass('text-blue-600');
 
-    expect(screen.getByLabelText('Database URL')).toBeInTheDocument();
+    expect(screen.getByLabelText('Database Connection')).toBeInTheDocument();
   });
 
   it('Manage tab is disabled until connected', () => {
@@ -93,12 +93,16 @@ describe('DatabaseManagerModal', () => {
     render(<DatabaseManagerModal isOpen={true} onClose={mockOnClose} onLoadCheckpoint={mockOnLoadCheckpoint} />);
 
     // Connect to database - use more specific button query
-    await user.type(screen.getByLabelText('Database URL'), 'sqlite:///test.db');
+    await user.type(screen.getByLabelText('Database Connection'), 'test.db');
 
-    const createButtons = screen.getAllByRole('button', { name: /Create New Database/i });
-    // Find the actual connect tab button (not in the tab navigation)
-    const createButton = createButtons.find((btn) => !btn.closest('[role="tablist"]'));
-    await user.click(createButton!);
+    // Wait for the button to become enabled (after storageUrl is auto-generated)
+    // Use exact match to avoid matching the folder browse button
+    const createButton = await screen.findByRole('button', { name: 'Create New Database' });
+    await waitFor(() => {
+      expect(createButton).not.toBeDisabled();
+    });
+
+    await user.click(createButton);
 
     await waitFor(() => {
       expect(mockConnectDatabase).toHaveBeenCalledWith('sqlite:///test.db', null);
@@ -170,9 +174,9 @@ describe('DatabaseManagerModal', () => {
     const connectTab = connectTabButtons[0]; // Tab button is first
     await user.click(connectTab);
 
-    // Verify switched to Connect tab by checking for Database URL input
+    // Verify switched to Connect tab by checking for Database Connection input
     await waitFor(() => {
-      expect(screen.getByLabelText('Database URL')).toBeInTheDocument();
+      expect(screen.getByLabelText('Database Connection')).toBeInTheDocument();
     });
   });
 
@@ -182,7 +186,7 @@ describe('DatabaseManagerModal', () => {
 
     // Just verify the modal renders with the expected structure
     expect(screen.getByText('Database Manager')).toBeInTheDocument();
-    expect(screen.getByLabelText('Database URL')).toBeInTheDocument();
+    expect(screen.getByLabelText('Database Connection')).toBeInTheDocument();
   });
 
   it('resets to Connect tab when modal is closed and reopened', () => {
@@ -196,7 +200,7 @@ describe('DatabaseManagerModal', () => {
     // Reopen modal
     rerender(<DatabaseManagerModal isOpen={true} onClose={mockOnClose} onLoadCheckpoint={mockOnLoadCheckpoint} />);
 
-    // Should be back on Connect tab - verify by checking for URL input
-    expect(screen.getByLabelText('Database URL')).toBeInTheDocument();
+    // Should be back on Connect tab - verify by checking for Connection input
+    expect(screen.getByLabelText('Database Connection')).toBeInTheDocument();
   });
 });

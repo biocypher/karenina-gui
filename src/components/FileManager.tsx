@@ -301,6 +301,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
     // Load the checkpoint
     onLoadCheckpoint(loadedCheckpoint);
+
+    // Mark benchmark as initialized since we're loading a checkpoint from database
+    markBenchmarkAsInitialized();
   };
 
   // Count finished items
