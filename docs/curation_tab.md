@@ -70,10 +70,21 @@ Click the "Manage Database" button in the File Management panel's Database secti
 
 **Connect Tab**
 
-- Enter a database URL (SQLite, PostgreSQL, or other supported databases)
-- Browse for local SQLite files using the folder icon
-- Choose between creating a new database or connecting to an existing one
-- Connection status displays the number of benchmarks found in the database
+The Connect tab provides a directory-based approach to database management:
+
+- **Database Directory**: The system reads from the `DB_PATH` environment variable to determine where to look for databases. If not set, it uses the current working directory. The active directory is displayed at the top of the tab.
+
+- **Available Databases**: All `.db` files in the specified directory are listed in a browser-like interface. If no databases exist, a "No databases found" message is displayed.
+
+- **Selecting a Database**: Click on any database in the list to select it. The selected database is highlighted.
+
+- **Connecting**: Once a database is selected, click the "Connect" button to establish a connection. The connection status displays the number of benchmarks found in the database.
+
+- **Creating New Databases**: Click "Create New Database" to create a new database:
+  - Choose the database type (SQLite, PostgreSQL, or MySQL)
+  - For SQLite: Enter a database name (it will be created in the `DB_PATH` directory)
+  - For PostgreSQL/MySQL: Enter server connection details (host, port, database name, credentials)
+  - Click "Create & Connect" to create and connect to the database
 
 **Manage Benchmarks Tab**
 
@@ -84,6 +95,17 @@ Click the "Manage Database" button in the File Management panel's Database secti
 - Create new benchmarks directly in the database with custom metadata (name, description, version, creator)
 - Select and load benchmarks into the curator for editing
 - Visual indicators show selection state and benchmark details
+
+**Setting Up the Database Directory**
+
+To use a custom database directory, set the `DB_PATH` environment variable before starting the application:
+
+```bash
+export DB_PATH="/path/to/your/databases"
+./start-karenina.sh
+```
+
+If `DB_PATH` is not set, the system will use the current working directory to store and locate databases.
 
 **Automatic Saving**
 

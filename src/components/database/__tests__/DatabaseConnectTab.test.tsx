@@ -9,66 +9,121 @@ global.fetch = vi.fn();
 describe('DatabaseConnectTab', () => {
   const mockOnConnect = vi.fn();
 
+  const mockListDatabasesResponse = {
+    success: true,
+    databases: [
+      { name: 'test1.db', path: '/db/path/test1.db', size: 1024 },
+      { name: 'test2.db', path: '/db/path/test2.db', size: 2048 },
+    ],
+    db_directory: '/db/path',
+    is_default_directory: false,
+  };
+
+  const mockEmptyListResponse = {
+    success: true,
+    databases: [],
+    db_directory: '/current/directory',
+    is_default_directory: true,
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     (global.fetch as ReturnType<typeof vi.fn>).mockClear();
   });
 
-  it('renders database URL input and action buttons', () => {
-    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
-
-    expect(screen.getByLabelText('Database URL')).toBeInTheDocument();
-    expect(screen.getByText('Create New Database')).toBeInTheDocument();
-    expect(screen.getByText('Connect to Existing')).toBeInTheDocument();
-    expect(screen.getByTitle('Browse for SQLite database file')).toBeInTheDocument();
-  });
-
-  it('shows help text with URL examples', () => {
-    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
-
-    expect(screen.getByText('Database URL Examples')).toBeInTheDocument();
-    expect(screen.getByText(/sqlite:\/\/\/path\/to\/database.db/)).toBeInTheDocument();
-    expect(screen.getByText(/postgresql:\/\//)).toBeInTheDocument();
-  });
-
-  it('disables action buttons when URL is empty', () => {
-    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
-
-    const createButton = screen.getByText('Create New Database');
-    const connectButton = screen.getByText('Connect to Existing');
-
-    expect(createButton).toBeDisabled();
-    expect(connectButton).toBeDisabled();
-  });
-
-  it('enables action buttons when URL is entered', async () => {
-    const user = userEvent.setup();
-    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
-
-    const urlInput = screen.getByLabelText('Database URL');
-    await user.type(urlInput, 'sqlite:///test.db');
-
-    const createButton = screen.getByText('Create New Database');
-    const connectButton = screen.getByText('Connect to Existing');
-
-    expect(createButton).toBeEnabled();
-    expect(connectButton).toBeEnabled();
-  });
-
-  it('creates new database successfully', async () => {
-    const user = userEvent.setup();
+  it('loads and displays available databases on mount', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ success: true, benchmark_count: 0 }),
+      json: async () => mockListDatabasesResponse,
     });
 
     render(<DatabaseConnectTab onConnect={mockOnConnect} />);
 
-    const urlInput = screen.getByLabelText('Database URL');
-    await user.type(urlInput, 'sqlite:///test.db');
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/database/list-databases');
+    });
 
-    const createButton = screen.getByText('Create New Database');
-    await user.click(createButton);
+    expect(await screen.findByText('test1.db')).toBeInTheDocument();
+    expect(screen.getByText('test2.db')).toBeInTheDocument();
+    expect(screen.getByText('/db/path')).toBeInTheDocument();
+  });
+
+  it('shows database directory and indicates if default', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockEmptyListResponse,
+    });
+
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    expect(await screen.findByText('/current/directory')).toBeInTheDocument();
+    expect(screen.getByText(/set DB_PATH environment variable to change/)).toBeInTheDocument();
+  });
+
+  it('shows "No databases found" when list is empty', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockEmptyListResponse,
+    });
+
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    expect(await screen.findByText('No databases found')).toBeInTheDocument();
+    expect(screen.getByText('Create a new database to get started')).toBeInTheDocument();
+  });
+
+  it('allows selecting a database from the list', async () => {
+    const user = userEvent.setup();
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockListDatabasesResponse,
+    });
+
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    const db1Button = await screen.findByText('test1.db');
+    await user.click(db1Button.closest('button')!);
+
+    expect(db1Button.closest('button')).toHaveClass('border-blue-500');
+  });
+
+  it('enables Connect button only when database is selected', async () => {
+    const user = userEvent.setup();
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockListDatabasesResponse,
+    });
+
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    const connectButton = await screen.findByRole('button', { name: /^Connect$/i });
+    expect(connectButton).toBeDisabled();
+
+    const db1Button = await screen.findByText('test1.db');
+    await user.click(db1Button.closest('button')!);
+
+    expect(connectButton).toBeEnabled();
+  });
+
+  it('connects to selected database successfully', async () => {
+    const user = userEvent.setup();
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockListDatabasesResponse,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, benchmark_count: 3 }),
+      });
+
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    const db1Button = await screen.findByText('test1.db');
+    await user.click(db1Button.closest('button')!);
+
+    const connectButton = screen.getByRole('button', { name: /^Connect$/i });
+    await user.click(connectButton);
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -77,114 +132,198 @@ describe('DatabaseConnectTab', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            storage_url: 'sqlite:///test.db',
-            create_if_missing: true,
-          }),
-        })
-      );
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText(/Connected successfully!/)).toBeInTheDocument();
-      expect(screen.getByText(/Found 0 benchmarks in database/)).toBeInTheDocument();
-    });
-
-    expect(mockOnConnect).toHaveBeenCalledWith('sqlite:///test.db');
-  });
-
-  it('connects to existing database successfully', async () => {
-    const user = userEvent.setup();
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true, benchmark_count: 5 }),
-    });
-
-    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
-
-    const urlInput = screen.getByLabelText('Database URL');
-    await user.type(urlInput, 'sqlite:///existing.db');
-
-    const connectButton = screen.getByText('Connect to Existing');
-    await user.click(connectButton);
-
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/database/connect',
-        expect.objectContaining({
-          body: JSON.stringify({
-            storage_url: 'sqlite:///existing.db',
+            storage_url: 'sqlite:////db/path/test1.db',
             create_if_missing: false,
           }),
         })
       );
     });
 
-    await waitFor(() => {
-      expect(screen.getByText(/Connected successfully!/)).toBeInTheDocument();
-      expect(screen.getByText(/Found 5 benchmarks in database/)).toBeInTheDocument();
+    expect(await screen.findByText(/Connected successfully!/)).toBeInTheDocument();
+    expect(screen.getByText(/Found 3 benchmarks in database/)).toBeInTheDocument();
+    expect(mockOnConnect).toHaveBeenCalledWith('sqlite:////db/path/test1.db');
+  });
+
+  it('shows create new database form when button clicked', async () => {
+    const user = userEvent.setup();
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockEmptyListResponse,
     });
 
-    expect(mockOnConnect).toHaveBeenCalledWith('sqlite:///existing.db');
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    const createButton = await screen.findByRole('button', { name: /Create New Database/i });
+    await user.click(createButton);
+
+    expect(screen.getByText('Create New Database')).toBeInTheDocument();
+    expect(screen.getByLabelText('Database Type')).toBeInTheDocument();
+    expect(screen.getByLabelText('Database Name')).toBeInTheDocument();
+  });
+
+  it('creates new SQLite database successfully', async () => {
+    const user = userEvent.setup();
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockEmptyListResponse,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, benchmark_count: 0 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ...mockEmptyListResponse,
+          databases: [{ name: 'new_db.db', path: '/current/directory/new_db.db', size: 0 }],
+        }),
+      });
+
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    const createButton = await screen.findByRole('button', { name: /Create New Database/i });
+    await user.click(createButton);
+
+    const nameInput = screen.getByLabelText('Database Name');
+    await user.type(nameInput, 'new_db');
+
+    const submitButton = screen.getByRole('button', { name: /Create & Connect/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/database/connect',
+        expect.objectContaining({
+          body: JSON.stringify({
+            storage_url: 'sqlite:////current/directory/new_db.db',
+            create_if_missing: true,
+          }),
+        })
+      );
+    });
+
+    expect(await screen.findByText(/Connected successfully!/)).toBeInTheDocument();
+    expect(mockOnConnect).toHaveBeenCalledWith('sqlite:////current/directory/new_db.db');
+  });
+
+  it('creates new PostgreSQL database with credentials', async () => {
+    const user = userEvent.setup();
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockEmptyListResponse,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, benchmark_count: 0 }),
+      });
+
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
+    });
+
+    const createButton = screen.getByRole('button', { name: /Create New Database/i });
+    await user.click(createButton);
+
+    // Change to PostgreSQL
+    const typeSelect = screen.getByLabelText('Database Type');
+    await user.selectOptions(typeSelect, 'postgresql');
+
+    // Fill in fields
+    await user.type(screen.getByLabelText('Host'), 'db.example.com');
+    await user.type(screen.getByLabelText('Database Name'), 'mydb');
+    await user.type(screen.getByLabelText('Username'), 'user');
+    await user.type(screen.getByLabelText('Password'), 'pass123');
+
+    const submitButton = screen.getByRole('button', { name: /Create & Connect/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/database/connect',
+        expect.objectContaining({
+          body: JSON.stringify({
+            storage_url: 'postgresql://user:pass123@db.example.com:5432/mydb',
+            create_if_missing: true,
+          }),
+        })
+      );
+    });
+  });
+
+  it('can cancel create database form', async () => {
+    const user = userEvent.setup();
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockEmptyListResponse,
+    });
+
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    const createButton = await screen.findByRole('button', { name: /Create New Database/i });
+    await user.click(createButton);
+
+    expect(screen.getByText('Create New Database')).toBeInTheDocument();
+
+    const cancelButton = screen.getByRole('button', { name: /Cancel/i });
+    await user.click(cancelButton);
+
+    expect(screen.queryByLabelText('Database Name')).not.toBeInTheDocument();
   });
 
   it('shows error when connection fails', async () => {
     const user = userEvent.setup();
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ detail: 'Database not found' }),
-    });
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockListDatabasesResponse,
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ detail: 'Connection failed' }),
+      });
 
     render(<DatabaseConnectTab onConnect={mockOnConnect} />);
 
-    const urlInput = screen.getByLabelText('Database URL');
-    await user.type(urlInput, 'sqlite:///nonexistent.db');
+    const db1Button = await screen.findByText('test1.db');
+    await user.click(db1Button.closest('button')!);
 
-    const connectButton = screen.getByText('Connect to Existing');
+    const connectButton = screen.getByRole('button', { name: /^Connect$/i });
     await user.click(connectButton);
 
-    expect(await screen.findByText('Database not found')).toBeInTheDocument();
+    expect(await screen.findByText('Connection failed')).toBeInTheDocument();
     expect(mockOnConnect).not.toHaveBeenCalled();
-  });
-
-  it('shows error when URL is empty on submit', () => {
-    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
-
-    // Buttons should be disabled, but let's test the validation anyway
-    // We need to enable the button manually for this test
-    const createButton = screen.getByText('Create New Database');
-
-    // The button should be disabled when URL is empty
-    expect(createButton).toBeDisabled();
   });
 
   it('shows loading state while connecting', async () => {
     const user = userEvent.setup();
-    let resolvePromise: (value: unknown) => void;
-    const promise = new Promise((resolve) => {
-      resolvePromise = resolve;
+    let resolveConnectPromise: (value: unknown) => void;
+    const connectPromise = new Promise((resolve) => {
+      resolveConnectPromise = resolve;
     });
 
-    (global.fetch as ReturnType<typeof vi.fn>).mockReturnValueOnce(promise);
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockListDatabasesResponse,
+      })
+      .mockReturnValueOnce(connectPromise);
 
     render(<DatabaseConnectTab onConnect={mockOnConnect} />);
 
-    const urlInput = screen.getByLabelText('Database URL');
-    await user.type(urlInput, 'sqlite:///test.db');
+    const db1Button = await screen.findByText('test1.db');
+    await user.click(db1Button.closest('button')!);
 
-    const createButton = screen.getByText('Create New Database');
-    await user.click(createButton);
+    const connectButton = screen.getByRole('button', { name: /^Connect$/i });
+    await user.click(connectButton);
 
-    // Should show loading state - both buttons now show "Connecting..."
-    const connectingElements = screen.getAllByText('Connecting...');
-    expect(connectingElements.length).toBe(2); // Both buttons show this text
-
-    // Both buttons should be disabled
-    connectingElements.forEach((element) => {
-      expect(element.closest('button')).toBeDisabled();
-    });
+    expect(screen.getByText('Connecting...')).toBeInTheDocument();
 
     // Resolve to clean up
-    resolvePromise!({
+    resolveConnectPromise!({
       ok: true,
       json: async () => ({ success: true, benchmark_count: 0 }),
     });
@@ -194,95 +333,67 @@ describe('DatabaseConnectTab', () => {
     });
   });
 
-  it('disables inputs and buttons after successful connection', async () => {
-    const user = userEvent.setup();
+  it('displays connection guide with DB_PATH information', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ success: true, benchmark_count: 0 }),
+      json: async () => mockEmptyListResponse,
     });
 
     render(<DatabaseConnectTab onConnect={mockOnConnect} />);
 
-    const urlInput = screen.getByLabelText('Database URL');
-    await user.type(urlInput, 'sqlite:///test.db');
-
-    await user.click(screen.getByText('Create New Database'));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Connected successfully!/)).toBeInTheDocument();
-    });
-
-    expect(urlInput).toBeDisabled();
-    expect(screen.queryByText('Create New Database')).not.toBeInTheDocument();
-    expect(screen.queryByText('Connect to Existing')).not.toBeInTheDocument();
+    expect(await screen.findByText(/DB_PATH/)).toBeInTheDocument();
+    expect(screen.getByText(/environment variable to specify where databases are stored/)).toBeInTheDocument();
   });
 
   it('shows plural/singular benchmark count correctly', async () => {
     const user = userEvent.setup();
-
-    // Test singular
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true, benchmark_count: 1 }),
-    });
-
-    const { rerender } = render(<DatabaseConnectTab onConnect={mockOnConnect} />);
-
-    await user.type(screen.getByLabelText('Database URL'), 'sqlite:///test.db');
-    await user.click(screen.getByText('Create New Database'));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Found 1 benchmark in database/)).toBeInTheDocument();
-    });
-
-    // Unmount and remount for plural test
-    rerender(<div />);
-    vi.clearAllMocks();
-
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true, benchmark_count: 2 }),
-    });
-
-    rerender(<DatabaseConnectTab onConnect={mockOnConnect} />);
-
-    await user.type(screen.getByLabelText('Database URL'), 'sqlite:///test2.db');
-    await user.click(screen.getByText('Create New Database'));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Found 2 benchmarks in database/)).toBeInTheDocument();
-    });
-  });
-
-  it('clears error state when starting new connection', async () => {
-    const user = userEvent.setup();
-
-    // First connection fails
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ detail: 'First error' }),
-    });
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockListDatabasesResponse,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, benchmark_count: 1 }),
+      });
 
     render(<DatabaseConnectTab onConnect={mockOnConnect} />);
 
-    await user.type(screen.getByLabelText('Database URL'), 'sqlite:///test.db');
-    await user.click(screen.getByText('Create New Database'));
+    const db1Button = await screen.findByText('test1.db');
+    await user.click(db1Button.closest('button')!);
 
-    expect(await screen.findByText('First error')).toBeInTheDocument();
+    const connectButton = screen.getByRole('button', { name: /^Connect$/i });
+    await user.click(connectButton);
 
-    // Second connection succeeds
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true, benchmark_count: 0 }),
-    });
+    expect(await screen.findByText(/Found 1 benchmark in database/)).toBeInTheDocument();
+  });
 
-    await user.clear(screen.getByLabelText('Database URL'));
-    await user.type(screen.getByLabelText('Database URL'), 'sqlite:///test2.db');
-    await user.click(screen.getByText('Create New Database'));
+  it('clears error when selecting different database', async () => {
+    const user = userEvent.setup();
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockListDatabasesResponse,
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ detail: 'Connection error' }),
+      });
 
-    await waitFor(() => {
-      expect(screen.queryByText('First error')).not.toBeInTheDocument();
-      expect(screen.getByText(/Connected successfully!/)).toBeInTheDocument();
-    });
+    render(<DatabaseConnectTab onConnect={mockOnConnect} />);
+
+    const db1Button = await screen.findByText('test1.db');
+    await user.click(db1Button.closest('button')!);
+
+    const connectButton = screen.getByRole('button', { name: /^Connect$/i });
+    await user.click(connectButton);
+
+    expect(await screen.findByText('Connection error')).toBeInTheDocument();
+
+    // Select different database
+    const db2Button = screen.getByText('test2.db');
+    await user.click(db2Button.closest('button')!);
+
+    expect(screen.queryByText('Connection error')).not.toBeInTheDocument();
   });
 });
