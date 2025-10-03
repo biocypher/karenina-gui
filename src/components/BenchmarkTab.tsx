@@ -13,7 +13,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from 'lucide-react';
-import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig, UnifiedCheckpoint } from '../types';
+import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
 import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
@@ -228,13 +228,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
                   // Auto-save to database after verification completes
                   try {
-                    const unifiedCheckpoint: UnifiedCheckpoint = {
-                      version: '2.0',
-                      global_rubric: currentRubric,
-                      dataset_metadata: metadata,
-                      checkpoint: checkpoint,
-                    };
-                    await autoSaveToDatabase(unifiedCheckpoint);
+                    await autoSaveToDatabase(checkpoint);
                     console.log('💾 Checkpoint auto-saved to database after verification');
                   } catch (saveError) {
                     console.warn('⚠️ Failed to auto-save to database after verification:', saveError);

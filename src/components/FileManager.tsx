@@ -199,7 +199,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
       // Auto-save to database if connected (non-blocking)
       try {
-        await autoSaveToDatabase(unifiedCheckpoint);
+        await autoSaveToDatabase(checkpoint);
         console.log('💾 Checkpoint auto-saved to database');
       } catch (saveError) {
         // Log error but don't block the download
