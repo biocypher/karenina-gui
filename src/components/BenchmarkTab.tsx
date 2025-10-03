@@ -321,6 +321,16 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         benchmark_name: metadata?.name || undefined, // Include benchmark name for database auto-save
       };
 
+      // Log database auto-save configuration
+      if (storageUrl && metadata?.name) {
+        console.log('🔗 Database auto-save enabled:', { storageUrl, benchmarkName: metadata.name });
+      } else {
+        console.warn('⚠️ Database auto-save disabled - missing:', {
+          storageUrl: storageUrl ? 'set' : 'NOT SET',
+          benchmarkName: metadata?.name ? metadata.name : 'NOT SET',
+        });
+      }
+
       const response = await fetch(API_ENDPOINTS.START_VERIFICATION, {
         method: HTTP_METHODS.POST,
         headers: HEADERS.CONTENT_TYPE_JSON,
