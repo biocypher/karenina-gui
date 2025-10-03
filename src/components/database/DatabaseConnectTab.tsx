@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, FolderOpen, Loader, CheckCircle, AlertCircle } from 'lucide-react';
+import { Database, FolderOpen, Folder, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface DatabaseConnectTabProps {
   onConnect: (storageUrl: string) => void;
@@ -61,7 +61,7 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
     setErrorMessage('');
   }, [dbType]);
 
-  const handleBrowse = () => {
+  const handleBrowseFile = () => {
     // Create a file input element for SQLite database file selection
     const input = document.createElement('input');
     input.type = 'file';
@@ -71,6 +71,31 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
       if (file) {
         // Use file path or name for SQLite URL
         setSqlitePath(file.name);
+      }
+    };
+    input.click();
+  };
+
+  const handleBrowseFolder = () => {
+    // Create a file input element configured for directory selection
+    const input = document.createElement('input');
+    input.type = 'file';
+    // @ts-expect-error - webkitdirectory is not in TypeScript types but works in modern browsers
+    input.webkitdirectory = true;
+    input.onchange = (e: Event) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files && files.length > 0) {
+        // Get the directory path from the first file
+        const file = files[0];
+        const pathParts = file.webkitRelativePath.split('/');
+        const dirName = pathParts[0];
+
+        // Prompt for database filename
+        const filename = prompt('Enter database filename (without extension):', 'my_database');
+        if (filename) {
+          const dbFilename = filename.endsWith('.db') ? filename : `${filename}.db`;
+          setSqlitePath(`${dirName}/${dbFilename}`);
+        }
       }
     };
     input.click();
@@ -188,14 +213,24 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
               disabled={isConnecting || connectionStatus === 'connected'}
             />
             <button
-              onClick={handleBrowse}
+              onClick={handleBrowseFile}
               disabled={isConnecting || connectionStatus === 'connected'}
               className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300
                        rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Browse for SQLite database file"
+              title="Browse for existing database file"
             >
               <FolderOpen className="h-5 w-5" />
+            </button>
+            <button
+              onClick={handleBrowseFolder}
+              disabled={isConnecting || connectionStatus === 'connected'}
+              className="px-4 py-2 bg-blue-100 dark:bg-blue-700 text-blue-700 dark:text-blue-300
+                       rounded-md hover:bg-blue-200 dark:hover:bg-blue-600 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Browse for folder to create new database"
+            >
+              <Folder className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -393,8 +428,9 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
           {dbType === 'sqlite' && (
             <>
               <p>
-                <strong>SQLite:</strong> Use the browse button to select an existing database file, or enter a path to
-                create a new one.
+                <strong>SQLite:</strong> Use the file icon (
+                <FolderOpen className="inline h-3 w-3" />) to select an existing database file, or the folder icon (
+                <Folder className="inline h-3 w-3" />) to choose a directory for creating a new database.
               </p>
               <p className="text-xs">Example: /path/to/database.db or ./my_database.db</p>
             </>
