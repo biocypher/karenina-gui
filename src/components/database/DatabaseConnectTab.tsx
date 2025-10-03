@@ -158,32 +158,25 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
 
   return (
     <div className="space-y-6">
-      {/* Database Type Selector */}
-      <div>
-        <label htmlFor="db-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Database Type
-        </label>
-        <select
-          id="db-type"
-          value={dbType}
-          onChange={(e) => setDbType(e.target.value as DatabaseType)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
-                   focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          disabled={isConnecting || connectionStatus === 'connected'}
-        >
-          <option value="sqlite">SQLite</option>
-          <option value="postgresql">PostgreSQL</option>
-          <option value="mysql">MySQL</option>
-        </select>
-      </div>
-
-      {/* SQLite Fields */}
+      {/* SQLite Fields with inline Database Type selector */}
       {dbType === 'sqlite' && (
         <div>
           <label htmlFor="sqlite-path" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Database File Path
+            Database Connection
           </label>
           <div className="flex gap-2">
+            <select
+              id="db-type"
+              value={dbType}
+              onChange={(e) => setDbType(e.target.value as DatabaseType)}
+              className="w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              disabled={isConnecting || connectionStatus === 'connected'}
+            >
+              <option value="sqlite">SQLite</option>
+              <option value="postgresql">PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+            </select>
             <input
               id="sqlite-path"
               type="text"
@@ -211,36 +204,58 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
       {/* PostgreSQL/MySQL Fields */}
       {(dbType === 'postgresql' || dbType === 'mysql') && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="host" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Host
-              </label>
-              <input
-                id="host"
-                type="text"
-                value={host}
-                onChange={(e) => setHost(e.target.value)}
-                placeholder="localhost"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                disabled={isConnecting || connectionStatus === 'connected'}
-              />
-            </div>
-            <div>
-              <label htmlFor="port" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Port
-              </label>
-              <input
-                id="port"
-                type="text"
-                value={port}
-                onChange={(e) => setPort(e.target.value)}
-                placeholder={dbType === 'postgresql' ? '5432' : '3306'}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                disabled={isConnecting || connectionStatus === 'connected'}
-              />
+          {/* Database Type selector inline with first row */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Database Connection
+            </label>
+            <div className="flex gap-4">
+              <div className="w-40">
+                <select
+                  id="db-type"
+                  value={dbType}
+                  onChange={(e) => setDbType(e.target.value as DatabaseType)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  disabled={isConnecting || connectionStatus === 'connected'}
+                >
+                  <option value="sqlite">SQLite</option>
+                  <option value="postgresql">PostgreSQL</option>
+                  <option value="mysql">MySQL</option>
+                </select>
+              </div>
+              <div className="flex-1 grid grid-cols-2 gap-4">
+                <div>
+                  <input
+                    id="host"
+                    type="text"
+                    value={host}
+                    onChange={(e) => setHost(e.target.value)}
+                    placeholder="localhost"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    disabled={isConnecting || connectionStatus === 'connected'}
+                  />
+                  <label htmlFor="host" className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Host
+                  </label>
+                </div>
+                <div>
+                  <input
+                    id="port"
+                    type="text"
+                    value={port}
+                    onChange={(e) => setPort(e.target.value)}
+                    placeholder={dbType === 'postgresql' ? '5432' : '3306'}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    disabled={isConnecting || connectionStatus === 'connected'}
+                  />
+                  <label htmlFor="port" className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Port
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
