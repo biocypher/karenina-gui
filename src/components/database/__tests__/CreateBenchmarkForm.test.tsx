@@ -60,15 +60,11 @@ describe('CreateBenchmarkForm', () => {
     expect(mockOnCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('shows error when submitting without name', async () => {
-    const user = userEvent.setup();
+  it('disables submit button when name is empty', () => {
     render(<CreateBenchmarkForm storageUrl={mockStorageUrl} onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
 
     const submitButton = screen.getByText('Create Benchmark');
-    await user.click(submitButton);
-
-    expect(await screen.findByText('Benchmark name is required')).toBeInTheDocument();
-    expect(mockOnSuccess).not.toHaveBeenCalled();
+    expect(submitButton).toBeDisabled();
   });
 
   it('submits form with minimal data (name only)', async () => {
@@ -96,7 +92,7 @@ describe('CreateBenchmarkForm', () => {
             storage_url: mockStorageUrl,
             name: 'Test Benchmark',
             description: undefined,
-            version: undefined,
+            version: '1.0.0',
             creator: undefined,
           }),
         })

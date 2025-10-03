@@ -174,10 +174,14 @@ describe('DatabaseConnectTab', () => {
     const createButton = screen.getByText('Create New Database');
     await user.click(createButton);
 
-    // Should show loading state
-    expect(screen.getByText('Connecting...')).toBeInTheDocument();
-    expect(createButton).toBeDisabled();
-    expect(screen.getByText('Connect to Existing')).toBeDisabled();
+    // Should show loading state - both buttons now show "Connecting..."
+    const connectingElements = screen.getAllByText('Connecting...');
+    expect(connectingElements.length).toBe(2); // Both buttons show this text
+
+    // Both buttons should be disabled
+    connectingElements.forEach((element) => {
+      expect(element.closest('button')).toBeDisabled();
+    });
 
     // Resolve to clean up
     resolvePromise!({

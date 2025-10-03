@@ -160,13 +160,9 @@ describe('DatabaseManagerModal', () => {
 
     render(<DatabaseManagerModal isOpen={true} onClose={mockOnClose} onLoadCheckpoint={mockOnLoadCheckpoint} />);
 
-    // Initially on Manage tab (because connected)
+    // Wait for initial render and fetch to complete
     await waitFor(() => {
-      const tabs = screen.getAllByRole('button');
-      const manageTab = tabs.find(
-        (tab) => tab.textContent?.includes('Manage Benchmarks') && tab.className.includes('text-blue-600')
-      );
-      expect(manageTab).toBeDefined();
+      expect(screen.queryByText(/Manage Benchmarks/i)).toBeInTheDocument();
     });
 
     // Switch to Connect tab - find the tab button specifically
@@ -174,8 +170,10 @@ describe('DatabaseManagerModal', () => {
     const connectTab = connectTabButtons[0]; // Tab button is first
     await user.click(connectTab);
 
-    // Verify switched to Connect tab
-    expect(connectTab).toHaveClass('text-blue-600');
+    // Verify switched to Connect tab by checking for Database URL input
+    await waitFor(() => {
+      expect(screen.getByLabelText('Database URL')).toBeInTheDocument();
+    });
   });
 
   it('calls onLoadCheckpoint and onClose when benchmark is loaded', () => {

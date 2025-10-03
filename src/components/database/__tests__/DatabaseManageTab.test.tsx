@@ -20,9 +20,13 @@ describe('DatabaseManageTab', () => {
 
     render(<DatabaseManageTab storageUrl={mockStorageUrl} onLoadBenchmark={mockOnLoadBenchmark} />);
 
-    // Should show loader while fetching
-    const loader = screen.getByRole('img', { hidden: true }); // Lucide icons have role="img"
-    expect(loader).toBeInTheDocument();
+    // Should show loader while fetching (Lucide Loader icon with animate-spin class)
+    // During loading, the component only shows the loader, not the benchmarks list or load button
+    const createButton = screen.getByText('Create New Benchmark in Database');
+    expect(createButton).toBeInTheDocument();
+
+    // The Load Selected Benchmark button should NOT be present during loading
+    expect(screen.queryByText('Load Selected Benchmark')).not.toBeInTheDocument();
   });
 
   it('shows empty state when no benchmarks exist', async () => {

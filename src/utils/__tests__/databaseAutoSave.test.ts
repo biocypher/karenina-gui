@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { autoSaveToDatabase } from '../databaseAutoSave';
 import { useDatasetStore } from '../../stores/useDatasetStore';
-import type { UnifiedCheckpoint } from '../../types';
+import { useRubricStore } from '../../stores/useRubricStore';
+import type { Checkpoint } from '../../types';
 
-// Mock the store
+// Mock the stores
 vi.mock('../../stores/useDatasetStore');
+vi.mock('../../stores/useRubricStore');
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -14,31 +16,29 @@ const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
 const mockUseDatasetStore = vi.mocked(useDatasetStore);
+const mockUseRubricStore = vi.mocked(useRubricStore);
 
 describe('databaseAutoSave', () => {
   const mockSetLastSaved = vi.fn();
-  const mockSetSaving = vi.fn();
+  const mockSetIsSaving = vi.fn();
   const mockSetSaveError = vi.fn();
 
-  const mockCheckpoint: UnifiedCheckpoint = {
-    version: '2.0',
-    dataset_metadata: {
-      name: 'Test Benchmark',
-      description: 'Test description',
-      version: '1.0.0',
-      creator: 'Test User',
+  const mockCheckpoint: Checkpoint = {
+    q1: {
+      id: 'q1',
+      question: 'What is 2+2?',
+      raw_answer: '4',
+      answer_template: 'class Answer(BaseModel): result: int',
+      finished: true,
+      tags: [],
     },
-    checkpoint: {
-      q1: {
-        id: 'q1',
-        question: 'What is 2+2?',
-        raw_answer: '4',
-        answer_template: 'class Answer(BaseModel): result: int',
-        finished: true,
-        tags: [],
-      },
-    },
-    global_rubric: null,
+  };
+
+  const mockMetadata = {
+    name: 'Test Benchmark',
+    description: 'Test description',
+    version: '1.0.0',
+    creator: 'Test User',
   };
 
   beforeEach(() => {
@@ -47,14 +47,20 @@ describe('databaseAutoSave', () => {
     mockConsoleLog.mockClear();
     mockConsoleError.mockClear();
 
-    // Default mock implementation
+    // Default mock implementation for useDatasetStore
     mockUseDatasetStore.getState = vi.fn().mockReturnValue({
       isConnectedToDatabase: true,
       storageUrl: 'sqlite:///test.db',
       currentBenchmarkName: 'Test Benchmark',
+      metadata: mockMetadata,
       setLastSaved: mockSetLastSaved,
-      setIsSaving: mockSetSaving,
+      setIsSaving: mockSetIsSaving,
       setSaveError: mockSetSaveError,
+    });
+
+    // Default mock implementation for useRubricStore
+    mockUseRubricStore.getState = vi.fn().mockReturnValue({
+      currentRubric: null,
     });
   });
 
@@ -63,15 +69,16 @@ describe('databaseAutoSave', () => {
       isConnectedToDatabase: false,
       storageUrl: null,
       currentBenchmarkName: null,
+      metadata: mockMetadata,
       setLastSaved: mockSetLastSaved,
-      setIsSaving: mockSetSaving,
+      setIsSaving: mockSetIsSaving,
       setSaveError: mockSetSaveError,
     });
 
     await autoSaveToDatabase(mockCheckpoint);
 
     expect(global.fetch).not.toHaveBeenCalled();
-    expect(mockSetSaving).not.toHaveBeenCalled();
+    expect(mockSetIsSaving).not.toHaveBeenCalled();
   });
 
   it('does nothing when storageUrl is missing', async () => {
@@ -79,8 +86,9 @@ describe('databaseAutoSave', () => {
       isConnectedToDatabase: true,
       storageUrl: null,
       currentBenchmarkName: 'Test',
+      metadata: mockMetadata,
       setLastSaved: mockSetLastSaved,
-      setIsSaving: mockSetSaving,
+      setIsSaving: mockSetIsSaving,
       setSaveError: mockSetSaveError,
     });
 
@@ -94,8 +102,9 @@ describe('databaseAutoSave', () => {
       isConnectedToDatabase: true,
       storageUrl: 'sqlite:///test.db',
       currentBenchmarkName: null,
+      metadata: mockMetadata,
       setLastSaved: mockSetLastSaved,
-      setIsSaving: mockSetSaving,
+      setIsSaving: mockSetIsSaving,
       setSaveError: mockSetSaveError,
     });
 
@@ -112,7 +121,7 @@ describe('databaseAutoSave', () => {
 
     await autoSaveToDatabase(mockCheckpoint);
 
-    expect(mockSetSaving).toHaveBeenCalledWith(true);
+    expect(mockSetIsSaving).toHaveBeenCalledWith(true);
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/database/save-benchmark',
       expect.objectContaining({
@@ -122,7 +131,7 @@ describe('databaseAutoSave', () => {
       })
     );
     expect(mockSetLastSaved).toHaveBeenCalledWith('2025-01-01T00:00:00Z');
-    expect(mockSetSaving).toHaveBeenCalledWith(false);
+    expect(mockSetIsSaving).toHaveBeenCalledWith(false);
     expect(mockSetSaveError).toHaveBeenCalledWith(null);
   });
 
@@ -141,8 +150,8 @@ describe('databaseAutoSave', () => {
       storage_url: 'sqlite:///test.db',
       benchmark_name: 'Test Benchmark',
       checkpoint_data: {
-        dataset_metadata: mockCheckpoint.dataset_metadata,
-        questions: mockCheckpoint.checkpoint,
+        dataset_metadata: mockMetadata,
+        questions: mockCheckpoint,
         global_rubric: null,
       },
     });
@@ -157,7 +166,7 @@ describe('databaseAutoSave', () => {
     await autoSaveToDatabase(mockCheckpoint);
 
     expect(mockSetSaveError).toHaveBeenCalledWith('Database error');
-    expect(mockSetSaving).toHaveBeenCalledWith(false);
+    expect(mockSetIsSaving).toHaveBeenCalledWith(false);
     expect(mockConsoleError).toHaveBeenCalledWith(
       '❌ Failed to auto-save to database:',
       expect.stringContaining('Database error')
@@ -170,39 +179,41 @@ describe('databaseAutoSave', () => {
     await autoSaveToDatabase(mockCheckpoint);
 
     expect(mockSetSaveError).toHaveBeenCalledWith('Network failure');
-    expect(mockSetSaving).toHaveBeenCalledWith(false);
+    expect(mockSetIsSaving).toHaveBeenCalledWith(false);
     expect(mockConsoleError).toHaveBeenCalledWith('❌ Failed to auto-save to database:', expect.any(String));
   });
 
   it('handles checkpoint with global rubric', async () => {
-    const checkpointWithRubric: UnifiedCheckpoint = {
-      ...mockCheckpoint,
-      global_rubric: {
-        id: 'test-rubric',
-        name: 'Test Rubric',
-        traits: [
-          {
-            name: 'Accuracy',
-            description: 'Answer is accurate',
-            kind: 'score',
-            min_score: 1,
-            max_score: 5,
-          },
-        ],
-      },
+    const testRubric = {
+      id: 'test-rubric',
+      name: 'Test Rubric',
+      traits: [
+        {
+          name: 'Accuracy',
+          description: 'Answer is accurate',
+          kind: 'score',
+          min_score: 1,
+          max_score: 5,
+        },
+      ],
     };
+
+    // Mock rubric store to return test rubric
+    mockUseRubricStore.getState = vi.fn().mockReturnValue({
+      currentRubric: testRubric,
+    });
 
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true, last_modified: '2025-01-01T00:00:00Z' }),
     });
 
-    await autoSaveToDatabase(checkpointWithRubric);
+    await autoSaveToDatabase(mockCheckpoint);
 
     const fetchCall = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const requestBody = JSON.parse(fetchCall[1].body);
 
-    expect(requestBody.checkpoint_data.global_rubric).toEqual(checkpointWithRubric.global_rubric);
+    expect(requestBody.checkpoint_data.global_rubric).toEqual(testRubric);
   });
 
   it('logs success message on successful save', async () => {
@@ -213,7 +224,7 @@ describe('databaseAutoSave', () => {
 
     await autoSaveToDatabase(mockCheckpoint);
 
-    expect(mockConsoleLog).toHaveBeenCalledWith('💾 Auto-saved to database: Test Benchmark');
+    expect(mockConsoleLog).toHaveBeenCalledWith('✅ Auto-saved to database successfully');
   });
 
   it('resets saving state even on error', async () => {
@@ -221,19 +232,12 @@ describe('databaseAutoSave', () => {
 
     await autoSaveToDatabase(mockCheckpoint);
 
-    expect(mockSetSaving).toHaveBeenNthCalledWith(1, true);
-    expect(mockSetSaving).toHaveBeenNthCalledWith(2, false);
+    expect(mockSetIsSaving).toHaveBeenNthCalledWith(1, true);
+    expect(mockSetIsSaving).toHaveBeenNthCalledWith(2, false);
   });
 
   it('handles empty checkpoint data', async () => {
-    const emptyCheckpoint: UnifiedCheckpoint = {
-      version: '2.0',
-      dataset_metadata: {
-        name: 'Empty Benchmark',
-      },
-      checkpoint: {},
-      global_rubric: null,
-    };
+    const emptyCheckpoint: Checkpoint = {};
 
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
