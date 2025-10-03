@@ -62,13 +62,37 @@ Because benchmarks evolve over time, the curator includes a robust checkpoint sy
 
 ### Database Management
 
-In addition to file-based checkpoints, the curator supports persistent database storage for benchmarks and verification results:
+In addition to file-based checkpoints, the curator supports persistent database storage for benchmarks and verification results through a streamlined modal interface:
 
-- **Manage Database Button:** Access database operations through the "Manage Database" button in the File Management panel.
-- **Connect to Database:** Browse for a local SQLite database file or enter a connection string for PostgreSQL or other database types.
-- **Create New Database:** Initialize a new database at a specified location with proper schema setup.
-- **Load from Database:** Browse available benchmarks in a connected database and load them directly into the curator.
-- **Auto-Save Verification Results:** When a benchmark is loaded from a database, all subsequent verification results are automatically saved to that database by default. This behavior can be disabled by setting the `AUTOSAVE_DATABASE` environment variable to `false`.
+**Accessing the Database Manager**
+
+Click the "Manage Database" button in the File Management panel's Database section to open the Database Manager modal. The interface uses a two-tab design:
+
+**Connect Tab**
+
+- Enter a database URL (SQLite, PostgreSQL, or other supported databases)
+- Browse for local SQLite files using the folder icon
+- Choose between creating a new database or connecting to an existing one
+- Connection status displays the number of benchmarks found in the database
+
+**Manage Benchmarks Tab**
+
+- View all benchmarks in the connected database with their statistics:
+  - Total questions count
+  - Finished and unfinished question counts
+  - Last modified timestamp
+- Create new benchmarks directly in the database with custom metadata (name, description, version, creator)
+- Select and load benchmarks into the curator for editing
+- Visual indicators show selection state and benchmark details
+
+**Automatic Saving**
+
+Once connected to a database, checkpoint data is automatically saved in two scenarios:
+
+- When downloading a checkpoint (saves to database AND downloads the JSON-LD file)
+- After completing a verification run in the Benchmark tab
+
+This auto-save functionality ensures your work is persistently stored without manual intervention, while still providing traditional file downloads when needed. The connection status indicator in the File Management panel shows the active database connection, current benchmark name, and last save timestamp.
 
 Database storage provides a centralized, structured approach to managing benchmarks and their verification history, making it easier to track progress over time and share results across teams.
 
