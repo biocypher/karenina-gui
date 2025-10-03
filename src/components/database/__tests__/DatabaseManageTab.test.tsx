@@ -159,8 +159,9 @@ describe('DatabaseManageTab', () => {
     await waitFor(() => {
       expect(mockOnLoadBenchmark).toHaveBeenCalledWith(
         expect.objectContaining({
+          version: '2.0',
           dataset_metadata: { name: 'Test Benchmark' },
-          questions: {},
+          checkpoint: {},
           global_rubric: null,
         }),
         'Test Benchmark'

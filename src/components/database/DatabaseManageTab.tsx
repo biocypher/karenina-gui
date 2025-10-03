@@ -95,8 +95,9 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
 
       // Convert checkpoint_data to UnifiedCheckpoint format
       const checkpoint: UnifiedCheckpoint = {
+        version: '2.0',
         dataset_metadata: data.checkpoint_data.dataset_metadata,
-        questions: data.checkpoint_data.questions,
+        checkpoint: data.checkpoint_data.questions,
         global_rubric: data.checkpoint_data.global_rubric || null,
       };
 
