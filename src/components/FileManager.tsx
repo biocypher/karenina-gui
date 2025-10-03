@@ -7,6 +7,7 @@ import { useQuestionStore } from '../stores/useQuestionStore';
 import { DatasetMetadataEditor } from './DatasetMetadataEditor';
 import { NewBenchmarkModal } from './NewBenchmarkModal';
 import { DatabaseManagerModal } from './DatabaseManagerModal';
+import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import {
   v2ToJsonLd,
   jsonLdToV2,
@@ -31,7 +32,15 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
   // Get stores
   const { currentRubric, reset: resetRubric } = useRubricStore();
-  const { metadata: datasetMetadata, setMetadata, markBenchmarkAsInitialized, setStorageUrl } = useDatasetStore();
+  const {
+    metadata: datasetMetadata,
+    setMetadata,
+    markBenchmarkAsInitialized,
+    setStorageUrl,
+    isConnectedToDatabase,
+    currentBenchmarkName,
+    lastSaved,
+  } = useDatasetStore();
   const { resetQuestionState } = useQuestionStore();
 
   const handleCheckpointUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,7 +182,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
     }
   };
 
-  const downloadCheckpoint = () => {
+  const downloadCheckpoint = async () => {
     if (Object.keys(checkpoint).length === 0) {
       alert('No checkpoint data to download. Please make some changes first.');
       return;
@@ -187,6 +196,15 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         dataset_metadata: datasetMetadata,
         checkpoint: checkpoint,
       };
+
+      // Auto-save to database if connected (non-blocking)
+      try {
+        await autoSaveToDatabase(unifiedCheckpoint);
+        console.log('💾 Checkpoint auto-saved to database');
+      } catch (saveError) {
+        // Log error but don't block the download
+        console.warn('⚠️ Failed to auto-save to database:', saveError);
+      }
 
       // Convert to JSON-LD format
       console.log('📊 Converting checkpoint to JSON-LD format...');
@@ -216,11 +234,16 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
       const itemCount = Object.keys(checkpoint).length;
       const rubricInfo = currentRubric ? ` and ${currentRubric.traits.length} rubric traits` : '';
 
+      // Check if database save was successful
+      const { isConnectedToDatabase, lastSaved } = useDatasetStore.getState();
+      const dbSaveInfo = isConnectedToDatabase && lastSaved ? `💾 Database: Saved successfully\n` : '';
+
       alert(
         `✅ Checkpoint downloaded successfully!\n\n` +
           `📊 Format: JSON-LD v3.0 (schema.org)\n` +
           `📁 File: karenina_checkpoint_${timestamp}.jsonld\n` +
-          `📦 Contains: ${itemCount} questions${rubricInfo}`
+          `📦 Contains: ${itemCount} questions${rubricInfo}\n` +
+          dbSaveInfo
       );
     } catch (conversionError) {
       console.error('❌ Failed to convert checkpoint to JSON-LD:', conversionError);
@@ -345,6 +368,32 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
               <Database className="w-4 h-4" />
               Manage Database
             </button>
+
+            {/* Database Connection Status */}
+            {isConnectedToDatabase ? (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg p-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    Connected to Database
+                  </span>
+                </div>
+                {currentBenchmarkName && (
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400 pl-4">
+                    Benchmark: <span className="font-medium">{currentBenchmarkName}</span>
+                  </div>
+                )}
+                {lastSaved && (
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400 pl-4">
+                    Last saved: {new Date(lastSaved).toLocaleTimeString()}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-xs text-slate-500 dark:text-slate-400 text-center py-2 bg-slate-50/50 dark:bg-slate-700/50 rounded-lg">
+                Not connected to database
+              </div>
+            )}
           </div>
         </div>
 

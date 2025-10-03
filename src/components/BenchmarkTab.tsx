@@ -13,7 +13,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from 'lucide-react';
-import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
+import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig, UnifiedCheckpoint } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
 import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
@@ -27,6 +27,7 @@ import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
 import { SearchableTextDisplay } from './SearchableTextDisplay';
+import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 
 // Interfaces now imported from types
 
@@ -224,6 +225,20 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   // Accumulate results instead of replacing them
                   setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
                   console.log('Results set successfully');
+
+                  // Auto-save to database after verification completes
+                  try {
+                    const unifiedCheckpoint: UnifiedCheckpoint = {
+                      version: '2.0',
+                      global_rubric: currentRubric,
+                      dataset_metadata: metadata,
+                      checkpoint: checkpoint,
+                    };
+                    await autoSaveToDatabase(unifiedCheckpoint);
+                    console.log('💾 Checkpoint auto-saved to database after verification');
+                  } catch (saveError) {
+                    console.warn('⚠️ Failed to auto-save to database after verification:', saveError);
+                  }
                 } catch (e) {
                   console.error('Error setting results:', e);
                   setError('Failed to process verification results');
