@@ -485,6 +485,11 @@ class Answer(BaseAnswer):
       };
 
       set(() => ({ checkpoint: updatedCheckpoint }));
+
+      // Auto-save to database after updating rubric
+      autoSaveToDatabase(updatedCheckpoint).catch((err) => {
+        console.warn('⚠️ Failed to auto-save to database after rubric update:', err);
+      });
     }
   },
 
