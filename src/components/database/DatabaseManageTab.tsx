@@ -85,8 +85,8 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
     // Close the create form
     setShowCreateForm(false);
 
-    // Load the newly created benchmark
-    handleLoadBenchmark(benchmarkName);
+    // Select the newly created benchmark (but don't load it)
+    setSelectedBenchmark(benchmarkName);
   };
 
   const handleLoadBenchmark = async (benchmarkName?: string) => {
