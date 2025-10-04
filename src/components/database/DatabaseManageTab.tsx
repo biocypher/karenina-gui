@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Database, Loader } from 'lucide-react';
+import { Plus, Database, Loader, Save } from 'lucide-react';
 import { BenchmarkCard } from './BenchmarkCard';
 import { CreateBenchmarkForm } from './CreateBenchmarkForm';
 import { UnifiedCheckpoint } from '../../types';
+import { useQuestionStore } from '../../stores/useQuestionStore';
+import { useDatasetStore } from '../../stores/useDatasetStore';
+import { useRubricStore } from '../../stores/useRubricStore';
 
 interface BenchmarkInfo {
   id: string;
@@ -19,16 +22,27 @@ interface DatabaseManageTabProps {
 }
 
 export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl, onLoadBenchmark }) => {
+  // Zustand stores
+  const { checkpoint } = useQuestionStore();
+  const { metadata } = useDatasetStore();
+  const { currentRubric } = useRubricStore();
+
+  // Local state
   const [benchmarks, setBenchmarks] = useState<BenchmarkInfo[]>([]);
   const [selectedBenchmark, setSelectedBenchmark] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBenchmark, setIsLoadingBenchmark] = useState(false);
+  const [isSavingQuestions, setIsSavingQuestions] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if we have questions loaded in memory
+  const hasQuestionsInMemory = Object.keys(checkpoint).length > 0;
 
   // Load benchmarks list when component mounts or storageUrl changes
   useEffect(() => {
     loadBenchmarks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageUrl]);
 
   const loadBenchmarks = async () => {
@@ -110,6 +124,64 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
     }
   };
 
+  const handleSaveToSelectedBenchmark = async () => {
+    if (!selectedBenchmark) {
+      setError('Please select a benchmark');
+      return;
+    }
+
+    if (!hasQuestionsInMemory) {
+      setError('No questions loaded in memory to export');
+      return;
+    }
+
+    setIsSavingQuestions(true);
+    setError(null);
+
+    try {
+      // Build checkpoint data in the format expected by the API
+      const checkpointData = {
+        dataset_metadata: metadata,
+        questions: checkpoint,
+        global_rubric: currentRubric,
+      };
+
+      const response = await fetch('/api/database/save-benchmark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          storage_url: storageUrl,
+          benchmark_name: selectedBenchmark,
+          checkpoint_data: checkpointData,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to export questions to benchmark');
+      }
+
+      await response.json();
+
+      // Success - show message and reload benchmarks list to reflect updated counts
+      console.log(
+        `✅ Successfully exported ${Object.keys(checkpoint).length} questions to benchmark '${selectedBenchmark}'`
+      );
+
+      // Reload benchmarks to show updated question counts
+      await loadBenchmarks();
+
+      // Clear any previous errors
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export questions to benchmark');
+    } finally {
+      setIsSavingQuestions(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Create New Benchmark Button/Form */}
@@ -174,12 +246,42 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
         )}
       </div>
 
-      {/* Load Button */}
+      {/* Action Buttons */}
       {benchmarks.length > 0 && (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          {/* Export Current Questions Button */}
+          <button
+            onClick={handleSaveToSelectedBenchmark}
+            disabled={!selectedBenchmark || !hasQuestionsInMemory || isSavingQuestions || isLoadingBenchmark}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700
+                     text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                     flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
+                     disabled:transform-none"
+            title={
+              !selectedBenchmark
+                ? 'Select a benchmark first'
+                : !hasQuestionsInMemory
+                  ? 'No questions loaded in memory'
+                  : 'Export current questions to selected benchmark'
+            }
+          >
+            {isSavingQuestions ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                Export current quest. to Benchmark
+              </>
+            )}
+          </button>
+
+          {/* Load Benchmark Button */}
           <button
             onClick={() => handleLoadBenchmark()}
-            disabled={!selectedBenchmark || isLoadingBenchmark}
+            disabled={!selectedBenchmark || isLoadingBenchmark || isSavingQuestions}
             className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700
                      text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed
                      flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5

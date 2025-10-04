@@ -94,6 +94,12 @@ The Connect tab provides a directory-based approach to database management:
   - Last modified timestamp
 - Create new benchmarks directly in the database with custom metadata (name, description, version, creator)
 - Select and load benchmarks into the curator for editing
+- **Export current questions to existing benchmarks**: When you have questions loaded in memory (e.g., from Template Generation) and a benchmark selected, you can merge those questions into the selected benchmark:
+  - Click "Export current quest. to Benchmark" to add current questions to the selected benchmark
+  - Questions are **merged** - existing questions in the benchmark are preserved
+  - Duplicate detection prevents adding the same question twice (based on question text)
+  - After exporting, the benchmark list refreshes to show updated question counts
+  - This feature enables an iterative workflow: extract questions → export to database → extract more → merge into same benchmark
 - Visual indicators show selection state and benchmark details
 
 **Setting Up the Database Directory**
@@ -117,6 +123,33 @@ Once connected to a database, checkpoint data is automatically saved in two scen
 This auto-save functionality ensures your work is persistently stored without manual intervention, while still providing traditional file downloads when needed. The connection status indicator in the File Management panel shows the active database connection, current benchmark name, and last save timestamp.
 
 Database storage provides a centralized, structured approach to managing benchmarks and their verification history, making it easier to track progress over time and share results across teams.
+
+**Merging Questions Workflow Example**
+
+A common workflow for building a benchmark incrementally:
+
+1. **Extract Initial Questions**: Use the Template Generation tab to extract questions from a data file (Excel, CSV, etc.)
+2. **Create Database Benchmark**: In the Database Manager, create a new benchmark in the database
+3. **Export Questions**: Select the benchmark and click "Export current quest. to Benchmark" to export the initial set
+4. **Extract More Questions**: Return to Template Generation and extract questions from another file
+5. **Merge Additional Questions**: Return to Database Manager, select the same benchmark, and click "Export current quest. to Benchmark"
+6. **Result**: The benchmark now contains all questions from both extractions, with no duplicates
+
+This iterative approach is particularly useful when:
+
+- Building benchmarks from multiple data sources
+- Incrementally adding questions as new data becomes available
+- Collaborating with multiple team members contributing questions
+- Testing and refining question extraction before committing to the database
+
+**Technical Note on Duplicate Detection**
+
+The system uses an MD5 hash of the question text as the unique identifier for each question. This means:
+
+- Questions with identical text are considered duplicates and won't be added twice
+- Questions with even minor text differences are treated as distinct questions
+- Metadata changes (tags, templates, etc.) don't affect duplicate detection
+- When a duplicate is encountered, the system silently skips it and continues processing
 
 If you ever need a completely fresh start, a reset function clears all loaded content—though not without a confirmation step to avoid accidental loss.
 
