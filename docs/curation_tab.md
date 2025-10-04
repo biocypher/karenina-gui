@@ -97,8 +97,14 @@ The Connect tab provides a directory-based approach to database management:
 - **Export current questions to existing benchmarks**: When you have questions loaded in memory (e.g., from Template Generation) and a benchmark selected, you can merge those questions into the selected benchmark:
   - Click "Export current quest. to Benchmark" to add current questions to the selected benchmark
   - Questions are **merged** - existing questions in the benchmark are preserved
-  - Duplicate detection prevents adding the same question twice (based on question text)
-  - After exporting, the benchmark list refreshes to show updated question counts
+  - **Interactive duplicate resolution**: When duplicate questions are detected (same question text), a modal appears allowing you to choose which version to keep:
+    - Collapsible items show each duplicate question
+    - Expand any item to see a side-by-side comparison of all fields (old vs new)
+    - Choose "Keep Old" to retain the database version, or "Keep New" to update with your current session version
+    - Bulk actions: "Keep All Old" or "Keep All New" buttons for quick resolution
+    - Visual diff highlighting shows which fields have changed
+  - Duplicate detection is based on MD5 hash of question text
+  - After exporting (or resolving duplicates), the benchmark list refreshes to show updated question counts
   - This feature enables an iterative workflow: extract questions → export to database → extract more → merge into same benchmark
 - Visual indicators show selection state and benchmark details
 
@@ -146,10 +152,14 @@ This iterative approach is particularly useful when:
 
 The system uses an MD5 hash of the question text as the unique identifier for each question. This means:
 
-- Questions with identical text are considered duplicates and won't be added twice
+- Questions with identical text are considered duplicates
 - Questions with even minor text differences are treated as distinct questions
 - Metadata changes (tags, templates, etc.) don't affect duplicate detection
-- When a duplicate is encountered, the system silently skips it and continues processing
+- When a duplicate is encountered, an interactive resolution modal appears:
+  - **Keep Old**: Retains the existing database version unchanged
+  - **Keep New**: Updates the database with your current session version (including any changes to answer templates, rubrics, metadata, etc.)
+  - This allows you to intentionally update questions while preventing accidental duplicates
+  - You can review all field differences before deciding
 
 If you ever need a completely fresh start, a reset function clears all loaded content—though not without a confirmation step to avoid accidental loss.
 

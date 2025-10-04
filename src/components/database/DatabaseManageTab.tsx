@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Database, Loader, Save } from 'lucide-react';
 import { BenchmarkCard } from './BenchmarkCard';
 import { CreateBenchmarkForm } from './CreateBenchmarkForm';
-import { UnifiedCheckpoint } from '../../types';
+import { DuplicateResolutionModal } from './DuplicateResolutionModal';
+import {
+  UnifiedCheckpoint,
+  DuplicateQuestionInfo,
+  DuplicateResolutions,
+  DatasetMetadata,
+  Checkpoint,
+  Rubric,
+} from '../../types';
 import { useQuestionStore } from '../../stores/useQuestionStore';
 import { useDatasetStore } from '../../stores/useDatasetStore';
 import { useRubricStore } from '../../stores/useRubricStore';
@@ -35,6 +43,10 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
   const [isSavingQuestions, setIsSavingQuestions] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Duplicate resolution state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicates, setDuplicates] = useState<DuplicateQuestionInfo[]>([]);
 
   // Check if we have questions loaded in memory
   const hasQuestionsInMemory = Object.keys(checkpoint).length > 0;
@@ -146,6 +158,7 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
         global_rubric: currentRubric,
       };
 
+      // First, detect duplicates
       const response = await fetch('/api/database/save-benchmark', {
         method: 'POST',
         headers: {
@@ -155,6 +168,48 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
           storage_url: storageUrl,
           benchmark_name: selectedBenchmark,
           checkpoint_data: checkpointData,
+          detect_duplicates: true, // Only detect, don't save yet
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to check for duplicates');
+      }
+
+      const data = await response.json();
+
+      // If duplicates found, show resolution modal
+      if (data.duplicates && data.duplicates.length > 0) {
+        console.log(`⚠️ Found ${data.duplicates.length} duplicate question(s)`);
+        setDuplicates(data.duplicates);
+        setShowDuplicateModal(true);
+      } else {
+        // No duplicates, proceed with normal save
+        await performSave(checkpointData);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export questions to benchmark');
+      setIsSavingQuestions(false);
+    }
+  };
+
+  const performSave = async (checkpointData: {
+    dataset_metadata: DatasetMetadata;
+    questions: Checkpoint;
+    global_rubric: Rubric | null;
+  }) => {
+    try {
+      const response = await fetch('/api/database/save-benchmark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          storage_url: storageUrl,
+          benchmark_name: selectedBenchmark,
+          checkpoint_data: checkpointData,
+          detect_duplicates: false, // Actual save
         }),
       });
 
@@ -175,11 +230,51 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
 
       // Clear any previous errors
       setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export questions to benchmark');
     } finally {
       setIsSavingQuestions(false);
     }
+  };
+
+  const handleApplyResolutions = async (resolutions: DuplicateResolutions) => {
+    if (!selectedBenchmark) {
+      throw new Error('No benchmark selected');
+    }
+
+    // Build checkpoint data
+    const checkpointData = {
+      dataset_metadata: metadata,
+      questions: checkpoint,
+      global_rubric: currentRubric,
+    };
+
+    // Call resolve-duplicates endpoint
+    const response = await fetch('/api/database/resolve-duplicates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        storage_url: storageUrl,
+        benchmark_name: selectedBenchmark,
+        checkpoint_data: checkpointData,
+        resolutions: resolutions,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to resolve duplicates');
+    }
+
+    const data = await response.json();
+
+    // Success - reload benchmarks list
+    console.log(`✅ ${data.message}`);
+    await loadBenchmarks();
+
+    // Clear state
+    setIsSavingQuestions(false);
+    setError(null);
   };
 
   return (
@@ -301,6 +396,17 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
           </button>
         </div>
       )}
+
+      {/* Duplicate Resolution Modal */}
+      <DuplicateResolutionModal
+        isOpen={showDuplicateModal}
+        onClose={() => {
+          setShowDuplicateModal(false);
+          setIsSavingQuestions(false); // Reset saving state when modal is closed
+        }}
+        duplicates={duplicates}
+        onApplyResolutions={handleApplyResolutions}
+      />
     </div>
   );
 };
