@@ -279,7 +279,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         clearInterval(interval);
       }
     };
-  }, [isRunning, jobId, MAX_RETRIES, setBenchmarkResults]);
+  }, [isRunning, jobId, MAX_RETRIES, setBenchmarkResults, checkpoint]);
 
   const handleStartVerification = async (questionIds?: string[]) => {
     const idsToRun = questionIds || Array.from(selectedTests);
@@ -338,7 +338,17 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error detail from response body
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch {
+          // If parsing fails, use the default error message
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

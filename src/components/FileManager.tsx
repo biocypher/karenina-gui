@@ -304,6 +304,29 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
     // Mark benchmark as initialized since we're loading a checkpoint from database
     markBenchmarkAsInitialized();
+
+    // Load dataset metadata into dataset store if present
+    if (loadedCheckpoint.dataset_metadata) {
+      setMetadata(loadedCheckpoint.dataset_metadata);
+      console.log('✅ Loaded dataset metadata:', loadedCheckpoint.dataset_metadata.name || 'Unnamed dataset');
+    }
+
+    // Load global rubric into rubric store if present
+    if (loadedCheckpoint.global_rubric) {
+      const { setCurrentRubric, saveRubric } = useRubricStore.getState();
+      setCurrentRubric(loadedCheckpoint.global_rubric);
+      console.log('✅ Loaded global rubric with', loadedCheckpoint.global_rubric.traits.length, 'traits');
+
+      // Sync the rubric to the backend so verification can access it
+      console.log('🔄 Syncing global rubric to backend...');
+      saveRubric()
+        .then(() => {
+          console.log('✅ Global rubric synced to backend successfully');
+        })
+        .catch((error) => {
+          console.error('❌ Failed to sync global rubric to backend:', error);
+        });
+    }
   };
 
   // Count finished items
