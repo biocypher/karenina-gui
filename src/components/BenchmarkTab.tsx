@@ -24,8 +24,10 @@ import { BenchmarkTable } from './BenchmarkTable';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
 import { RubricResultsDisplay } from './RubricResultsDisplay';
 import { useRubricStore } from '../stores/useRubricStore';
+import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
 import { SearchableTextDisplay } from './SearchableTextDisplay';
+import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 
 // Interfaces now imported from types
 
@@ -68,6 +70,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Rubric store
   const { currentRubric } = useRubricStore();
+  const { storageUrl, metadata } = useDatasetStore();
 
   // Verification state
   const [isRunning, setIsRunning] = useState(false);
@@ -222,6 +225,14 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   // Accumulate results instead of replacing them
                   setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
                   console.log('Results set successfully');
+
+                  // Auto-save to database after verification completes
+                  try {
+                    await autoSaveToDatabase(checkpoint);
+                    console.log('💾 Checkpoint auto-saved to database after verification');
+                  } catch (saveError) {
+                    console.warn('⚠️ Failed to auto-save to database after verification:', saveError);
+                  }
                 } catch (e) {
                   console.error('Error setting results:', e);
                   setError('Failed to process verification results');
@@ -268,7 +279,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         clearInterval(interval);
       }
     };
-  }, [isRunning, jobId, MAX_RETRIES, setBenchmarkResults]);
+  }, [isRunning, jobId, MAX_RETRIES, setBenchmarkResults, checkpoint]);
 
   const handleStartVerification = async (questionIds?: string[]) => {
     const idsToRun = questionIds || Array.from(selectedTests);
@@ -306,7 +317,19 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         finished_templates: templatesData,
         run_name: runName.trim() || undefined, // Send run name if provided
         async_config: getAsyncConfig(), // Include async configuration from config store
+        storage_url: storageUrl || undefined, // Include storage URL for database auto-save
+        benchmark_name: metadata?.name || undefined, // Include benchmark name for database auto-save
       };
+
+      // Log database auto-save configuration
+      if (storageUrl && metadata?.name) {
+        console.log('🔗 Database auto-save enabled:', { storageUrl, benchmarkName: metadata.name });
+      } else {
+        console.warn('⚠️ Database auto-save disabled - missing:', {
+          storageUrl: storageUrl ? 'set' : 'NOT SET',
+          benchmarkName: metadata?.name ? metadata.name : 'NOT SET',
+        });
+      }
 
       const response = await fetch(API_ENDPOINTS.START_VERIFICATION, {
         method: HTTP_METHODS.POST,
@@ -315,7 +338,17 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error detail from response body
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch {
+          // If parsing fails, use the default error message
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

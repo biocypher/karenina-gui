@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
+import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 
 // Define the question store state interface
 interface QuestionState {
@@ -247,6 +248,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     });
 
     set(() => ({ checkpoint: completeCheckpoint }));
+
+    // Auto-save to database after saving template
+    autoSaveToDatabase(completeCheckpoint).catch((err) => {
+      console.warn('⚠️ Failed to auto-save to database after template save:', err);
+    });
   },
 
   toggleFinished: () => {
@@ -284,6 +290,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     });
 
     set(() => ({ checkpoint: completeCheckpoint }));
+
+    // Auto-save to database after toggling finished status
+    autoSaveToDatabase(completeCheckpoint).catch((err) => {
+      console.warn('⚠️ Failed to auto-save to database after toggle finished:', err);
+    });
   },
 
   navigateToQuestion: (questionId: string) => {
@@ -474,6 +485,11 @@ class Answer(BaseAnswer):
       };
 
       set(() => ({ checkpoint: updatedCheckpoint }));
+
+      // Auto-save to database after updating rubric
+      autoSaveToDatabase(updatedCheckpoint).catch((err) => {
+        console.warn('⚠️ Failed to auto-save to database after rubric update:', err);
+      });
     }
   },
 

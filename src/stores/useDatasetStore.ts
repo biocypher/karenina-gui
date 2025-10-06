@@ -6,11 +6,22 @@ interface DatasetState {
   // Dataset metadata
   metadata: DatasetMetadata;
 
+  // Database storage URL (for auto-save functionality)
+  storageUrl: string | null;
+
   // Benchmark lifecycle tracking
   isBenchmarkInitialized: boolean;
 
+  // Database connection state
+  isConnectedToDatabase: boolean;
+  currentBenchmarkName: string | null;
+  lastSaved: string | null;
+  isSaving: boolean;
+  saveError: string | null;
+
   // Actions
   setMetadata: (metadata: DatasetMetadata) => void;
+  setStorageUrl: (url: string | null) => void;
   updateField: <K extends keyof DatasetMetadata>(field: K, value: DatasetMetadata[K]) => void;
   addKeyword: (keyword: string) => void;
   removeKeyword: (keyword: string) => void;
@@ -24,6 +35,14 @@ interface DatasetState {
   // Helper actions for complex fields
   setCreator: (creator: SchemaOrgPerson | SchemaOrgOrganization) => void;
   setPublisher: (publisher: SchemaOrgOrganization) => void;
+
+  // Database connection actions
+  connectDatabase: (url: string, benchmarkName: string | null) => void;
+  disconnectDatabase: () => void;
+  setCurrentBenchmarkName: (name: string | null) => void;
+  setLastSaved: (timestamp: string | null) => void;
+  setIsSaving: (isSaving: boolean) => void;
+  setSaveError: (error: string | null) => void;
 }
 
 // Default metadata structure
@@ -41,7 +60,15 @@ const getDefaultMetadata = (): DatasetMetadata => ({
 export const useDatasetStore = create<DatasetState>((set) => ({
   // Initial state
   metadata: getDefaultMetadata(),
+  storageUrl: null,
   isBenchmarkInitialized: false,
+
+  // Database connection initial state
+  isConnectedToDatabase: false,
+  currentBenchmarkName: null,
+  lastSaved: null,
+  isSaving: false,
+  saveError: null,
 
   // Actions
   setMetadata: (metadata: DatasetMetadata) => {
@@ -58,6 +85,10 @@ export const useDatasetStore = create<DatasetState>((set) => ({
         dateModified: metadata.dateModified,
       },
     }));
+  },
+
+  setStorageUrl: (url: string | null) => {
+    set({ storageUrl: url });
   },
 
   updateField: <K extends keyof DatasetMetadata>(field: K, value: DatasetMetadata[K]) => {
@@ -175,6 +206,50 @@ export const useDatasetStore = create<DatasetState>((set) => ({
         publisher,
         dateModified: new Date().toISOString(),
       },
+    }));
+  },
+
+  // Database connection actions
+  connectDatabase: (url: string, benchmarkName: string | null) => {
+    set(() => ({
+      isConnectedToDatabase: true,
+      storageUrl: url,
+      currentBenchmarkName: benchmarkName,
+      saveError: null,
+    }));
+  },
+
+  disconnectDatabase: () => {
+    set(() => ({
+      isConnectedToDatabase: false,
+      storageUrl: null,
+      currentBenchmarkName: null,
+      lastSaved: null,
+      saveError: null,
+    }));
+  },
+
+  setCurrentBenchmarkName: (name: string | null) => {
+    set(() => ({
+      currentBenchmarkName: name,
+    }));
+  },
+
+  setLastSaved: (timestamp: string | null) => {
+    set(() => ({
+      lastSaved: timestamp,
+    }));
+  },
+
+  setIsSaving: (isSaving: boolean) => {
+    set(() => ({
+      isSaving,
+    }));
+  },
+
+  setSaveError: (error: string | null) => {
+    set(() => ({
+      saveError: error,
     }));
   },
 }));

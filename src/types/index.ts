@@ -100,6 +100,20 @@ export interface UnifiedCheckpoint {
   checkpoint: Checkpoint;
 }
 
+// Duplicate resolution types
+export interface DuplicateQuestionInfo {
+  question_id: string;
+  question_text: string;
+  old_version: CheckpointItem & { last_modified: string };
+  new_version: CheckpointItem & { last_modified: string };
+}
+
+export type DuplicateResolution = 'keep_old' | 'keep_new';
+
+export interface DuplicateResolutions {
+  [question_id: string]: DuplicateResolution;
+}
+
 // JSON-LD Checkpoint Types (schema.org vocabulary)
 export interface JsonLdContext {
   '@context': {

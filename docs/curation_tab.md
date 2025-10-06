@@ -58,7 +58,110 @@ Global rubrics can also be created with the help of AI. By analyzing questions, 
 
 ## File and Version Management
 
-Because benchmarks evolve over time, the curator includes a robust checkpoint system. Saving a checkpoint exports all templates, metadata, rubrics, and few-shot examples into a JSON-LD file that can later be reloaded in full. You may export the entire state, only selected questions, or just the Python template code. Restoring from a checkpoint validates the structure before merging or replacing your current data. If you ever need a completely fresh start, a reset function clears all loaded content—though not without a confirmation step to avoid accidental loss.
+Because benchmarks evolve over time, the curator includes a robust checkpoint system. Saving a checkpoint exports all templates, metadata, rubrics, and few-shot examples into a JSON-LD file that can later be reloaded in full. You may export the entire state, only selected questions, or just the Python template code. Restoring from a checkpoint validates the structure before merging or replacing your current data.
+
+### Database Management
+
+In addition to file-based checkpoints, the curator supports persistent database storage for benchmarks and verification results through a streamlined modal interface:
+
+**Accessing the Database Manager**
+
+Click the "Manage Database" button in the File Management panel's Database section to open the Database Manager modal. The interface uses a two-tab design:
+
+**Connect Tab**
+
+The Connect tab provides a directory-based approach to database management:
+
+- **Database Directory**: The system reads from the `DB_PATH` environment variable to determine where to look for databases. If not set, it uses the current working directory. The active directory is displayed at the top of the tab.
+
+- **Available Databases**: All `.db` files in the specified directory are listed in a browser-like interface. If no databases exist, a "No databases found" message is displayed.
+
+- **Selecting a Database**: Click on any database in the list to select it. The selected database is highlighted.
+
+- **Connecting**: Once a database is selected, click the "Connect" button to establish a connection. The connection status displays the number of benchmarks found in the database.
+
+- **Creating New Databases**: Click "Create New Database" to create a new database:
+  - Choose the database type (SQLite, PostgreSQL, or MySQL)
+  - For SQLite: Enter a database name (it will be created in the `DB_PATH` directory)
+  - For PostgreSQL/MySQL: Enter server connection details (host, port, database name, credentials)
+  - Click "Create & Connect" to create and connect to the database
+
+**Manage Benchmarks Tab**
+
+- View all benchmarks in the connected database with their statistics:
+  - Total questions count
+  - Finished and unfinished question counts
+  - Last modified timestamp
+- Create new benchmarks directly in the database with custom metadata (name, description, version, creator)
+- Select and load benchmarks into the curator for editing
+- **Export current questions to existing benchmarks**: When you have questions loaded in memory (e.g., from Template Generation) and a benchmark selected, you can merge those questions into the selected benchmark:
+  - Click "Export current quest. to Benchmark" to add current questions to the selected benchmark
+  - Questions are **merged** - existing questions in the benchmark are preserved
+  - **Interactive duplicate resolution**: When duplicate questions are detected (same question text), a modal appears allowing you to choose which version to keep:
+    - Collapsible items show each duplicate question
+    - Expand any item to see a side-by-side comparison of all fields (old vs new)
+    - Choose "Keep Old" to retain the database version, or "Keep New" to update with your current session version
+    - Bulk actions: "Keep All Old" or "Keep All New" buttons for quick resolution
+    - Visual diff highlighting shows which fields have changed
+  - Duplicate detection is based on MD5 hash of question text
+  - After exporting (or resolving duplicates), the benchmark list refreshes to show updated question counts
+  - This feature enables an iterative workflow: extract questions → export to database → extract more → merge into same benchmark
+- Visual indicators show selection state and benchmark details
+
+**Setting Up the Database Directory**
+
+To use a custom database directory, set the `DB_PATH` environment variable before starting the application:
+
+```bash
+export DB_PATH="/path/to/your/databases"
+./start-karenina.sh
+```
+
+If `DB_PATH` is not set, the system will use the current working directory to store and locate databases.
+
+**Automatic Saving**
+
+Once connected to a database, checkpoint data is automatically saved in two scenarios:
+
+- When downloading a checkpoint (saves to database AND downloads the JSON-LD file)
+- After completing a verification run in the Benchmark tab
+
+This auto-save functionality ensures your work is persistently stored without manual intervention, while still providing traditional file downloads when needed. The connection status indicator in the File Management panel shows the active database connection, current benchmark name, and last save timestamp.
+
+Database storage provides a centralized, structured approach to managing benchmarks and their verification history, making it easier to track progress over time and share results across teams.
+
+**Merging Questions Workflow Example**
+
+A common workflow for building a benchmark incrementally:
+
+1. **Extract Initial Questions**: Use the Template Generation tab to extract questions from a data file (Excel, CSV, etc.)
+2. **Create Database Benchmark**: In the Database Manager, create a new benchmark in the database
+3. **Export Questions**: Select the benchmark and click "Export current quest. to Benchmark" to export the initial set
+4. **Extract More Questions**: Return to Template Generation and extract questions from another file
+5. **Merge Additional Questions**: Return to Database Manager, select the same benchmark, and click "Export current quest. to Benchmark"
+6. **Result**: The benchmark now contains all questions from both extractions, with no duplicates
+
+This iterative approach is particularly useful when:
+
+- Building benchmarks from multiple data sources
+- Incrementally adding questions as new data becomes available
+- Collaborating with multiple team members contributing questions
+- Testing and refining question extraction before committing to the database
+
+**Technical Note on Duplicate Detection**
+
+The system uses an MD5 hash of the question text as the unique identifier for each question. This means:
+
+- Questions with identical text are considered duplicates
+- Questions with even minor text differences are treated as distinct questions
+- Metadata changes (tags, templates, etc.) don't affect duplicate detection
+- When a duplicate is encountered, an interactive resolution modal appears:
+  - **Keep Old**: Retains the existing database version unchanged
+  - **Keep New**: Updates the database with your current session version (including any changes to answer templates, rubrics, metadata, etc.)
+  - This allows you to intentionally update questions while preventing accidental duplicates
+  - You can review all field differences before deciding
+
+If you ever need a completely fresh start, a reset function clears all loaded content—though not without a confirmation step to avoid accidental loss.
 
 ## Visual Status Indicators
 
