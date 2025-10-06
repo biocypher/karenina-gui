@@ -6,12 +6,13 @@ The Template Curator is the place where raw, automatically generated answer temp
 
 At its core, the curator offers a **rich editing environment** that balances flexibility with control. Its main features include:
 
-- **Dual Editing Modes:**
-  - _Code Editor_ — For precise programming control, with syntax highlighting and real-time validation.
-  - _Form Editor_ — For intuitive, visual editing of template fields, types, and descriptions.
+**Dual Editing Modes:**
 
-- **Powerful Search & Filtering:**  
-  Quickly locate and organize templates using robust search, filtering, and metadata management tools.
+- _Code Editor_ — For precise programming control, with syntax highlighting and real-time validation.
+- _Form Editor_ — For intuitive, visual editing of template fields, types, and descriptions.
+
+**Powerful Search & Filtering:**
+Quickly locate and organize templates using robust search, filtering, and metadata management tools.
 
 These capabilities ensure that even large benchmarks remain organized, accessible, and easy to navigate.
 
@@ -23,10 +24,13 @@ You can bring data into the curator in several ways. The most common path is to 
 
 Efficient navigation is essential when working with large benchmarks. The curator offers a suite of tools to help you quickly find and manage questions:
 
-- **Centralized Search Bar:** Instantly locate questions by searching their text, candidate answers, IDs, or metadata keywords. Searches are case-insensitive and update results in real time.
-- **Completion Status Filters:** Easily narrow your view to show only finished questions, only unfinished ones, or all questions at once.
-- **Navigation Controls:** Use a dropdown menu to jump directly to any question, sequential next/previous buttons to move through the list, and a live counter to track your current position.
-- **Keyboard Shortcuts:** Speed up your workflow with common shortcuts for search, navigation, and editing.
+**Centralized Search Bar:** Instantly locate questions by searching their text, candidate answers, IDs, or metadata keywords. Searches are case-insensitive and update results in real time.
+
+**Completion Status Filters:** Easily narrow your view to show only finished questions, only unfinished ones, or all questions at once.
+
+**Navigation Controls:** Use a dropdown menu to jump directly to any question, sequential next/previous buttons to move through the list, and a live counter to track your current position.
+
+**Keyboard Shortcuts:** Speed up your workflow with common shortcuts for search, navigation, and editing.
 
 These features work together to ensure that even the largest benchmarks remain organized, accessible, and easy to navigate.
 
@@ -72,21 +76,24 @@ Click the "Manage Database" button in the File Management panel's Database secti
 
 The Connect tab provides a directory-based approach to database management:
 
-- **Database Directory**: The system reads from the `DB_PATH` environment variable to determine where to look for databases. If not set, it uses the current working directory. The active directory is displayed at the top of the tab.
+**Database Directory**: The system reads from the `DB_PATH` environment variable to determine where to look for databases. If not set, it uses the current working directory. The active directory is displayed at the top of the tab.
 
-- **Available Databases**: All `.db` files in the specified directory are listed in a browser-like interface. If no databases exist, a "No databases found" message is displayed.
+**Available Databases**: All `.db` files in the specified directory are listed in a browser-like interface. If no databases exist, a "No databases found" message is displayed.
 
-- **Selecting a Database**: Click on any database in the list to select it. The selected database is highlighted.
+**Selecting a Database**: Click on any database in the list to select it. The selected database is highlighted.
 
-- **Connecting**: Once a database is selected, click the "Connect" button to establish a connection. The connection status displays the number of benchmarks found in the database.
+**Connecting**: Once a database is selected, click the "Connect" button to establish a connection. The connection status displays the number of benchmarks found in the database.
 
-- **Creating New Databases**: Click "Create New Database" to create a new database:
-  - Choose the database type (SQLite, PostgreSQL, or MySQL)
-  - For SQLite: Enter a database name (it will be created in the `DB_PATH` directory)
-  - For PostgreSQL/MySQL: Enter server connection details (host, port, database name, credentials)
-  - Click "Create & Connect" to create and connect to the database
+**Creating New Databases**: Click "Create New Database" to create a new database:
+
+- Choose the database type (SQLite, PostgreSQL, or MySQL)
+- For SQLite: Enter a database name (it will be created in the `DB_PATH` directory)
+- For PostgreSQL/MySQL: Enter server connection details (host, port, database name, credentials)
+- Click "Create & Connect" to create and connect to the database
 
 **Manage Benchmarks Tab**
+
+The Manage Benchmarks tab provides the following capabilities:
 
 - View all benchmarks in the connected database with their statistics:
   - Total questions count
@@ -94,19 +101,23 @@ The Connect tab provides a directory-based approach to database management:
   - Last modified timestamp
 - Create new benchmarks directly in the database with custom metadata (name, description, version, creator)
 - Select and load benchmarks into the curator for editing
-- **Export current questions to existing benchmarks**: When you have questions loaded in memory (e.g., from Template Generation) and a benchmark selected, you can merge those questions into the selected benchmark:
-  - Click "Export current quest. to Benchmark" to add current questions to the selected benchmark
-  - Questions are **merged** - existing questions in the benchmark are preserved
-  - **Interactive duplicate resolution**: When duplicate questions are detected (same question text), a modal appears allowing you to choose which version to keep:
-    - Collapsible items show each duplicate question
-    - Expand any item to see a side-by-side comparison of all fields (old vs new)
-    - Choose "Keep Old" to retain the database version, or "Keep New" to update with your current session version
-    - Bulk actions: "Keep All Old" or "Keep All New" buttons for quick resolution
-    - Visual diff highlighting shows which fields have changed
-  - Duplicate detection is based on MD5 hash of question text
-  - After exporting (or resolving duplicates), the benchmark list refreshes to show updated question counts
-  - This feature enables an iterative workflow: extract questions → export to database → extract more → merge into same benchmark
 - Visual indicators show selection state and benchmark details
+
+**Export current questions to existing benchmarks**: When you have questions loaded in memory (e.g., from Template Generation) and a benchmark selected, you can merge those questions into the selected benchmark:
+
+- Click "Export current quest. to Benchmark" to add current questions to the selected benchmark
+- Questions are **merged** - existing questions in the benchmark are preserved
+- Duplicate detection is based on MD5 hash of question text
+- After exporting (or resolving duplicates), the benchmark list refreshes to show updated question counts
+- This feature enables an iterative workflow: extract questions → export to database → extract more → merge into same benchmark
+
+**Interactive duplicate resolution**: When duplicate questions are detected (same question text), a modal appears allowing you to choose which version to keep:
+
+- Collapsible items show each duplicate question
+- Expand any item to see a side-by-side comparison of all fields (old vs new)
+- Choose "Keep Old" to retain the database version, or "Keep New" to update with your current session version
+- Bulk actions: "Keep All Old" or "Keep All New" buttons for quick resolution
+- Visual diff highlighting shows which fields have changed
 
 **Setting Up the Database Directory**
 

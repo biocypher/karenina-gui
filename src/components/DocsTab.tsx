@@ -10,6 +10,7 @@ import { useTheme } from '../hooks/useTheme';
 import kareninaFrameworkMd from '../../docs/karenina_framework.md?raw';
 import generalConfigsMd from '../../docs/general_configs.md?raw';
 import generationTabMd from '../../docs/generation_tab.md?raw';
+import curationTabMd from '../../docs/curation_tab.md?raw';
 import benchmarkingTabMd from '../../docs/benchmarking_tab.md?raw';
 
 interface DocSection {
@@ -33,6 +34,11 @@ const docSections: DocSection[] = [
     id: 'generation-tab',
     title: 'Template Generation',
     content: generationTabMd,
+  },
+  {
+    id: 'curation-tab',
+    title: 'Template Curation',
+    content: curationTabMd,
   },
   {
     id: 'benchmarking-tab',
