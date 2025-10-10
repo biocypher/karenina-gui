@@ -26,6 +26,7 @@ interface ConfigurationPanelProps {
   finishedTemplates?: Array<[string, unknown]>;
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
+  abstentionEnabled: boolean;
   fewShotEnabled: boolean;
   fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
@@ -38,6 +39,7 @@ interface ConfigurationPanelProps {
   onTogglePromptExpanded: (modelId: string) => void;
   onRubricEnabledChange: (enabled: boolean) => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
+  onAbstentionEnabledChange: (enabled: boolean) => void;
   onFewShotEnabledChange: (enabled: boolean) => void;
   onFewShotModeChange: (mode: 'all' | 'k-shot' | 'custom') => void;
   onFewShotKChange: (k: number) => void;
@@ -54,6 +56,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   finishedTemplates,
   rubricEnabled,
   correctnessEnabled,
+  abstentionEnabled,
   fewShotEnabled,
   fewShotMode,
   fewShotK,
@@ -66,6 +69,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onTogglePromptExpanded,
   onRubricEnabledChange,
   onCorrectnessEnabledChange,
+  onAbstentionEnabledChange,
   onFewShotEnabledChange,
   onFewShotModeChange,
   onFewShotKChange,
@@ -415,6 +419,23 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Rubric</span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 (Qualitative evaluation using defined traits)
+              </span>
+            </label>
+
+            <label
+              className="flex items-center space-x-3"
+              title="Detect when models refuse to answer or abstain. When detected, marks the result as abstained regardless of other verification outcomes."
+            >
+              <input
+                type="checkbox"
+                checked={abstentionEnabled}
+                onChange={(e) => onAbstentionEnabledChange(e.target.checked)}
+                disabled={isRunning}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+              />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Abstention Detection</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                (Detect refusals and mark as abstained)
               </span>
             </label>
 
