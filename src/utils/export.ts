@@ -30,6 +30,11 @@ export interface ExportableResult {
   embedding_similarity_score?: number;
   embedding_override_applied?: boolean;
   embedding_model_used?: string;
+  // Abstention detection metadata
+  abstention_check_performed?: boolean;
+  abstention_detected?: boolean | null;
+  abstention_override_applied?: boolean;
+  abstention_reasoning?: string | null;
 }
 
 /**
@@ -77,9 +82,14 @@ export async function exportFromServer(jobId: string, format: 'json' | 'csv'): P
  */
 export function exportToJSON(results: ExportableResult[], selectedFields?: string[]): string {
   const resultsWithIndex = results.map((result, index) => {
+    // Replace success boolean with "abstained" string when abstention is detected
+    const successValue =
+      result.abstention_detected && result.abstention_override_applied ? 'abstained' : result.success;
+
     const resultWithIndex = {
       row_index: index + 1,
       ...result,
+      success: successValue,
     };
 
     if (selectedFields) {
@@ -227,7 +237,9 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       answering_mcp_servers: escapeCSVField(
         result.answering_mcp_servers ? JSON.stringify(result.answering_mcp_servers) : ''
       ),
-      success: escapeCSVField(result.success),
+      success: escapeCSVField(
+        result.abstention_detected && result.abstention_override_applied ? 'abstained' : result.success
+      ),
       error: escapeCSVField(result.error || ''),
       execution_time: escapeCSVField(result.execution_time),
       timestamp: escapeCSVField(result.timestamp),
