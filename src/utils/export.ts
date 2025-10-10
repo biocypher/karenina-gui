@@ -23,6 +23,8 @@ export interface ExportableResult {
   timestamp: string;
   run_name?: string;
   job_id?: string;
+  // MCP server metadata
+  answering_mcp_servers?: string[];
   // Embedding check metadata
   embedding_check_performed?: boolean;
   embedding_similarity_score?: number;
@@ -159,6 +161,8 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'parsing_replicate',
     'answering_system_prompt',
     'parsing_system_prompt',
+    // MCP server fields
+    'answering_mcp_servers',
     'success',
     'error',
     'execution_time',
@@ -219,6 +223,10 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       parsing_replicate: escapeCSVField(result.parsing_replicate || ''),
       answering_system_prompt: escapeCSVField(result.answering_system_prompt || ''),
       parsing_system_prompt: escapeCSVField(result.parsing_system_prompt || ''),
+      // MCP server fields
+      answering_mcp_servers: escapeCSVField(
+        result.answering_mcp_servers ? JSON.stringify(result.answering_mcp_servers) : ''
+      ),
       success: escapeCSVField(result.success),
       error: escapeCSVField(result.error || ''),
       execution_time: escapeCSVField(result.execution_time),

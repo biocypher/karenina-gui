@@ -83,14 +83,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     mcp_validated_servers?: Record<string, string>;
   }) => {
     if (mcpModalState.modelId) {
-      // Find if this is an answering or parsing model and update accordingly
       const answeringModel = answeringModels.find((m) => m.id === mcpModalState.modelId);
-      const parsingModel = parsingModels.find((m) => m.id === mcpModalState.modelId);
 
       if (answeringModel) {
         onUpdateAnsweringModel(mcpModalState.modelId, config);
-      } else if (parsingModel) {
-        onUpdateParsingModel(mcpModalState.modelId, config);
       }
     }
     setMcpModalState({ isOpen: false, modelId: null });
@@ -99,23 +95,12 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   const getCurrentMCPConfig = () => {
     if (!mcpModalState.modelId) return undefined;
 
-    // Check answering models first
     const answeringModel = answeringModels.find((m) => m.id === mcpModalState.modelId);
     if (answeringModel) {
       return {
         mcp_urls_dict: answeringModel.mcp_urls_dict,
         mcp_tool_filter: answeringModel.mcp_tool_filter,
         mcp_validated_servers: answeringModel.mcp_validated_servers,
-      };
-    }
-
-    // Check parsing models
-    const parsingModel = parsingModels.find((m) => m.id === mcpModalState.modelId);
-    if (parsingModel) {
-      return {
-        mcp_urls_dict: parsingModel.mcp_urls_dict,
-        mcp_tool_filter: parsingModel.mcp_tool_filter,
-        mcp_validated_servers: parsingModel.mcp_validated_servers,
       };
     }
 
@@ -313,8 +298,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* MCP Configuration - Show for all models except manual interface */}
-      {model.interface !== 'manual' && (
+      {/* MCP Configuration - Show only for answering models with non-manual interface */}
+      {isAnswering && model.interface !== 'manual' && (
         <div className="mt-3">
           <button
             onClick={() => setMcpModalState({ isOpen: true, modelId: model.id })}

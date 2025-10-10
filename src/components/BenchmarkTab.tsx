@@ -1291,6 +1291,18 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                       : 'N/A'}
                                   </p>
                                 </div>
+                                {/* MCP Server Information */}
+                                {selectedResult.answering_mcp_servers &&
+                                  selectedResult.answering_mcp_servers.length > 0 && (
+                                    <div>
+                                      <span className="font-medium text-slate-600 dark:text-slate-300">
+                                        MCP Servers:
+                                      </span>
+                                      <p className="text-slate-800 dark:text-slate-200">
+                                        {selectedResult.answering_mcp_servers.join(', ')}
+                                      </p>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                           </div>

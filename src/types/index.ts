@@ -319,7 +319,6 @@ export interface VerificationResult {
   regex_extraction_results?: Record<string, unknown>;
   // MCP server metadata
   answering_mcp_servers?: string[];
-  parsing_mcp_servers?: string[];
 }
 
 export interface VerificationProgress {

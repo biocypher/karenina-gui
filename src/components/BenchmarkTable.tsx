@@ -289,6 +289,29 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
         filterFn: 'arrIncludesSome',
       }),
+      columnHelper.accessor('answering_mcp_servers', {
+        header: 'MCP Servers',
+        cell: (info) => {
+          const servers = info.getValue();
+          if (!servers || servers.length === 0) {
+            return <span className="text-slate-400 text-xs">None</span>;
+          }
+          return (
+            <div className="flex flex-wrap gap-1">
+              {servers.map((server, index) => (
+                <span
+                  key={index}
+                  className="text-xs bg-cyan-100 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-200 px-2 py-1 rounded"
+                  title={server}
+                >
+                  {server.length > 15 ? `${server.substring(0, 15)}...` : server}
+                </span>
+              ))}
+            </div>
+          );
+        },
+        filterFn: 'arrIncludesSome',
+      }),
       columnHelper.accessor('success', {
         header: 'Status',
         cell: (info) => (
