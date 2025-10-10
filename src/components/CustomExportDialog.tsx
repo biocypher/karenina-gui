@@ -46,6 +46,11 @@ const FIELD_GROUPS: FieldGroup[] = [
       { key: 'parsing_model', label: 'Parsing Model', description: 'Model used for parsing' },
       { key: 'answering_replicate', label: 'Answering Replicate', description: 'Replicate number for answering' },
       { key: 'parsing_replicate', label: 'Parsing Replicate', description: 'Replicate number for parsing' },
+      {
+        key: 'answering_mcp_servers',
+        label: 'Answering MCP Servers',
+        description: 'MCP servers attached to answering model',
+      },
     ],
   },
   {

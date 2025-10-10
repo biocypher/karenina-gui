@@ -167,6 +167,49 @@ describe('Export Utils', () => {
 
       expect(parsed).toEqual([]);
     });
+
+    it('should replace success with "abstained" when abstention is detected in JSON export', () => {
+      const resultsWithAbstention: ExportableResult[] = [
+        {
+          question_id: 'q1',
+          question_text: 'Test question',
+          raw_llm_response: 'I cannot answer that',
+          answering_model: 'test-model',
+          parsing_model: 'test-parser',
+          success: true,
+          execution_time: 1.0,
+          timestamp: '2023-01-01T00:00:00Z',
+          // Abstention detected
+          abstention_check_performed: true,
+          abstention_detected: true,
+          abstention_override_applied: true,
+          abstention_reasoning: 'Model refused to answer',
+        },
+        {
+          question_id: 'q2',
+          question_text: 'Normal question',
+          raw_llm_response: 'Normal answer',
+          answering_model: 'test-model',
+          parsing_model: 'test-parser',
+          success: false,
+          execution_time: 1.0,
+          timestamp: '2023-01-01T00:00:00Z',
+          // No abstention
+          abstention_check_performed: true,
+          abstention_detected: false,
+          abstention_override_applied: false,
+        },
+      ];
+
+      const json = exportToJSON(resultsWithAbstention);
+      const parsed = JSON.parse(json);
+
+      // First result should show "abstained" instead of true
+      expect(parsed[0]).toHaveProperty('success', 'abstained');
+
+      // Second result should show normal boolean
+      expect(parsed[1]).toHaveProperty('success', false);
+    });
   });
 
   describe('exportToCSV', () => {
@@ -367,6 +410,53 @@ describe('Export Utils', () => {
       expect(lines[2]).toContain('true'); // embedding_check_performed for second result
       expect(lines[2]).toContain('0.72'); // embedding_similarity_score for second result
       expect(lines[2]).toContain('true'); // embedding_override_applied for second result (this one was overridden)
+    });
+
+    it('should replace success with "abstained" when abstention is detected in CSV export', () => {
+      const resultsWithAbstention: ExportableResult[] = [
+        {
+          question_id: 'q1',
+          question_text: 'Test question',
+          raw_llm_response: 'I cannot answer that',
+          answering_model: 'test-model',
+          parsing_model: 'test-parser',
+          success: true,
+          execution_time: 1.0,
+          timestamp: '2023-01-01T00:00:00Z',
+          // Abstention detected
+          abstention_check_performed: true,
+          abstention_detected: true,
+          abstention_override_applied: true,
+          abstention_reasoning: 'Model refused to answer',
+        },
+        {
+          question_id: 'q2',
+          question_text: 'Normal question',
+          raw_llm_response: 'Normal answer',
+          answering_model: 'test-model',
+          parsing_model: 'test-parser',
+          success: true,
+          execution_time: 1.0,
+          timestamp: '2023-01-01T00:00:00Z',
+          // No abstention
+          abstention_check_performed: true,
+          abstention_detected: false,
+          abstention_override_applied: false,
+        },
+      ];
+
+      const csv = exportToCSV(resultsWithAbstention);
+      const lines = csv.split('\n');
+
+      // Check header has success column
+      expect(lines[0]).toContain('success');
+
+      // First result should show "abstained" instead of true
+      expect(lines[1]).toContain('abstained');
+      expect(lines[1]).not.toContain('true,'); // Make sure it's not showing true
+
+      // Second result should show normal boolean
+      expect(lines[2]).toContain('true');
     });
   });
 

@@ -47,6 +47,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     runName,
     rubricEnabled,
     correctnessEnabled,
+    abstentionEnabled,
     fewShotEnabled,
     fewShotMode,
     fewShotK,
@@ -54,6 +55,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setRunName,
     setRubricEnabled,
     setCorrectnessEnabled,
+    setAbstentionEnabled,
     setFewShotEnabled,
     setFewShotMode,
     setFewShotK,
@@ -492,6 +494,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             finishedTemplates={finishedTemplates}
             rubricEnabled={rubricEnabled}
             correctnessEnabled={correctnessEnabled}
+            abstentionEnabled={abstentionEnabled}
             fewShotEnabled={fewShotEnabled}
             fewShotMode={fewShotMode}
             fewShotK={fewShotK}
@@ -504,6 +507,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onTogglePromptExpanded={togglePromptExpanded}
             onRubricEnabledChange={setRubricEnabled}
             onCorrectnessEnabledChange={setCorrectnessEnabled}
+            onAbstentionEnabledChange={setAbstentionEnabled}
             onFewShotEnabledChange={setFewShotEnabled}
             onFewShotModeChange={setFewShotMode}
             onFewShotKChange={setFewShotK}
@@ -1219,6 +1223,64 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                             </div>
                           )}
 
+                          {/* Abstention Detection Results */}
+                          {selectedResult.abstention_check_performed && (
+                            <div>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                Abstention Detection Results
+                              </h4>
+                              <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
+                                  <div>
+                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                      Check Performed:
+                                    </h5>
+                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
+                                      {selectedResult.abstention_check_performed ? 'Yes' : 'No'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                      Abstention Detected:
+                                    </h5>
+                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
+                                      {selectedResult.abstention_detected === true
+                                        ? 'Yes'
+                                        : selectedResult.abstention_detected === false
+                                          ? 'No'
+                                          : 'N/A'}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {selectedResult.abstention_detected && selectedResult.abstention_override_applied && (
+                                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                                    <div className="flex items-center space-x-2">
+                                      <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                                      <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                                        Result Overridden by Abstention Detection
+                                      </span>
+                                    </div>
+                                    <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-1">
+                                      The model refused to answer or abstained from providing a substantive response.
+                                      The result was marked as abstained regardless of other verification outcomes.
+                                    </p>
+                                    {selectedResult.abstention_reasoning && (
+                                      <div className="mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800">
+                                        <h5 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                                          Detector Reasoning:
+                                        </h5>
+                                        <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                                          {selectedResult.abstention_reasoning}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
                           {/* System Prompts */}
                           {(selectedResult.answering_system_prompt || selectedResult.parsing_system_prompt) && (
                             <div>
@@ -1291,6 +1353,18 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                       : 'N/A'}
                                   </p>
                                 </div>
+                                {/* MCP Server Information */}
+                                {selectedResult.answering_mcp_servers &&
+                                  selectedResult.answering_mcp_servers.length > 0 && (
+                                    <div>
+                                      <span className="font-medium text-slate-600 dark:text-slate-300">
+                                        MCP Servers:
+                                      </span>
+                                      <p className="text-slate-800 dark:text-slate-200">
+                                        {selectedResult.answering_mcp_servers.join(', ')}
+                                      </p>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                           </div>

@@ -276,6 +276,7 @@ export interface VerificationConfig {
   replicate_count: number;
   rubric_enabled?: boolean;
   rubric_trait_names?: string[];
+  abstention_enabled?: boolean; // Enable abstention/refusal detection
   few_shot_enabled?: boolean;
   few_shot_mode?: 'all' | 'k-shot' | 'custom';
   few_shot_k?: number;
@@ -317,6 +318,13 @@ export interface VerificationResult {
   regex_validation_details?: Record<string, Record<string, unknown>>;
   regex_overall_success?: boolean;
   regex_extraction_results?: Record<string, unknown>;
+  // Abstention detection metadata
+  abstention_check_performed?: boolean;
+  abstention_detected?: boolean | null;
+  abstention_override_applied?: boolean;
+  abstention_reasoning?: string | null;
+  // MCP server metadata
+  answering_mcp_servers?: string[];
 }
 
 export interface VerificationProgress {
