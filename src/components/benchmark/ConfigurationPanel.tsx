@@ -85,8 +85,12 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     if (mcpModalState.modelId) {
       // Find if this is an answering or parsing model and update accordingly
       const answeringModel = answeringModels.find((m) => m.id === mcpModalState.modelId);
+      const parsingModel = parsingModels.find((m) => m.id === mcpModalState.modelId);
+
       if (answeringModel) {
         onUpdateAnsweringModel(mcpModalState.modelId, config);
+      } else if (parsingModel) {
+        onUpdateParsingModel(mcpModalState.modelId, config);
       }
     }
     setMcpModalState({ isOpen: false, modelId: null });
@@ -94,14 +98,28 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
   const getCurrentMCPConfig = () => {
     if (!mcpModalState.modelId) return undefined;
-    const model = answeringModels.find((m) => m.id === mcpModalState.modelId);
-    return model
-      ? {
-          mcp_urls_dict: model.mcp_urls_dict,
-          mcp_tool_filter: model.mcp_tool_filter,
-          mcp_validated_servers: model.mcp_validated_servers,
-        }
-      : undefined;
+
+    // Check answering models first
+    const answeringModel = answeringModels.find((m) => m.id === mcpModalState.modelId);
+    if (answeringModel) {
+      return {
+        mcp_urls_dict: answeringModel.mcp_urls_dict,
+        mcp_tool_filter: answeringModel.mcp_tool_filter,
+        mcp_validated_servers: answeringModel.mcp_validated_servers,
+      };
+    }
+
+    // Check parsing models
+    const parsingModel = parsingModels.find((m) => m.id === mcpModalState.modelId);
+    if (parsingModel) {
+      return {
+        mcp_urls_dict: parsingModel.mcp_urls_dict,
+        mcp_tool_filter: parsingModel.mcp_tool_filter,
+        mcp_validated_servers: parsingModel.mcp_validated_servers,
+      };
+    }
+
+    return undefined;
   };
 
   const renderModelConfiguration = (model: ModelConfiguration, index: number, isAnswering: boolean) => (
@@ -295,8 +313,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* MCP Configuration - Show only for answering models */}
-      {isAnswering && model.interface !== 'manual' && (
+      {/* MCP Configuration - Show for all models except manual interface */}
+      {model.interface !== 'manual' && (
         <div className="mt-3">
           <button
             onClick={() => setMcpModalState({ isOpen: true, modelId: model.id })}
