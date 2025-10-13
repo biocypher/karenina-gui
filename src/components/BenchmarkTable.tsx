@@ -93,6 +93,65 @@ const RubricCell: React.FC<{ rubricResult: Record<string, number | boolean> | nu
   );
 };
 
+const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) => {
+  // Not enabled - show disabled state
+  if (!result.deep_judgment_enabled) {
+    return (
+      <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+        Disabled
+      </span>
+    );
+  }
+
+  // Enabled but not performed - show not performed state
+  if (!result.deep_judgment_performed) {
+    return (
+      <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+        Not Performed
+      </span>
+    );
+  }
+
+  // Calculate counts
+  const excerptCount = result.extracted_excerpts ? Object.keys(result.extracted_excerpts).length : 0;
+  const reasoningCount = result.attribute_reasoning ? Object.keys(result.attribute_reasoning).length : 0;
+  const missingCount = result.attributes_without_excerpts ? result.attributes_without_excerpts.length : 0;
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {excerptCount > 0 && (
+        <span
+          className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200"
+          title={`${excerptCount} attributes with excerpts`}
+        >
+          E: {excerptCount}
+        </span>
+      )}
+      {reasoningCount > 0 && (
+        <span
+          className="inline-flex items-center px-2 py-1 rounded text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200"
+          title={`${reasoningCount} attributes with reasoning`}
+        >
+          R: {reasoningCount}
+        </span>
+      )}
+      {missingCount > 0 && (
+        <span
+          className="inline-flex items-center px-2 py-1 rounded text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
+          title={`${missingCount} attributes without excerpts`}
+        >
+          M: {missingCount}
+        </span>
+      )}
+      {excerptCount === 0 && reasoningCount === 0 && missingCount === 0 && (
+        <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+          No Data
+        </span>
+      )}
+    </div>
+  );
+};
+
 const MultiSelectFilter: React.FC<{
   options: string[];
   selectedValues: Set<string>;
@@ -423,6 +482,11 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           if (value === 'none') return false;
           return true;
         },
+      }),
+      columnHelper.display({
+        id: 'deep_judgment',
+        header: 'Deep-Judgment',
+        cell: (info) => <DeepJudgmentCell result={info.row.original} />,
       }),
       columnHelper.accessor('execution_time', {
         header: 'Time',
