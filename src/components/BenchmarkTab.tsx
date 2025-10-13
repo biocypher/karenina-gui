@@ -1285,6 +1285,150 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                             </div>
                           )}
 
+                          {/* Deep-Judgment Results */}
+                          {selectedResult.deep_judgment_performed && (
+                            <div>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                                Deep-Judgment Results
+                              </h4>
+                              <div className="space-y-3">
+                                {/* Summary Statistics */}
+                                <div className="grid grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
+                                  <div>
+                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                      Stages Completed:
+                                    </h5>
+                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
+                                      {selectedResult.deep_judgment_stages_completed?.join(', ') || 'N/A'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                      Model Calls:
+                                    </h5>
+                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
+                                      {selectedResult.deep_judgment_model_calls || 0}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                      Excerpt Retries:
+                                    </h5>
+                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
+                                      {selectedResult.deep_judgment_excerpt_retry_count || 0}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Extracted Excerpts */}
+                                {selectedResult.extracted_excerpts &&
+                                  Object.keys(selectedResult.extracted_excerpts).length > 0 && (
+                                    <div>
+                                      <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                        Extracted Excerpts:
+                                      </h5>
+                                      <div className="space-y-2">
+                                        {Object.entries(selectedResult.extracted_excerpts).map(
+                                          ([attributeName, excerpts]) => (
+                                            <div
+                                              key={attributeName}
+                                              className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
+                                            >
+                                              <div className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                                                {attributeName}
+                                              </div>
+                                              <div className="space-y-2">
+                                                {excerpts.map((excerpt, idx) => (
+                                                  <div
+                                                    key={idx}
+                                                    className="bg-white dark:bg-slate-800 rounded p-2 border border-blue-100 dark:border-blue-900"
+                                                  >
+                                                    <p className="text-slate-800 dark:text-slate-200 text-sm mb-1">
+                                                      "{excerpt.text}"
+                                                    </p>
+                                                    <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+                                                      <span>Confidence: {excerpt.confidence}</span>
+                                                      <span>Similarity: {excerpt.similarity_score.toFixed(3)}</span>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {/* Attribute Reasoning */}
+                                {selectedResult.attribute_reasoning &&
+                                  Object.keys(selectedResult.attribute_reasoning).length > 0 && (
+                                    <div>
+                                      <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                        Attribute Reasoning:
+                                      </h5>
+                                      <div className="space-y-2">
+                                        {Object.entries(selectedResult.attribute_reasoning).map(
+                                          ([attributeName, reasoning]) => (
+                                            <div
+                                              key={attributeName}
+                                              className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3"
+                                            >
+                                              <div className="font-medium text-purple-900 dark:text-purple-100 mb-1">
+                                                {attributeName}
+                                              </div>
+                                              <p className="text-slate-800 dark:text-slate-200 text-sm">{reasoning}</p>
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {/* Attributes Without Excerpts */}
+                                {selectedResult.attributes_without_excerpts &&
+                                  selectedResult.attributes_without_excerpts.length > 0 && (
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                                      <div className="flex items-center space-x-2 mb-2">
+                                        <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                          Attributes Without Excerpts
+                                        </span>
+                                      </div>
+                                      <p className="text-amber-700 dark:text-amber-300 text-sm mb-2">
+                                        The following attributes could not be supported with verbatim excerpts from the
+                                        raw response:
+                                      </p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {selectedResult.attributes_without_excerpts.map((attrName) => (
+                                          <span
+                                            key={attrName}
+                                            className="inline-flex items-center px-2 py-1 rounded text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700"
+                                          >
+                                            {attrName}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {/* No Data Message */}
+                                {(!selectedResult.extracted_excerpts ||
+                                  Object.keys(selectedResult.extracted_excerpts).length === 0) &&
+                                  (!selectedResult.attribute_reasoning ||
+                                    Object.keys(selectedResult.attribute_reasoning).length === 0) &&
+                                  (!selectedResult.attributes_without_excerpts ||
+                                    selectedResult.attributes_without_excerpts.length === 0) && (
+                                    <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 text-center">
+                                      <p className="text-slate-600 dark:text-slate-400 text-sm">
+                                        Deep-judgment was performed but no data was generated.
+                                      </p>
+                                    </div>
+                                  )}
+                              </div>
+                            </div>
+                          )}
+
                           {/* System Prompts */}
                           {(selectedResult.answering_system_prompt || selectedResult.parsing_system_prompt) && (
                             <div>
