@@ -48,6 +48,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     rubricEnabled,
     correctnessEnabled,
     abstentionEnabled,
+    deepJudgmentEnabled,
     fewShotEnabled,
     fewShotMode,
     fewShotK,
@@ -56,6 +57,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setRubricEnabled,
     setCorrectnessEnabled,
     setAbstentionEnabled,
+    setDeepJudgmentEnabled,
     setFewShotEnabled,
     setFewShotMode,
     setFewShotK,
@@ -495,6 +497,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             rubricEnabled={rubricEnabled}
             correctnessEnabled={correctnessEnabled}
             abstentionEnabled={abstentionEnabled}
+            deepJudgmentEnabled={deepJudgmentEnabled}
             fewShotEnabled={fewShotEnabled}
             fewShotMode={fewShotMode}
             fewShotK={fewShotK}
@@ -508,6 +511,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onRubricEnabledChange={setRubricEnabled}
             onCorrectnessEnabledChange={setCorrectnessEnabled}
             onAbstentionEnabledChange={setAbstentionEnabled}
+            onDeepJudgmentEnabledChange={setDeepJudgmentEnabled}
             onFewShotEnabledChange={setFewShotEnabled}
             onFewShotModeChange={setFewShotMode}
             onFewShotKChange={setFewShotK}

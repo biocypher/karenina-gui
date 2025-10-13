@@ -27,6 +27,7 @@ interface ConfigurationPanelProps {
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
+  deepJudgmentEnabled: boolean;
   fewShotEnabled: boolean;
   fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
@@ -40,6 +41,7 @@ interface ConfigurationPanelProps {
   onRubricEnabledChange: (enabled: boolean) => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
   onAbstentionEnabledChange: (enabled: boolean) => void;
+  onDeepJudgmentEnabledChange: (enabled: boolean) => void;
   onFewShotEnabledChange: (enabled: boolean) => void;
   onFewShotModeChange: (mode: 'all' | 'k-shot' | 'custom') => void;
   onFewShotKChange: (k: number) => void;
@@ -57,6 +59,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   rubricEnabled,
   correctnessEnabled,
   abstentionEnabled,
+  deepJudgmentEnabled,
   fewShotEnabled,
   fewShotMode,
   fewShotK,
@@ -70,6 +73,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onRubricEnabledChange,
   onCorrectnessEnabledChange,
   onAbstentionEnabledChange,
+  onDeepJudgmentEnabledChange,
   onFewShotEnabledChange,
   onFewShotModeChange,
   onFewShotKChange,
@@ -436,6 +440,23 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Abstention Detection</span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 (Detect refusals and mark as abstained)
+              </span>
+            </label>
+
+            <label
+              className="flex items-center space-x-3"
+              title="Multi-stage parsing that extracts verbatim excerpts, generates reasoning traces, and validates attribute values. Increases LLM calls but provides detailed evidence."
+            >
+              <input
+                type="checkbox"
+                checked={deepJudgmentEnabled}
+                onChange={(e) => onDeepJudgmentEnabledChange(e.target.checked)}
+                disabled={isRunning}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+              />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Deep-Judgment</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                (Extract excerpts and reasoning traces)
               </span>
             </label>
 
