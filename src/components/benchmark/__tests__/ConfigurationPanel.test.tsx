@@ -356,4 +356,81 @@ describe('ConfigurationPanel', () => {
       expect(defaultProps.onUpdateAnsweringModel).toHaveBeenCalledWith('answering-1', { interface: 'manual' });
     });
   });
+
+  describe('Abstention Detection', () => {
+    const propsWithAbstention = {
+      ...defaultProps,
+      abstentionEnabled: false,
+      onAbstentionEnabledChange: vi.fn(),
+      rubricEnabled: false,
+      correctnessEnabled: true,
+      onRubricEnabledChange: vi.fn(),
+      onCorrectnessEnabledChange: vi.fn(),
+      finishedTemplates: [],
+      fewShotEnabled: false,
+      fewShotMode: 'all' as const,
+      fewShotK: 3,
+      onFewShotEnabledChange: vi.fn(),
+      onFewShotModeChange: vi.fn(),
+      onFewShotKChange: vi.fn(),
+      onManualTraceUploadSuccess: vi.fn(),
+      onManualTraceUploadError: vi.fn(),
+    };
+
+    it('renders abstention detection checkbox', () => {
+      render(<ConfigurationPanel {...propsWithAbstention} />);
+
+      const abstentionCheckbox = screen.getByRole('checkbox', { name: /Abstention Detection/i });
+      expect(abstentionCheckbox).toBeInTheDocument();
+    });
+
+    it('abstention checkbox is unchecked by default', () => {
+      render(<ConfigurationPanel {...propsWithAbstention} />);
+
+      const abstentionCheckbox = screen.getByRole('checkbox', { name: /Abstention Detection/i });
+      expect(abstentionCheckbox).not.toBeChecked();
+    });
+
+    it('abstention checkbox reflects the abstentionEnabled prop', () => {
+      const props = { ...propsWithAbstention, abstentionEnabled: true };
+      render(<ConfigurationPanel {...props} />);
+
+      const abstentionCheckbox = screen.getByRole('checkbox', { name: /Abstention Detection/i });
+      expect(abstentionCheckbox).toBeChecked();
+    });
+
+    it('calls onAbstentionEnabledChange when abstention checkbox is clicked', () => {
+      render(<ConfigurationPanel {...propsWithAbstention} />);
+
+      const abstentionCheckbox = screen.getByRole('checkbox', { name: /Abstention Detection/i });
+      fireEvent.click(abstentionCheckbox);
+
+      expect(propsWithAbstention.onAbstentionEnabledChange).toHaveBeenCalledWith(true);
+      expect(propsWithAbstention.onAbstentionEnabledChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables abstention checkbox when isRunning is true', () => {
+      const props = { ...propsWithAbstention, isRunning: true };
+      render(<ConfigurationPanel {...props} />);
+
+      const abstentionCheckbox = screen.getByRole('checkbox', { name: /Abstention Detection/i });
+      expect(abstentionCheckbox).toBeDisabled();
+    });
+
+    it('displays abstention detection description text', () => {
+      render(<ConfigurationPanel {...propsWithAbstention} />);
+
+      expect(screen.getByText(/Detect refusals and mark as abstained/i)).toBeInTheDocument();
+    });
+
+    it('has a tooltip explaining abstention detection', () => {
+      render(<ConfigurationPanel {...propsWithAbstention} />);
+
+      const checkboxLabel = screen.getByRole('checkbox', { name: /Abstention Detection/i }).closest('label');
+      expect(checkboxLabel).toHaveAttribute(
+        'title',
+        'Detect when models refuse to answer or abstain. When detected, marks the result as abstained regardless of other verification outcomes.'
+      );
+    });
+  });
 });

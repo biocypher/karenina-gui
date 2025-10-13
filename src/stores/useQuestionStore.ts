@@ -215,7 +215,22 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
   saveCurrentTemplate: () => {
     const state = get();
-    if (!state.selectedQuestionId || !state.questionData[state.selectedQuestionId]) return;
+
+    // Debug logging to understand save flow
+    console.log('💾 saveCurrentTemplate called', {
+      selectedQuestionId: state.selectedQuestionId,
+      hasQuestionData: !!state.questionData[state.selectedQuestionId],
+      totalQuestions: Object.keys(state.questionData).length,
+      totalCheckpointItems: Object.keys(state.checkpoint).length,
+    });
+
+    if (!state.selectedQuestionId || !state.questionData[state.selectedQuestionId]) {
+      console.error('❌ saveCurrentTemplate: Early return - missing selectedQuestionId or questionData', {
+        selectedQuestionId: state.selectedQuestionId,
+        hasQuestionInData: !!state.questionData[state.selectedQuestionId],
+      });
+      return;
+    }
 
     const now = new Date().toISOString();
 
@@ -249,10 +264,21 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     set(() => ({ checkpoint: completeCheckpoint }));
 
-    // Auto-save to database after saving template
-    autoSaveToDatabase(completeCheckpoint).catch((err) => {
-      console.warn('⚠️ Failed to auto-save to database after template save:', err);
+    console.log('✅ Checkpoint updated in store', {
+      totalItems: Object.keys(completeCheckpoint).length,
+      currentQuestionId: state.selectedQuestionId,
     });
+
+    // Auto-save to database after saving template
+    console.log('🔄 Attempting to save to database...');
+    autoSaveToDatabase(completeCheckpoint)
+      .then(() => {
+        console.log('✅ Successfully saved to database');
+      })
+      .catch((err) => {
+        console.error('❌ Failed to save to database:', err);
+        alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      });
   },
 
   toggleFinished: () => {

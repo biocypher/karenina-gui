@@ -289,20 +289,88 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
         filterFn: 'arrIncludesSome',
       }),
+      columnHelper.accessor('answering_mcp_servers', {
+        header: 'MCP Servers',
+        cell: (info) => {
+          const servers = info.getValue();
+          if (!servers || servers.length === 0) {
+            return <span className="text-slate-400 text-xs">None</span>;
+          }
+          return (
+            <div className="flex flex-wrap gap-1">
+              {servers.map((server, index) => (
+                <span
+                  key={index}
+                  className="text-xs bg-cyan-100 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-200 px-2 py-1 rounded"
+                  title={server}
+                >
+                  {server.length > 15 ? `${server.substring(0, 15)}...` : server}
+                </span>
+              ))}
+            </div>
+          );
+        },
+        filterFn: 'arrIncludesSome',
+      }),
       columnHelper.accessor('success', {
         header: 'Status',
-        cell: (info) => (
-          <span
-            className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-              info.getValue()
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-            }`}
-          >
-            {info.getValue() ? 'Success' : 'Failed'}
-          </span>
-        ),
-        filterFn: 'equals',
+        cell: (info) => {
+          const row = info.row.original;
+
+          // Check for abstention first
+          if (row.abstention_detected && row.abstention_check_performed) {
+            return (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
+                Abstained
+              </span>
+            );
+          }
+
+          // Regular success/failed display
+          return (
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+                info.getValue()
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+              }`}
+            >
+              {info.getValue() ? 'Success' : 'Failed'}
+            </span>
+          );
+        },
+        filterFn: (row, columnId, value) => {
+          const rowValue = row.getValue(columnId);
+          const original = row.original as VerificationResult;
+
+          // If no filter is set, show all
+          if (!value || value.size === 0) return true;
+
+          // Check for abstention
+          if (value.has('abstained')) {
+            if (original.abstention_detected && original.abstention_check_performed) {
+              return true;
+            }
+          }
+
+          // Check for regular success/failed states
+          if (
+            value.has(true) &&
+            rowValue === true &&
+            !(original.abstention_detected && original.abstention_check_performed)
+          ) {
+            return true;
+          }
+          if (
+            value.has(false) &&
+            rowValue === false &&
+            !(original.abstention_detected && original.abstention_check_performed)
+          ) {
+            return true;
+          }
+
+          return false;
+        },
       }),
       columnHelper.accessor('verify_result', {
         header: 'Verification',
@@ -556,12 +624,13 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
                           )}
                           {header.id === 'success' && (
                             <MultiSelectFilter
-                              options={['Success', 'Failed']}
+                              options={['Success', 'Failed', 'Abstained']}
                               selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
                               onChange={(values) => {
-                                const filterValues = new Set<boolean>();
+                                const filterValues = new Set<boolean | string>();
                                 if (values.has('Success')) filterValues.add(true);
                                 if (values.has('Failed')) filterValues.add(false);
+                                if (values.has('Abstained')) filterValues.add('abstained');
                                 header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
                               }}
                               placeholder="All statuses"

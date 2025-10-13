@@ -10,13 +10,32 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
   const { isConnectedToDatabase, storageUrl, currentBenchmarkName, metadata, setIsSaving, setLastSaved, setSaveError } =
     useDatasetStore.getState();
 
+  console.log('🔍 autoSaveToDatabase called', {
+    isConnectedToDatabase,
+    hasStorageUrl: !!storageUrl,
+    currentBenchmarkName,
+    checkpointSize: Object.keys(checkpoint).length,
+  });
+
   // Only proceed if connected to database
   if (!isConnectedToDatabase || !storageUrl || !currentBenchmarkName) {
-    console.log('⏭️ Skipping database auto-save: not connected to database');
+    const reason = !isConnectedToDatabase
+      ? 'not connected to database'
+      : !storageUrl
+        ? 'no storage URL'
+        : 'no benchmark name';
+    console.warn(`⏭️ Skipping database auto-save: ${reason}`, {
+      isConnectedToDatabase,
+      storageUrl,
+      currentBenchmarkName,
+    });
     return;
   }
 
-  console.log('💾 Auto-saving to database...');
+  console.log('💾 Auto-saving to database...', {
+    benchmarkName: currentBenchmarkName,
+    storageUrl: storageUrl.substring(0, 30) + '...',
+  });
   setIsSaving(true);
   setSaveError(null);
 
@@ -31,7 +50,8 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
       global_rubric: currentRubric,
     };
 
-    // Call the save-benchmark API
+    // Call the save-benchmark API with detect_duplicates=false
+    // This allows updating existing questions without triggering duplicate detection
     const response = await fetch('/api/database/save-benchmark', {
       method: 'POST',
       headers: {
@@ -41,12 +61,19 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
         storage_url: storageUrl,
         benchmark_name: currentBenchmarkName,
         checkpoint_data: checkpointData,
+        detect_duplicates: false, // Skip duplicate detection for auto-save
       }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || 'Failed to save to database');
+      const errorMessage = error.detail || 'Failed to save to database';
+      console.error('❌ Database save failed with HTTP error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error,
+      });
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -54,14 +81,35 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
     // Update last saved timestamp
     setLastSaved(data.last_modified || new Date().toISOString());
 
-    console.log('✅ Auto-saved to database successfully');
+    console.log('✅ Auto-saved to database successfully', {
+      benchmarkName: currentBenchmarkName,
+      lastModified: data.last_modified,
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('❌ Failed to auto-save to database:', errorMessage);
+    console.error('❌ Failed to auto-save to database:', {
+      error: errorMessage,
+      fullError: error,
+    });
     setSaveError(errorMessage);
 
-    // Show error notification but don't block user workflow
-    // The error will be displayed in the UI via the store state
+    // Check if it's a duplicate question error
+    if (errorMessage.includes('UNIQUE constraint failed: questions.question_text')) {
+      const betterError = new Error(
+        'Cannot save: A question with this text already exists in the database.\n\n' +
+          'This can happen when:\n' +
+          '• You loaded a benchmark and added a question that already exists\n' +
+          '• The question was previously saved to the database\n\n' +
+          'To resolve:\n' +
+          '1. Use "Export current quest. to Benchmark" button in Database Manager for proper duplicate handling\n' +
+          '2. Or modify the question text to make it unique\n' +
+          '3. Or download the checkpoint locally instead'
+      );
+      throw betterError;
+    }
+
+    // Re-throw the error so the caller can handle it (e.g., show alert)
+    throw error;
   } finally {
     setIsSaving(false);
   }

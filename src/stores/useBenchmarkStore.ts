@@ -22,6 +22,7 @@ interface BenchmarkState {
   // Evaluation Settings
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
+  abstentionEnabled: boolean;
   fewShotEnabled: boolean;
   fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
@@ -46,6 +47,7 @@ interface BenchmarkState {
   // Evaluation Settings Actions
   setRubricEnabled: (enabled: boolean) => void;
   setCorrectnessEnabled: (enabled: boolean) => void;
+  setAbstentionEnabled: (enabled: boolean) => void;
   setFewShotEnabled: (enabled: boolean) => void;
   setFewShotMode: (mode: 'all' | 'k-shot' | 'custom') => void;
   setFewShotK: (k: number) => void;
@@ -85,6 +87,7 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   // Initial state - Evaluation Settings
   rubricEnabled: false,
   correctnessEnabled: true,
+  abstentionEnabled: false,
   fewShotEnabled: false,
   fewShotMode: 'all',
   fewShotK: 3,
@@ -140,6 +143,7 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   // Evaluation Settings Actions
   setRubricEnabled: (enabled) => set({ rubricEnabled: enabled }),
   setCorrectnessEnabled: (enabled) => set({ correctnessEnabled: enabled }),
+  setAbstentionEnabled: (enabled) => set({ abstentionEnabled: enabled }),
   setFewShotEnabled: (enabled) => set({ fewShotEnabled: enabled }),
   setFewShotMode: (mode) => set({ fewShotMode: mode }),
   setFewShotK: (k) => set({ fewShotK: k }),

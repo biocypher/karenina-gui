@@ -228,13 +228,18 @@ function App() {
   };
 
   const handleSave = () => {
+    console.log('💾 Save button clicked');
+
     // First save all unsaved fields if in form editor mode
     if (codeEditorRef.current) {
+      console.log('📝 Saving unsaved fields from code editor...');
       codeEditorRef.current.saveAllUnsavedFields();
     }
 
     // Then save the current template
+    console.log('🔄 Calling saveCurrentTemplate...');
     saveCurrentTemplate();
+    console.log('✅ handleSave completed');
   };
 
   const handleToggleFinished = () => {
