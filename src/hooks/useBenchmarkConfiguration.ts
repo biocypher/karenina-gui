@@ -182,6 +182,7 @@ export const useBenchmarkConfiguration = () => {
     replicate_count: replicateCount,
     rubric_enabled: rubricEnabled,
     abstention_enabled: abstentionEnabled,
+    deep_judgment_enabled: deepJudgmentEnabled,
     few_shot_enabled: fewShotEnabled,
     few_shot_mode: fewShotMode,
     few_shot_k: fewShotK,
