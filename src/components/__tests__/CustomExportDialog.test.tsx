@@ -78,4 +78,38 @@ describe('CustomExportDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(mockOnClose).toHaveBeenCalled();
   });
+
+  it('includes Deep-Judgment Analysis field group', () => {
+    render(<CustomExportDialog {...defaultProps} />);
+
+    // Check that the Deep-Judgment Analysis group header is present
+    expect(screen.getByText('Deep-Judgment Analysis')).toBeInTheDocument();
+
+    // Check for key deep-judgment fields
+    expect(screen.getByText('Deep-Judgment Enabled')).toBeInTheDocument();
+    expect(screen.getByText('Deep-Judgment Performed')).toBeInTheDocument();
+    expect(screen.getByText('Extracted Excerpts')).toBeInTheDocument();
+    expect(screen.getByText('Attribute Reasoning')).toBeInTheDocument();
+    expect(screen.getByText('Attributes Without Excerpts')).toBeInTheDocument();
+  });
+
+  it('includes all 8 deep-judgment fields in export options', () => {
+    render(<CustomExportDialog {...defaultProps} />);
+
+    // Verify all 8 deep-judgment fields are present
+    const deepJudgmentFields = [
+      'Deep-Judgment Enabled',
+      'Deep-Judgment Performed',
+      'Extracted Excerpts',
+      'Attribute Reasoning',
+      'Stages Completed',
+      'Model Calls',
+      'Excerpt Retry Count',
+      'Attributes Without Excerpts',
+    ];
+
+    deepJudgmentFields.forEach((fieldLabel) => {
+      expect(screen.getByText(fieldLabel)).toBeInTheDocument();
+    });
+  });
 });
