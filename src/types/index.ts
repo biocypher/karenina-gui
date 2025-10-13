@@ -325,6 +325,15 @@ export interface VerificationResult {
   abstention_reasoning?: string | null;
   // MCP server metadata
   answering_mcp_servers?: string[];
+  // Deep-judgment metadata (multi-stage parsing with excerpts and reasoning)
+  deep_judgment_enabled?: boolean;
+  deep_judgment_performed?: boolean;
+  extracted_excerpts?: Record<string, Array<{ text: string; confidence: string; similarity_score: number }>>;
+  attribute_reasoning?: Record<string, string>;
+  deep_judgment_stages_completed?: string[];
+  deep_judgment_model_calls?: number;
+  deep_judgment_excerpt_retry_count?: number;
+  attributes_without_excerpts?: string[];
 }
 
 export interface VerificationProgress {
