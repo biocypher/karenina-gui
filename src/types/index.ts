@@ -328,7 +328,10 @@ export interface VerificationResult {
   // Deep-judgment metadata (multi-stage parsing with excerpts and reasoning)
   deep_judgment_enabled?: boolean;
   deep_judgment_performed?: boolean;
-  extracted_excerpts?: Record<string, Array<{ text: string; confidence: string; similarity_score: number }>>;
+  extracted_excerpts?: Record<
+    string,
+    Array<{ text: string; confidence: string; similarity_score: number; explanation?: string }>
+  >;
   attribute_reasoning?: Record<string, string>;
   deep_judgment_stages_completed?: string[];
   deep_judgment_model_calls?: number;

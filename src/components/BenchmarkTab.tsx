@@ -1341,15 +1341,34 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                 {excerpts.map((excerpt, idx) => (
                                                   <div
                                                     key={idx}
-                                                    className="bg-white dark:bg-slate-800 rounded p-2 border border-blue-100 dark:border-blue-900"
+                                                    className={`rounded p-2 border ${
+                                                      excerpt.explanation
+                                                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                                                        : 'bg-white dark:bg-slate-800 border-blue-100 dark:border-blue-900'
+                                                    }`}
                                                   >
-                                                    <p className="text-slate-800 dark:text-slate-200 text-sm mb-1">
-                                                      "{excerpt.text}"
-                                                    </p>
-                                                    <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
-                                                      <span>Confidence: {excerpt.confidence}</span>
-                                                      <span>Similarity: {excerpt.similarity_score.toFixed(3)}</span>
-                                                    </div>
+                                                    {excerpt.explanation ? (
+                                                      // Display explanation for missing excerpts
+                                                      <div>
+                                                        <p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-1">
+                                                          No excerpt found
+                                                        </p>
+                                                        <p className="text-amber-700 dark:text-amber-300 text-sm italic">
+                                                          {excerpt.explanation}
+                                                        </p>
+                                                      </div>
+                                                    ) : (
+                                                      // Display normal excerpt
+                                                      <>
+                                                        <p className="text-slate-800 dark:text-slate-200 text-sm mb-1">
+                                                          "{excerpt.text}"
+                                                        </p>
+                                                        <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+                                                          <span>Confidence: {excerpt.confidence}</span>
+                                                          <span>Similarity: {excerpt.similarity_score.toFixed(3)}</span>
+                                                        </div>
+                                                      </>
+                                                    )}
                                                   </div>
                                                 ))}
                                               </div>
