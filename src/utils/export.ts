@@ -1,6 +1,14 @@
 import { API_ENDPOINTS } from '../constants/api';
 import type { Rubric, RubricTrait } from '../types';
 
+/**
+ * ExportableResult interface for GUI exports.
+ *
+ * MUST mirror backend VerificationResult model exactly.
+ *
+ * When adding fields: Update this interface, allHeaders array, and allRowData object.
+ * See docs: .agents/dev/recurring-issues.md#issue-1-gui-export-sync-when-adding-verificationresult-fields
+ */
 export interface ExportableResult {
   question_id: string;
   question_text: string;
@@ -164,6 +172,16 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
   // Create headers for global rubrics only
   const globalRubricHeaders = globalTraits.map((trait) => `rubric_${trait}`);
 
+  /**
+   * CRITICAL DEVELOPER WARNING:
+   *
+   * When adding new fields to VerificationResult model, you MUST add them here.
+   *
+   * This is the CSV headers array. Every field in ExportableResult interface
+   * that should be exported must have a corresponding header here.
+   *
+   * See: .agents/dev/adding-verification-fields.md for complete checklist
+   */
   const allHeaders = [
     'row_index',
     'question_id',
@@ -240,6 +258,21 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       rubricSummary = `${passedTraits}/${traits.length}`;
     }
 
+    /**
+     * CRITICAL DEVELOPER WARNING:
+     *
+     * When adding new fields to VerificationResult model, you MUST add them here.
+     *
+     * This is the CSV row data object. For each field in ExportableResult interface
+     * that should be exported, add a corresponding key-value pair here.
+     *
+     * IMPORTANT:
+     * - Use escapeCSVField() for all values to handle special characters
+     * - Use JSON.stringify() for complex types (objects, arrays, etc.)
+     * - Provide sensible defaults for optional fields (e.g., || false, || '', || 0)
+     *
+     * See: .agents/dev/adding-verification-fields.md for complete checklist
+     */
     const allRowData: Record<string, string> = {
       row_index: String(index + 1),
       question_id: escapeCSVField(result.question_id),
