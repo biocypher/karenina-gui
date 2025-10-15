@@ -1386,7 +1386,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                         getRiskStyle(riskLevel).border
                                                       }`}
                                                     >
-                                                      Hallucination Risk: {riskLevel.toUpperCase()}
+                                                      Max Hallucination Risk: {riskLevel.toUpperCase()}
                                                     </span>
                                                   )}
                                                 </div>
@@ -1440,7 +1440,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                                   `Hallucination risk: ${excerpt.hallucination_risk}`
                                                                 }
                                                               >
-                                                                Risk: {excerpt.hallucination_risk.toUpperCase()}
+                                                                Hallucination Risk:{' '}
+                                                                {excerpt.hallucination_risk.toUpperCase()}
                                                               </span>
                                                             )}
                                                           </div>
@@ -1450,6 +1451,17 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                               <SearchResultsDisplay
                                                                 searchResults={excerpt.search_results}
                                                               />
+                                                            </div>
+                                                          )}
+                                                          {/* Hallucination Justification (if available) */}
+                                                          {excerpt.hallucination_justification && (
+                                                            <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                                              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                                Hallucination Risk Reasoning:
+                                                              </p>
+                                                              <p className="text-sm text-slate-600 dark:text-slate-400">
+                                                                {excerpt.hallucination_justification}
+                                                              </p>
                                                             </div>
                                                           )}
                                                         </>
