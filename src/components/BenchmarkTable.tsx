@@ -546,7 +546,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       }),
       columnHelper.display({
         id: 'deep_judgment',
-        header: 'Deep-Judgment',
+        header: 'Hallucination Risk',
         cell: (info) => <DeepJudgmentCell result={info.row.original} />,
       }),
       columnHelper.accessor('execution_time', {
