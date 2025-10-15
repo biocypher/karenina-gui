@@ -28,6 +28,7 @@ interface ConfigurationPanelProps {
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
   deepJudgmentEnabled: boolean;
+  deepJudgmentSearchEnabled: boolean;
   fewShotEnabled: boolean;
   fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
@@ -42,6 +43,7 @@ interface ConfigurationPanelProps {
   onCorrectnessEnabledChange: (enabled: boolean) => void;
   onAbstentionEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentEnabledChange: (enabled: boolean) => void;
+  onDeepJudgmentSearchEnabledChange: (enabled: boolean) => void;
   onFewShotEnabledChange: (enabled: boolean) => void;
   onFewShotModeChange: (mode: 'all' | 'k-shot' | 'custom') => void;
   onFewShotKChange: (k: number) => void;
@@ -60,6 +62,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   correctnessEnabled,
   abstentionEnabled,
   deepJudgmentEnabled,
+  deepJudgmentSearchEnabled,
   fewShotEnabled,
   fewShotMode,
   fewShotK,
@@ -74,6 +77,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onCorrectnessEnabledChange,
   onAbstentionEnabledChange,
   onDeepJudgmentEnabledChange,
+  onDeepJudgmentSearchEnabledChange,
   onFewShotEnabledChange,
   onFewShotModeChange,
   onFewShotKChange,
@@ -459,6 +463,27 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 (Extract excerpts and reasoning traces)
               </span>
             </label>
+
+            {deepJudgmentEnabled && (
+              <div className="ml-8 mt-2">
+                <label
+                  className="flex items-center space-x-3"
+                  title="Validate excerpts against external search results to detect potential hallucinations. Adds search API calls to verification."
+                >
+                  <input
+                    type="checkbox"
+                    checked={deepJudgmentSearchEnabled}
+                    onChange={(e) => onDeepJudgmentSearchEnabledChange(e.target.checked)}
+                    disabled={isRunning}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Search Enhancement</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    (Validate excerpts with external search)
+                  </span>
+                </label>
+              </div>
+            )}
 
             <label className="flex items-center space-x-3">
               <input
