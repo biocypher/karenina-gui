@@ -117,6 +117,15 @@ const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) 
   const reasoningCount = result.attribute_reasoning ? Object.keys(result.attribute_reasoning).length : 0;
   const missingCount = result.attributes_without_excerpts ? result.attributes_without_excerpts.length : 0;
 
+  // Calculate hallucination risk count (only when search was performed)
+  let hallucinationRiskCount = 0;
+  let hasHighRisk = false;
+  if (result.hallucination_risk_assessment) {
+    const riskValues = Object.values(result.hallucination_risk_assessment);
+    hallucinationRiskCount = riskValues.filter((r) => r !== 'none').length;
+    hasHighRisk = riskValues.some((r) => r === 'high');
+  }
+
   return (
     <div className="flex flex-wrap gap-1">
       {excerptCount > 0 && (
@@ -143,7 +152,19 @@ const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) 
           M: {missingCount}
         </span>
       )}
-      {excerptCount === 0 && reasoningCount === 0 && missingCount === 0 && (
+      {hallucinationRiskCount > 0 && (
+        <span
+          className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+            hasHighRisk
+              ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200'
+          }`}
+          title={`${hallucinationRiskCount} attributes with hallucination risk${hasHighRisk ? ' (including high risk)' : ''}`}
+        >
+          H: {hallucinationRiskCount}
+        </span>
+      )}
+      {excerptCount === 0 && reasoningCount === 0 && missingCount === 0 && hallucinationRiskCount === 0 && (
         <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
           No Data
         </span>

@@ -144,6 +144,16 @@ const FIELD_GROUPS: FieldGroup[] = [
         label: 'Attributes Without Excerpts',
         description: 'List of attributes that could not be supported with verbatim excerpts',
       },
+      {
+        key: 'deep_judgment_search_enabled',
+        label: 'Search Enhancement Enabled',
+        description: 'Whether external search validation was enabled for deep-judgment',
+      },
+      {
+        key: 'hallucination_risk_assessment',
+        label: 'Hallucination Risk Assessment',
+        description: 'Per-attribute risk assessment from search validation (none/low/medium/high)',
+      },
     ],
   },
 ];
