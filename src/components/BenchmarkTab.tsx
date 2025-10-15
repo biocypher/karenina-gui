@@ -27,6 +27,7 @@ import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
 import { SearchableTextDisplay } from './SearchableTextDisplay';
+import { SearchResultsDisplay } from './SearchResultsDisplay';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 
 // Interfaces now imported from types
@@ -1374,12 +1375,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                         {/* Search Results (if search was performed) */}
                                                         {excerpt.search_results && (
                                                           <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
-                                                            <p className="text-xs font-medium text-blue-800 dark:text-blue-200 mb-1">
-                                                              Search Validation:
-                                                            </p>
-                                                            <p className="text-slate-700 dark:text-slate-300 text-xs">
-                                                              {excerpt.search_results}
-                                                            </p>
+                                                            <SearchResultsDisplay
+                                                              searchResults={excerpt.search_results}
+                                                            />
                                                           </div>
                                                         )}
                                                       </>
