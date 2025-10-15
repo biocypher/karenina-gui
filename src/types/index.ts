@@ -336,6 +336,8 @@ export interface VerificationResult {
       similarity_score: number;
       explanation?: string;
       search_results?: string; // External search validation when search is enabled
+      hallucination_risk?: string; // Per-excerpt risk: "none" | "low" | "medium" | "high"
+      hallucination_justification?: string; // Explanation for the risk level
     }>
   >;
   attribute_reasoning?: Record<string, string>;

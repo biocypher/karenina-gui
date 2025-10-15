@@ -54,6 +54,8 @@ export interface ExportableResult {
       similarity_score: number;
       explanation?: string;
       search_results?: string;
+      hallucination_risk?: string;
+      hallucination_justification?: string;
     }>
   >;
   attribute_reasoning?: Record<string, string>;
