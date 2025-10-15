@@ -112,19 +112,71 @@ const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) 
     );
   }
 
-  // Calculate counts
+  // Check if search was enabled (hallucination risk assessment present)
+  const searchEnabled = result.deep_judgment_search_enabled && result.hallucination_risk_assessment;
+
+  // If search was enabled, show Hallucination Risk badge
+  if (searchEnabled) {
+    const riskValues = Object.values(result.hallucination_risk_assessment);
+
+    // Find the highest risk level across all attributes
+    let highestRisk: 'none' | 'low' | 'medium' | 'high' = 'none';
+    const riskOrder = { none: 0, low: 1, medium: 2, high: 3 };
+
+    riskValues.forEach((risk) => {
+      if (riskOrder[risk as keyof typeof riskOrder] > riskOrder[highestRisk]) {
+        highestRisk = risk as 'none' | 'low' | 'medium' | 'high';
+      }
+    });
+
+    // Color-code by highest risk level
+    const getRiskStyle = (risk: string) => {
+      switch (risk) {
+        case 'high':
+          return {
+            bg: 'bg-red-100 dark:bg-red-900/40',
+            text: 'text-red-800 dark:text-red-200',
+            border: 'border-red-300 dark:border-red-700',
+          };
+        case 'medium':
+          return {
+            bg: 'bg-orange-100 dark:bg-orange-900/40',
+            text: 'text-orange-800 dark:text-orange-200',
+            border: 'border-orange-300 dark:border-orange-700',
+          };
+        case 'low':
+          return {
+            bg: 'bg-yellow-100 dark:bg-yellow-900/40',
+            text: 'text-yellow-800 dark:text-yellow-200',
+            border: 'border-yellow-300 dark:border-yellow-700',
+          };
+        case 'none':
+        default:
+          return {
+            bg: 'bg-green-100 dark:bg-green-900/40',
+            text: 'text-green-800 dark:text-green-200',
+            border: 'border-green-300 dark:border-green-700',
+          };
+      }
+    };
+
+    const style = getRiskStyle(highestRisk);
+    const riskCount = riskValues.filter((r) => r !== 'none').length;
+
+    return (
+      <span
+        className={`inline-flex items-center px-2 py-1 rounded text-xs ${style.bg} ${style.text} border ${style.border}`}
+        title={`Hallucination risk: ${highestRisk.toUpperCase()} (${riskCount} attribute${riskCount === 1 ? '' : 's'} with risk)`}
+      >
+        {highestRisk.toUpperCase()}
+      </span>
+    );
+  }
+
+  // Otherwise, show E:, R:, M: badges (legacy display when search not enabled)
   const excerptCount = result.extracted_excerpts ? Object.keys(result.extracted_excerpts).length : 0;
   const reasoningCount = result.attribute_reasoning ? Object.keys(result.attribute_reasoning).length : 0;
   const missingCount = result.attributes_without_excerpts ? result.attributes_without_excerpts.length : 0;
-
-  // Calculate hallucination risk count (only when search was performed)
-  let hallucinationRiskCount = 0;
-  let hasHighRisk = false;
-  if (result.hallucination_risk_assessment) {
-    const riskValues = Object.values(result.hallucination_risk_assessment);
-    hallucinationRiskCount = riskValues.filter((r) => r !== 'none').length;
-    hasHighRisk = riskValues.some((r) => r === 'high');
-  }
 
   return (
     <div className="flex flex-wrap gap-1">
@@ -152,19 +204,7 @@ const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) 
           M: {missingCount}
         </span>
       )}
-      {hallucinationRiskCount > 0 && (
-        <span
-          className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-            hasHighRisk
-              ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200'
-          }`}
-          title={`${hallucinationRiskCount} attributes with hallucination risk${hasHighRisk ? ' (including high risk)' : ''}`}
-        >
-          H: {hallucinationRiskCount}
-        </span>
-      )}
-      {excerptCount === 0 && reasoningCount === 0 && missingCount === 0 && hallucinationRiskCount === 0 && (
+      {excerptCount === 0 && reasoningCount === 0 && missingCount === 0 && (
         <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
           No Data
         </span>
