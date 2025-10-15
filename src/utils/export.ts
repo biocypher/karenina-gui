@@ -48,13 +48,22 @@ export interface ExportableResult {
   deep_judgment_performed?: boolean;
   extracted_excerpts?: Record<
     string,
-    Array<{ text: string; confidence: string; similarity_score: number; explanation?: string }>
+    Array<{
+      text: string;
+      confidence: string;
+      similarity_score: number;
+      explanation?: string;
+      search_results?: string;
+    }>
   >;
   attribute_reasoning?: Record<string, string>;
   deep_judgment_stages_completed?: string[];
   deep_judgment_model_calls?: number;
   deep_judgment_excerpt_retry_count?: number;
   attributes_without_excerpts?: string[];
+  // Search-enhanced deep-judgment metadata
+  deep_judgment_search_enabled?: boolean;
+  hallucination_risk_assessment?: Record<string, string>;
 }
 
 /**
@@ -228,6 +237,9 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'deep_judgment_model_calls',
     'deep_judgment_excerpt_retry_count',
     'attributes_without_excerpts',
+    // Search-enhanced deep-judgment fields
+    'deep_judgment_search_enabled',
+    'hallucination_risk_assessment',
   ];
 
   // Filter headers based on selected fields if provided
@@ -330,6 +342,11 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       deep_judgment_excerpt_retry_count: escapeCSVField(result.deep_judgment_excerpt_retry_count || 0),
       attributes_without_excerpts: escapeCSVField(
         result.attributes_without_excerpts ? JSON.stringify(result.attributes_without_excerpts) : ''
+      ),
+      // Search-enhanced deep-judgment fields
+      deep_judgment_search_enabled: escapeCSVField(result.deep_judgment_search_enabled || false),
+      hallucination_risk_assessment: escapeCSVField(
+        result.hallucination_risk_assessment ? JSON.stringify(result.hallucination_risk_assessment) : ''
       ),
     };
 
