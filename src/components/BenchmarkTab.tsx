@@ -1386,7 +1386,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                         getRiskStyle(riskLevel).border
                                                       }`}
                                                     >
-                                                      Risk: {riskLevel.toUpperCase()}
+                                                      Hallucination Risk: {riskLevel.toUpperCase()}
                                                     </span>
                                                   )}
                                                 </div>
