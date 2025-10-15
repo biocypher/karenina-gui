@@ -1334,59 +1334,112 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                       </h5>
                                       <div className="space-y-2">
                                         {Object.entries(selectedResult.extracted_excerpts).map(
-                                          ([attributeName, excerpts]) => (
-                                            <div
-                                              key={attributeName}
-                                              className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
-                                            >
-                                              <div className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                                                {attributeName}
-                                              </div>
-                                              <div className="space-y-2">
-                                                {excerpts.map((excerpt, idx) => (
-                                                  <div
-                                                    key={idx}
-                                                    className={`rounded p-2 border ${
-                                                      excerpt.explanation
-                                                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-                                                        : 'bg-white dark:bg-slate-800 border-blue-100 dark:border-blue-900'
-                                                    }`}
-                                                  >
-                                                    {excerpt.explanation ? (
-                                                      // Display explanation for missing excerpts
-                                                      <div>
-                                                        <p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-1">
-                                                          No excerpt found
-                                                        </p>
-                                                        <p className="text-amber-700 dark:text-amber-300 text-sm italic">
-                                                          {excerpt.explanation}
-                                                        </p>
-                                                      </div>
-                                                    ) : (
-                                                      // Display normal excerpt
-                                                      <>
-                                                        <p className="text-slate-800 dark:text-slate-200 text-sm mb-1">
-                                                          "{excerpt.text}"
-                                                        </p>
-                                                        <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
-                                                          <span>Confidence: {excerpt.confidence}</span>
-                                                          <span>Similarity: {excerpt.similarity_score.toFixed(3)}</span>
-                                                        </div>
-                                                        {/* Search Results (if search was performed) */}
-                                                        {excerpt.search_results && (
-                                                          <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
-                                                            <SearchResultsDisplay
-                                                              searchResults={excerpt.search_results}
-                                                            />
-                                                          </div>
-                                                        )}
-                                                      </>
-                                                    )}
+                                          ([attributeName, excerpts]) => {
+                                            // Get hallucination risk for this attribute
+                                            const riskLevel =
+                                              selectedResult.hallucination_risk_assessment?.[attributeName];
+                                            const getRiskStyle = (risk: string) => {
+                                              switch (risk) {
+                                                case 'high':
+                                                  return {
+                                                    bg: 'bg-red-100 dark:bg-red-900/40',
+                                                    text: 'text-red-800 dark:text-red-200',
+                                                    border: 'border-red-300 dark:border-red-700',
+                                                  };
+                                                case 'medium':
+                                                  return {
+                                                    bg: 'bg-orange-100 dark:bg-orange-900/40',
+                                                    text: 'text-orange-800 dark:text-orange-200',
+                                                    border: 'border-orange-300 dark:border-orange-700',
+                                                  };
+                                                case 'low':
+                                                  return {
+                                                    bg: 'bg-yellow-100 dark:bg-yellow-900/40',
+                                                    text: 'text-yellow-800 dark:text-yellow-200',
+                                                    border: 'border-yellow-300 dark:border-yellow-700',
+                                                  };
+                                                case 'none':
+                                                default:
+                                                  return {
+                                                    bg: 'bg-green-100 dark:bg-green-900/40',
+                                                    text: 'text-green-800 dark:text-green-200',
+                                                    border: 'border-green-300 dark:border-green-700',
+                                                  };
+                                              }
+                                            };
+
+                                            return (
+                                              <div
+                                                key={attributeName}
+                                                className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
+                                              >
+                                                <div className="flex items-center justify-between mb-2">
+                                                  <div className="font-medium text-blue-900 dark:text-blue-100">
+                                                    {attributeName}
                                                   </div>
-                                                ))}
+                                                  {/* Hallucination Risk Badge */}
+                                                  {riskLevel && (
+                                                    <span
+                                                      className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+                                                        getRiskStyle(riskLevel).bg
+                                                      } ${getRiskStyle(riskLevel).text} border ${
+                                                        getRiskStyle(riskLevel).border
+                                                      }`}
+                                                    >
+                                                      Risk: {riskLevel.toUpperCase()}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <div className="space-y-2">
+                                                  {excerpts.map((excerpt, idx) => (
+                                                    <div
+                                                      key={idx}
+                                                      className={`rounded p-2 border ${
+                                                        excerpt.explanation
+                                                          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                                                          : 'bg-white dark:bg-slate-800 border-blue-100 dark:border-blue-900'
+                                                      }`}
+                                                    >
+                                                      {excerpt.explanation ? (
+                                                        // Display explanation for missing excerpts
+                                                        <div>
+                                                          <p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-1">
+                                                            No excerpt found
+                                                          </p>
+                                                          <p className="text-amber-700 dark:text-amber-300 text-sm italic">
+                                                            {excerpt.explanation}
+                                                          </p>
+                                                        </div>
+                                                      ) : (
+                                                        // Display normal excerpt
+                                                        <>
+                                                          <p className="text-slate-800 dark:text-slate-200 text-sm mb-1">
+                                                            "{excerpt.text}"
+                                                          </p>
+                                                          <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+                                                            <span>Extraction confidence: {excerpt.confidence}</span>
+                                                            <span>
+                                                              {excerpt.similarity_score === 1
+                                                                ? 'Verbatim match'
+                                                                : `Fuzzy match (${excerpt.similarity_score.toFixed(3)})`}
+                                                            </span>
+                                                          </div>
+                                                          {/* Search Results (if search was performed) */}
+                                                          {excerpt.search_results && (
+                                                            <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                                                              <SearchResultsDisplay
+                                                                searchResults={excerpt.search_results}
+                                                              />
+                                                            </div>
+                                                          )}
+                                                        </>
+                                                      )}
+                                                    </div>
+                                                  ))}
+                                                </div>
                                               </div>
-                                            </div>
-                                          )
+                                            );
+                                          }
                                         )}
                                       </div>
                                     </div>
@@ -1440,78 +1493,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                             {attrName}
                                           </span>
                                         ))}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                {/* Hallucination Risk Assessment (Search-Enhanced) */}
-                                {selectedResult.hallucination_risk_assessment &&
-                                  Object.keys(selectedResult.hallucination_risk_assessment).length > 0 && (
-                                    <div>
-                                      <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                        Hallucination Risk Assessment:
-                                      </h5>
-                                      <div className="space-y-2">
-                                        {Object.entries(selectedResult.hallucination_risk_assessment).map(
-                                          ([attributeName, riskLevel]) => {
-                                            // Determine styling based on risk level
-                                            const getRiskStyle = (risk: string) => {
-                                              switch (risk) {
-                                                case 'high':
-                                                  return {
-                                                    bg: 'bg-red-50 dark:bg-red-900/20',
-                                                    border: 'border-red-200 dark:border-red-800',
-                                                    text: 'text-red-900 dark:text-red-100',
-                                                    badge:
-                                                      'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700',
-                                                  };
-                                                case 'medium':
-                                                  return {
-                                                    bg: 'bg-orange-50 dark:bg-orange-900/20',
-                                                    border: 'border-orange-200 dark:border-orange-800',
-                                                    text: 'text-orange-900 dark:text-orange-100',
-                                                    badge:
-                                                      'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700',
-                                                  };
-                                                case 'low':
-                                                  return {
-                                                    bg: 'bg-yellow-50 dark:bg-yellow-900/20',
-                                                    border: 'border-yellow-200 dark:border-yellow-800',
-                                                    text: 'text-yellow-900 dark:text-yellow-100',
-                                                    badge:
-                                                      'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700',
-                                                  };
-                                                case 'none':
-                                                default:
-                                                  return {
-                                                    bg: 'bg-green-50 dark:bg-green-900/20',
-                                                    border: 'border-green-200 dark:border-green-800',
-                                                    text: 'text-green-900 dark:text-green-100',
-                                                    badge:
-                                                      'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700',
-                                                  };
-                                              }
-                                            };
-
-                                            const style = getRiskStyle(riskLevel);
-
-                                            return (
-                                              <div
-                                                key={attributeName}
-                                                className={`${style.bg} border ${style.border} rounded-lg p-3`}
-                                              >
-                                                <div className="flex items-center justify-between">
-                                                  <div className={`font-medium ${style.text}`}>{attributeName}</div>
-                                                  <span
-                                                    className={`inline-flex items-center px-2 py-1 rounded text-xs ${style.badge} border`}
-                                                  >
-                                                    Risk: {riskLevel.toUpperCase()}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            );
-                                          }
-                                        )}
                                       </div>
                                     </div>
                                   )}
