@@ -1,58 +1,25 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
-
-interface SearchItem {
-  index: number;
-  title: string;
-  content: string;
-  url: string;
-}
+import { SearchResultItem } from '../types';
 
 interface SearchResultsDisplayProps {
-  searchResults: string;
+  searchResults: SearchResultItem[];
 }
 
-/**
- * Parse search results from the formatted string returned by Tavily search tool.
- *
- * Expected format:
- * <item_1>
- * [1] Title
- *     Content (can be multi-line)
- *     Source: https://example.com
- * </item_1>
- *
- * @param searchResults - Formatted search results string
- * @returns Array of parsed search items
- */
-function parseSearchResults(searchResults: string): SearchItem[] {
-  // Regex to match <item_N>...</item_N> blocks
-  // Captures: index, title (after [N]), content (multi-line), and URL
-  const itemRegex = /<item_(\d+)>\s*\[\d+\]\s*([^\n]+)\n\s+(.+?)\n\s+Source:\s*(.+?)\s*<\/item_\d+>/gs;
-
-  const items: SearchItem[] = [];
-  let match;
-
-  while ((match = itemRegex.exec(searchResults)) !== null) {
-    items.push({
-      index: parseInt(match[1], 10),
-      title: match[2].trim(),
-      content: match[3].trim(),
-      url: match[4].trim(),
-    });
-  }
-
-  return items;
-}
-
-const SearchResultItem: React.FC<{
-  item: SearchItem;
+const SearchResultItemComponent: React.FC<{
+  item: SearchResultItem;
   isExpanded: boolean;
   onToggle: () => void;
 }> = ({ item, isExpanded, onToggle }) => {
+  // Use title if available, otherwise use truncated content (max 80 chars)
+  const displayTitle = item.title || (item.content.length > 80 ? item.content.substring(0, 80) + '...' : item.content);
+
+  // Determine if we should show the title was truncated from content
+  const titleIsTruncated = !item.title;
+
   return (
     <div className="bg-white dark:bg-slate-800 border border-blue-100 dark:border-blue-900 rounded p-2">
-      {/* Collapsible header - shows title */}
+      {/* Collapsible header - shows title or truncated content */}
       <button
         onClick={onToggle}
         className="w-full flex items-start gap-2 text-left hover:opacity-80 transition-opacity"
@@ -62,7 +29,13 @@ const SearchResultItem: React.FC<{
         ) : (
           <ChevronRight className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
         )}
-        <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{item.title}</span>
+        <span
+          className={`text-xs font-medium ${
+            titleIsTruncated ? 'text-slate-600 dark:text-slate-400 italic' : 'text-slate-800 dark:text-slate-200'
+          }`}
+        >
+          {displayTitle}
+        </span>
       </button>
 
       {/* Collapsible content - shows full content and source */}
@@ -71,18 +44,22 @@ const SearchResultItem: React.FC<{
           {/* Content */}
           <div className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{item.content}</div>
 
-          {/* Source URL as clickable link */}
-          <div className="flex items-center gap-1">
-            <ExternalLink className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline break-all"
-            >
-              {item.url}
-            </a>
-          </div>
+          {/* Source URL as clickable link (only if available) */}
+          {item.url ? (
+            <div className="flex items-center gap-1">
+              <ExternalLink className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline break-all"
+              >
+                {item.url}
+              </a>
+            </div>
+          ) : (
+            <div className="text-xs text-slate-500 dark:text-slate-500 italic">Source not available</div>
+          )}
         </div>
       )}
     </div>
@@ -93,15 +70,12 @@ export const SearchResultsDisplay: React.FC<SearchResultsDisplayProps> = ({ sear
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
-  // Parse search results
-  const items = parseSearchResults(searchResults);
-
-  if (items.length === 0) {
-    // Fallback if parsing fails - show raw text
+  // No results case
+  if (!searchResults || searchResults.length === 0) {
     return (
       <div className="text-xs text-slate-600 dark:text-slate-400">
         <p className="font-medium mb-1">Search Validation:</p>
-        <p className="whitespace-pre-wrap">{searchResults}</p>
+        <p>No search results available</p>
       </div>
     );
   }
@@ -124,18 +98,18 @@ export const SearchResultsDisplay: React.FC<SearchResultsDisplayProps> = ({ sear
         className="flex items-center gap-2 text-xs font-medium text-blue-800 dark:text-blue-200 hover:opacity-80 transition-opacity"
       >
         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        Search Validation ({items.length} {items.length === 1 ? 'result' : 'results'})
+        Search Validation ({searchResults.length} {searchResults.length === 1 ? 'result' : 'results'})
       </button>
 
       {/* Collapsible content - all search result items */}
       {isExpanded && (
         <div className="space-y-2">
-          {items.map((item) => (
-            <SearchResultItem
-              key={item.index}
+          {searchResults.map((item, idx) => (
+            <SearchResultItemComponent
+              key={idx}
               item={item}
-              isExpanded={expandedItems.has(item.index)}
-              onToggle={() => toggleItem(item.index)}
+              isExpanded={expandedItems.has(idx)}
+              onToggle={() => toggleItem(idx)}
             />
           ))}
         </div>

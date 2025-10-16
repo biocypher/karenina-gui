@@ -335,7 +335,7 @@ export interface VerificationResult {
       confidence: string;
       similarity_score: number;
       explanation?: string;
-      search_results?: string; // External search validation when search is enabled
+      search_results?: SearchResultItem[]; // External search validation when search is enabled (structured)
       hallucination_risk?: string; // Per-excerpt risk: "none" | "low" | "medium" | "high"
       hallucination_justification?: string; // Explanation for the risk level
     }>
@@ -523,4 +523,11 @@ export interface MCPPresetConfig {
 export interface MCPPresetsResponse {
   presets: Record<string, MCPPresetConfig>;
   error?: string;
+}
+
+// Search result types for deep-judgment
+export interface SearchResultItem {
+  title?: string | null; // Optional - will use truncated content if missing
+  content: string; // Required - the main text
+  url?: string | null; // Optional - will not show clickable link if missing
 }
