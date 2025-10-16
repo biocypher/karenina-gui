@@ -1423,27 +1423,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                                 ? 'Verbatim match'
                                                                 : `Fuzzy match (${excerpt.similarity_score.toFixed(3)})`}
                                                             </span>
-                                                            {/* Per-excerpt Hallucination Risk Badge */}
-                                                            {excerpt.hallucination_risk && (
-                                                              <span
-                                                                className={`inline-flex items-center px-2 py-1 rounded text-xs border ${
-                                                                  excerpt.hallucination_risk === 'high'
-                                                                    ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
-                                                                    : excerpt.hallucination_risk === 'medium'
-                                                                      ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700'
-                                                                      : excerpt.hallucination_risk === 'low'
-                                                                        ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'
-                                                                        : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700'
-                                                                }`}
-                                                                title={
-                                                                  excerpt.hallucination_justification ||
-                                                                  `Hallucination risk: ${excerpt.hallucination_risk}`
-                                                                }
-                                                              >
-                                                                Hallucination Risk:{' '}
-                                                                {excerpt.hallucination_risk.toUpperCase()}
-                                                              </span>
-                                                            )}
                                                           </div>
                                                           {/* Search Results (if search was performed) */}
                                                           {excerpt.search_results && (
@@ -1456,9 +1435,26 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                           {/* Hallucination Justification (if available) */}
                                                           {excerpt.hallucination_justification && (
                                                             <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                                                              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                                                Hallucination Risk Reasoning:
-                                                              </p>
+                                                              <div className="flex items-center gap-2 mb-1">
+                                                                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                                                  Hallucination Risk Reasoning:
+                                                                </p>
+                                                                {excerpt.hallucination_risk && (
+                                                                  <span
+                                                                    className={`inline-flex items-center px-2 py-1 rounded text-xs border ${
+                                                                      excerpt.hallucination_risk === 'high'
+                                                                        ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
+                                                                        : excerpt.hallucination_risk === 'medium'
+                                                                          ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700'
+                                                                          : excerpt.hallucination_risk === 'low'
+                                                                            ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'
+                                                                            : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700'
+                                                                    }`}
+                                                                  >
+                                                                    {excerpt.hallucination_risk.toUpperCase()}
+                                                                  </span>
+                                                                )}
+                                                              </div>
                                                               <p className="text-sm text-slate-600 dark:text-slate-400">
                                                                 {excerpt.hallucination_justification}
                                                               </p>
