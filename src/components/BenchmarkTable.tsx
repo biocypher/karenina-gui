@@ -116,7 +116,7 @@ const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) 
   const searchEnabled = result.deep_judgment_search_enabled && result.hallucination_risk_assessment;
 
   // If search was enabled, show Hallucination Risk badge
-  if (searchEnabled) {
+  if (searchEnabled && result.hallucination_risk_assessment) {
     const riskValues = Object.values(result.hallucination_risk_assessment);
 
     // Find the highest risk level across all attributes
@@ -173,43 +173,11 @@ const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) 
     );
   }
 
-  // Otherwise, show E:, R:, M: badges (legacy display when search not enabled)
-  const excerptCount = result.extracted_excerpts ? Object.keys(result.extracted_excerpts).length : 0;
-  const reasoningCount = result.attribute_reasoning ? Object.keys(result.attribute_reasoning).length : 0;
-  const missingCount = result.attributes_without_excerpts ? result.attributes_without_excerpts.length : 0;
-
+  // When search not enabled, show "None" (no risk assessment performed)
   return (
-    <div className="flex flex-wrap gap-1">
-      {excerptCount > 0 && (
-        <span
-          className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200"
-          title={`${excerptCount} attributes with excerpts`}
-        >
-          E: {excerptCount}
-        </span>
-      )}
-      {reasoningCount > 0 && (
-        <span
-          className="inline-flex items-center px-2 py-1 rounded text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200"
-          title={`${reasoningCount} attributes with reasoning`}
-        >
-          R: {reasoningCount}
-        </span>
-      )}
-      {missingCount > 0 && (
-        <span
-          className="inline-flex items-center px-2 py-1 rounded text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
-          title={`${missingCount} attributes without excerpts`}
-        >
-          M: {missingCount}
-        </span>
-      )}
-      {excerptCount === 0 && reasoningCount === 0 && missingCount === 0 && (
-        <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-          No Data
-        </span>
-      )}
-    </div>
+    <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+      None
+    </span>
   );
 };
 
