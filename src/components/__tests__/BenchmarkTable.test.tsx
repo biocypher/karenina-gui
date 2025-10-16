@@ -114,13 +114,13 @@ describe('BenchmarkTable - Deep-Judgment Column', () => {
     expect(screen.getByText('No Data')).toBeInTheDocument();
   });
 
-  it('includes Deep-Judgment column header', () => {
+  it('includes Hallucination Risk column header', () => {
     const results = {
       q1: createMockResult(),
     };
 
     render(<BenchmarkTable benchmarkResults={results} onViewResult={mockOnViewResult} />);
 
-    expect(screen.getByText('Deep-Judgment')).toBeInTheDocument();
+    expect(screen.getByText('Hallucination Risk')).toBeInTheDocument();
   });
 });
