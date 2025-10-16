@@ -17,9 +17,9 @@ describe('BenchmarkTable - Deep-Judgment Column', () => {
     parsing_model: 'gpt-4',
     answering_mcp_servers: [],
     success: true,
-    verify_result: true,
-    verify_granular_result: {},
-    verify_rubric: null,
+    verify_result: { success: true },
+    verify_granular_result: { score: 1.0 },
+    verify_rubric: undefined,
     execution_time: 1.23,
     timestamp: new Date().toISOString(),
     run_name: 'test-run',
@@ -53,11 +53,12 @@ describe('BenchmarkTable - Deep-Judgment Column', () => {
     expect(screen.getByText('Not Performed')).toBeInTheDocument();
   });
 
-  it('displays excerpt count when deep-judgment performed with excerpts', () => {
+  it('displays "None" when deep-judgment performed without search enhancement', () => {
     const results = {
       q1: createMockResult({
         deep_judgment_enabled: true,
         deep_judgment_performed: true,
+        deep_judgment_search_enabled: false,
         extracted_excerpts: {
           attr1: [{ text: 'excerpt 1', confidence: 'high', similarity_score: 0.95 }],
           attr2: [{ text: 'excerpt 2', confidence: 'medium', similarity_score: 0.85 }],
@@ -72,46 +73,56 @@ describe('BenchmarkTable - Deep-Judgment Column', () => {
 
     render(<BenchmarkTable benchmarkResults={results} onViewResult={mockOnViewResult} />);
 
-    expect(screen.getByText('E: 2')).toBeInTheDocument();
-    expect(screen.getByText('R: 2')).toBeInTheDocument();
+    // Should show "None" since search enhancement is disabled
+    expect(screen.getByText('None')).toBeInTheDocument();
   });
 
-  it('displays missing count when attributes have no excerpts', () => {
+  it('displays risk level when search enhancement enabled', () => {
     const results = {
       q1: createMockResult({
         deep_judgment_enabled: true,
         deep_judgment_performed: true,
+        deep_judgment_search_enabled: true,
         extracted_excerpts: {
           attr1: [{ text: 'excerpt 1', confidence: 'high', similarity_score: 0.95 }],
         },
         attribute_reasoning: {
           attr1: 'reasoning for attr1',
         },
-        attributes_without_excerpts: ['attr2', 'attr3'],
+        hallucination_risk_assessment: {
+          attr1: 'low',
+        },
       }),
     };
 
     render(<BenchmarkTable benchmarkResults={results} onViewResult={mockOnViewResult} />);
 
-    expect(screen.getByText('E: 1')).toBeInTheDocument();
-    expect(screen.getByText('R: 1')).toBeInTheDocument();
-    expect(screen.getByText('M: 2')).toBeInTheDocument();
+    expect(screen.getByText('LOW')).toBeInTheDocument();
   });
 
-  it('displays "No Data" when performed but no deep-judgment data available', () => {
+  it('displays highest risk level when multiple attributes assessed', () => {
     const results = {
       q1: createMockResult({
         deep_judgment_enabled: true,
         deep_judgment_performed: true,
-        extracted_excerpts: {},
-        attribute_reasoning: {},
-        attributes_without_excerpts: [],
+        deep_judgment_search_enabled: true,
+        extracted_excerpts: {
+          attr1: [{ text: 'excerpt 1', confidence: 'high', similarity_score: 0.95 }],
+          attr2: [{ text: 'excerpt 2', confidence: 'medium', similarity_score: 0.85 }],
+          attr3: [{ text: 'excerpt 3', confidence: 'high', similarity_score: 0.9 }],
+        },
+        hallucination_risk_assessment: {
+          attr1: 'low',
+          attr2: 'high',
+          attr3: 'medium',
+        },
       }),
     };
 
     render(<BenchmarkTable benchmarkResults={results} onViewResult={mockOnViewResult} />);
 
-    expect(screen.getByText('No Data')).toBeInTheDocument();
+    // Should show highest risk level
+    expect(screen.getByText('HIGH')).toBeInTheDocument();
   });
 
   it('includes Hallucination Risk column header', () => {
