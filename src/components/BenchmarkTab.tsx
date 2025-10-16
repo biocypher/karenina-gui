@@ -1451,7 +1451,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                                                                             : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700'
                                                                     }`}
                                                                   >
-                                                                    {excerpt.hallucination_risk.toUpperCase()}
+                                                                    Risk: {excerpt.hallucination_risk.toUpperCase()}
                                                                   </span>
                                                                 )}
                                                               </div>
