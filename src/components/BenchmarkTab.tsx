@@ -93,6 +93,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   // Add state for polling retry count
   const [, setRetryCount] = useState(0);
 
+  // Local state for replicate count input to allow clearing
+  const [replicateInputValue, setReplicateInputValue] = useState<string>(replicateCount.toString());
+
   // Filter state for table results
   const [filteredCount, setFilteredCount] = useState<number | null>(null);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -559,8 +562,32 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   type="number"
                   min="1"
                   max="10"
-                  value={replicateCount}
-                  onChange={(e) => setReplicateCount(Math.max(1, parseInt(e.target.value) || 1))}
+                  value={replicateInputValue}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setReplicateInputValue(value);
+                    // Update store with valid number, or 1 if empty/invalid
+                    if (value === '') {
+                      // Don't update store yet, wait for blur
+                    } else {
+                      const parsed = parseInt(value);
+                      if (!isNaN(parsed)) {
+                        setReplicateCount(Math.max(1, Math.min(10, parsed)));
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // On blur, ensure we have a valid value (default to 1 if empty)
+                    if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                      setReplicateInputValue('1');
+                      setReplicateCount(1);
+                    } else {
+                      const parsed = parseInt(e.target.value);
+                      const clamped = Math.max(1, Math.min(10, parsed));
+                      setReplicateInputValue(clamped.toString());
+                      setReplicateCount(clamped);
+                    }
+                  }}
                   disabled={isRunning}
                   className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 />
