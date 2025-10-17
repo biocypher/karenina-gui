@@ -1,6 +1,14 @@
 import { API_ENDPOINTS } from '../constants/api';
 import type { Rubric, RubricTrait } from '../types';
 
+/**
+ * ExportableResult interface for GUI exports.
+ *
+ * MUST mirror backend VerificationResult model exactly.
+ *
+ * When adding fields: Update this interface, allHeaders array, and allRowData object.
+ * See docs: .agents/dev/recurring-issues.md#issue-1-gui-export-sync-when-adding-verificationresult-fields
+ */
 export interface ExportableResult {
   question_id: string;
   question_text: string;
@@ -35,6 +43,29 @@ export interface ExportableResult {
   abstention_detected?: boolean | null;
   abstention_override_applied?: boolean;
   abstention_reasoning?: string | null;
+  // Deep-judgment metadata
+  deep_judgment_enabled?: boolean;
+  deep_judgment_performed?: boolean;
+  extracted_excerpts?: Record<
+    string,
+    Array<{
+      text: string;
+      confidence: string;
+      similarity_score: number;
+      explanation?: string;
+      search_results?: string;
+      hallucination_risk?: string;
+      hallucination_justification?: string;
+    }>
+  >;
+  attribute_reasoning?: Record<string, string>;
+  deep_judgment_stages_completed?: string[];
+  deep_judgment_model_calls?: number;
+  deep_judgment_excerpt_retry_count?: number;
+  attributes_without_excerpts?: string[];
+  // Search-enhanced deep-judgment metadata
+  deep_judgment_search_enabled?: boolean;
+  hallucination_risk_assessment?: Record<string, string>;
 }
 
 /**
@@ -152,6 +183,16 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
   // Create headers for global rubrics only
   const globalRubricHeaders = globalTraits.map((trait) => `rubric_${trait}`);
 
+  /**
+   * CRITICAL DEVELOPER WARNING:
+   *
+   * When adding new fields to VerificationResult model, you MUST add them here.
+   *
+   * This is the CSV headers array. Every field in ExportableResult interface
+   * that should be exported must have a corresponding header here.
+   *
+   * See: .agents/dev/adding-verification-fields.md for complete checklist
+   */
   const allHeaders = [
     'row_index',
     'question_id',
@@ -184,6 +225,23 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'embedding_similarity_score',
     'embedding_override_applied',
     'embedding_model_used',
+    // Abstention detection fields
+    'abstention_check_performed',
+    'abstention_detected',
+    'abstention_override_applied',
+    'abstention_reasoning',
+    // Deep-judgment fields
+    'deep_judgment_enabled',
+    'deep_judgment_performed',
+    'extracted_excerpts',
+    'attribute_reasoning',
+    'deep_judgment_stages_completed',
+    'deep_judgment_model_calls',
+    'deep_judgment_excerpt_retry_count',
+    'attributes_without_excerpts',
+    // Search-enhanced deep-judgment fields
+    'deep_judgment_search_enabled',
+    'hallucination_risk_assessment',
   ];
 
   // Filter headers based on selected fields if provided
@@ -214,6 +272,21 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       rubricSummary = `${passedTraits}/${traits.length}`;
     }
 
+    /**
+     * CRITICAL DEVELOPER WARNING:
+     *
+     * When adding new fields to VerificationResult model, you MUST add them here.
+     *
+     * This is the CSV row data object. For each field in ExportableResult interface
+     * that should be exported, add a corresponding key-value pair here.
+     *
+     * IMPORTANT:
+     * - Use escapeCSVField() for all values to handle special characters
+     * - Use JSON.stringify() for complex types (objects, arrays, etc.)
+     * - Provide sensible defaults for optional fields (e.g., || false, || '', || 0)
+     *
+     * See: .agents/dev/adding-verification-fields.md for complete checklist
+     */
     const allRowData: Record<string, string> = {
       row_index: String(index + 1),
       question_id: escapeCSVField(result.question_id),
@@ -250,6 +323,33 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       embedding_similarity_score: escapeCSVField(result.embedding_similarity_score || ''),
       embedding_override_applied: escapeCSVField(result.embedding_override_applied || false),
       embedding_model_used: escapeCSVField(result.embedding_model_used || ''),
+      // Abstention detection fields
+      abstention_check_performed: escapeCSVField(result.abstention_check_performed || false),
+      abstention_detected: escapeCSVField(
+        result.abstention_detected !== null && result.abstention_detected !== undefined
+          ? result.abstention_detected
+          : ''
+      ),
+      abstention_override_applied: escapeCSVField(result.abstention_override_applied || false),
+      abstention_reasoning: escapeCSVField(result.abstention_reasoning || ''),
+      // Deep-judgment fields
+      deep_judgment_enabled: escapeCSVField(result.deep_judgment_enabled || false),
+      deep_judgment_performed: escapeCSVField(result.deep_judgment_performed || false),
+      extracted_excerpts: escapeCSVField(result.extracted_excerpts ? JSON.stringify(result.extracted_excerpts) : ''),
+      attribute_reasoning: escapeCSVField(result.attribute_reasoning ? JSON.stringify(result.attribute_reasoning) : ''),
+      deep_judgment_stages_completed: escapeCSVField(
+        result.deep_judgment_stages_completed ? JSON.stringify(result.deep_judgment_stages_completed) : ''
+      ),
+      deep_judgment_model_calls: escapeCSVField(result.deep_judgment_model_calls || 0),
+      deep_judgment_excerpt_retry_count: escapeCSVField(result.deep_judgment_excerpt_retry_count || 0),
+      attributes_without_excerpts: escapeCSVField(
+        result.attributes_without_excerpts ? JSON.stringify(result.attributes_without_excerpts) : ''
+      ),
+      // Search-enhanced deep-judgment fields
+      deep_judgment_search_enabled: escapeCSVField(result.deep_judgment_search_enabled || false),
+      hallucination_risk_assessment: escapeCSVField(
+        result.hallucination_risk_assessment ? JSON.stringify(result.hallucination_risk_assessment) : ''
+      ),
     };
 
     // Add global rubric values

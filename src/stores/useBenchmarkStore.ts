@@ -23,6 +23,8 @@ interface BenchmarkState {
   rubricEnabled: boolean;
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
+  deepJudgmentEnabled: boolean;
+  deepJudgmentSearchEnabled: boolean;
   fewShotEnabled: boolean;
   fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
@@ -48,6 +50,8 @@ interface BenchmarkState {
   setRubricEnabled: (enabled: boolean) => void;
   setCorrectnessEnabled: (enabled: boolean) => void;
   setAbstentionEnabled: (enabled: boolean) => void;
+  setDeepJudgmentEnabled: (enabled: boolean) => void;
+  setDeepJudgmentSearchEnabled: (enabled: boolean) => void;
   setFewShotEnabled: (enabled: boolean) => void;
   setFewShotMode: (mode: 'all' | 'k-shot' | 'custom') => void;
   setFewShotK: (k: number) => void;
@@ -88,6 +92,8 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   rubricEnabled: false,
   correctnessEnabled: true,
   abstentionEnabled: false,
+  deepJudgmentEnabled: false,
+  deepJudgmentSearchEnabled: false,
   fewShotEnabled: false,
   fewShotMode: 'all',
   fewShotK: 3,
@@ -144,6 +150,8 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   setRubricEnabled: (enabled) => set({ rubricEnabled: enabled }),
   setCorrectnessEnabled: (enabled) => set({ correctnessEnabled: enabled }),
   setAbstentionEnabled: (enabled) => set({ abstentionEnabled: enabled }),
+  setDeepJudgmentEnabled: (enabled) => set({ deepJudgmentEnabled: enabled }),
+  setDeepJudgmentSearchEnabled: (enabled) => set({ deepJudgmentSearchEnabled: enabled }),
   setFewShotEnabled: (enabled) => set({ fewShotEnabled: enabled }),
   setFewShotMode: (mode) => set({ fewShotMode: mode }),
   setFewShotK: (k) => set({ fewShotK: k }),

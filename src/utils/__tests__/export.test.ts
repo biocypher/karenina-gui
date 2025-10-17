@@ -448,15 +448,19 @@ describe('Export Utils', () => {
       const csv = exportToCSV(resultsWithAbstention);
       const lines = csv.split('\n');
 
-      // Check header has success column
-      expect(lines[0]).toContain('success');
+      // Parse CSV to check specific field values
+      const headers = lines[0].split(',');
+      const firstRow = lines[1].split(',');
+      const secondRow = lines[2].split(',');
 
-      // First result should show "abstained" instead of true
-      expect(lines[1]).toContain('abstained');
-      expect(lines[1]).not.toContain('true,'); // Make sure it's not showing true
+      const successIndex = headers.indexOf('success');
+      expect(successIndex).toBeGreaterThan(-1);
 
-      // Second result should show normal boolean
-      expect(lines[2]).toContain('true');
+      // First result should show "abstained" instead of true for success field
+      expect(firstRow[successIndex]).toBe('abstained');
+
+      // Second result should show true for success field
+      expect(secondRow[successIndex]).toBe('true');
     });
   });
 

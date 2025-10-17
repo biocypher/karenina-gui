@@ -325,6 +325,29 @@ export interface VerificationResult {
   abstention_reasoning?: string | null;
   // MCP server metadata
   answering_mcp_servers?: string[];
+  // Deep-judgment metadata (multi-stage parsing with excerpts and reasoning)
+  deep_judgment_enabled?: boolean;
+  deep_judgment_performed?: boolean;
+  extracted_excerpts?: Record<
+    string,
+    Array<{
+      text: string;
+      confidence: string;
+      similarity_score: number;
+      explanation?: string;
+      search_results?: SearchResultItem[]; // External search validation when search is enabled (structured)
+      hallucination_risk?: string; // Per-excerpt risk: "none" | "low" | "medium" | "high"
+      hallucination_justification?: string; // Explanation for the risk level
+    }>
+  >;
+  attribute_reasoning?: Record<string, string>;
+  deep_judgment_stages_completed?: string[];
+  deep_judgment_model_calls?: number;
+  deep_judgment_excerpt_retry_count?: number;
+  attributes_without_excerpts?: string[];
+  // Search-enhanced deep-judgment metadata
+  deep_judgment_search_enabled?: boolean;
+  hallucination_risk_assessment?: Record<string, string>; // Maps attribute to "none" | "low" | "medium" | "high"
 }
 
 export interface VerificationProgress {
@@ -500,4 +523,11 @@ export interface MCPPresetConfig {
 export interface MCPPresetsResponse {
   presets: Record<string, MCPPresetConfig>;
   error?: string;
+}
+
+// Search result types for deep-judgment
+export interface SearchResultItem {
+  title?: string | null; // Optional - will use truncated content if missing
+  content: string; // Required - the main text
+  url?: string | null; // Optional - will not show clickable link if missing
 }

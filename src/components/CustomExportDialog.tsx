@@ -101,6 +101,61 @@ const FIELD_GROUPS: FieldGroup[] = [
       },
     ],
   },
+  {
+    name: 'Deep-Judgment Analysis',
+    fields: [
+      {
+        key: 'deep_judgment_enabled',
+        label: 'Deep-Judgment Enabled',
+        description: 'Whether deep-judgment multi-stage parsing was enabled for this verification',
+      },
+      {
+        key: 'deep_judgment_performed',
+        label: 'Deep-Judgment Performed',
+        description: 'Whether deep-judgment parsing was actually performed',
+      },
+      {
+        key: 'extracted_excerpts',
+        label: 'Extracted Excerpts',
+        description: 'Verbatim text excerpts extracted for each attribute with confidence and similarity scores',
+      },
+      {
+        key: 'attribute_reasoning',
+        label: 'Attribute Reasoning',
+        description: 'Reasoning traces explaining how excerpts map to attribute values',
+      },
+      {
+        key: 'deep_judgment_stages_completed',
+        label: 'Stages Completed',
+        description: 'List of pipeline stages completed (excerpts, reasoning, parameters)',
+      },
+      {
+        key: 'deep_judgment_model_calls',
+        label: 'Model Calls',
+        description: 'Number of LLM invocations used for deep-judgment parsing',
+      },
+      {
+        key: 'deep_judgment_excerpt_retry_count',
+        label: 'Excerpt Retry Count',
+        description: 'Number of retry attempts for failed excerpt fuzzy matching',
+      },
+      {
+        key: 'attributes_without_excerpts',
+        label: 'Attributes Without Excerpts',
+        description: 'List of attributes that could not be supported with verbatim excerpts',
+      },
+      {
+        key: 'deep_judgment_search_enabled',
+        label: 'Search Enhancement Enabled',
+        description: 'Whether external search validation was enabled for deep-judgment',
+      },
+      {
+        key: 'hallucination_risk_assessment',
+        label: 'Hallucination Risk Assessment',
+        description: 'Per-attribute risk assessment from search validation (none/low/medium/high)',
+      },
+    ],
+  },
 ];
 
 export const CustomExportDialog: React.FC<CustomExportDialogProps> = ({

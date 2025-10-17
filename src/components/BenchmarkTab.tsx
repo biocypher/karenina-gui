@@ -3,7 +3,6 @@ import {
   Play,
   Square,
   Download,
-  CheckCircle,
   AlertCircle,
   BarChart3,
   Filter,
@@ -20,13 +19,12 @@ import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
 import { exportFromServer, exportFilteredResults, ExportableResult } from '../utils/export';
 import { ConfigurationPanel } from './benchmark/ConfigurationPanel';
 import { ProgressIndicator } from './benchmark/ProgressIndicator';
+import { VerificationResultDetailModal } from './benchmark/VerificationResultDetailModal';
 import { BenchmarkTable } from './BenchmarkTable';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
-import { RubricResultsDisplay } from './RubricResultsDisplay';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
-import { SearchableTextDisplay } from './SearchableTextDisplay';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 
 // Interfaces now imported from types
@@ -48,6 +46,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     rubricEnabled,
     correctnessEnabled,
     abstentionEnabled,
+    deepJudgmentEnabled,
+    deepJudgmentSearchEnabled,
     fewShotEnabled,
     fewShotMode,
     fewShotK,
@@ -56,6 +56,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setRubricEnabled,
     setCorrectnessEnabled,
     setAbstentionEnabled,
+    setDeepJudgmentEnabled,
+    setDeepJudgmentSearchEnabled,
     setFewShotEnabled,
     setFewShotMode,
     setFewShotK,
@@ -495,6 +497,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             rubricEnabled={rubricEnabled}
             correctnessEnabled={correctnessEnabled}
             abstentionEnabled={abstentionEnabled}
+            deepJudgmentEnabled={deepJudgmentEnabled}
+            deepJudgmentSearchEnabled={deepJudgmentSearchEnabled}
             fewShotEnabled={fewShotEnabled}
             fewShotMode={fewShotMode}
             fewShotK={fewShotK}
@@ -508,6 +512,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onRubricEnabledChange={setRubricEnabled}
             onCorrectnessEnabledChange={setCorrectnessEnabled}
             onAbstentionEnabledChange={setAbstentionEnabled}
+            onDeepJudgmentEnabledChange={setDeepJudgmentEnabled}
+            onDeepJudgmentSearchEnabledChange={setDeepJudgmentSearchEnabled}
             onFewShotEnabledChange={setFewShotEnabled}
             onFewShotModeChange={setFewShotMode}
             onFewShotKChange={setFewShotK}
@@ -956,435 +962,12 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
           </Card>
 
           {/* Results Modal */}
-          {selectedResult && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-600">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      Detailed Answering Trace
-                    </h3>
-                    <button
-                      onClick={() => setSelectedResult(null)}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                  {(() => {
-                    try {
-                      return (
-                        <div className="space-y-4">
-                          {/* Status */}
-                          <div>
-                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Status</h4>
-                            <div
-                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                                selectedResult.success
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                              }`}
-                            >
-                              {selectedResult.success ? (
-                                <CheckCircle className="w-4 h-4" />
-                              ) : (
-                                <AlertCircle className="w-4 h-4" />
-                              )}
-                              {selectedResult.success ? 'Success' : 'Failed'}
-                            </div>
-                            {selectedResult.error && (
-                              <p className="text-red-600 dark:text-red-400 mt-2">{selectedResult.error}</p>
-                            )}
-                          </div>
-
-                          {/* Raw Question */}
-                          <div>
-                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Raw Question</h4>
-                            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                              <p className="text-slate-800 dark:text-slate-200">
-                                {selectedResult.question_text || 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Raw Answer (Expected) */}
-                          <div>
-                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                              Raw Answer (Expected)
-                            </h4>
-                            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                              <p className="text-slate-800 dark:text-slate-200">
-                                {checkpoint[selectedResult.question_id]?.raw_answer || 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Raw LLM Response (Generated) */}
-                          <div>
-                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                              Raw LLM Response (Generated)
-                            </h4>
-                            <SearchableTextDisplay
-                              text={selectedResult.raw_llm_response || 'N/A'}
-                              className="text-slate-800 dark:text-slate-200"
-                            />
-                          </div>
-
-                          {/* Ground Truth (Expected) */}
-                          {selectedResult.parsed_gt_response && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                Ground Truth (Expected)
-                              </h4>
-                              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
-                                <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
-                                  {(() => {
-                                    try {
-                                      return JSON.stringify(selectedResult.parsed_gt_response, null, 2);
-                                    } catch {
-                                      return String(selectedResult.parsed_gt_response);
-                                    }
-                                  })()}
-                                </pre>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* LLM Extraction (Generated) */}
-                          {selectedResult.parsed_llm_response && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                LLM Extraction (Generated)
-                              </h4>
-                              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                                <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
-                                  {(() => {
-                                    try {
-                                      return JSON.stringify(selectedResult.parsed_llm_response, null, 2);
-                                    } catch {
-                                      return String(selectedResult.parsed_llm_response);
-                                    }
-                                  })()}
-                                </pre>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Regex Ground Truth (Expected) */}
-                          {selectedResult.regex_validation_details && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                Regex Ground Truth (Expected)
-                              </h4>
-                              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-                                <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
-                                  {(() => {
-                                    try {
-                                      const regexGroundTruth: Record<string, Record<string, unknown>> = {};
-                                      Object.entries(selectedResult.regex_validation_details).forEach(
-                                        ([fieldName, details]) => {
-                                          regexGroundTruth[fieldName] = {
-                                            pattern: details.pattern,
-                                            expected: details.expected,
-                                            match_type: details.match_type,
-                                          };
-                                        }
-                                      );
-                                      return JSON.stringify(regexGroundTruth, null, 2);
-                                    } catch {
-                                      return String(selectedResult.regex_validation_details);
-                                    }
-                                  })()}
-                                </pre>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Regex Extraction (Generated) */}
-                          {selectedResult.regex_extraction_results &&
-                            Object.keys(selectedResult.regex_extraction_results).length > 0 && (
-                              <div>
-                                <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                  Regex Extraction (Generated)
-                                </h4>
-                                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3">
-                                  <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
-                                    {(() => {
-                                      try {
-                                        return JSON.stringify(selectedResult.regex_extraction_results, null, 2);
-                                      } catch {
-                                        return String(selectedResult.regex_extraction_results);
-                                      }
-                                    })()}
-                                  </pre>
-                                </div>
-                              </div>
-                            )}
-
-                          {/* Verification Results */}
-                          {selectedResult.verify_result && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Verify Result</h4>
-                              <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
-                                  {(() => {
-                                    try {
-                                      return typeof selectedResult.verify_result === 'string'
-                                        ? selectedResult.verify_result
-                                        : JSON.stringify(selectedResult.verify_result, null, 2);
-                                    } catch {
-                                      return String(selectedResult.verify_result);
-                                    }
-                                  })()}
-                                </pre>
-                              </div>
-                            </div>
-                          )}
-
-                          {selectedResult.verify_granular_result && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                Granular Verify Result
-                              </h4>
-                              <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
-                                  {(() => {
-                                    try {
-                                      return typeof selectedResult.verify_granular_result === 'string'
-                                        ? selectedResult.verify_granular_result
-                                        : JSON.stringify(selectedResult.verify_granular_result, null, 2);
-                                    } catch {
-                                      return String(selectedResult.verify_granular_result);
-                                    }
-                                  })()}
-                                </pre>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Rubric Evaluation Results */}
-                          {selectedResult.verify_rubric && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                Rubric Evaluation Results
-                              </h4>
-                              <RubricResultsDisplay
-                                rubricResults={selectedResult.verify_rubric}
-                                currentRubric={currentRubric}
-                                evaluationRubric={selectedResult.evaluation_rubric}
-                              />
-                            </div>
-                          )}
-
-                          {/* Embedding Check Results */}
-                          {selectedResult.embedding_check_performed && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                Embedding Check Results
-                              </h4>
-                              <div className="space-y-3">
-                                <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                  <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                      Similarity Score:
-                                    </h5>
-                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                      {selectedResult.embedding_similarity_score?.toFixed(3) || 'N/A'}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                      Model Used:
-                                    </h5>
-                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                      {selectedResult.embedding_model_used || 'N/A'}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {selectedResult.embedding_override_applied && (
-                                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                                    <div className="flex items-center space-x-2">
-                                      <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                      <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                                        Verification Overridden by Semantic Check
-                                      </span>
-                                    </div>
-                                    <p className="text-green-700 dark:text-green-300 text-sm mt-1">
-                                      The initial verification failed, but embedding similarity analysis determined the
-                                      answers are semantically equivalent.
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Abstention Detection Results */}
-                          {selectedResult.abstention_check_performed && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                Abstention Detection Results
-                              </h4>
-                              <div className="space-y-3">
-                                <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                  <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                      Check Performed:
-                                    </h5>
-                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                      {selectedResult.abstention_check_performed ? 'Yes' : 'No'}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                      Abstention Detected:
-                                    </h5>
-                                    <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                      {selectedResult.abstention_detected === true
-                                        ? 'Yes'
-                                        : selectedResult.abstention_detected === false
-                                          ? 'No'
-                                          : 'N/A'}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {selectedResult.abstention_detected && selectedResult.abstention_override_applied && (
-                                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                                    <div className="flex items-center space-x-2">
-                                      <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                                      <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                                        Result Overridden by Abstention Detection
-                                      </span>
-                                    </div>
-                                    <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-1">
-                                      The model refused to answer or abstained from providing a substantive response.
-                                      The result was marked as abstained regardless of other verification outcomes.
-                                    </p>
-                                    {selectedResult.abstention_reasoning && (
-                                      <div className="mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800">
-                                        <h5 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
-                                          Detector Reasoning:
-                                        </h5>
-                                        <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                                          {selectedResult.abstention_reasoning}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* System Prompts */}
-                          {(selectedResult.answering_system_prompt || selectedResult.parsing_system_prompt) && (
-                            <div>
-                              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                                System Prompts Used
-                              </h4>
-                              <div className="space-y-3">
-                                {selectedResult.answering_system_prompt && (
-                                  <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                      Answering Model System Prompt:
-                                    </h5>
-                                    <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                      <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                        {selectedResult.answering_system_prompt}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-                                {selectedResult.parsing_system_prompt && (
-                                  <div>
-                                    <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                      Parsing Model System Prompt:
-                                    </h5>
-                                    <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                                      <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                        {selectedResult.parsing_system_prompt}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Metadata */}
-                          <div>
-                            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Metadata</h4>
-                            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="font-medium text-slate-600 dark:text-slate-300">
-                                    Answering Model:
-                                  </span>
-                                  <p className="text-slate-800 dark:text-slate-200">
-                                    {selectedResult.answering_model || 'N/A'}
-                                  </p>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-slate-600 dark:text-slate-300">Parsing Model:</span>
-                                  <p className="text-slate-800 dark:text-slate-200">
-                                    {selectedResult.parsing_model || 'N/A'}
-                                  </p>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-slate-600 dark:text-slate-300">
-                                    Execution Time:
-                                  </span>
-                                  <p className="text-slate-800 dark:text-slate-200">
-                                    {selectedResult.execution_time
-                                      ? `${selectedResult.execution_time.toFixed(2)}s`
-                                      : 'N/A'}
-                                  </p>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-slate-600 dark:text-slate-300">Timestamp:</span>
-                                  <p className="text-slate-800 dark:text-slate-200">
-                                    {selectedResult.timestamp
-                                      ? new Date(selectedResult.timestamp).toLocaleString()
-                                      : 'N/A'}
-                                  </p>
-                                </div>
-                                {/* MCP Server Information */}
-                                {selectedResult.answering_mcp_servers &&
-                                  selectedResult.answering_mcp_servers.length > 0 && (
-                                    <div>
-                                      <span className="font-medium text-slate-600 dark:text-slate-300">
-                                        MCP Servers:
-                                      </span>
-                                      <p className="text-slate-800 dark:text-slate-200">
-                                        {selectedResult.answering_mcp_servers.join(', ')}
-                                      </p>
-                                    </div>
-                                  )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    } catch (e) {
-                      console.error('Error rendering modal content:', e);
-                      return (
-                        <div className="text-center py-8 text-red-500">
-                          <AlertCircle className="w-8 h-8 mx-auto mb-2" />
-                          <p>Error displaying result details</p>
-                          <p className="text-sm mt-1">{e instanceof Error ? e.message : 'Unknown error'}</p>
-                        </div>
-                      );
-                    }
-                  })()}
-                </div>
-              </div>
-            </div>
-          )}
+          <VerificationResultDetailModal
+            result={selectedResult}
+            checkpoint={checkpoint}
+            currentRubric={currentRubric}
+            onClose={() => setSelectedResult(null)}
+          />
         </div>
       );
     } catch (e) {
