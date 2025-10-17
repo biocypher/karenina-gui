@@ -813,8 +813,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               parsingModelsCount={parsingModels.length}
             />
 
-            {/* Aggregated Test Stats - Always show to prevent layout shift */}
-            {getAllUnfilteredResults().length > 0 && (
+            {/* Aggregated Test Stats - Always show when running or have results to prevent layout shift */}
+            {(isRunning || getAllUnfilteredResults().length > 0) && (
               <div className="grid grid-cols-6 gap-3 mb-4">
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">

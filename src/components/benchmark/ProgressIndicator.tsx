@@ -48,30 +48,6 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
     <div className="mb-4">
       {progress && (
         <>
-          <div className="grid grid-cols-4 gap-4 mb-4">
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                {progress.total_count || totalTests}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-300">Total Tests</div>
-            </div>
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                {progress.successful_count || 0}
-              </div>
-              <div className="text-sm text-green-600 dark:text-green-400">Successful</div>
-            </div>
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{progress.failed_count || 0}</div>
-              <div className="text-sm text-red-600 dark:text-red-400">Failed</div>
-            </div>
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                {progress.estimated_time_remaining ? formatDuration(progress.estimated_time_remaining) : 'N/A'}
-              </div>
-              <div className="text-sm text-blue-600 dark:text-blue-400">Estimated Time</div>
-            </div>
-          </div>
           <div className="flex justify-between text-sm text-slate-600 dark:text-slate-300 mb-2">
             <span>
               Progress: {progress.processed_count || 0} / {progress.total_count || totalTests}
@@ -96,27 +72,10 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
       )}
       {!progress && (
         <>
-          <div className="grid grid-cols-4 gap-4 mb-4">
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{totalTests}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-300">Total Tests</div>
-            </div>
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-green-700 dark:text-green-300">0</div>
-              <div className="text-sm text-green-600 dark:text-green-400">Successful</div>
-            </div>
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-red-700 dark:text-red-300">0</div>
-              <div className="text-sm text-red-600 dark:text-red-400">Failed</div>
-            </div>
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                <Loader className="w-6 h-6 animate-spin mx-auto" />
-              </div>
-              <div className="text-sm text-blue-600 dark:text-blue-400">Starting...</div>
-            </div>
+          <div className="text-center text-slate-600 dark:text-slate-300 mb-2 flex items-center justify-center gap-2">
+            <Loader className="w-4 h-4 animate-spin" />
+            <span>Initializing verification...</span>
           </div>
-          <div className="text-center text-slate-600 dark:text-slate-300 mb-2">Initializing verification...</div>
           <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
             <div className="bg-indigo-600 h-2 rounded-full animate-pulse" style={{ width: '10%' }} />
           </div>
