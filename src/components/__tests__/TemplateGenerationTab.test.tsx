@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '../../test-utils/test-helpers';
 import { TemplateGenerationTab } from '../TemplateGenerationTab';
+import { useTemplateStore } from '../../stores/useTemplateStore';
 
 interface QuestionExtractorProps {
   onQuestionsExtracted: (questions: Record<string, unknown>) => void;
@@ -46,6 +47,11 @@ vi.mock('../AnswerTemplateGenerator', () => ({
 }));
 
 describe('TemplateGenerationTab', () => {
+  beforeEach(() => {
+    // Reset the template store before each test
+    useTemplateStore.getState().resetTemplateState();
+  });
+
   it('should render both question extraction and template generation sections', () => {
     const mockOnTemplatesGenerated = vi.fn();
     const mockOnSwitchToCurator = vi.fn();

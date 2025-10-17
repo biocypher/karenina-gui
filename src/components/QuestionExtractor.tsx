@@ -2,23 +2,9 @@ import React, { useState, useRef } from 'react';
 import { Upload, Settings, CheckCircle, AlertCircle } from 'lucide-react';
 import { FilePreview } from './FilePreview';
 import { QuestionVisualizer } from './QuestionVisualizer';
-import { AdvancedExtractionPanel, MetadataColumnSettings } from './AdvancedExtractionPanel';
+import { AdvancedExtractionPanel } from './AdvancedExtractionPanel';
 import { QuestionData } from '../types';
-
-interface FileInfo {
-  file_id: string;
-  filename: string;
-  size: number;
-}
-
-interface PreviewData {
-  success: boolean;
-  total_rows?: number;
-  columns?: string[];
-  preview_rows?: number;
-  data?: Record<string, string>[];
-  error?: string;
-}
+import { useTemplateStore } from '../stores/useTemplateStore';
 
 interface ExtractedQuestions {
   success: boolean;
@@ -32,35 +18,35 @@ interface QuestionExtractorProps {
   extractedQuestions?: QuestionData;
 }
 
-export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
-  onQuestionsExtracted,
-  extractedQuestions: initialExtractedQuestions,
-}) => {
-  const [uploadedFile, setUploadedFile] = useState<FileInfo | null>(null);
-  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
-  const [extractedQuestions, setExtractedQuestions] = useState<ExtractedQuestions | null>(
-    initialExtractedQuestions && Object.keys(initialExtractedQuestions).length > 0
-      ? {
-          success: true,
-          questions_count: Object.keys(initialExtractedQuestions).length,
-          questions_data: initialExtractedQuestions,
-        }
-      : null
-  );
-  const [selectedQuestionColumn, setSelectedQuestionColumn] = useState<string>('');
-  const [selectedAnswerColumn, setSelectedAnswerColumn] = useState<string>('');
-  const [selectedSheet, setSelectedSheet] = useState<string>('');
+export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestionsExtracted }) => {
+  // Get state from the store
+  const uploadedFile = useTemplateStore((state) => state.uploadedFile);
+  const previewData = useTemplateStore((state) => state.previewData);
+  const selectedQuestionColumn = useTemplateStore((state) => state.selectedQuestionColumn);
+  const selectedAnswerColumn = useTemplateStore((state) => state.selectedAnswerColumn);
+  const selectedSheet = useTemplateStore((state) => state.selectedSheet);
+  const currentStep = useTemplateStore((state) => state.currentStep);
+  const advancedVisible = useTemplateStore((state) => state.advancedVisible);
+  const metadataSettings = useTemplateStore((state) => state.metadataSettings);
+  const extractedQuestions = useTemplateStore((state) => state.extractedQuestions);
+
+  // Get setters from the store
+  const setUploadedFile = useTemplateStore((state) => state.setUploadedFile);
+  const setPreviewData = useTemplateStore((state) => state.setPreviewData);
+  const setSelectedQuestionColumn = useTemplateStore((state) => state.setSelectedQuestionColumn);
+  const setSelectedAnswerColumn = useTemplateStore((state) => state.setSelectedAnswerColumn);
+  const setCurrentStep = useTemplateStore((state) => state.setCurrentStep);
+  const setAdvancedVisible = useTemplateStore((state) => state.setAdvancedVisible);
+  const setMetadataSettings = useTemplateStore((state) => state.setMetadataSettings);
+  const setExtractedQuestions = useTemplateStore((state) => state.setExtractedQuestions);
+  const resetExtractionWorkflow = useTemplateStore((state) => state.resetExtractionWorkflow);
+
+  // Local UI state (not persisted)
   const [isUploading, setIsUploading] = useState(false);
   const [, setIsPreviewing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'configure' | 'extract' | 'visualize'>(
-    initialExtractedQuestions && Object.keys(initialExtractedQuestions).length > 0 ? 'visualize' : 'upload'
-  );
-  const [advancedVisible, setAdvancedVisible] = useState(false);
-  const [metadataSettings, setMetadataSettings] = useState<MetadataColumnSettings>({
-    keywords_separator: ',',
-  });
+  const [extractionResult, setExtractionResult] = useState<ExtractedQuestions | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -210,33 +196,28 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
       }
 
       const result = await response.json();
-      setExtractedQuestions(result);
+      setExtractionResult(result);
 
-      if (result.success) {
+      if (result.success && result.questions_data) {
         setCurrentStep('visualize');
-        // Call the callback to persist the extracted questions
-        if (onQuestionsExtracted && result.questions_data) {
+        // Store the extracted questions in the store
+        setExtractedQuestions(result.questions_data);
+        // Call the callback to notify parent
+        if (onQuestionsExtracted) {
           onQuestionsExtracted(result.questions_data);
         }
       }
     } catch (error) {
       console.error('Extraction error:', error);
-      setExtractedQuestions({ success: false, error: 'Failed to extract questions' });
+      setExtractionResult({ success: false, error: 'Failed to extract questions' });
     } finally {
       setIsExtracting(false);
     }
   };
 
   const handleReset = () => {
-    setUploadedFile(null);
-    setPreviewData(null);
-    setExtractedQuestions(null);
-    setSelectedQuestionColumn('');
-    setSelectedAnswerColumn('');
-    setSelectedSheet('');
-    setAdvancedVisible(false);
-    setMetadataSettings({ keywords_separator: ',' });
-    setCurrentStep('upload');
+    resetExtractionWorkflow();
+    setExtractionResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -321,9 +302,9 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
               </div>
               <button
                 onClick={handleReset}
-                className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg transition-colors font-medium"
               >
-                Upload Different File
+                Start Over
               </button>
             </div>
           </div>
@@ -410,7 +391,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
       )}
 
       {/* Step 4: Results */}
-      {currentStep === 'visualize' && extractedQuestions && (
+      {currentStep === 'visualize' && Object.keys(extractedQuestions).length > 0 && (
         <div className="space-y-6">
           {/* Results Summary */}
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
@@ -421,13 +402,13 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
                   Extraction Complete
                 </h3>
                 <p className="text-slate-600 dark:text-slate-300">
-                  Successfully extracted {extractedQuestions.questions_count} questions
+                  Successfully extracted {Object.keys(extractedQuestions).length} questions
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleReset}
-                  className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg transition-colors font-medium"
                 >
                   Start Over
                 </button>
@@ -436,18 +417,18 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({
           </div>
 
           {/* Question Visualizer */}
-          <QuestionVisualizer questions={extractedQuestions.questions_data || {}} />
+          <QuestionVisualizer questions={extractedQuestions} />
         </div>
       )}
 
       {/* Error States */}
-      {(previewData?.error || extractedQuestions?.error) && (
+      {(previewData?.error || extractionResult?.error) && (
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4">
           <div className="flex items-center gap-2 text-red-800 dark:text-red-300">
             <AlertCircle className="w-5 h-5" />
             <span className="font-medium">Error</span>
           </div>
-          <p className="text-red-700 dark:text-red-300 mt-1">{previewData?.error || extractedQuestions?.error}</p>
+          <p className="text-red-700 dark:text-red-300 mt-1">{previewData?.error || extractionResult?.error}</p>
         </div>
       )}
     </div>

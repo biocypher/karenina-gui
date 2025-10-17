@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { QuestionExtractor } from './QuestionExtractor';
 import { AnswerTemplateGenerator } from './AnswerTemplateGenerator';
 import { QuestionData } from '../types';
+import { useTemplateStore } from '../stores/useTemplateStore';
 
 interface TemplateGenerationTabProps {
   onTemplatesGenerated: (combinedData: QuestionData) => void;
@@ -12,7 +13,8 @@ export const TemplateGenerationTab: React.FC<TemplateGenerationTabProps> = ({
   onTemplatesGenerated,
   onSwitchToCurator,
 }) => {
-  const [extractedQuestions, setExtractedQuestions] = useState<QuestionData>({});
+  const extractedQuestions = useTemplateStore((state) => state.extractedQuestions);
+  const setExtractedQuestions = useTemplateStore((state) => state.setExtractedQuestions);
 
   const handleQuestionsExtracted = (questions: QuestionData) => {
     setExtractedQuestions(questions);

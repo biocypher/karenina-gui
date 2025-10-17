@@ -9,10 +9,46 @@ import {
 import { logger } from '../utils/logger';
 import { handleApiError } from '../utils/errorHandler';
 
+// Extraction workflow types
+export interface FileInfo {
+  file_id: string;
+  filename: string;
+  size: number;
+}
+
+export interface PreviewData {
+  success: boolean;
+  total_rows?: number;
+  columns?: string[];
+  preview_rows?: number;
+  data?: Record<string, string>[];
+  error?: string;
+}
+
+export interface MetadataColumnSettings {
+  author_name_column?: string;
+  author_email_column?: string;
+  author_affiliation_column?: string;
+  url_column?: string;
+  keywords_column?: string;
+  keywords_separator: string;
+}
+
 // Define the template store state interface
 interface TemplateState {
   // Configuration state
   config: TemplateGenerationConfig;
+
+  // Question extraction workflow state (persists across tab switches)
+  uploadedFile: FileInfo | null;
+  previewData: PreviewData | null;
+  selectedQuestionColumn: string;
+  selectedAnswerColumn: string;
+  selectedSheet: string;
+  currentStep: 'upload' | 'preview' | 'configure' | 'extract' | 'visualize';
+  advancedVisible: boolean;
+  metadataSettings: MetadataColumnSettings;
+  extractedQuestions: QuestionData;
 
   // Selection state
   selectedQuestions: Set<string>;
@@ -30,6 +66,19 @@ interface TemplateState {
 
   // Actions
   setConfig: (config: TemplateGenerationConfig) => void;
+
+  // Extraction workflow actions
+  setUploadedFile: (file: FileInfo | null) => void;
+  setPreviewData: (data: PreviewData | null) => void;
+  setSelectedQuestionColumn: (column: string) => void;
+  setSelectedAnswerColumn: (column: string) => void;
+  setSelectedSheet: (sheet: string) => void;
+  setCurrentStep: (step: 'upload' | 'preview' | 'configure' | 'extract' | 'visualize') => void;
+  setAdvancedVisible: (visible: boolean) => void;
+  setMetadataSettings: (settings: MetadataColumnSettings) => void;
+  setExtractedQuestions: (questions: QuestionData) => void;
+  resetExtractionWorkflow: () => void;
+
   setSelectedQuestions: (questions: Set<string>) => void;
   setError: (error: string | null) => void;
 
@@ -67,6 +116,20 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     temperature: 0.1,
     interface: 'langchain',
   },
+
+  // Extraction workflow initial state
+  uploadedFile: null,
+  previewData: null,
+  selectedQuestionColumn: '',
+  selectedAnswerColumn: '',
+  selectedSheet: '',
+  currentStep: 'upload',
+  advancedVisible: false,
+  metadataSettings: {
+    keywords_separator: ',',
+  },
+  extractedQuestions: {},
+
   selectedQuestions: new Set(),
   hasInitialized: false,
   isGenerating: false,
@@ -78,6 +141,32 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
   // Basic setters
   setConfig: (config: TemplateGenerationConfig) => set(() => ({ config })),
+
+  // Extraction workflow setters
+  setUploadedFile: (uploadedFile: FileInfo | null) => set(() => ({ uploadedFile })),
+  setPreviewData: (previewData: PreviewData | null) => set(() => ({ previewData })),
+  setSelectedQuestionColumn: (selectedQuestionColumn: string) => set(() => ({ selectedQuestionColumn })),
+  setSelectedAnswerColumn: (selectedAnswerColumn: string) => set(() => ({ selectedAnswerColumn })),
+  setSelectedSheet: (selectedSheet: string) => set(() => ({ selectedSheet })),
+  setCurrentStep: (currentStep: 'upload' | 'preview' | 'configure' | 'extract' | 'visualize') =>
+    set(() => ({ currentStep })),
+  setAdvancedVisible: (advancedVisible: boolean) => set(() => ({ advancedVisible })),
+  setMetadataSettings: (metadataSettings: MetadataColumnSettings) => set(() => ({ metadataSettings })),
+  setExtractedQuestions: (extractedQuestions: QuestionData) => set(() => ({ extractedQuestions })),
+
+  resetExtractionWorkflow: () =>
+    set(() => ({
+      uploadedFile: null,
+      previewData: null,
+      selectedQuestionColumn: '',
+      selectedAnswerColumn: '',
+      selectedSheet: '',
+      currentStep: 'upload',
+      advancedVisible: false,
+      metadataSettings: { keywords_separator: ',' },
+      extractedQuestions: {},
+    })),
+
   setSelectedQuestions: (selectedQuestions: Set<string>) => set(() => ({ selectedQuestions })),
   setError: (error: string | null) => set(() => ({ error })),
 
@@ -292,6 +381,16 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         temperature: 0.1,
         interface: 'langchain',
       },
+      // Reset extraction workflow
+      uploadedFile: null,
+      previewData: null,
+      selectedQuestionColumn: '',
+      selectedAnswerColumn: '',
+      selectedSheet: '',
+      currentStep: 'upload',
+      advancedVisible: false,
+      metadataSettings: { keywords_separator: ',' },
+      extractedQuestions: {},
       selectedQuestions: new Set(),
       hasInitialized: false,
       isGenerating: false,
