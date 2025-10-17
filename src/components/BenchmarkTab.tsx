@@ -813,34 +813,65 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               parsingModelsCount={parsingModels.length}
             />
 
-            {/* Aggregated Test Stats - Only show when not running and we have results */}
-            {!isRunning && getAllUnfilteredResults().length > 0 && (
-              <div className="grid grid-cols-4 gap-4 mb-4">
+            {/* Aggregated Test Stats - Always show to prevent layout shift */}
+            {getAllUnfilteredResults().length > 0 && (
+              <div className="grid grid-cols-6 gap-3 mb-4">
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                     {getAllUnfilteredResults().length}
                   </div>
-                  <div className="text-sm text-slate-600 dark:text-slate-300">Total Tests</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300">Total Tests</div>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    {getAllUnfilteredResults().filter((r) => r.success).length}
+                    {getAllUnfilteredResults().filter((r) => r.completed_without_errors).length}
                   </div>
-                  <div className="text-sm text-green-600 dark:text-green-400">Successful</div>
+                  <div className="text-xs text-green-600 dark:text-green-400">Completed Without Errors</div>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                    {getAllUnfilteredResults().filter((r) => !r.success).length}
+                    {getAllUnfilteredResults().filter((r) => !r.completed_without_errors).length}
                   </div>
-                  <div className="text-sm text-red-600 dark:text-red-400">Failed</div>
+                  <div className="text-xs text-red-600 dark:text-red-400">With Errors</div>
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    {getAllUnfilteredResults().length > 0
-                      ? `${(getAllUnfilteredResults().reduce((sum, r) => sum + r.execution_time, 0) / getAllUnfilteredResults().length).toFixed(1)}s`
-                      : 'N/A'}
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+                    {
+                      getAllUnfilteredResults().filter((r) => r.abstention_detected && r.abstention_check_performed)
+                        .length
+                    }
                   </div>
-                  <div className="text-sm text-blue-600 dark:text-blue-400">Avg Time</div>
+                  <div className="text-xs text-yellow-600 dark:text-yellow-400">Abstained</div>
+                </div>
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                    {
+                      getAllUnfilteredResults().filter(
+                        (r) =>
+                          r.verify_result === true ||
+                          (typeof r.verify_result === 'object' &&
+                            r.verify_result !== null &&
+                            'completed_without_errors' in r.verify_result &&
+                            r.verify_result.completed_without_errors === true)
+                      ).length
+                    }
+                  </div>
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400">Passed</div>
+                </div>
+                <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
+                    {
+                      getAllUnfilteredResults().filter(
+                        (r) =>
+                          r.verify_result === false ||
+                          (typeof r.verify_result === 'object' &&
+                            r.verify_result !== null &&
+                            'completed_without_errors' in r.verify_result &&
+                            r.verify_result.completed_without_errors === false)
+                      ).length
+                    }
+                  </div>
+                  <div className="text-xs text-rose-600 dark:text-rose-400">Failed</div>
                 </div>
               </div>
             )}
