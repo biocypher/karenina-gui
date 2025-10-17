@@ -526,98 +526,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             }}
           />
 
-          {/* Control Panel */}
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                Verification Control
-              </h3>
-
-              <div className="flex gap-3">
-                {isRunning && (
-                  <button
-                    onClick={handleCancelVerification}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  >
-                    <Square className="w-4 h-4" />
-                    Cancel
-                  </button>
-                )}
-
-                {progress && progress.status === 'completed' && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleExportResults('json')}
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                    >
-                      <FileDown className="w-4 h-4" />
-                      Export JSON
-                    </button>
-                    <button
-                      onClick={() => handleExportResults('csv')}
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                    >
-                      <FileDown className="w-4 h-4" />
-                      Export CSV
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <ProgressIndicator
-              isRunning={isRunning}
-              progress={progress}
-              selectedTestsCount={selectedTests.size}
-              answeringModelsCount={answeringModels.length}
-              parsingModelsCount={parsingModels.length}
-            />
-
-            {/* Aggregated Test Stats - Only show when not running and we have results */}
-            {!isRunning && getAllUnfilteredResults().length > 0 && (
-              <div className="grid grid-cols-4 gap-4 mb-4">
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {getAllUnfilteredResults().length}
-                  </div>
-                  <div className="text-sm text-slate-600 dark:text-slate-300">Total Tests</div>
-                </div>
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    {getAllUnfilteredResults().filter((r) => r.success).length}
-                  </div>
-                  <div className="text-sm text-green-600 dark:text-green-400">Successful</div>
-                </div>
-                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                    {getAllUnfilteredResults().filter((r) => !r.success).length}
-                  </div>
-                  <div className="text-sm text-red-600 dark:text-red-400">Failed</div>
-                </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    {getAllUnfilteredResults().length > 0
-                      ? `${(getAllUnfilteredResults().reduce((sum, r) => sum + r.execution_time, 0) / getAllUnfilteredResults().length).toFixed(1)}s`
-                      : 'N/A'}
-                  </div>
-                  <div className="text-sm text-blue-600 dark:text-blue-400">Avg Time</div>
-                </div>
-              </div>
-            )}
-
-            {/* Error Display */}
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  <span className="text-red-800 dark:text-red-200 font-medium">Error</span>
-                </div>
-                <p className="text-red-700 dark:text-red-300 mt-1">{error}</p>
-              </div>
-            )}
-          </Card>
-
           {/* Run Management Section */}
           <Card>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -853,6 +761,98 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Control Panel */}
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                Verification Control
+              </h3>
+
+              <div className="flex gap-3">
+                {isRunning && (
+                  <button
+                    onClick={handleCancelVerification}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    <Square className="w-4 h-4" />
+                    Cancel
+                  </button>
+                )}
+
+                {progress && progress.status === 'completed' && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleExportResults('json')}
+                      className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      Export JSON
+                    </button>
+                    <button
+                      onClick={() => handleExportResults('csv')}
+                      className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      Export CSV
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <ProgressIndicator
+              isRunning={isRunning}
+              progress={progress}
+              selectedTestsCount={selectedTests.size}
+              answeringModelsCount={answeringModels.length}
+              parsingModelsCount={parsingModels.length}
+            />
+
+            {/* Aggregated Test Stats - Only show when not running and we have results */}
+            {!isRunning && getAllUnfilteredResults().length > 0 && (
+              <div className="grid grid-cols-4 gap-4 mb-4">
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {getAllUnfilteredResults().length}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-300">Total Tests</div>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                    {getAllUnfilteredResults().filter((r) => r.success).length}
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Successful</div>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-red-700 dark:text-red-300">
+                    {getAllUnfilteredResults().filter((r) => !r.success).length}
+                  </div>
+                  <div className="text-sm text-red-600 dark:text-red-400">Failed</div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                    {getAllUnfilteredResults().length > 0
+                      ? `${(getAllUnfilteredResults().reduce((sum, r) => sum + r.execution_time, 0) / getAllUnfilteredResults().length).toFixed(1)}s`
+                      : 'N/A'}
+                  </div>
+                  <div className="text-sm text-blue-600 dark:text-blue-400">Avg Time</div>
+                </div>
+              </div>
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  <span className="text-red-800 dark:text-red-200 font-medium">Error</span>
+                </div>
+                <p className="text-red-700 dark:text-red-300 mt-1">{error}</p>
               </div>
             )}
           </Card>
