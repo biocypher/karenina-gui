@@ -117,7 +117,7 @@ describe('BenchmarkTab Fixes - Core Functionality', () => {
                 results: {
                   q1: {
                     question_id: 'q1',
-                    success: true,
+                    completed_without_errors: true,
                     question_text: 'What is 2+2?',
                     raw_llm_response: '4',
                     parsed_response: { answer: '4' },

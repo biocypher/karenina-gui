@@ -40,7 +40,7 @@ global.fetch = vi.fn();
 
 const createMockResult = (overrides: Partial<VerificationResult> = {}): VerificationResult => ({
   question_id: 'test-question-1',
-  success: true,
+  completed_without_errors: true,
   question_text: 'What is 2+2?',
   raw_llm_response: 'The answer is 4.',
   parsed_gt_response: { answer: '4' },
@@ -113,7 +113,7 @@ describe('EmbeddingCheck UI Components', () => {
     it('should show override success message when embedding check overrode the result', async () => {
       const user = userEvent.setup();
       const mockResult = createMockResult({
-        success: false, // Original verification failed
+        completed_without_errors: false, // Original verification failed
         verify_result: false,
         embedding_check_performed: true,
         embedding_similarity_score: 0.92,

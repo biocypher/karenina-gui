@@ -284,7 +284,7 @@ export interface VerificationConfig {
 
 export interface VerificationResult {
   question_id: string;
-  success: boolean;
+  completed_without_errors: boolean;
   error?: string;
   question_text: string;
   raw_llm_response: string;
@@ -419,7 +419,7 @@ export interface ParsedAnswerResponse {
 }
 
 export interface VerificationOutcome {
-  success: boolean;
+  completed_without_errors: boolean;
   score?: number;
   details?: string;
 }

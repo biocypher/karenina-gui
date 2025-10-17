@@ -25,7 +25,7 @@ export interface ExportableResult {
   parsing_replicate?: number;
   answering_system_prompt?: string;
   parsing_system_prompt?: string;
-  success: boolean;
+  completed_without_errors: boolean;
   error?: string;
   execution_time: number;
   timestamp: string;
@@ -113,14 +113,14 @@ export async function exportFromServer(jobId: string, format: 'json' | 'csv'): P
  */
 export function exportToJSON(results: ExportableResult[], selectedFields?: string[]): string {
   const resultsWithIndex = results.map((result, index) => {
-    // Replace success boolean with "abstained" string when abstention is detected
-    const successValue =
-      result.abstention_detected && result.abstention_override_applied ? 'abstained' : result.success;
+    // Replace completed_without_errors boolean with "abstained" string when abstention is detected
+    const completedWithoutErrorsValue =
+      result.abstention_detected && result.abstention_override_applied ? 'abstained' : result.completed_without_errors;
 
     const resultWithIndex = {
       row_index: index + 1,
       ...result,
-      success: successValue,
+      completed_without_errors: completedWithoutErrorsValue,
     };
 
     if (selectedFields) {
@@ -214,7 +214,7 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'parsing_system_prompt',
     // MCP server fields
     'answering_mcp_servers',
-    'success',
+    'completed_without_errors',
     'error',
     'execution_time',
     'timestamp',
@@ -310,8 +310,8 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       answering_mcp_servers: escapeCSVField(
         result.answering_mcp_servers ? JSON.stringify(result.answering_mcp_servers) : ''
       ),
-      success: escapeCSVField(
-        result.abstention_detected && result.abstention_override_applied ? 'abstained' : result.success
+      completed_without_errors: escapeCSVField(
+        result.abstention_detected && result.abstention_override_applied ? 'abstained' : result.completed_without_errors
       ),
       error: escapeCSVField(result.error || ''),
       execution_time: escapeCSVField(result.execution_time),

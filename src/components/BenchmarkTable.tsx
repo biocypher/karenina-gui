@@ -400,8 +400,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor('success', {
-        header: 'Status',
+      columnHelper.accessor('completed_without_errors', {
+        header: 'Completed Without Errors',
         cell: (info) => {
           const row = info.row.original;
 
@@ -414,7 +414,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
             );
           }
 
-          // Regular success/failed display
+          // Regular true/false display
           return (
             <span
               className={`inline-flex items-center px-2 py-1 rounded text-xs ${
@@ -423,7 +423,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
                   : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
               }`}
             >
-              {info.getValue() ? 'Success' : 'Failed'}
+              {info.getValue() ? 'true' : 'false'}
             </span>
           );
         },
@@ -715,15 +715,23 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
                               placeholder={`All ${header.id.includes('model') ? 'models' : header.id === 'run_name' ? 'runs' : ''}`}
                             />
                           )}
-                          {header.id === 'success' && (
+                          {header.id === 'completed_without_errors' && (
                             <MultiSelectFilter
-                              options={['Success', 'Failed', 'Abstained']}
-                              selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                              options={['true', 'false', 'abstained']}
+                              selectedValues={(() => {
+                                const filterValue = header.column.getFilterValue() as Set<boolean | string> | undefined;
+                                if (!filterValue) return new Set();
+                                const displayValues = new Set<string>();
+                                if (filterValue.has(true)) displayValues.add('true');
+                                if (filterValue.has(false)) displayValues.add('false');
+                                if (filterValue.has('abstained')) displayValues.add('abstained');
+                                return displayValues;
+                              })()}
                               onChange={(values) => {
                                 const filterValues = new Set<boolean | string>();
-                                if (values.has('Success')) filterValues.add(true);
-                                if (values.has('Failed')) filterValues.add(false);
-                                if (values.has('Abstained')) filterValues.add('abstained');
+                                if (values.has('true')) filterValues.add(true);
+                                if (values.has('false')) filterValues.add(false);
+                                if (values.has('abstained')) filterValues.add('abstained');
                                 header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
                               }}
                               placeholder="All statuses"
