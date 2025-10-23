@@ -12,7 +12,6 @@ import type { PydanticFieldDefinition, PydanticClassDefinition, PydanticMethod }
 interface PydanticFormEditorProps {
   code: string;
   onChange: (newCode: string) => void;
-  onSave?: () => void;
   className?: string;
 }
 
@@ -22,7 +21,7 @@ export interface PydanticFormEditorRef {
 }
 
 export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticFormEditorProps>(
-  ({ code, onChange, onSave, className }, ref) => {
+  ({ code, onChange, className }, ref) => {
     const [classDef, setClassDef] = useState<PydanticClassDefinition | null>(null);
     const [parseError, setParseError] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -122,10 +121,10 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
           isUpdatingRef.current = false;
         }, 0);
 
-        // Auto-save after field changes
-        if (onSave) {
-          onSave();
-        }
+        // Note: Do NOT call onSave() here - it causes infinite recursion
+        // onSave should only be triggered by explicit user action (Save button)
+        // Field updates trigger onChange which updates currentTemplate, which triggers
+        // session draft auto-save via useEffect in App.tsx
       } catch (error) {
         console.error('Error generating code:', error);
       }

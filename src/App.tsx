@@ -77,6 +77,8 @@ function App() {
     getOriginalCode,
     getSavedCode,
     setCurrentTemplate,
+    setSessionDraft,
+    hasSessionDraft,
   } = useQuestionStore();
 
   // Remaining local state - ephemeral data not managed by stores yet
@@ -113,6 +115,19 @@ function App() {
 
     return () => clearInterval(checkInterval);
   }, []);
+
+  // Auto-save current template to session drafts when it changes
+  useEffect(() => {
+    if (!selectedQuestionId || !currentTemplate) return;
+
+    const checkpointTemplate = checkpoint[selectedQuestionId]?.answer_template;
+
+    // If current template differs from checkpoint, save to session drafts
+    if (currentTemplate !== checkpointTemplate) {
+      setSessionDraft(selectedQuestionId, currentTemplate);
+      console.log(`✅ Auto-saved session draft for question: ${selectedQuestionId}`);
+    }
+  }, [currentTemplate, selectedQuestionId, checkpoint, setSessionDraft]);
 
   // Load configuration defaults on app startup
   useEffect(() => {
@@ -199,6 +214,22 @@ function App() {
   };
 
   const handleNavigateToQuestion = (questionId: string) => {
+    // ALWAYS auto-save any pending field changes before navigation (safer approach)
+    // This ensures we never lose data due to timing/async issues
+    if (codeEditorRef.current) {
+      console.log('💾 Auto-saving any pending fields before navigation...');
+      codeEditorRef.current.saveAllUnsavedFields();
+
+      // Wait for state updates to propagate: field save → form update → template update → session draft save
+      setTimeout(() => {
+        performNavigation(questionId);
+      }, 400);
+    } else {
+      performNavigation(questionId);
+    }
+  };
+
+  const performNavigation = (questionId: string) => {
     // Save current scroll position
     savedScrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
     isNavigatingRef.current = true;
@@ -221,6 +252,21 @@ function App() {
       window.scrollTo(0, savedScrollPositionRef.current);
       isNavigatingRef.current = false;
     }, 50);
+  };
+
+  const handleTabSwitch = (newTab: string) => {
+    // Auto-save any pending field changes before switching tabs (only when leaving curator tab)
+    if (activeTab === 'curator' && codeEditorRef.current) {
+      console.log('💾 Auto-saving any pending fields before tab switch...');
+      codeEditorRef.current.saveAllUnsavedFields();
+
+      // Wait for state updates to propagate: field save → form update → template update → session draft save
+      setTimeout(() => {
+        setActiveTab(newTab);
+      }, 400);
+    } else {
+      setActiveTab(newTab);
+    }
   };
 
   const handleQuestionChange = (questionId: string) => {
@@ -333,6 +379,8 @@ function App() {
       });
 
       // Navigate to first matching question or clear selection
+      // Note: Using direct store navigation here (not handleNavigateToQuestion) to avoid recursion
+      // This is automatic navigation from filter/search changes, not user-initiated
       if (currentFilteredIds.length > 0) {
         console.log('🎯 Auto-navigating to first filtered/searched question:', currentFilteredIds[0]);
         navigateToQuestion(currentFilteredIds[0]);
@@ -341,17 +389,18 @@ function App() {
         navigateToQuestion('');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionFilter, questionSearchTerm]); // Only primitive filter/search values - store functions and data excluded to prevent loops!
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      navigateToQuestion(questionIds[currentIndex - 1]);
+      handleNavigateToQuestion(questionIds[currentIndex - 1]);
     }
   };
 
   const handleNext = () => {
     if (currentIndex < questionIds.length - 1) {
-      navigateToQuestion(questionIds[currentIndex + 1]);
+      handleNavigateToQuestion(questionIds[currentIndex + 1]);
     }
   };
 
@@ -512,7 +561,7 @@ function App() {
           {/* Tab Navigation */}
           <div className="mt-6 flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-1 border border-white/30 dark:border-slate-700/30 shadow-sm w-fit">
             <button
-              onClick={() => setActiveTab('generator')}
+              onClick={() => handleTabSwitch('generator')}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === 'generator'
                   ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
@@ -522,7 +571,7 @@ function App() {
               1. Template Generation
             </button>
             <button
-              onClick={() => setActiveTab('curator')}
+              onClick={() => handleTabSwitch('curator')}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === 'curator'
                   ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
@@ -532,7 +581,7 @@ function App() {
               2. Template Curator
             </button>
             <button
-              onClick={() => setActiveTab('benchmark')}
+              onClick={() => handleTabSwitch('benchmark')}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === 'benchmark'
                   ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
@@ -542,7 +591,7 @@ function App() {
               3. Benchmark
             </button>
             <button
-              onClick={() => setActiveTab('docs')}
+              onClick={() => handleTabSwitch('docs')}
               className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === 'docs'
                   ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
@@ -559,7 +608,7 @@ function App() {
         {activeTab === 'generator' && (
           <TemplateGenerationTab
             onTemplatesGenerated={handleTemplatesGenerated}
-            onSwitchToCurator={() => setActiveTab('curator')}
+            onSwitchToCurator={() => handleTabSwitch('curator')}
           />
         )}
 
@@ -800,6 +849,19 @@ function App() {
                         </span>
                       </div>
                     )}
+
+                    {/* Session Draft Indicator */}
+                    {hasSessionDraft(selectedQuestionId) && (
+                      <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400 mt-4 bg-amber-50/80 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200/50 dark:border-amber-700/50">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
+                          Unsaved session changes
+                        </span>
+                        <span className="text-xs text-amber-600 dark:text-amber-500">
+                          (Click Save to persist permanently)
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -894,7 +956,7 @@ function App() {
                   Object.keys(checkpoint).length === 0 &&
                   Object.keys(extractedQuestions).length === 0 && (
                     <button
-                      onClick={() => setActiveTab('generator')}
+                      onClick={() => handleTabSwitch('generator')}
                       className="px-6 py-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors font-medium mr-3"
                     >
                       1. Go to Template Generation
@@ -911,7 +973,7 @@ function App() {
                         </p>
                       </div>
                       <button
-                        onClick={() => setActiveTab('generator')}
+                        onClick={() => handleTabSwitch('generator')}
                         className="px-6 py-3 bg-emerald-600 dark:bg-emerald-700 text-white rounded-xl hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-colors font-medium"
                       >
                         1. Go to Template Generation

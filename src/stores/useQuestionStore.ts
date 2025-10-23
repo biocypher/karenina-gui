@@ -10,6 +10,7 @@ interface QuestionState {
   selectedQuestionId: string;
   currentTemplate: string;
   dataSource: 'default' | 'uploaded';
+  sessionDrafts: Record<string, string>; // Session-only drafts (cleared on refresh)
 
   // Actions
   setQuestionData: (data: QuestionData) => void;
@@ -17,6 +18,9 @@ interface QuestionState {
   setSelectedQuestionId: (id: string) => void;
   setCurrentTemplate: (template: string) => void;
   setDataSource: (source: 'default' | 'uploaded') => void;
+  setSessionDraft: (questionId: string, template: string) => void;
+  clearSessionDraft: (questionId: string) => void;
+  hasSessionDraft: (questionId: string) => boolean;
 
   // Complex operations
   loadQuestionData: (data: QuestionData) => void;
@@ -56,6 +60,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   selectedQuestionId: '',
   currentTemplate: '',
   dataSource: 'default',
+  sessionDrafts: {},
 
   // Basic setters
   setQuestionData: (questionData: QuestionData) => set(() => ({ questionData })),
@@ -63,6 +68,30 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   setSelectedQuestionId: (selectedQuestionId: string) => set(() => ({ selectedQuestionId })),
   setCurrentTemplate: (currentTemplate: string) => set(() => ({ currentTemplate })),
   setDataSource: (dataSource: 'default' | 'uploaded') => set(() => ({ dataSource })),
+
+  // Session draft management
+  setSessionDraft: (questionId: string, template: string) => {
+    const state = get();
+    set(() => ({
+      sessionDrafts: {
+        ...state.sessionDrafts,
+        [questionId]: template,
+      },
+    }));
+  },
+
+  clearSessionDraft: (questionId: string) => {
+    const state = get();
+    const remainingDrafts = Object.fromEntries(
+      Object.entries(state.sessionDrafts).filter(([key]) => key !== questionId)
+    );
+    set(() => ({ sessionDrafts: remainingDrafts }));
+  },
+
+  hasSessionDraft: (questionId: string) => {
+    const state = get();
+    return questionId in state.sessionDrafts;
+  },
 
   // Complex operations
   loadQuestionData: (data: QuestionData) => {
@@ -269,6 +298,13 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       currentQuestionId: state.selectedQuestionId,
     });
 
+    // Clear session draft for the saved question (it's now permanently saved)
+    const updatedState = get();
+    const remainingDrafts = Object.fromEntries(
+      Object.entries(updatedState.sessionDrafts).filter(([key]) => key !== state.selectedQuestionId)
+    );
+    set(() => ({ sessionDrafts: remainingDrafts }));
+
     // Auto-save to database after saving template
     console.log('🔄 Attempting to save to database...');
     autoSaveToDatabase(completeCheckpoint)
@@ -325,9 +361,13 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
   navigateToQuestion: (questionId: string) => {
     const state = get();
+
+    // Prefer session draft over checkpoint/question data
+    const sessionDraft = state.sessionDrafts[questionId];
     const checkpointItem = state.checkpoint[questionId];
 
-    const templateToLoad = checkpointItem?.answer_template || state.questionData[questionId]?.answer_template || '';
+    const templateToLoad =
+      sessionDraft || checkpointItem?.answer_template || state.questionData[questionId]?.answer_template || '';
 
     set(() => ({
       selectedQuestionId: questionId,
@@ -342,6 +382,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       selectedQuestionId: '',
       currentTemplate: '',
       dataSource: 'default',
+      sessionDrafts: {},
     }));
   },
 
