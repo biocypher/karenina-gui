@@ -186,8 +186,12 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
           author_email_column: metadataSettings.author_email_column || null,
           author_affiliation_column: metadataSettings.author_affiliation_column || null,
           url_column: metadataSettings.url_column || null,
-          keywords_column: metadataSettings.keywords_column || null,
-          keywords_separator: metadataSettings.keywords_separator,
+          // New format: multiple keyword columns with individual separators
+          keywords_columns: metadataSettings.keywords_columns
+            ? metadataSettings.keywords_columns
+                .filter((kc) => kc.column && kc.column.trim() !== '') // Only send non-empty columns
+                .map((kc) => ({ column: kc.column, separator: kc.separator }))
+            : null,
         }),
       });
 
