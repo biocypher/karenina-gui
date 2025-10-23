@@ -1140,6 +1140,8 @@ function App() {
           hasUnsavedFieldChanges={hasUnsavedFieldChanges}
           onFilterChange={setQuestionFilter}
           hasCheckpointData={Object.keys(checkpoint).length > 0}
+          getAllQuestionsWithSessionDrafts={getAllQuestionsWithSessionDrafts}
+          allQuestionIds={allQuestionIds}
         />
       )}
 

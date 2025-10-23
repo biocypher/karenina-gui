@@ -35,6 +35,10 @@ interface ExpandedEditorProps {
   // Editor ref and state
   codeEditorRef: React.RefObject<CodeEditorRef>;
   hasUnsavedFieldChanges: boolean;
+
+  // Unsaved changes tracking
+  getAllQuestionsWithSessionDrafts?: () => string[];
+  allQuestionIds?: string[];
 }
 
 export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
@@ -58,6 +62,8 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
   hasCheckpointData = false,
   codeEditorRef,
   hasUnsavedFieldChanges,
+  getAllQuestionsWithSessionDrafts,
+  allQuestionIds = [],
 }) => {
   const [showFullQuestion, setShowFullQuestion] = useState(false);
   const [showFullAnswer, setShowFullAnswer] = useState(false);
@@ -168,9 +174,15 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
           </div>
 
           {/* Center: Question Indicator */}
-          <div className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          <div className="flex items-center gap-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
             <Maximize2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <span>Answer Template Editor</span>
+            {getAllQuestionsWithSessionDrafts && getAllQuestionsWithSessionDrafts().length > 0 && (
+              <span className="px-2.5 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
+                Unsaved changes
+              </span>
+            )}
           </div>
 
           {/* Right: Actions */}
@@ -206,6 +218,26 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
 
       {/* Compact Question Context Bar */}
       <div className="flex-shrink-0 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 px-6 py-3">
+        {/* Unsaved Changes Warning */}
+        {getAllQuestionsWithSessionDrafts && getAllQuestionsWithSessionDrafts().length > 0 && (
+          <div className="mb-3 flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 border border-amber-200 dark:border-amber-700/50">
+            <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse flex-shrink-0" />
+            <span className="font-medium">Unsaved session changes:</span>
+            <span className="font-semibold">
+              {(() => {
+                const questionsWithDrafts = getAllQuestionsWithSessionDrafts();
+                const questionNumbers = questionsWithDrafts
+                  .map((qId) => {
+                    const index = allQuestionIds.indexOf(qId);
+                    return index >= 0 ? index + 1 : null;
+                  })
+                  .filter((num): num is number => num !== null)
+                  .sort((a, b) => a - b);
+                return `Question${questionNumbers.length > 1 ? 's' : ''} ${questionNumbers.join(', ')}`;
+              })()}
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
           {/* Raw Question */}
           <div className="flex items-start gap-3">
