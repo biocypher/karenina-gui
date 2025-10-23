@@ -21,6 +21,7 @@ interface QuestionState {
   setSessionDraft: (questionId: string, template: string) => void;
   clearSessionDraft: (questionId: string) => void;
   hasSessionDraft: (questionId: string) => boolean;
+  getAllQuestionsWithSessionDrafts: () => string[];
 
   // Complex operations
   loadQuestionData: (data: QuestionData) => void;
@@ -91,6 +92,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   hasSessionDraft: (questionId: string) => {
     const state = get();
     return questionId in state.sessionDrafts;
+  },
+
+  getAllQuestionsWithSessionDrafts: () => {
+    const state = get();
+    return Object.keys(state.sessionDrafts);
   },
 
   // Complex operations

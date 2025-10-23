@@ -78,7 +78,7 @@ function App() {
     getSavedCode,
     setCurrentTemplate,
     setSessionDraft,
-    hasSessionDraft,
+    getAllQuestionsWithSessionDrafts,
   } = useQuestionStore();
 
   // Remaining local state - ephemeral data not managed by stores yet
@@ -572,13 +572,19 @@ function App() {
             </button>
             <button
               onClick={() => handleTabSwitch('curator')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 relative ${
                 activeTab === 'curator'
                   ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
               }`}
             >
               2. Template Curator
+              {getAllQuestionsWithSessionDrafts().length > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 h-3 w-3 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse border-2 border-white dark:border-slate-800"
+                  title={`${getAllQuestionsWithSessionDrafts().length} question(s) with unsaved changes`}
+                ></span>
+              )}
             </button>
             <button
               onClick={() => handleTabSwitch('benchmark')}
@@ -850,25 +856,51 @@ function App() {
                       </div>
                     )}
 
-                    {/* Session Draft Indicator */}
-                    {hasSessionDraft(selectedQuestionId) && (
-                      <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400 mt-4 bg-amber-50/80 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200/50 dark:border-amber-700/50">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
-                          Unsaved session changes
-                        </span>
-                        <span className="text-xs text-amber-600 dark:text-amber-500">
-                          (Click Save to persist permanently)
-                        </span>
-                      </div>
-                    )}
+                    {/* Unsaved Changes Indicator - Shows all questions with session drafts */}
+                    {(() => {
+                      const questionsWithDrafts = getAllQuestionsWithSessionDrafts();
+                      if (questionsWithDrafts.length === 0) return null;
+
+                      // Get question numbers for each question with drafts
+                      const questionNumbers = questionsWithDrafts
+                        .map((qId) => {
+                          const index = allQuestionIds.indexOf(qId);
+                          return index >= 0 ? index + 1 : null;
+                        })
+                        .filter((num): num is number => num !== null)
+                        .sort((a, b) => a - b);
+
+                      return (
+                        <div className="flex flex-col gap-2 text-sm text-amber-700 dark:text-amber-400 mt-4 bg-amber-50/80 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200/50 dark:border-amber-700/50">
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
+                            Unsaved session changes
+                          </div>
+                          <div className="text-xs text-amber-600 dark:text-amber-500">
+                            Question{questionNumbers.length > 1 ? 's' : ''} with unsaved changes:{' '}
+                            <span className="font-semibold">{questionNumbers.join(', ')}</span>
+                          </div>
+                          <div className="text-xs text-amber-600 dark:text-amber-500">
+                            (Click Save to persist permanently)
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
                 {/* Right Column - Answer Template Editor (2/3 width) */}
                 <div className="xl:col-span-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Answer Template</h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Answer Template</h3>
+                      {getAllQuestionsWithSessionDrafts().length > 0 && (
+                        <span className="px-2.5 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
+                          Unsaved changes
+                        </span>
+                      )}
+                    </div>
                     <div className="flex gap-3">
                       <button
                         onClick={handleToggleFinished}
