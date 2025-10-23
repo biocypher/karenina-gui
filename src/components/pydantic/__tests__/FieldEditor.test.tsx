@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { FieldEditor } from '../FieldEditor';
+import { createRef } from 'react';
+import { FieldEditor, FieldEditorRef } from '../FieldEditor';
 import type { PydanticFieldDefinition } from '../../../types';
 
 describe('FieldEditor', () => {
@@ -33,12 +34,13 @@ describe('FieldEditor', () => {
     const nameInput = screen.getByDisplayValue('test_field');
     fireEvent.change(nameInput, { target: { value: 'new_field_name' } });
 
-    // Should not be called immediately - only when Save button is clicked
+    // Should not be called immediately - only when saveChanges is called via ref
     expect(mockOnChange).not.toHaveBeenCalled();
   });
 
-  it('calls onChange when Save button is clicked after field changes', () => {
-    render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
+  it('calls onChange when saveChanges is called via ref after field changes', () => {
+    const ref = createRef<FieldEditorRef>();
+    render(<FieldEditor ref={ref} field={defaultField} onChange={mockOnChange} />);
 
     // Change field name
     const nameInput = screen.getByDisplayValue('test_field');
@@ -51,9 +53,8 @@ describe('FieldEditor', () => {
     // Should not be called yet
     expect(mockOnChange).not.toHaveBeenCalled();
 
-    // Click Save button
-    const saveButton = screen.getByText('Save Field');
-    fireEvent.click(saveButton);
+    // Call saveChanges via ref
+    ref.current?.saveChanges();
 
     // Now it should be called with all changes
     expect(mockOnChange).toHaveBeenCalledWith(
@@ -66,19 +67,19 @@ describe('FieldEditor', () => {
     );
   });
 
-  it('enables Save button when field has unsaved changes', () => {
-    render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
+  it('tracks unsaved changes via ref', () => {
+    const ref = createRef<FieldEditorRef>();
+    render(<FieldEditor ref={ref} field={defaultField} onChange={mockOnChange} />);
 
-    // Save button should be disabled initially
-    const saveButton = screen.getByText('Save Field');
-    expect(saveButton).toBeDisabled();
+    // Should have no unsaved changes initially
+    expect(ref.current?.hasUnsavedChanges()).toBe(false);
 
     // Change field name
     const nameInput = screen.getByDisplayValue('test_field');
     fireEvent.change(nameInput, { target: { value: 'new_field_name' } });
 
-    // Save button should now be enabled
-    expect(saveButton).toBeEnabled();
+    // Should now have unsaved changes
+    expect(ref.current?.hasUnsavedChanges()).toBe(true);
   });
 
   it('shows remove button when onRemove prop is provided', () => {
@@ -104,8 +105,9 @@ describe('FieldEditor', () => {
     expect(screen.getByDisplayValue('A test field')).toBeInTheDocument();
   });
 
-  it('updates description when Save button is clicked', () => {
-    render(<FieldEditor field={defaultField} onChange={mockOnChange} />);
+  it('updates description when saveChanges is called via ref', () => {
+    const ref = createRef<FieldEditorRef>();
+    render(<FieldEditor ref={ref} field={defaultField} onChange={mockOnChange} />);
 
     // Update description
     const descriptionTextarea = screen.getByDisplayValue('A test field');
@@ -114,9 +116,8 @@ describe('FieldEditor', () => {
     // Should not be called immediately
     expect(mockOnChange).not.toHaveBeenCalled();
 
-    // Click Save button
-    const saveButton = screen.getByText('Save Field');
-    fireEvent.click(saveButton);
+    // Call saveChanges via ref
+    ref.current?.saveChanges();
 
     expect(mockOnChange).toHaveBeenCalledWith({
       ...defaultField,
@@ -150,15 +151,15 @@ describe('FieldEditor', () => {
       literalValues: ['active'],
     };
 
-    render(<FieldEditor field={literalField} onChange={mockOnChange} />);
+    const ref = createRef<FieldEditorRef>();
+    render(<FieldEditor ref={ref} field={literalField} onChange={mockOnChange} />);
 
     // Click Add Choice Option (no need to expand - always visible)
     const addButton = screen.getByText('Add Choice Option');
     fireEvent.click(addButton);
 
-    // Need to save changes
-    const saveButton = screen.getByText('Save Field');
-    fireEvent.click(saveButton);
+    // Call saveChanges via ref
+    ref.current?.saveChanges();
 
     // The component adds an empty string and then filters it, so result should be original value
     expect(mockOnChange).toHaveBeenCalledWith(
@@ -194,7 +195,8 @@ describe('FieldEditor', () => {
       listItemType: 'str',
     };
 
-    render(<FieldEditor field={listField} onChange={mockOnChange} />);
+    const ref = createRef<FieldEditorRef>();
+    render(<FieldEditor ref={ref} field={listField} onChange={mockOnChange} />);
 
     // Find the item type selector by looking for the one under "List Item Type" label
     const itemTypeLabel = screen.getByText('List Item Type');
@@ -204,9 +206,8 @@ describe('FieldEditor', () => {
     expect(itemTypeSelector).toBeTruthy();
     fireEvent.change(itemTypeSelector!, { target: { value: 'int' } });
 
-    // Need to save changes
-    const saveButton = screen.getByText('Save Field');
-    fireEvent.click(saveButton);
+    // Call saveChanges via ref
+    ref.current?.saveChanges();
 
     expect(mockOnChange).toHaveBeenCalledWith(
       expect.objectContaining({

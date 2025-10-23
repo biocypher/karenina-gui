@@ -616,27 +616,8 @@ export const FieldEditor = forwardRef<FieldEditorRef, FieldEditorProps>(
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-600">
-            <button
-              type="button"
-              onClick={handleSaveChanges}
-              disabled={!hasUnsavedChanges}
-              className={`inline-flex items-center px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                hasUnsavedChanges
-                  ? 'text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 border-transparent'
-                  : 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-600 border border-slate-300 dark:border-slate-500 cursor-not-allowed'
-              }`}
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Save Field
-              {hasUnsavedChanges && (
-                <span className="ml-2 inline-flex items-center justify-center w-2 h-2 text-xs font-bold text-white bg-red-500 rounded-full"></span>
-              )}
-            </button>
-
-            {onRemove && (
+          {onRemove && (
+            <div className="flex items-center justify-end pt-6 border-t border-slate-200 dark:border-slate-600">
               <button
                 type="button"
                 onClick={onRemove}
@@ -653,8 +634,8 @@ export const FieldEditor = forwardRef<FieldEditorRef, FieldEditorProps>(
                 </svg>
                 Remove Field
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
