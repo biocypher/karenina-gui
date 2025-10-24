@@ -365,6 +365,9 @@ export interface VerificationProgress {
   estimated_time_remaining?: number;
   error?: string;
   results?: Record<string, VerificationResult>;
+  // WebSocket streaming fields
+  in_progress_questions?: string[];
+  ema_seconds_per_item?: number;
 }
 
 // Rubric Types
