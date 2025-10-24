@@ -320,7 +320,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setProgress(null);
     // DON'T clear existing results - we want to accumulate them
     setError(null);
-    setRetryCount(0); // Reset retry count for new verification
 
     try {
       // Prepare verification config
