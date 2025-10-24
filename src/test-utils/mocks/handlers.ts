@@ -78,6 +78,8 @@ export const handlers = [
       current_question: 'q2',
       processed_count: 2,
       total_count: 2,
+      in_progress_questions: [],
+      ema_seconds_per_item: 1.35,
       result: {
         templates: {
           q1: {

@@ -61,6 +61,9 @@ interface TemplateState {
   error: string | null;
   jobId: string | null;
 
+  // WebSocket state
+  websocket: WebSocket | null;
+
   // Generated templates state (ephemeral - not persisted)
   generatedTemplates: Record<string, GeneratedTemplate>;
 
@@ -100,6 +103,10 @@ interface TemplateState {
   resetTemplateState: () => void;
   retryFailedTemplate: (questionId: string, questions: QuestionData) => Promise<void>;
 
+  // WebSocket operations
+  connectProgressWebSocket: (jobId: string) => void;
+  disconnectProgressWebSocket: () => void;
+
   // Computed getters
   getPendingQuestions: (questions: QuestionData) => QuestionData;
   getSelectedCount: () => number;
@@ -137,6 +144,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   result: null,
   error: null,
   jobId: null,
+  websocket: null,
   generatedTemplates: {},
 
   // Basic setters
@@ -243,6 +251,9 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
       const data = await response.json();
       set(() => ({ jobId: data.job_id }));
+
+      // Connect to WebSocket for real-time progress updates
+      get().connectProgressWebSocket(data.job_id);
     } catch (err) {
       set(() => ({
         isGenerating: false,
@@ -259,6 +270,10 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       await fetch(`/api/cancel-generation/${state.jobId}`, {
         method: 'POST',
       });
+
+      // Disconnect WebSocket
+      state.disconnectProgressWebSocket();
+
       set(() => ({
         isGenerating: false,
         progress: null,
@@ -374,6 +389,9 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   },
 
   resetTemplateState: () => {
+    // Disconnect WebSocket before resetting
+    get().disconnectProgressWebSocket();
+
     set(() => ({
       config: {
         model_provider: 'google_genai',
@@ -398,6 +416,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       result: null,
       error: null,
       jobId: null,
+      websocket: null,
       generatedTemplates: {},
     }));
   },
@@ -425,6 +444,115 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
     // Start generation with force regenerate
     await state.startGeneration(questions, true);
+  },
+
+  // WebSocket operations
+  connectProgressWebSocket: (jobId: string) => {
+    const state = get();
+
+    // Disconnect any existing connection
+    if (state.websocket) {
+      state.disconnectProgressWebSocket();
+    }
+
+    try {
+      // Determine WebSocket protocol based on current page protocol
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws/generation-progress/${jobId}`;
+
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        logger.info('WebSocket connected for job', jobId);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const eventData = JSON.parse(event.data);
+
+          // Handle different event types
+          switch (eventData.type) {
+            case 'snapshot':
+            case 'job_started':
+            case 'task_started':
+            case 'task_completed':
+              // Update progress
+              state.updateProgress({
+                job_id: eventData.job_id,
+                status: eventData.status,
+                percentage: eventData.percentage,
+                processed_count: eventData.processed,
+                total_count: eventData.total,
+                current_question: eventData.current_question || '',
+                estimated_time_remaining: eventData.estimated_time_remaining,
+                in_progress_questions: eventData.in_progress_questions || [],
+                ema_seconds_per_item: eventData.ema_seconds_per_item || 0,
+              });
+              break;
+
+            case 'job_completed':
+              // Fetch final result
+              fetch(`/api/generation-progress/${jobId}`)
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.result) {
+                    state.completeGeneration(data.result);
+                  }
+                  state.disconnectProgressWebSocket();
+                })
+                .catch((err) => {
+                  logger.error('Failed to fetch final result:', err);
+                  state.disconnectProgressWebSocket();
+                });
+              break;
+
+            case 'job_failed':
+              state.failGeneration(eventData.error || 'Generation failed');
+              state.disconnectProgressWebSocket();
+              break;
+
+            case 'job_cancelled':
+              state.updateProgress({
+                ...state.progress,
+                job_id: jobId,
+                status: 'cancelled',
+              } as TemplateGenerationProgress);
+              state.disconnectProgressWebSocket();
+              break;
+
+            default:
+              logger.warn('Unknown WebSocket event type:', eventData.type);
+          }
+        } catch (err) {
+          logger.error('Failed to parse WebSocket message:', err);
+        }
+      };
+
+      ws.onerror = (error) => {
+        logger.error('WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        logger.info('WebSocket closed for job', jobId);
+        set(() => ({ websocket: null }));
+      };
+
+      set(() => ({ websocket: ws }));
+    } catch (err) {
+      logger.error('Failed to create WebSocket connection:', err);
+    }
+  },
+
+  disconnectProgressWebSocket: () => {
+    const state = get();
+    if (state.websocket) {
+      try {
+        state.websocket.close();
+      } catch (err) {
+        logger.error('Error closing WebSocket:', err);
+      }
+      set(() => ({ websocket: null }));
+    }
   },
 
   // Computed getters

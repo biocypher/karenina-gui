@@ -223,6 +223,9 @@ export interface TemplateGenerationProgress {
   estimated_time_remaining?: number; // in seconds
   error?: string;
   result?: TemplateGenerationResult;
+  // WebSocket streaming fields
+  in_progress_questions?: string[];
+  ema_seconds_per_item?: number;
 }
 
 export interface GeneratedTemplate {

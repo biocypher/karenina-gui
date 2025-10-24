@@ -3,7 +3,6 @@ import { Play, Square, Download, CheckCircle, AlertCircle, Plus, Trash2, Refresh
 import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
 import { useConfigStore } from '../stores/useConfigStore';
-import { handleApiError } from '../utils/errorHandler';
 import { QuestionSelector } from './QuestionSelector';
 import { TemplateProgress } from './TemplateProgress';
 import { TemplateResults } from './TemplateResults';
@@ -30,17 +29,12 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     progress,
     result,
     error,
-    jobId,
     generatedTemplates,
     setConfig,
     setSelectedQuestions,
-    setError,
     initializeSelection,
     startGeneration,
     cancelGeneration,
-    updateProgress,
-    completeGeneration,
-    failGeneration,
     removeGeneratedTemplate,
     downloadResults,
     downloadAllGenerated,
@@ -77,43 +71,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     initializeSelection(questions);
   }, [questions, initializeSelection]);
 
-  // Poll for progress updates
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    let isMounted = true;
-
-    if (isGenerating && jobId) {
-      interval = setInterval(async () => {
-        if (!isMounted || !isGenerating) return;
-
-        try {
-          console.log(`Polling progress for job: ${jobId}`);
-          const response = await fetch(`/api/generation-progress/${jobId}`);
-          const progressData = await response.json();
-
-          updateProgress(progressData);
-
-          if (progressData.status === 'completed') {
-            completeGeneration(progressData.result);
-          } else if (progressData.status === 'failed') {
-            failGeneration(progressData.error || 'Generation failed');
-          }
-        } catch (err) {
-          if (isMounted) {
-            handleApiError(err, 'Polling generation progress', {
-              logToConsole: true,
-              setErrorState: setError,
-            });
-          }
-        }
-      }, 1000);
-    }
-
-    return () => {
-      isMounted = false;
-      if (interval) clearInterval(interval);
-    };
-  }, [isGenerating, jobId, updateProgress, completeGeneration, failGeneration, setError]);
+  // Progress updates now handled via WebSocket in useTemplateStore
 
   const handleStartGeneration = async (forceRegenerate: boolean = false) => {
     await startGeneration(questions, forceRegenerate);
@@ -341,7 +299,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
       </div>
 
       {/* Progress Display */}
-      <TemplateProgress progress={progress} />
+      <TemplateProgress progress={progress} questions={questions} />
 
       {/* Results Display */}
       <TemplateResults result={result} onDownloadResults={handleDownloadResults} />
