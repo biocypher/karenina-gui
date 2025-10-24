@@ -82,6 +82,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const [selectedResult, setSelectedResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
 
   // Test selection state
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
@@ -89,9 +90,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   // Few-shot custom selection state
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [customFewShotSelections, setCustomFewShotSelections] = useState<Record<string, Set<number>>>({});
-
-  // Add state for polling retry count
-  const [, setRetryCount] = useState(0);
 
   // Local state for replicate count input to allow clearing
   const [replicateInputValue, setReplicateInputValue] = useState<string>(replicateCount.toString());
@@ -101,7 +99,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const [totalCount, setTotalCount] = useState<number>(0);
   // Custom export dialog state
   const [isCustomExportDialogOpen, setIsCustomExportDialogOpen] = useState(false);
-  const MAX_RETRIES = 10;
 
   // Get finished templates from checkpoint
   const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
@@ -150,143 +147,166 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     );
   };
 
-  // Poll for progress updates
+  // WebSocket cleanup on unmount
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    let isMounted = true;
+    return () => {
+      // Disconnect WebSocket when component unmounts
+      disconnectProgressWebSocket();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    if (isRunning && jobId) {
-      console.log(`Starting polling for job: ${jobId}`);
+  // Note: HTTP polling logic has been removed and replaced with WebSocket streaming.
+  // The WebSocket connection is established in handleStartVerification() after the job starts
+  // and provides real-time progress updates with <100ms latency (vs 1s polling delay).
+  // Progress events: snapshot, job_started, task_started, task_completed, job_completed, job_failed, job_cancelled
 
-      interval = setInterval(async () => {
-        if (!isMounted || !isRunning) return;
-
-        try {
-          console.log(`Polling progress for job: ${jobId}`);
-          const response = await fetch(API_ENDPOINTS.VERIFICATION_PROGRESS(jobId));
-
-          if (!response.ok) {
-            console.error(`Progress polling failed with status: ${response.status}`);
-            if (response.status >= 400 && isMounted) {
-              setIsRunning(false);
-              setError(`Progress polling failed: ${response.status} ${response.statusText}`);
-              return;
-            }
-          }
-
-          const progressData = await response.json();
-          console.log('Progress data received:', progressData);
-
-          // Validate progress data structure
-          if (!progressData || typeof progressData !== 'object') {
-            console.error('Invalid progress data received:', progressData);
-            setRetryCount((prev) => {
-              const newCount = prev + 1;
-              if (newCount >= MAX_RETRIES && isMounted) {
-                setIsRunning(false);
-                setError('Too many invalid responses from server');
-              }
-              return newCount;
-            });
-            return;
-          }
-
-          // Reset retry count on successful response
-          if (isMounted) {
-            setRetryCount(0);
-
-            // Safely update progress
-            try {
-              setProgress((prev) => {
-                console.log('Updating progress from:', prev?.status, 'to:', progressData.status);
-                return progressData;
-              });
-            } catch (e) {
-              console.error('Error setting progress:', e);
-            }
-
-            if (progressData.status === 'completed') {
-              console.log('Verification completed, cleaning up...');
-              setIsRunning(false);
-
-              if (progressData.results && typeof progressData.results === 'object') {
-                console.log('Setting results:', Object.keys(progressData.results).length, 'items');
-                try {
-                  // Validate and sanitize results before setting
-                  const sanitizedResults: Record<string, VerificationResult> = {};
-                  for (const [, value] of Object.entries(progressData.results)) {
-                    if (value && typeof value === 'object') {
-                      const result = value as VerificationResult;
-                      // Use composite key with timestamp to ensure every result is stored uniquely
-                      const timestamp = result.timestamp || new Date().toISOString();
-                      const compositeKey = `${result.question_id}_${result.job_id || progressData.job_id}_${timestamp}`;
-                      sanitizedResults[compositeKey] = result;
-                    }
-                  }
-                  console.log('Sanitized results structure:', {
-                    count: Object.keys(sanitizedResults).length,
-                    firstKey: Object.keys(sanitizedResults)[0],
-                    firstValue: sanitizedResults[Object.keys(sanitizedResults)[0]],
-                    keys: Object.keys(sanitizedResults),
-                  });
-                  // Accumulate results instead of replacing them
-                  setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
-                  console.log('Results set successfully');
-
-                  // Auto-save to database after verification completes
-                  try {
-                    await autoSaveToDatabase(checkpoint);
-                    console.log('💾 Checkpoint auto-saved to database after verification');
-                  } catch (saveError) {
-                    console.warn('⚠️ Failed to auto-save to database after verification:', saveError);
-                  }
-                } catch (e) {
-                  console.error('Error setting results:', e);
-                  setError('Failed to process verification results');
-                }
-              } else {
-                console.warn('Completed but no valid results received');
-                setError('Verification completed but no results were returned');
-              }
-            } else if (progressData.status === 'failed') {
-              console.log('Verification failed:', progressData.error);
-              setIsRunning(false);
-              setError(progressData.error || 'Verification failed');
-            }
-          }
-        } catch (err) {
-          console.error('Error polling progress:', err);
-          if (isMounted) {
-            setRetryCount((prev) => {
-              const newCount = prev + 1;
-              const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-
-              if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
-                console.warn(`Network error during polling (attempt ${newCount}/${MAX_RETRIES}), will retry...`);
-                if (newCount >= MAX_RETRIES) {
-                  setIsRunning(false);
-                  setError(`Polling failed after ${MAX_RETRIES} retries: ${errorMessage}`);
-                }
-              } else {
-                // For non-network errors, stop polling
-                setIsRunning(false);
-                setError(`Polling error: ${errorMessage}`);
-              }
-              return newCount;
-            });
-          }
-        }
-      }, 1000);
+  // WebSocket connection management
+  const connectProgressWebSocket = (jobId: string) => {
+    // Disconnect any existing connection
+    if (websocket) {
+      websocket.close();
+      setWebsocket(null);
     }
 
-    return () => {
-      console.log('Cleaning up polling interval');
-      isMounted = false;
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isRunning, jobId, MAX_RETRIES, setBenchmarkResults, checkpoint]);
+    try {
+      // Determine WebSocket protocol based on current page protocol
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws/verification-progress/${jobId}`;
+
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('WebSocket connected for verification job', jobId);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const eventData = JSON.parse(event.data);
+
+          // Handle different event types
+          switch (eventData.type) {
+            case 'snapshot':
+            case 'job_started':
+            case 'task_started':
+            case 'task_completed':
+              // Update progress
+              setProgress({
+                job_id: eventData.job_id,
+                status: eventData.status,
+                percentage: eventData.percentage,
+                processed_count: eventData.processed,
+                total_count: eventData.total,
+                current_question: eventData.current_question || '',
+                estimated_time_remaining: eventData.estimated_time_remaining,
+                in_progress_questions: eventData.in_progress_questions || [],
+                ema_seconds_per_item: eventData.ema_seconds_per_item || 0,
+                successful_count: 0,
+                failed_count: 0,
+              });
+              break;
+
+            case 'job_completed':
+              // Update progress to show completed status
+              setProgress((prev) => ({
+                ...prev,
+                job_id: jobId,
+                status: 'completed',
+                percentage: 100,
+                in_progress_questions: [],
+                current_question: '',
+                processed_count: prev?.processed_count || 0,
+                total_count: prev?.total_count || 0,
+                successful_count: 0,
+                failed_count: 0,
+              }));
+
+              // Fetch final results
+              fetch(`/api/verification-progress/${jobId}`)
+                .then((res) => res.json())
+                .then(async (data) => {
+                  setIsRunning(false);
+                  if (data.results && typeof data.results === 'object') {
+                    console.log('Setting results:', Object.keys(data.results).length, 'items');
+                    const sanitizedResults: Record<string, VerificationResult> = {};
+                    for (const [, value] of Object.entries(data.results)) {
+                      if (value && typeof value === 'object') {
+                        const result = value as VerificationResult;
+                        const timestamp = result.timestamp || new Date().toISOString();
+                        const compositeKey = `${result.question_id}_${result.job_id || jobId}_${timestamp}`;
+                        sanitizedResults[compositeKey] = result;
+                      }
+                    }
+                    // Accumulate results instead of replacing them
+                    setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
+                    console.log('Results set successfully');
+
+                    // Auto-save to database after verification completes
+                    try {
+                      await autoSaveToDatabase(checkpoint);
+                      console.log('💾 Checkpoint auto-saved to database after verification');
+                    } catch (saveError) {
+                      console.warn('⚠️ Failed to auto-save to database after verification:', saveError);
+                    }
+                  }
+                  disconnectProgressWebSocket();
+                })
+                .catch((err) => {
+                  console.error('Failed to fetch final results:', err);
+                  setIsRunning(false);
+                  disconnectProgressWebSocket();
+                });
+              break;
+
+            case 'job_failed':
+              setError(eventData.error || 'Verification failed');
+              setIsRunning(false);
+              disconnectProgressWebSocket();
+              break;
+
+            case 'job_cancelled':
+              setProgress((prev) => ({
+                ...prev,
+                job_id: jobId,
+                status: 'cancelled',
+                processed_count: prev?.processed_count || 0,
+                total_count: prev?.total_count || 0,
+                successful_count: 0,
+                failed_count: 0,
+              }));
+              setIsRunning(false);
+              disconnectProgressWebSocket();
+              break;
+
+            default:
+              console.warn('Unknown WebSocket event type:', eventData.type);
+          }
+        } catch (err) {
+          console.error('Failed to parse WebSocket message:', err);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket connection closed');
+        setWebsocket(null);
+      };
+
+      setWebsocket(ws);
+    } catch (err) {
+      console.error('Failed to connect WebSocket:', err);
+    }
+  };
+
+  const disconnectProgressWebSocket = () => {
+    if (websocket) {
+      websocket.close();
+      setWebsocket(null);
+    }
+  };
 
   const handleStartVerification = async (questionIds?: string[]) => {
     const idsToRun = questionIds || Array.from(selectedTests);
@@ -360,6 +380,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
       const data = await response.json();
       setJobId(data.job_id);
+
+      // Connect to WebSocket for real-time progress updates
+      connectProgressWebSocket(data.job_id);
     } catch (err) {
       setIsRunning(false);
       setError(err instanceof Error ? err.message : 'Failed to start verification');
@@ -373,6 +396,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       await fetch(API_ENDPOINTS.CANCEL_VERIFICATION(jobId), {
         method: HTTP_METHODS.POST,
       });
+
+      // Disconnect WebSocket
+      disconnectProgressWebSocket();
+
       setIsRunning(false);
       setProgress(null);
       setJobId(null);
@@ -838,6 +865,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               selectedTestsCount={selectedTests.size}
               answeringModelsCount={answeringModels.length}
               parsingModelsCount={parsingModels.length}
+              finishedTemplates={finishedTemplates}
             />
 
             {/* Aggregated Test Stats - Always show when running or have results to prevent layout shift */}

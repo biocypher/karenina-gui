@@ -15,12 +15,18 @@ interface VerificationProgress {
   results?: Record<string, unknown>;
 }
 
+interface FinishedTemplateData {
+  question: string;
+  [key: string]: unknown;
+}
+
 interface ProgressIndicatorProps {
   isRunning: boolean;
   progress: VerificationProgress | null;
   selectedTestsCount: number;
   answeringModelsCount: number;
   parsingModelsCount: number;
+  finishedTemplates?: Array<[string, FinishedTemplateData]>;
 }
 
 const formatDuration = (seconds?: number) => {
@@ -37,12 +43,27 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   selectedTestsCount,
   answeringModelsCount,
   parsingModelsCount,
+  finishedTemplates,
 }) => {
   if (!isRunning) {
     return null;
   }
 
   const totalTests = selectedTestsCount * answeringModelsCount * parsingModelsCount;
+
+  // Helper to get question text from question ID
+  const getQuestionText = (questionId: string): string => {
+    if (!finishedTemplates) {
+      return questionId;
+    }
+    const template = finishedTemplates.find(([id]) => id === questionId);
+    if (!template) {
+      return questionId;
+    }
+    const question = template[1].question || questionId;
+    // Truncate long questions
+    return question.length > 60 ? `${question.substring(0, 60)}...` : question;
+  };
 
   return (
     <div className="mb-4">
@@ -60,9 +81,37 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
               style={{ width: `${progress.percentage || 0}%` }}
             />
           </div>
-          {progress.current_question && (
-            <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Current: {progress.current_question}</p>
+
+          {/* Concurrent Tasks Display */}
+          {progress.in_progress_questions && progress.in_progress_questions.length > 0 && (
+            <div className="mt-3">
+              <div className="text-sm text-slate-600 dark:text-slate-300 mb-2 flex items-center gap-2">
+                <Loader className="w-4 h-4 animate-spin text-indigo-500" />
+                <span>Currently Processing ({progress.in_progress_questions.length}):</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {progress.in_progress_questions.map((questionId, index) => (
+                  <span
+                    key={`${questionId}-${index}`}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700"
+                    title={
+                      finishedTemplates
+                        ? finishedTemplates.find(([id]) => id === questionId)?.[1]?.question || questionId
+                        : questionId
+                    }
+                  >
+                    {getQuestionText(questionId)}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
+
+          {/* Current Question (fallback for when in_progress_questions is empty) */}
+          {(!progress.in_progress_questions || progress.in_progress_questions.length === 0) &&
+            progress.current_question && (
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Current: {progress.current_question}</p>
+            )}
           {progress.estimated_time_remaining && progress.status !== 'completed' && (
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Estimated time remaining: {formatDuration(progress.estimated_time_remaining)}
