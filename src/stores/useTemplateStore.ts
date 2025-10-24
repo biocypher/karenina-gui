@@ -491,6 +491,16 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
               break;
 
             case 'job_completed':
+              // Update progress to show completed status
+              state.updateProgress({
+                ...state.progress,
+                job_id: jobId,
+                status: 'completed',
+                percentage: 100,
+                in_progress_questions: [],
+                current_question: '',
+              } as TemplateGenerationProgress);
+
               // Fetch final result
               fetch(`/api/generation-progress/${jobId}`)
                 .then((res) => res.json())
