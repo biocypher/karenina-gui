@@ -3,7 +3,7 @@ import { PlusIcon, TrashIcon, XMarkIcon, QuestionMarkCircleIcon } from '@heroico
 import { useRubricStore } from '../stores/useRubricStore';
 import { RubricTrait, TraitKind, ManualRubricTrait } from '../types';
 
-type TraitType = 'boolean' | 'score' | 'manual';
+type TraitType = 'boolean' | 'score' | 'manual' | 'metric';
 
 export default function RubricTraitEditor() {
   const {
@@ -227,6 +227,7 @@ export default function RubricTraitEditor() {
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
                     <option value="manual">Manual (Regex)</option>
+                    <option value="metric">Metric (Confusion Matrix)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,6 +364,7 @@ export default function RubricTraitEditor() {
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
                     <option value="manual">Manual (Regex)</option>
+                    <option value="metric">Metric (Confusion Matrix)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
