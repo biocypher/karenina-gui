@@ -351,6 +351,17 @@ export interface VerificationResult {
   // Search-enhanced deep-judgment metadata
   deep_judgment_search_enabled?: boolean;
   hallucination_risk_assessment?: Record<string, string>; // Maps attribute to "none" | "low" | "medium" | "high"
+  // Metric trait evaluation metadata (confusion-matrix analysis)
+  metric_trait_confusion_lists?: Record<
+    string,
+    {
+      tp: string[]; // True Positives
+      tn: string[]; // True Negatives
+      fp: string[]; // False Positives
+      fn: string[]; // False Negatives
+    }
+  >; // Maps trait name to confusion lists
+  metric_trait_metrics?: Record<string, Record<string, number>>; // Maps trait name to computed metrics (e.g., {"precision": 0.85, "recall": 0.92})
 }
 
 export interface VerificationProgress {
@@ -390,9 +401,21 @@ export interface ManualRubricTrait {
   invert_result?: boolean; // Whether to invert the boolean result (default: false)
 }
 
+export interface MetricRubricTrait {
+  name: string;
+  description?: string;
+  metrics: string[]; // e.g., ['precision', 'recall', 'f1']
+  tp_instructions: string[]; // True Positive instructions
+  tn_instructions: string[]; // True Negative instructions
+  fp_instructions: string[]; // False Positive instructions
+  fn_instructions: string[]; // False Negative instructions
+  repeated_extraction?: boolean; // Whether to deduplicate excerpts (default: true)
+}
+
 export interface Rubric {
   traits: RubricTrait[];
   manual_traits?: ManualRubricTrait[];
+  metric_traits?: MetricRubricTrait[];
 }
 
 // Rubric Trait Generation Configuration

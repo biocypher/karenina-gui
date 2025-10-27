@@ -66,6 +66,17 @@ export interface ExportableResult {
   // Search-enhanced deep-judgment metadata
   deep_judgment_search_enabled?: boolean;
   hallucination_risk_assessment?: Record<string, string>;
+  // Metric trait evaluation metadata (confusion-matrix analysis)
+  metric_trait_confusion_lists?: Record<
+    string,
+    {
+      tp: string[];
+      tn: string[];
+      fp: string[];
+      fn: string[];
+    }
+  >;
+  metric_trait_metrics?: Record<string, Record<string, number>>;
 }
 
 /**
@@ -242,6 +253,9 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     // Search-enhanced deep-judgment fields
     'deep_judgment_search_enabled',
     'hallucination_risk_assessment',
+    // Metric trait fields
+    'metric_trait_confusion_lists',
+    'metric_trait_metrics',
   ];
 
   // Filter headers based on selected fields if provided
@@ -349,6 +363,13 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       deep_judgment_search_enabled: escapeCSVField(result.deep_judgment_search_enabled || false),
       hallucination_risk_assessment: escapeCSVField(
         result.hallucination_risk_assessment ? JSON.stringify(result.hallucination_risk_assessment) : ''
+      ),
+      // Metric trait fields
+      metric_trait_confusion_lists: escapeCSVField(
+        result.metric_trait_confusion_lists ? JSON.stringify(result.metric_trait_confusion_lists) : ''
+      ),
+      metric_trait_metrics: escapeCSVField(
+        result.metric_trait_metrics ? JSON.stringify(result.metric_trait_metrics) : ''
       ),
     };
 
