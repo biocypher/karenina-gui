@@ -9,7 +9,7 @@ describe('BenchmarkTab - Results Accumulation Issue', () => {
       q1: {
         question_id: 'q1',
         question_text: 'What is 2+2?',
-        success: true,
+        completed_without_errors: true,
         run_name: 'foo',
         timestamp: '2023-01-01T00:01:00Z',
         job_id: 'job-1',
@@ -24,7 +24,7 @@ describe('BenchmarkTab - Results Accumulation Issue', () => {
       q1: {
         question_id: 'q1',
         question_text: 'What is 2+2?',
-        success: true,
+        completed_without_errors: true,
         run_name: 'bar', // Different run name!
         timestamp: '2023-01-01T00:02:00Z',
         job_id: 'job-2',

@@ -34,7 +34,7 @@ describe('BenchmarkTab - Deep-Judgment Modal Display', () => {
     answering_model: 'gpt-4',
     parsing_model: 'gpt-4',
     answering_mcp_servers: [],
-    success: true,
+    completed_without_errors: true,
     verify_result: true,
     verify_granular_result: {},
     verify_rubric: null,

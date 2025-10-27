@@ -52,16 +52,20 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                 <div className="space-y-4">
                   {/* Status */}
                   <div>
-                    <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Status</h4>
+                    <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Completed Without Errors</h4>
                     <div
                       className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                        result.success
+                        result.completed_without_errors
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
                           : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
                       }`}
                     >
-                      {result.success ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                      {result.success ? 'Success' : 'Failed'}
+                      {result.completed_without_errors ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
+                      {result.completed_without_errors ? 'true' : 'false'}
                     </div>
                     {result.error && <p className="text-red-600 dark:text-red-400 mt-2">{result.error}</p>}
                   </div>

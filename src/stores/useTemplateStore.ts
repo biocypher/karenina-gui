@@ -9,10 +9,46 @@ import {
 import { logger } from '../utils/logger';
 import { handleApiError } from '../utils/errorHandler';
 
+// Extraction workflow types
+export interface FileInfo {
+  file_id: string;
+  filename: string;
+  size: number;
+}
+
+export interface PreviewData {
+  success: boolean;
+  total_rows?: number;
+  columns?: string[];
+  preview_rows?: number;
+  data?: Record<string, string>[];
+  error?: string;
+}
+
+export interface MetadataColumnSettings {
+  author_name_column?: string;
+  author_email_column?: string;
+  author_affiliation_column?: string;
+  url_column?: string;
+  keywords_column?: string;
+  keywords_separator: string;
+}
+
 // Define the template store state interface
 interface TemplateState {
   // Configuration state
   config: TemplateGenerationConfig;
+
+  // Question extraction workflow state (persists across tab switches)
+  uploadedFile: FileInfo | null;
+  previewData: PreviewData | null;
+  selectedQuestionColumn: string;
+  selectedAnswerColumn: string;
+  selectedSheet: string;
+  currentStep: 'upload' | 'preview' | 'configure' | 'extract' | 'visualize';
+  advancedVisible: boolean;
+  metadataSettings: MetadataColumnSettings;
+  extractedQuestions: QuestionData;
 
   // Selection state
   selectedQuestions: Set<string>;
@@ -25,11 +61,27 @@ interface TemplateState {
   error: string | null;
   jobId: string | null;
 
+  // WebSocket state
+  websocket: WebSocket | null;
+
   // Generated templates state (ephemeral - not persisted)
   generatedTemplates: Record<string, GeneratedTemplate>;
 
   // Actions
   setConfig: (config: TemplateGenerationConfig) => void;
+
+  // Extraction workflow actions
+  setUploadedFile: (file: FileInfo | null) => void;
+  setPreviewData: (data: PreviewData | null) => void;
+  setSelectedQuestionColumn: (column: string) => void;
+  setSelectedAnswerColumn: (column: string) => void;
+  setSelectedSheet: (sheet: string) => void;
+  setCurrentStep: (step: 'upload' | 'preview' | 'configure' | 'extract' | 'visualize') => void;
+  setAdvancedVisible: (visible: boolean) => void;
+  setMetadataSettings: (settings: MetadataColumnSettings) => void;
+  setExtractedQuestions: (questions: QuestionData) => void;
+  resetExtractionWorkflow: () => void;
+
   setSelectedQuestions: (questions: Set<string>) => void;
   setError: (error: string | null) => void;
 
@@ -51,6 +103,10 @@ interface TemplateState {
   resetTemplateState: () => void;
   retryFailedTemplate: (questionId: string, questions: QuestionData) => Promise<void>;
 
+  // WebSocket operations
+  connectProgressWebSocket: (jobId: string) => void;
+  disconnectProgressWebSocket: () => void;
+
   // Computed getters
   getPendingQuestions: (questions: QuestionData) => QuestionData;
   getSelectedCount: () => number;
@@ -67,6 +123,20 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     temperature: 0.1,
     interface: 'langchain',
   },
+
+  // Extraction workflow initial state
+  uploadedFile: null,
+  previewData: null,
+  selectedQuestionColumn: '',
+  selectedAnswerColumn: '',
+  selectedSheet: '',
+  currentStep: 'upload',
+  advancedVisible: false,
+  metadataSettings: {
+    keywords_separator: ',',
+  },
+  extractedQuestions: {},
+
   selectedQuestions: new Set(),
   hasInitialized: false,
   isGenerating: false,
@@ -74,10 +144,37 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   result: null,
   error: null,
   jobId: null,
+  websocket: null,
   generatedTemplates: {},
 
   // Basic setters
   setConfig: (config: TemplateGenerationConfig) => set(() => ({ config })),
+
+  // Extraction workflow setters
+  setUploadedFile: (uploadedFile: FileInfo | null) => set(() => ({ uploadedFile })),
+  setPreviewData: (previewData: PreviewData | null) => set(() => ({ previewData })),
+  setSelectedQuestionColumn: (selectedQuestionColumn: string) => set(() => ({ selectedQuestionColumn })),
+  setSelectedAnswerColumn: (selectedAnswerColumn: string) => set(() => ({ selectedAnswerColumn })),
+  setSelectedSheet: (selectedSheet: string) => set(() => ({ selectedSheet })),
+  setCurrentStep: (currentStep: 'upload' | 'preview' | 'configure' | 'extract' | 'visualize') =>
+    set(() => ({ currentStep })),
+  setAdvancedVisible: (advancedVisible: boolean) => set(() => ({ advancedVisible })),
+  setMetadataSettings: (metadataSettings: MetadataColumnSettings) => set(() => ({ metadataSettings })),
+  setExtractedQuestions: (extractedQuestions: QuestionData) => set(() => ({ extractedQuestions })),
+
+  resetExtractionWorkflow: () =>
+    set(() => ({
+      uploadedFile: null,
+      previewData: null,
+      selectedQuestionColumn: '',
+      selectedAnswerColumn: '',
+      selectedSheet: '',
+      currentStep: 'upload',
+      advancedVisible: false,
+      metadataSettings: { keywords_separator: ',' },
+      extractedQuestions: {},
+    })),
+
   setSelectedQuestions: (selectedQuestions: Set<string>) => set(() => ({ selectedQuestions })),
   setError: (error: string | null) => set(() => ({ error })),
 
@@ -154,6 +251,9 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
       const data = await response.json();
       set(() => ({ jobId: data.job_id }));
+
+      // Connect to WebSocket for real-time progress updates
+      get().connectProgressWebSocket(data.job_id);
     } catch (err) {
       set(() => ({
         isGenerating: false,
@@ -170,6 +270,10 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       await fetch(`/api/cancel-generation/${state.jobId}`, {
         method: 'POST',
       });
+
+      // Disconnect WebSocket
+      state.disconnectProgressWebSocket();
+
       set(() => ({
         isGenerating: false,
         progress: null,
@@ -285,6 +389,9 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   },
 
   resetTemplateState: () => {
+    // Disconnect WebSocket before resetting
+    get().disconnectProgressWebSocket();
+
     set(() => ({
       config: {
         model_provider: 'google_genai',
@@ -292,6 +399,16 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         temperature: 0.1,
         interface: 'langchain',
       },
+      // Reset extraction workflow
+      uploadedFile: null,
+      previewData: null,
+      selectedQuestionColumn: '',
+      selectedAnswerColumn: '',
+      selectedSheet: '',
+      currentStep: 'upload',
+      advancedVisible: false,
+      metadataSettings: { keywords_separator: ',' },
+      extractedQuestions: {},
       selectedQuestions: new Set(),
       hasInitialized: false,
       isGenerating: false,
@@ -299,6 +416,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       result: null,
       error: null,
       jobId: null,
+      websocket: null,
       generatedTemplates: {},
     }));
   },
@@ -326,6 +444,125 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
     // Start generation with force regenerate
     await state.startGeneration(questions, true);
+  },
+
+  // WebSocket operations
+  connectProgressWebSocket: (jobId: string) => {
+    const state = get();
+
+    // Disconnect any existing connection
+    if (state.websocket) {
+      state.disconnectProgressWebSocket();
+    }
+
+    try {
+      // Determine WebSocket protocol based on current page protocol
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws/generation-progress/${jobId}`;
+
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        logger.info('WebSocket connected for job', jobId);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const eventData = JSON.parse(event.data);
+
+          // Handle different event types
+          switch (eventData.type) {
+            case 'snapshot':
+            case 'job_started':
+            case 'task_started':
+            case 'task_completed':
+              // Update progress
+              state.updateProgress({
+                job_id: eventData.job_id,
+                status: eventData.status,
+                percentage: eventData.percentage,
+                processed_count: eventData.processed,
+                total_count: eventData.total,
+                current_question: eventData.current_question || '',
+                estimated_time_remaining: eventData.estimated_time_remaining,
+                in_progress_questions: eventData.in_progress_questions || [],
+                ema_seconds_per_item: eventData.ema_seconds_per_item || 0,
+              });
+              break;
+
+            case 'job_completed':
+              // Update progress to show completed status
+              state.updateProgress({
+                ...state.progress,
+                job_id: jobId,
+                status: 'completed',
+                percentage: 100,
+                in_progress_questions: [],
+                current_question: '',
+              } as TemplateGenerationProgress);
+
+              // Fetch final result
+              fetch(`/api/generation-progress/${jobId}`)
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.result) {
+                    state.completeGeneration(data.result);
+                  }
+                  state.disconnectProgressWebSocket();
+                })
+                .catch((err) => {
+                  logger.error('Failed to fetch final result:', err);
+                  state.disconnectProgressWebSocket();
+                });
+              break;
+
+            case 'job_failed':
+              state.failGeneration(eventData.error || 'Generation failed');
+              state.disconnectProgressWebSocket();
+              break;
+
+            case 'job_cancelled':
+              state.updateProgress({
+                ...state.progress,
+                job_id: jobId,
+                status: 'cancelled',
+              } as TemplateGenerationProgress);
+              state.disconnectProgressWebSocket();
+              break;
+
+            default:
+              logger.warn('Unknown WebSocket event type:', eventData.type);
+          }
+        } catch (err) {
+          logger.error('Failed to parse WebSocket message:', err);
+        }
+      };
+
+      ws.onerror = (error) => {
+        logger.error('WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        logger.info('WebSocket closed for job', jobId);
+        set(() => ({ websocket: null }));
+      };
+
+      set(() => ({ websocket: ws }));
+    } catch (err) {
+      logger.error('Failed to create WebSocket connection:', err);
+    }
+  },
+
+  disconnectProgressWebSocket: () => {
+    const state = get();
+    if (state.websocket) {
+      try {
+        state.websocket.close();
+      } catch (err) {
+        logger.error('Error closing WebSocket:', err);
+      }
+      set(() => ({ websocket: null }));
+    }
   },
 
   // Computed getters

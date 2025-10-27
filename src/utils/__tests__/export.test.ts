@@ -38,7 +38,7 @@ describe('Export Utils', () => {
       parsing_replicate: 1,
       answering_system_prompt: 'You are a math expert',
       parsing_system_prompt: 'Parse the answer',
-      success: true,
+      completed_without_errors: true,
       execution_time: 1.5,
       timestamp: '2023-01-01T00:00:00Z',
       run_name: 'test-run',
@@ -60,7 +60,7 @@ describe('Export Utils', () => {
       },
       answering_model: 'gpt-4',
       parsing_model: 'gpt-4-parser',
-      success: false,
+      completed_without_errors: false,
       error: 'Parse error',
       execution_time: 0.8,
       timestamp: '2023-01-01T00:01:00Z',
@@ -168,7 +168,7 @@ describe('Export Utils', () => {
       expect(parsed).toEqual([]);
     });
 
-    it('should replace success with "abstained" when abstention is detected in JSON export', () => {
+    it('should replace completed_without_errors with "abstained" when abstention is detected in JSON export', () => {
       const resultsWithAbstention: ExportableResult[] = [
         {
           question_id: 'q1',
@@ -176,7 +176,7 @@ describe('Export Utils', () => {
           raw_llm_response: 'I cannot answer that',
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: true,
+          completed_without_errors: true,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
           // Abstention detected
@@ -191,7 +191,7 @@ describe('Export Utils', () => {
           raw_llm_response: 'Normal answer',
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: false,
+          completed_without_errors: false,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
           // No abstention
@@ -205,10 +205,10 @@ describe('Export Utils', () => {
       const parsed = JSON.parse(json);
 
       // First result should show "abstained" instead of true
-      expect(parsed[0]).toHaveProperty('success', 'abstained');
+      expect(parsed[0]).toHaveProperty('completed_without_errors', 'abstained');
 
       // Second result should show normal boolean
-      expect(parsed[1]).toHaveProperty('success', false);
+      expect(parsed[1]).toHaveProperty('completed_without_errors', false);
     });
   });
 
@@ -230,7 +230,7 @@ describe('Export Utils', () => {
           raw_llm_response: 'Answer with, commas and "quotes"',
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: true,
+          completed_without_errors: true,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
         },
@@ -259,7 +259,7 @@ describe('Export Utils', () => {
           raw_llm_response: 'Test response',
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: true,
+          completed_without_errors: true,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
           // Optional fields left undefined
@@ -307,7 +307,7 @@ describe('Export Utils', () => {
           },
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: true,
+          completed_without_errors: true,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
         },
@@ -348,7 +348,7 @@ describe('Export Utils', () => {
           },
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: true,
+          completed_without_errors: true,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
         },
@@ -362,7 +362,7 @@ describe('Export Utils', () => {
           },
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: true,
+          completed_without_errors: true,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
         },
@@ -412,7 +412,7 @@ describe('Export Utils', () => {
       expect(lines[2]).toContain('true'); // embedding_override_applied for second result (this one was overridden)
     });
 
-    it('should replace success with "abstained" when abstention is detected in CSV export', () => {
+    it('should replace completed_without_errors with "abstained" when abstention is detected in CSV export', () => {
       const resultsWithAbstention: ExportableResult[] = [
         {
           question_id: 'q1',
@@ -420,7 +420,7 @@ describe('Export Utils', () => {
           raw_llm_response: 'I cannot answer that',
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: true,
+          completed_without_errors: true,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
           // Abstention detected
@@ -435,7 +435,7 @@ describe('Export Utils', () => {
           raw_llm_response: 'Normal answer',
           answering_model: 'test-model',
           parsing_model: 'test-parser',
-          success: true,
+          completed_without_errors: true,
           execution_time: 1.0,
           timestamp: '2023-01-01T00:00:00Z',
           // No abstention
@@ -453,14 +453,14 @@ describe('Export Utils', () => {
       const firstRow = lines[1].split(',');
       const secondRow = lines[2].split(',');
 
-      const successIndex = headers.indexOf('success');
-      expect(successIndex).toBeGreaterThan(-1);
+      const completedWithoutErrorsIndex = headers.indexOf('completed_without_errors');
+      expect(completedWithoutErrorsIndex).toBeGreaterThan(-1);
 
-      // First result should show "abstained" instead of true for success field
-      expect(firstRow[successIndex]).toBe('abstained');
+      // First result should show "abstained" instead of true for completed_without_errors field
+      expect(firstRow[completedWithoutErrorsIndex]).toBe('abstained');
 
-      // Second result should show true for success field
-      expect(secondRow[successIndex]).toBe('true');
+      // Second result should show true for completed_without_errors field
+      expect(secondRow[completedWithoutErrorsIndex]).toBe('true');
     });
   });
 

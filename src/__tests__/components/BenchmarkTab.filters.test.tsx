@@ -48,7 +48,7 @@ const mockCheckpoint: Checkpoint = {
 const mockVerificationResults = {
   q1: {
     question_id: 'q1',
-    success: true,
+    completed_without_errors: true,
     question_text: 'What is 2+2?',
     raw_llm_response: 'The answer is 4',
     parsed_response: { response: '4' },
@@ -61,7 +61,7 @@ const mockVerificationResults = {
   },
   q2: {
     question_id: 'q2',
-    success: false,
+    completed_without_errors: false,
     question_text: 'What is the capital of France?',
     raw_llm_response: 'Paris is the capital',
     parsed_response: null,
@@ -74,7 +74,7 @@ const mockVerificationResults = {
   },
   q3: {
     question_id: 'q3',
-    success: true,
+    completed_without_errors: true,
     question_text: 'What is Python?',
     raw_llm_response: 'Python is a high-level programming language',
     parsed_response: { description: 'A programming language' },
@@ -166,8 +166,8 @@ describe('BenchmarkTab Filters and Export', () => {
       const allResults = Object.values(mockVerificationResults);
 
       // Test template validity filter
-      const validResults = allResults.filter((result) => result.success);
-      const invalidResults = allResults.filter((result) => !result.success);
+      const validResults = allResults.filter((result) => result.completed_without_errors);
+      const invalidResults = allResults.filter((result) => !result.completed_without_errors);
 
       expect(validResults).toHaveLength(2); // q1 and q3 are successful
       expect(invalidResults).toHaveLength(1); // q2 is unsuccessful
@@ -341,7 +341,7 @@ describe('BenchmarkTab Filters and Export', () => {
           question_text: 'Test question',
           answering_model: 'model1',
           parsing_model: 'model2',
-          success: true,
+          completed_without_errors: true,
           verify_result: null,
           execution_time: 1.5,
           timestamp: '2024-01-01T00:00:00Z',

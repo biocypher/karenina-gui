@@ -223,6 +223,9 @@ export interface TemplateGenerationProgress {
   estimated_time_remaining?: number; // in seconds
   error?: string;
   result?: TemplateGenerationResult;
+  // WebSocket streaming fields
+  in_progress_questions?: string[];
+  ema_seconds_per_item?: number;
 }
 
 export interface GeneratedTemplate {
@@ -284,7 +287,7 @@ export interface VerificationConfig {
 
 export interface VerificationResult {
   question_id: string;
-  success: boolean;
+  completed_without_errors: boolean;
   error?: string;
   question_text: string;
   raw_llm_response: string;
@@ -362,6 +365,9 @@ export interface VerificationProgress {
   estimated_time_remaining?: number;
   error?: string;
   results?: Record<string, VerificationResult>;
+  // WebSocket streaming fields
+  in_progress_questions?: string[];
+  ema_seconds_per_item?: number;
 }
 
 // Rubric Types
@@ -419,7 +425,7 @@ export interface ParsedAnswerResponse {
 }
 
 export interface VerificationOutcome {
-  success: boolean;
+  completed_without_errors: boolean;
   score?: number;
   details?: string;
 }
