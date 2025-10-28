@@ -325,7 +325,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   const handleInstructionChange = (index: number, bucket: 'tp' | 'tn' | 'fp' | 'fn', value: string) => {
     if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
 
-    const instructions = value.split('\n').filter((line) => line.trim() !== '');
+    // Split by newlines but keep empty lines to allow multi-line editing
+    // Empty lines will be preserved in the textarea for better UX
+    const instructions = value.split('\n');
     const fieldName = `${bucket}_instructions` as keyof MetricRubricTrait;
     handleMetricTraitChange(index, fieldName, instructions);
   };
