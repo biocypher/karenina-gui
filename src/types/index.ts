@@ -404,9 +404,10 @@ export interface ManualRubricTrait {
 export interface MetricRubricTrait {
   name: string;
   description?: string;
-  metrics: string[]; // Currently only 'precision' is supported
+  evaluation_mode: 'tp_only' | 'full_matrix'; // Evaluation mode: tp_only (only TP defined) or full_matrix (TP+TN defined)
+  metrics: string[]; // Available metrics depend on evaluation_mode
   tp_instructions: string[]; // Correct extractions - what SHOULD be in the answer
-  tn_instructions: string[]; // Incorrect extractions (FP) - what SHOULD NOT be in the answer
+  tn_instructions: string[]; // Incorrect extractions - what SHOULD NOT be in the answer (only required in full_matrix mode)
   repeated_extraction?: boolean; // Whether to deduplicate excerpts (default: true)
 }
 
