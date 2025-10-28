@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, XMarkIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useQuestionStore } from '../stores/useQuestionStore';
-import { RubricTrait, TraitKind, Rubric, ManualRubricTrait } from '../types';
+import { RubricTrait, TraitKind, Rubric, ManualRubricTrait, MetricRubricTrait } from '../types';
 
-type TraitType = 'boolean' | 'score' | 'manual';
+type TraitType = 'boolean' | 'score' | 'manual' | 'metric';
 
 interface QuestionRubricEditorProps {
   questionId: string;
@@ -36,6 +36,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       setQuestionRubricState({
         traits: [],
         manual_traits: [],
+        metric_traits: [],
       });
     }
   }, [isInitialized, questionRubric]);
@@ -43,7 +44,10 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   const handleAddTrait = () => {
     if (!questionRubric) return;
 
-    const totalTraits = questionRubric.traits.length + (questionRubric.manual_traits?.length || 0);
+    const totalTraits =
+      questionRubric.traits.length +
+      (questionRubric.manual_traits?.length || 0) +
+      (questionRubric.metric_traits?.length || 0);
 
     // Always add Binary trait by default - user can change type via dropdown
     const newTrait: RubricTrait = {
@@ -72,26 +76,48 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
       if (newType === 'manual') return; // Already manual
 
-      // Create converted trait
-      const convertedTrait: RubricTrait = {
-        name: manualTrait.name,
-        description: manualTrait.description || '',
-        kind: newType as TraitKind,
-        ...(newType === 'score' && { min_score: 1, max_score: 5 }),
-      };
-
-      // Update both arrays atomically
+      // Remove from manual_traits
       const updatedManualTraits = questionRubric.manual_traits.filter((_, i) => i !== index);
-      const updatedTraits = [...questionRubric.traits, convertedTrait];
 
-      const updatedRubric = {
-        ...questionRubric,
-        traits: updatedTraits,
-        manual_traits: updatedManualTraits,
-      };
+      if (newType === 'metric') {
+        // Convert to metric trait
+        const convertedTrait: MetricRubricTrait = {
+          name: manualTrait.name,
+          description: manualTrait.description || '',
+          metrics: [],
+          tp_instructions: [],
+          tn_instructions: [],
+          fp_instructions: [],
+          fn_instructions: [],
+          repeated_extraction: true,
+        };
 
-      setQuestionRubricState(updatedRubric);
-      setQuestionRubric(questionId, updatedRubric);
+        const updatedRubric = {
+          ...questionRubric,
+          manual_traits: updatedManualTraits,
+          metric_traits: [...(questionRubric.metric_traits || []), convertedTrait],
+        };
+
+        setQuestionRubricState(updatedRubric);
+        setQuestionRubric(questionId, updatedRubric);
+      } else {
+        // Convert to LLM trait
+        const convertedTrait: RubricTrait = {
+          name: manualTrait.name,
+          description: manualTrait.description || '',
+          kind: newType as TraitKind,
+          ...(newType === 'score' && { min_score: 1, max_score: 5 }),
+        };
+
+        const updatedRubric = {
+          ...questionRubric,
+          traits: [...questionRubric.traits, convertedTrait],
+          manual_traits: updatedManualTraits,
+        };
+
+        setQuestionRubricState(updatedRubric);
+        setQuestionRubric(questionId, updatedRubric);
+      }
     } else {
       // Converting from LLM trait
       const llmTrait = questionRubric.traits[index];
@@ -122,6 +148,29 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
           ...questionRubric,
           traits: updatedTraits,
           manual_traits: updatedManualTraits,
+        };
+
+        setQuestionRubricState(updatedRubric);
+        setQuestionRubric(questionId, updatedRubric);
+      } else if (newType === 'metric') {
+        // Convert to metric trait
+        const convertedTrait: MetricRubricTrait = {
+          name: llmTrait.name,
+          description: llmTrait.description || '',
+          metrics: [],
+          tp_instructions: [],
+          tn_instructions: [],
+          fp_instructions: [],
+          fn_instructions: [],
+          repeated_extraction: true,
+        };
+
+        const updatedTraits = questionRubric.traits.filter((_, i) => i !== index);
+
+        const updatedRubric = {
+          ...questionRubric,
+          traits: updatedTraits,
+          metric_traits: [...(questionRubric.metric_traits || []), convertedTrait],
         };
 
         setQuestionRubricState(updatedRubric);
@@ -339,6 +388,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
                     <option value="manual">Manual (Regex)</option>
+                    <option value="metric">Metric (Confusion Matrix)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -460,6 +510,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
                     <option value="manual">Manual (Regex)</option>
+                    <option value="metric">Metric (Confusion Matrix)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
