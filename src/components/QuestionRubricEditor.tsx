@@ -1112,13 +1112,17 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Global Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {(globalRubric?.traits.length || 0) + (globalRubric?.manual_traits?.length || 0)}
+                {(globalRubric?.traits.length || 0) +
+                  (globalRubric?.manual_traits?.length || 0) +
+                  (globalRubric?.metric_traits?.length || 0)}
               </span>
             </div>
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Question Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {questionRubric.traits.length + (questionRubric.manual_traits?.length || 0)}
+                {questionRubric.traits.length +
+                  (questionRubric.manual_traits?.length || 0) +
+                  (questionRubric.metric_traits?.length || 0)}
               </span>
             </div>
           </div>
@@ -1128,8 +1132,10 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
                 {(globalRubric?.traits.length || 0) +
                   (globalRubric?.manual_traits?.length || 0) +
+                  (globalRubric?.metric_traits?.length || 0) +
                   questionRubric.traits.length +
-                  (questionRubric.manual_traits?.length || 0)}
+                  (questionRubric.manual_traits?.length || 0) +
+                  (questionRubric.metric_traits?.length || 0)}
               </span>
             </div>
             <div className="flex items-center">
@@ -1155,6 +1161,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                     {questionRubric.manual_traits?.length || 0}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">manual</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full mr-1"></span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {questionRubric.metric_traits?.length || 0}
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">metric</span>
                 </span>
               </div>
             </div>
