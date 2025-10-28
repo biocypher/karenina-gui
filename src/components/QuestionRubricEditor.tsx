@@ -1138,9 +1138,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                   (questionRubric.metric_traits?.length || 0)}
               </span>
             </div>
-            <div className="flex items-center">
-              <span className="text-slate-600 dark:text-slate-400 font-medium">Question Types:</span>
-              <div className="ml-2 flex space-x-3">
+            <div className="flex items-start">
+              <span className="text-slate-600 dark:text-slate-400 font-medium pt-0.5">Question Types:</span>
+              <div className="ml-2 flex flex-wrap gap-2">
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-indigo-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
