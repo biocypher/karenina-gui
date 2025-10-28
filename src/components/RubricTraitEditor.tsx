@@ -5,15 +5,23 @@ import { RubricTrait, TraitKind, ManualRubricTrait, MetricRubricTrait } from '..
 
 type TraitType = 'boolean' | 'score' | 'manual' | 'metric';
 
-// Valid metrics for metric traits
-// With TP (correct extractions) and TN (incorrect extractions) instructions,
-// we can compute precision: TP / (TP + FP), where FP = excerpts matching TN
-const VALID_METRICS = ['precision'] as const;
-type MetricName = (typeof VALID_METRICS)[number];
+// Valid metrics for each evaluation mode
+const VALID_METRICS_TP_ONLY = ['precision', 'recall', 'f1'] as const;
+const VALID_METRICS_FULL_MATRIX = ['precision', 'recall', 'specificity', 'accuracy', 'f1'] as const;
+type MetricName = 'precision' | 'recall' | 'specificity' | 'accuracy' | 'f1';
 
-// Metric requirements (which instruction buckets are needed)
+// Metric requirements (which confusion matrix values are needed)
 const METRIC_REQUIREMENTS: Record<MetricName, string[]> = {
-  precision: ['tp', 'tn'], // TP identifies correct, TN identifies incorrect (FP)
+  precision: ['tp', 'fp'],
+  recall: ['tp', 'fn'],
+  specificity: ['tn', 'fp'],
+  accuracy: ['tp', 'tn', 'fp', 'fn'],
+  f1: ['tp', 'fp', 'fn'],
+};
+
+// Get available metrics for a given evaluation mode
+const getAvailableMetrics = (evaluationMode: 'tp_only' | 'full_matrix'): readonly MetricName[] => {
+  return evaluationMode === 'tp_only' ? VALID_METRICS_TP_ONLY : VALID_METRICS_FULL_MATRIX;
 };
 
 export default function RubricTraitEditor() {
@@ -80,11 +88,10 @@ export default function RubricTraitEditor() {
         const convertedTrait: MetricRubricTrait = {
           name: manualTrait.name,
           description: manualTrait.description || '',
-          metrics: [],
+          evaluation_mode: 'tp_only',
+          metrics: ['precision'],
           tp_instructions: [],
           tn_instructions: [],
-          fp_instructions: [],
-          fn_instructions: [],
           repeated_extraction: true,
         };
 
@@ -175,11 +182,10 @@ export default function RubricTraitEditor() {
         const convertedTrait: MetricRubricTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
-          metrics: [],
+          evaluation_mode: 'tp_only',
+          metrics: ['precision'],
           tp_instructions: [],
           tn_instructions: [],
-          fp_instructions: [],
-          fn_instructions: [],
           repeated_extraction: true,
         };
 
@@ -271,6 +277,13 @@ export default function RubricTraitEditor() {
 
   // Check if a metric can be computed based on available instruction buckets
   const canComputeMetric = (trait: MetricRubricTrait, metric: MetricName): boolean => {
+    // First check if metric is available for the current evaluation mode
+    const availableMetrics = getAvailableMetrics(trait.evaluation_mode);
+    if (!availableMetrics.includes(metric)) {
+      return false;
+    }
+
+    // Then check if we have the required instructions
     const required = METRIC_REQUIREMENTS[metric];
     const hasTP = (trait.tp_instructions?.length || 0) > 0;
     const hasTN = (trait.tn_instructions?.length || 0) > 0;
@@ -278,9 +291,32 @@ export default function RubricTraitEditor() {
     const available: Record<string, boolean> = {
       tp: hasTP,
       tn: hasTN,
+      fp: true, // FP is always computable (TP-only: extra content, full_matrix: TN present)
+      fn: hasTP, // FN requires TP instructions (missing TPs)
     };
 
     return required.every((bucket) => available[bucket]);
+  };
+
+  const handleEvaluationModeChange = (index: number, mode: 'tp_only' | 'full_matrix') => {
+    if (!currentRubric?.metric_traits || index < 0 || index >= currentRubric.metric_traits.length) return;
+
+    const currentTrait = currentRubric.metric_traits[index];
+
+    // Filter metrics to only keep those valid for the new mode
+    const availableMetrics = getAvailableMetrics(mode);
+    const validMetrics = currentTrait.metrics.filter((m) => availableMetrics.includes(m as MetricName));
+
+    // If no metrics remain valid, default to precision
+    const newMetrics = validMetrics.length > 0 ? validMetrics : ['precision'];
+
+    const updatedTrait: MetricRubricTrait = {
+      ...currentTrait,
+      evaluation_mode: mode,
+      metrics: newMetrics,
+    };
+
+    updateMetricTrait(index, updatedTrait);
   };
 
   const handleSaveRubric = async () => {
@@ -796,13 +832,46 @@ export default function RubricTraitEditor() {
               </div>
             </div>
 
+            {/* Evaluation Mode Selector */}
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Evaluation Mode
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`eval-mode-${index}`}
+                    value="tp_only"
+                    checked={trait.evaluation_mode === 'tp_only'}
+                    onChange={() => handleEvaluationModeChange(index, 'tp_only')}
+                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">TP-only (Precision, Recall, F1)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`eval-mode-${index}`}
+                    value="full_matrix"
+                    checked={trait.evaluation_mode === 'full_matrix'}
+                    onChange={() => handleEvaluationModeChange(index, 'full_matrix')}
+                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">
+                    Full Matrix (All metrics including Specificity, Accuracy)
+                  </span>
+                </label>
+              </div>
+            </div>
+
             {/* Metric Selection */}
             <div className="mt-4">
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Metrics to Compute
               </label>
               <div className="flex flex-wrap gap-3">
-                {VALID_METRICS.map((metric) => {
+                {getAvailableMetrics(trait.evaluation_mode).map((metric) => {
                   const isSelected = (trait.metrics || []).includes(metric);
                   const canCompute = canComputeMetric(trait, metric);
 
@@ -840,7 +909,7 @@ export default function RubricTraitEditor() {
             </div>
 
             {/* Instruction Buckets */}
-            <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className={`mt-4 grid ${trait.evaluation_mode === 'tp_only' ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
               {/* True Positives (Correct Extractions) */}
               <div>
                 <label
@@ -861,25 +930,27 @@ export default function RubricTraitEditor() {
                 />
               </div>
 
-              {/* True Negatives (Incorrect Extractions = FP) */}
-              <div>
-                <label
-                  htmlFor={`metric-tn-${index}`}
-                  className="block text-xs font-medium text-red-700 dark:text-red-400 mb-1"
-                >
-                  Incorrect Extractions (FP) - What SHOULD NOT be extracted
-                </label>
-                <textarea
-                  id={`metric-tn-${index}`}
-                  value={(trait.tn_instructions || []).join('\n')}
-                  onChange={(e) => handleInstructionChange(index, 'tn', e.target.value)}
-                  className="w-full px-3 py-2 text-sm font-mono border border-red-300 dark:border-red-700 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                  placeholder="One instruction per line&#10;e.g., mentions side effects&#10;     off-topic information"
-                  rows={4}
-                />
-              </div>
+              {/* True Negatives (Incorrect Extractions = FP) - Only show in full_matrix mode */}
+              {trait.evaluation_mode === 'full_matrix' && (
+                <div>
+                  <label
+                    htmlFor={`metric-tn-${index}`}
+                    className="block text-xs font-medium text-red-700 dark:text-red-400 mb-1"
+                  >
+                    Incorrect Extractions (TN) - What SHOULD NOT be extracted
+                  </label>
+                  <textarea
+                    id={`metric-tn-${index}`}
+                    value={(trait.tn_instructions || []).join('\n')}
+                    onChange={(e) => handleInstructionChange(index, 'tn', e.target.value)}
+                    className="w-full px-3 py-2 text-sm font-mono border border-red-300 dark:border-red-700 rounded-md
+                               bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                               focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                    placeholder="One instruction per line&#10;e.g., mentions side effects&#10;     off-topic information"
+                    rows={4}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Repeated Extraction Toggle */}
