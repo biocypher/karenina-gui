@@ -6,6 +6,19 @@ import { RubricTrait, TraitKind, Rubric, ManualRubricTrait, MetricRubricTrait } 
 
 type TraitType = 'boolean' | 'score' | 'manual' | 'metric';
 
+// Valid metrics for metric traits
+const VALID_METRICS = ['precision', 'recall', 'specificity', 'accuracy', 'f1'] as const;
+type MetricName = (typeof VALID_METRICS)[number];
+
+// Metric requirements (which instruction buckets are needed)
+const METRIC_REQUIREMENTS: Record<MetricName, string[]> = {
+  precision: ['tp', 'fp'],
+  recall: ['tp', 'fn'],
+  specificity: ['tn', 'fp'],
+  accuracy: ['tp', 'tn', 'fp', 'fn'],
+  f1: ['tp', 'fp', 'fn'],
+};
+
 interface QuestionRubricEditorProps {
   questionId: string;
 }
@@ -277,9 +290,77 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     setLastError(null);
   };
 
+  const handleMetricTraitChange = (
+    index: number,
+    field: keyof MetricRubricTrait,
+    value: string | string[] | boolean
+  ) => {
+    if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
+
+    const currentTrait = questionRubric.metric_traits[index];
+    const updatedTrait: MetricRubricTrait = { ...currentTrait, [field]: value };
+
+    const updatedMetricTraits = [...questionRubric.metric_traits];
+    updatedMetricTraits[index] = updatedTrait;
+
+    const updatedRubric = { ...questionRubric, metric_traits: updatedMetricTraits };
+    setQuestionRubricState(updatedRubric);
+    setQuestionRubric(questionId, updatedRubric);
+    setLastError(null);
+  };
+
+  const handleMetricToggle = (index: number, metric: MetricName) => {
+    if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
+
+    const currentTrait = questionRubric.metric_traits[index];
+    const currentMetrics = currentTrait.metrics || [];
+
+    const updatedMetrics = currentMetrics.includes(metric)
+      ? currentMetrics.filter((m) => m !== metric)
+      : [...currentMetrics, metric];
+
+    handleMetricTraitChange(index, 'metrics', updatedMetrics);
+  };
+
+  const handleInstructionChange = (index: number, bucket: 'tp' | 'tn' | 'fp' | 'fn', value: string) => {
+    if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
+
+    const instructions = value.split('\n').filter((line) => line.trim() !== '');
+    const fieldName = `${bucket}_instructions` as keyof MetricRubricTrait;
+    handleMetricTraitChange(index, fieldName, instructions);
+  };
+
+  const canComputeMetric = (trait: MetricRubricTrait, metric: MetricName): boolean => {
+    const required = METRIC_REQUIREMENTS[metric];
+    const hasTP = (trait.tp_instructions?.length || 0) > 0;
+    const hasTN = (trait.tn_instructions?.length || 0) > 0;
+    const hasFP = (trait.fp_instructions?.length || 0) > 0;
+    const hasFN = (trait.fn_instructions?.length || 0) > 0;
+
+    const available: Record<string, boolean> = {
+      tp: hasTP,
+      tn: hasTN,
+      fp: hasFP,
+      fn: hasFN,
+    };
+
+    return required.every((bucket) => available[bucket]);
+  };
+
+  const handleRemoveMetricTrait = (index: number) => {
+    if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
+
+    const updatedMetricTraits = questionRubric.metric_traits.filter((_, i) => i !== index);
+    const updatedRubric = { ...questionRubric, metric_traits: updatedMetricTraits };
+
+    setQuestionRubricState(updatedRubric);
+    setQuestionRubric(questionId, updatedRubric);
+    setLastError(null);
+  };
+
   const handleClearRubric = () => {
     clearQuestionRubric(questionId);
-    setQuestionRubricState({ traits: [], manual_traits: [] });
+    setQuestionRubricState({ traits: [], manual_traits: [], metric_traits: [] });
     setLastError(null);
   };
 
@@ -701,6 +782,244 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Metric (Confusion Matrix) Traits */}
+        {(questionRubric.metric_traits || []).map((trait, index) => (
+          <div
+            key={`metric-${index}`}
+            className="bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+          >
+            <div className="grid grid-cols-12 gap-4 items-start">
+              {/* Trait Name */}
+              <div className="col-span-3">
+                <label
+                  htmlFor={`q-metric-trait-name-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Trait Name
+                </label>
+                <input
+                  id={`q-metric-trait-name-${index}`}
+                  type="text"
+                  value={trait.name}
+                  onChange={(e) => handleMetricTraitChange(index, 'name', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="e.g., Diagnosis Accuracy"
+                />
+              </div>
+
+              {/* Trait Type Selector */}
+              <div className="col-span-2">
+                <label
+                  htmlFor={`q-metric-trait-type-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Trait Type
+                </label>
+                <div className="relative">
+                  <select
+                    id={`q-metric-trait-type-${index}`}
+                    value="metric"
+                    onChange={() => {
+                      // For metric traits, we need a different approach since handleTraitTypeChange expects isManual boolean
+                      // For now, let them convert via the dropdowns in LLM/manual sections
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                               bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                               focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none pr-8
+                               hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
+                    aria-label="Trait type"
+                  >
+                    <option value="boolean">Binary</option>
+                    <option value="score">Score</option>
+                    <option value="manual">Manual (Regex)</option>
+                    <option value="metric">Metric (Confusion Matrix)</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="col-span-6">
+                <label
+                  htmlFor={`q-metric-trait-description-${index}`}
+                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Trait Description
+                </label>
+                <input
+                  id={`q-metric-trait-description-${index}`}
+                  type="text"
+                  value={trait.description || ''}
+                  onChange={(e) => handleMetricTraitChange(index, 'description', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="What should be evaluated for this trait?"
+                />
+              </div>
+
+              {/* Delete Button */}
+              <div className="col-span-1 flex justify-end mt-6">
+                <button
+                  onClick={() => handleRemoveMetricTrait(index)}
+                  className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
+                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                  title="Delete metric trait"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Metric Selection */}
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Metrics to Compute
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {VALID_METRICS.map((metric) => {
+                  const isSelected = (trait.metrics || []).includes(metric);
+                  const canCompute = canComputeMetric(trait, metric);
+
+                  return (
+                    <label
+                      key={metric}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors cursor-pointer
+                        ${
+                          isSelected
+                            ? canCompute
+                              ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700'
+                              : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:border-indigo-300'
+                        }`}
+                      title={
+                        isSelected && !canCompute
+                          ? `Missing required buckets: ${METRIC_REQUIREMENTS[metric].join(', ')}`
+                          : ''
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleMetricToggle(index, metric)}
+                        className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                      />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">
+                        {metric}
+                      </span>
+                      {isSelected && !canCompute && <span className="text-xs text-red-600 dark:text-red-400">⚠️</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Instruction Buckets */}
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              {/* True Positives */}
+              <div>
+                <label
+                  htmlFor={`q-metric-tp-${index}`}
+                  className="block text-xs font-medium text-green-700 dark:text-green-400 mb-1"
+                >
+                  True Positives (TP) - Correct Matches
+                </label>
+                <textarea
+                  id={`q-metric-tp-${index}`}
+                  value={(trait.tp_instructions || []).join('\n')}
+                  onChange={(e) => handleInstructionChange(index, 'tp', e.target.value)}
+                  className="w-full px-3 py-2 text-sm font-mono border border-green-300 dark:border-green-700 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  placeholder="One instruction per line"
+                  rows={3}
+                />
+              </div>
+
+              {/* False Positives */}
+              <div>
+                <label
+                  htmlFor={`q-metric-fp-${index}`}
+                  className="block text-xs font-medium text-red-700 dark:text-red-400 mb-1"
+                >
+                  False Positives (FP) - Incorrect Matches
+                </label>
+                <textarea
+                  id={`q-metric-fp-${index}`}
+                  value={(trait.fp_instructions || []).join('\n')}
+                  onChange={(e) => handleInstructionChange(index, 'fp', e.target.value)}
+                  className="w-full px-3 py-2 text-sm font-mono border border-red-300 dark:border-red-700 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  placeholder="One instruction per line"
+                  rows={3}
+                />
+              </div>
+
+              {/* True Negatives */}
+              <div>
+                <label
+                  htmlFor={`q-metric-tn-${index}`}
+                  className="block text-xs font-medium text-blue-700 dark:text-blue-400 mb-1"
+                >
+                  True Negatives (TN) - Correct Non-Matches
+                </label>
+                <textarea
+                  id={`q-metric-tn-${index}`}
+                  value={(trait.tn_instructions || []).join('\n')}
+                  onChange={(e) => handleInstructionChange(index, 'tn', e.target.value)}
+                  className="w-full px-3 py-2 text-sm font-mono border border-blue-300 dark:border-blue-700 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="One instruction per line"
+                  rows={3}
+                />
+              </div>
+
+              {/* False Negatives */}
+              <div>
+                <label
+                  htmlFor={`q-metric-fn-${index}`}
+                  className="block text-xs font-medium text-orange-700 dark:text-orange-400 mb-1"
+                >
+                  False Negatives (FN) - Missed Matches
+                </label>
+                <textarea
+                  id={`q-metric-fn-${index}`}
+                  value={(trait.fn_instructions || []).join('\n')}
+                  onChange={(e) => handleInstructionChange(index, 'fn', e.target.value)}
+                  className="w-full px-3 py-2 text-sm font-mono border border-orange-300 dark:border-orange-700 rounded-md
+                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
+                             focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                  placeholder="One instruction per line"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Repeated Extraction Toggle */}
+            <div className="mt-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={trait.repeated_extraction ?? true}
+                  onChange={(e) => handleMetricTraitChange(index, 'repeated_extraction', e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-300">
+                  Deduplicate Excerpts (Remove duplicate text across buckets)
+                </span>
+              </label>
             </div>
           </div>
         ))}
