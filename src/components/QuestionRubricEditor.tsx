@@ -7,16 +7,14 @@ import { RubricTrait, TraitKind, Rubric, ManualRubricTrait, MetricRubricTrait } 
 type TraitType = 'boolean' | 'score' | 'manual' | 'metric';
 
 // Valid metrics for metric traits
-const VALID_METRICS = ['precision', 'recall', 'specificity', 'accuracy', 'f1'] as const;
+// With TP (correct extractions) and TN (incorrect extractions) instructions,
+// we can compute precision: TP / (TP + FP), where FP = excerpts matching TN
+const VALID_METRICS = ['precision'] as const;
 type MetricName = (typeof VALID_METRICS)[number];
 
 // Metric requirements (which instruction buckets are needed)
 const METRIC_REQUIREMENTS: Record<MetricName, string[]> = {
-  precision: ['tp', 'fp'],
-  recall: ['tp', 'fn'],
-  specificity: ['tn', 'fp'],
-  accuracy: ['tp', 'tn', 'fp', 'fn'],
-  f1: ['tp', 'fp', 'fn'],
+  precision: ['tp', 'tn'], // TP identifies correct, TN identifies incorrect (FP)
 };
 
 interface QuestionRubricEditorProps {
@@ -97,11 +95,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
         const convertedTrait: MetricRubricTrait = {
           name: manualTrait.name,
           description: manualTrait.description || '',
-          metrics: [],
+          metrics: ['precision'], // Default to precision
           tp_instructions: [],
           tn_instructions: [],
-          fp_instructions: [],
-          fn_instructions: [],
           repeated_extraction: true,
         };
 
@@ -170,11 +166,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
         const convertedTrait: MetricRubricTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
-          metrics: [],
+          metrics: ['precision'], // Default to precision
           tp_instructions: [],
           tn_instructions: [],
-          fp_instructions: [],
-          fn_instructions: [],
           repeated_extraction: true,
         };
 
@@ -322,7 +316,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     handleMetricTraitChange(index, 'metrics', updatedMetrics);
   };
 
-  const handleInstructionChange = (index: number, bucket: 'tp' | 'tn' | 'fp' | 'fn', value: string) => {
+  const handleInstructionChange = (index: number, bucket: 'tp' | 'tn', value: string) => {
     if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
 
     // Split by newlines but keep empty lines to allow multi-line editing
@@ -336,14 +330,10 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     const required = METRIC_REQUIREMENTS[metric];
     const hasTP = (trait.tp_instructions?.length || 0) > 0;
     const hasTN = (trait.tn_instructions?.length || 0) > 0;
-    const hasFP = (trait.fp_instructions?.length || 0) > 0;
-    const hasFN = (trait.fn_instructions?.length || 0) > 0;
 
     const available: Record<string, boolean> = {
       tp: hasTP,
       tn: hasTN,
-      fp: hasFP,
-      fn: hasFN,
     };
 
     return required.every((bucket) => available[bucket]);
@@ -928,13 +918,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
             {/* Instruction Buckets */}
             <div className="mt-4 grid grid-cols-2 gap-4">
-              {/* True Positives */}
+              {/* True Positives (Correct Extractions) */}
               <div>
                 <label
                   htmlFor={`q-metric-tp-${index}`}
                   className="block text-xs font-medium text-green-700 dark:text-green-400 mb-1"
                 >
-                  True Positives (TP) - Correct Matches
+                  Correct Extractions (TP) - What SHOULD be extracted
                 </label>
                 <textarea
                   id={`q-metric-tp-${index}`}
@@ -943,68 +933,28 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                   className="w-full px-3 py-2 text-sm font-mono border border-green-300 dark:border-green-700 rounded-md
                              bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
                              focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                  placeholder="One instruction per line"
-                  rows={3}
+                  placeholder="One instruction per line&#10;e.g., mentions drug mechanism&#10;     includes dosage information"
+                  rows={4}
                 />
               </div>
 
-              {/* False Positives */}
-              <div>
-                <label
-                  htmlFor={`q-metric-fp-${index}`}
-                  className="block text-xs font-medium text-red-700 dark:text-red-400 mb-1"
-                >
-                  False Positives (FP) - Incorrect Matches
-                </label>
-                <textarea
-                  id={`q-metric-fp-${index}`}
-                  value={(trait.fp_instructions || []).join('\n')}
-                  onChange={(e) => handleInstructionChange(index, 'fp', e.target.value)}
-                  className="w-full px-3 py-2 text-sm font-mono border border-red-300 dark:border-red-700 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                  placeholder="One instruction per line"
-                  rows={3}
-                />
-              </div>
-
-              {/* True Negatives */}
+              {/* True Negatives (Incorrect Extractions = FP) */}
               <div>
                 <label
                   htmlFor={`q-metric-tn-${index}`}
-                  className="block text-xs font-medium text-blue-700 dark:text-blue-400 mb-1"
+                  className="block text-xs font-medium text-red-700 dark:text-red-400 mb-1"
                 >
-                  True Negatives (TN) - Correct Non-Matches
+                  Incorrect Extractions (FP) - What SHOULD NOT be extracted
                 </label>
                 <textarea
                   id={`q-metric-tn-${index}`}
                   value={(trait.tn_instructions || []).join('\n')}
                   onChange={(e) => handleInstructionChange(index, 'tn', e.target.value)}
-                  className="w-full px-3 py-2 text-sm font-mono border border-blue-300 dark:border-blue-700 rounded-md
+                  className="w-full px-3 py-2 text-sm font-mono border border-red-300 dark:border-red-700 rounded-md
                              bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="One instruction per line"
-                  rows={3}
-                />
-              </div>
-
-              {/* False Negatives */}
-              <div>
-                <label
-                  htmlFor={`q-metric-fn-${index}`}
-                  className="block text-xs font-medium text-orange-700 dark:text-orange-400 mb-1"
-                >
-                  False Negatives (FN) - Missed Matches
-                </label>
-                <textarea
-                  id={`q-metric-fn-${index}`}
-                  value={(trait.fn_instructions || []).join('\n')}
-                  onChange={(e) => handleInstructionChange(index, 'fn', e.target.value)}
-                  className="w-full px-3 py-2 text-sm font-mono border border-orange-300 dark:border-orange-700 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                  placeholder="One instruction per line"
-                  rows={3}
+                             focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  placeholder="One instruction per line&#10;e.g., mentions side effects&#10;     off-topic information"
+                  rows={4}
                 />
               </div>
             </div>

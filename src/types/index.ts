@@ -404,11 +404,9 @@ export interface ManualRubricTrait {
 export interface MetricRubricTrait {
   name: string;
   description?: string;
-  metrics: string[]; // e.g., ['precision', 'recall', 'f1']
-  tp_instructions: string[]; // True Positive instructions
-  tn_instructions: string[]; // True Negative instructions
-  fp_instructions: string[]; // False Positive instructions
-  fn_instructions: string[]; // False Negative instructions
+  metrics: string[]; // Currently only 'precision' is supported
+  tp_instructions: string[]; // Correct extractions - what SHOULD be in the answer
+  tn_instructions: string[]; // Incorrect extractions (FP) - what SHOULD NOT be in the answer
   repeated_extraction?: boolean; // Whether to deduplicate excerpts (default: true)
 }
 
