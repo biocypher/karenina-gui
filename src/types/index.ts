@@ -278,6 +278,7 @@ export interface VerificationConfig {
   parsing_models: ModelConfiguration[];
   replicate_count: number;
   rubric_enabled?: boolean;
+  evaluation_mode?: 'template_only' | 'template_and_rubric' | 'rubric_only'; // Evaluation mode selection
   rubric_trait_names?: string[];
   abstention_enabled?: boolean; // Enable abstention/refusal detection
   few_shot_enabled?: boolean;
@@ -293,8 +294,11 @@ export interface VerificationResult {
   raw_llm_response: string;
   parsed_gt_response?: Record<string, unknown>; // Ground truth from 'correct' field
   parsed_llm_response?: Record<string, unknown>; // LLM extracted fields (excluding 'id' and 'correct')
-  verify_result?: VerificationOutcome;
+  // Evaluation mode tracking
+  template_verification_performed?: boolean; // Whether template verification was executed
+  verify_result?: VerificationOutcome | null; // Template verification result (null if template verification skipped in rubric_only mode)
   verify_granular_result?: GranularVerificationResult;
+  rubric_evaluation_performed?: boolean; // Whether rubric evaluation was executed
   verify_rubric?: Record<string, number | boolean>;
   evaluation_rubric?: Rubric; // The merged rubric used for evaluation (global + question-specific)
   keywords?: string[]; // Keywords associated with the question
