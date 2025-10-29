@@ -347,6 +347,21 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         benchmark_name: metadata?.name || undefined, // Include benchmark name for database auto-save
       };
 
+      // DEBUG: Log verification request details
+      console.log('🔍 Verification Request Debug:');
+      console.log('  Config:', JSON.stringify(config, null, 2));
+      console.log('  Rubric Enabled?', config.rubric_enabled);
+
+      // Log first template's rubric (if any) to verify metric_traits are included
+      if (templatesData.length > 0 && templatesData[0].question_rubric) {
+        console.log('  Sample Question Rubric:', JSON.stringify(templatesData[0].question_rubric, null, 2));
+        console.log('  Has Metric Traits?', templatesData[0].question_rubric.metric_traits?.length > 0);
+      } else {
+        console.log('  No question rubrics found in templates');
+      }
+
+      console.log('  Complete Request Payload:', JSON.stringify(requestPayload, null, 2));
+
       // Log database auto-save configuration
       if (storageUrl && metadata?.name) {
         console.log('🔗 Database auto-save enabled:', { storageUrl, benchmarkName: metadata.name });

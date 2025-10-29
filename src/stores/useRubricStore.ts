@@ -3,6 +3,7 @@ import {
   Rubric,
   RubricTrait,
   ManualRubricTrait,
+  MetricRubricTrait,
   RubricTraitGenerationRequest,
   RubricTraitGenerationResponse,
   RubricTraitGenerationConfig,
@@ -38,6 +39,11 @@ interface RubricState {
   updateManualTrait: (index: number, trait: ManualRubricTrait) => void;
   removeManualTrait: (index: number) => void;
 
+  // Metric trait actions
+  addMetricTrait: (trait: MetricRubricTrait) => void;
+  updateMetricTrait: (index: number, trait: MetricRubricTrait) => void;
+  removeMetricTrait: (index: number) => void;
+
   // Configuration actions
   setConfig: (config: RubricTraitGenerationConfig) => void;
 
@@ -56,6 +62,7 @@ interface RubricState {
 const defaultRubric: Rubric = {
   traits: [],
   manual_traits: [],
+  metric_traits: [],
 };
 
 export const useRubricStore = create<RubricState>((set, get) => ({
@@ -82,10 +89,11 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     const { currentRubric } = get();
     const rubric = currentRubric || defaultRubric;
 
-    // Check for duplicate names across both LLM and manual traits
+    // Check for duplicate names across all trait types
     const llmNames = rubric.traits.map((t) => t.name.toLowerCase());
     const manualNames = (rubric.manual_traits || []).map((t) => t.name.toLowerCase());
-    const existingNames = [...llmNames, ...manualNames];
+    const metricNames = (rubric.metric_traits || []).map((t) => t.name.toLowerCase());
+    const existingNames = [...llmNames, ...manualNames, ...metricNames];
 
     if (existingNames.includes(trait.name.toLowerCase())) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
@@ -108,10 +116,11 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       return;
     }
 
-    // Check for duplicate names (excluding current trait, checking both LLM and manual traits)
+    // Check for duplicate names (excluding current trait, checking all trait types)
     const llmNames = currentRubric.traits.map((t, i) => (i !== index ? t.name.toLowerCase() : null)).filter(Boolean);
     const manualNames = (currentRubric.manual_traits || []).map((t) => t.name.toLowerCase());
-    const existingNames = [...llmNames, ...manualNames];
+    const metricNames = (currentRubric.metric_traits || []).map((t) => t.name.toLowerCase());
+    const existingNames = [...llmNames, ...manualNames, ...metricNames];
 
     if (existingNames.includes(trait.name.toLowerCase())) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
@@ -160,10 +169,11 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     const { currentRubric } = get();
     const rubric = currentRubric || defaultRubric;
 
-    // Check for duplicate names across both LLM and manual traits
+    // Check for duplicate names across all trait types
     const llmNames = rubric.traits.map((t) => t.name.toLowerCase());
     const manualNames = (rubric.manual_traits || []).map((t) => t.name.toLowerCase());
-    const existingNames = [...llmNames, ...manualNames];
+    const metricNames = (rubric.metric_traits || []).map((t) => t.name.toLowerCase());
+    const existingNames = [...llmNames, ...manualNames, ...metricNames];
 
     if (existingNames.includes(trait.name.toLowerCase())) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
@@ -186,12 +196,13 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       return;
     }
 
-    // Check for duplicate names (excluding current manual trait, checking both LLM and manual traits)
+    // Check for duplicate names (excluding current manual trait, checking all trait types)
     const llmNames = currentRubric.traits.map((t) => t.name.toLowerCase());
     const manualNames = currentRubric.manual_traits
       .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
       .filter(Boolean);
-    const existingNames = [...llmNames, ...manualNames];
+    const metricNames = (currentRubric.metric_traits || []).map((t) => t.name.toLowerCase());
+    const existingNames = [...llmNames, ...manualNames, ...metricNames];
 
     if (existingNames.includes(trait.name.toLowerCase())) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
@@ -217,6 +228,74 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     const updatedManualTraits = currentRubric.manual_traits.filter((_, i) => i !== index);
     set({
       currentRubric: { ...currentRubric, manual_traits: updatedManualTraits },
+      lastError: null,
+    });
+  },
+
+  // Metric trait actions
+  addMetricTrait: (trait) => {
+    const { currentRubric } = get();
+    const rubric = currentRubric || defaultRubric;
+
+    // Check for duplicate names across all trait types
+    const llmNames = rubric.traits.map((t) => t.name.toLowerCase());
+    const manualNames = (rubric.manual_traits || []).map((t) => t.name.toLowerCase());
+    const metricNames = (rubric.metric_traits || []).map((t) => t.name.toLowerCase());
+    const existingNames = [...llmNames, ...manualNames, ...metricNames];
+
+    if (existingNames.includes(trait.name.toLowerCase())) {
+      set({ lastError: `Trait with name "${trait.name}" already exists` });
+      return;
+    }
+
+    set({
+      currentRubric: {
+        ...rubric,
+        metric_traits: [...(rubric.metric_traits || []), trait],
+      },
+      lastError: null,
+    });
+  },
+
+  updateMetricTrait: (index, trait) => {
+    const { currentRubric } = get();
+    if (!currentRubric || !currentRubric.metric_traits || index < 0 || index >= currentRubric.metric_traits.length) {
+      set({ lastError: 'Invalid metric trait index' });
+      return;
+    }
+
+    // Check for duplicate names (excluding current metric trait, checking all trait types)
+    const llmNames = currentRubric.traits.map((t) => t.name.toLowerCase());
+    const manualNames = (currentRubric.manual_traits || []).map((t) => t.name.toLowerCase());
+    const metricNames = currentRubric.metric_traits
+      .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
+      .filter(Boolean);
+    const existingNames = [...llmNames, ...manualNames, ...metricNames];
+
+    if (existingNames.includes(trait.name.toLowerCase())) {
+      set({ lastError: `Trait with name "${trait.name}" already exists` });
+      return;
+    }
+
+    const updatedMetricTraits = [...currentRubric.metric_traits];
+    updatedMetricTraits[index] = trait;
+
+    set({
+      currentRubric: { ...currentRubric, metric_traits: updatedMetricTraits },
+      lastError: null,
+    });
+  },
+
+  removeMetricTrait: (index) => {
+    const { currentRubric } = get();
+    if (!currentRubric || !currentRubric.metric_traits || index < 0 || index >= currentRubric.metric_traits.length) {
+      set({ lastError: 'Invalid metric trait index' });
+      return;
+    }
+
+    const updatedMetricTraits = currentRubric.metric_traits.filter((_, i) => i !== index);
+    set({
+      currentRubric: { ...currentRubric, metric_traits: updatedMetricTraits },
       lastError: null,
     });
   },
@@ -302,9 +381,13 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       return;
     }
 
-    // Validate that we have at least one trait (LLM or manual)
-    if (!currentRubric.traits.length && !(currentRubric.manual_traits && currentRubric.manual_traits.length)) {
-      set({ lastError: 'Rubric must have at least one trait' });
+    // Validate that we have at least one trait (LLM, manual, or metric)
+    const hasTraits = currentRubric.traits.length > 0;
+    const hasManualTraits = currentRubric.manual_traits && currentRubric.manual_traits.length > 0;
+    const hasMetricTraits = currentRubric.metric_traits && currentRubric.metric_traits.length > 0;
+
+    if (!hasTraits && !hasManualTraits && !hasMetricTraits) {
+      set({ lastError: 'Rubric must have at least one trait (LLM, manual, or metric)' });
       return;
     }
 

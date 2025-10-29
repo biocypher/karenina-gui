@@ -32,10 +32,16 @@ interface BenchmarkTableProps {
 
 const columnHelper = createColumnHelper<VerificationResult>();
 
-const RubricCell: React.FC<{ rubricResult: Record<string, number | boolean> | null }> = ({ rubricResult }) => {
+const RubricCell: React.FC<{
+  rubricResult: Record<string, number | boolean> | null;
+  metricTraitMetrics?: Record<string, Record<string, number>>;
+}> = ({ rubricResult, metricTraitMetrics }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (!rubricResult) {
+  const hasLLMTraits = rubricResult && Object.keys(rubricResult).length > 0;
+  const hasMetricTraits = metricTraitMetrics && Object.keys(metricTraitMetrics).length > 0;
+
+  if (!hasLLMTraits && !hasMetricTraits) {
     return (
       <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
         N/A
@@ -43,12 +49,14 @@ const RubricCell: React.FC<{ rubricResult: Record<string, number | boolean> | nu
     );
   }
 
-  const traits = Object.entries(rubricResult);
+  const traits = hasLLMTraits ? Object.entries(rubricResult!) : [];
+  const metricTraits = hasMetricTraits ? Object.entries(metricTraitMetrics!) : [];
+
   const passedTraits = traits.filter(([, value]) => (typeof value === 'boolean' ? value : value && value >= 3)).length;
-  const totalTraits = traits.length;
+  const totalTraits = traits.length + metricTraits.length;
 
   const summary = `${passedTraits}/${totalTraits}`;
-  const hasGoodResults = passedTraits >= totalTraits * 0.5;
+  const hasGoodResults = totalTraits > 0 && passedTraits >= totalTraits * 0.5;
 
   return (
     <div className="space-y-1">
@@ -85,6 +93,25 @@ const RubricCell: React.FC<{ rubricResult: Record<string, number | boolean> | nu
               >
                 {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value || 'N/A'}
               </span>
+            </div>
+          ))}
+          {metricTraits.map(([name, metrics]) => (
+            <div key={`metric-${name}`} className="bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded space-y-1">
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-slate-700 dark:text-slate-300">{name}</span>
+                <span className="text-xs text-purple-600 dark:text-purple-400">(Metric)</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(metrics).map(([metricName, value]) => (
+                  <span
+                    key={metricName}
+                    className="text-xs text-purple-600 dark:text-purple-400"
+                    title={`${metricName}: ${(value * 100).toFixed(1)}%`}
+                  >
+                    {metricName}: {(value * 100).toFixed(1)}%
+                  </span>
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -495,16 +522,30 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
         filterFn: 'equals',
       }),
-      columnHelper.accessor('verify_rubric', {
+      columnHelper.display({
+        id: 'rubric',
         header: 'Rubric',
-        cell: (info) => <RubricCell rubricResult={info.getValue()} />,
+        cell: (info) => (
+          <RubricCell
+            rubricResult={info.row.original.verify_rubric}
+            metricTraitMetrics={info.row.original.metric_trait_metrics}
+          />
+        ),
         filterFn: (row, columnId, value) => {
-          const rubricResult = row.getValue(columnId) as Record<string, number | boolean> | null;
-          if (!rubricResult) return value === 'none';
+          const rubricResult = row.original.verify_rubric;
+          const metricTraitMetrics = row.original.metric_trait_metrics;
 
-          const traits = Object.entries(rubricResult);
+          const hasLLMTraits = rubricResult && Object.keys(rubricResult).length > 0;
+          const hasMetricTraits = metricTraitMetrics && Object.keys(metricTraitMetrics).length > 0;
+
+          if (!hasLLMTraits && !hasMetricTraits) return value === 'none';
+
+          const traits = hasLLMTraits ? Object.entries(rubricResult) : [];
+          const metricTraits = hasMetricTraits ? Object.entries(metricTraitMetrics) : [];
+
           const passedTraits = traits.filter(([, val]) => (typeof val === 'boolean' ? val : val && val >= 3)).length;
-          const successRate = passedTraits / traits.length;
+          const totalTraits = traits.length + metricTraits.length;
+          const successRate = totalTraits > 0 ? passedTraits / totalTraits : 0;
 
           if (value === 'passed') return successRate >= 0.5;
           if (value === 'failed') return successRate < 0.5;

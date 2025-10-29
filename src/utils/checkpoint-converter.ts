@@ -8,6 +8,7 @@ import {
   CheckpointItem,
   RubricTrait,
   ManualRubricTrait,
+  MetricRubricTrait,
   Rubric,
   CheckpointConversionMetadata,
   SchemaOrgPerson,
@@ -305,6 +306,15 @@ export function v2ToJsonLd(
             value: JSON.stringify(item.question_rubric.manual_traits),
           });
         }
+
+        // Add question-specific metric_traits to additionalProperty if present
+        if (item.question_rubric.metric_traits && item.question_rubric.metric_traits.length > 0) {
+          question.additionalProperty.push({
+            '@type': 'PropertyValue' as const,
+            name: 'question_metric_rubric_traits',
+            value: JSON.stringify(item.question_rubric.metric_traits),
+          });
+        }
       }
 
       if (ratings.length > 0) {
@@ -370,6 +380,15 @@ export function v2ToJsonLd(
         '@type': 'PropertyValue',
         name: 'global_manual_rubric_traits',
         value: JSON.stringify(checkpoint.global_rubric.manual_traits),
+      });
+    }
+
+    // Add global metric_traits to additionalProperties if present
+    if (checkpoint.global_rubric?.metric_traits && checkpoint.global_rubric.metric_traits.length > 0) {
+      additionalProperties.push({
+        '@type': 'PropertyValue',
+        name: 'global_metric_rubric_traits',
+        value: JSON.stringify(checkpoint.global_rubric.metric_traits),
       });
     }
 
@@ -462,6 +481,29 @@ export function jsonLdToV2(
       }
     }
 
+    // Extract global metric_traits from additionalProperty
+    let globalMetricTraits: MetricRubricTrait[] | undefined;
+    const globalMetricTraitsProp = jsonLdCheckpoint.additionalProperty?.find(
+      (prop) => prop.name === 'global_metric_rubric_traits'
+    );
+    if (globalMetricTraitsProp && typeof globalMetricTraitsProp.value === 'string') {
+      try {
+        globalMetricTraits = JSON.parse(globalMetricTraitsProp.value);
+      } catch {
+        // Invalid JSON, ignore metric traits
+      }
+    }
+
+    // Merge metric_traits into global rubric
+    if (globalMetricTraits && globalMetricTraits.length > 0) {
+      if (globalRubric) {
+        globalRubric.metric_traits = globalMetricTraits;
+      } else {
+        // Create rubric with only metric traits
+        globalRubric = { traits: [], metric_traits: globalMetricTraits };
+      }
+    }
+
     // Convert DataFeedItem objects back to CheckpointItem
     const checkpoint: { [key: string]: CheckpointItem } = {};
 
@@ -549,6 +591,26 @@ export function jsonLdToV2(
           }
         } catch {
           // Invalid JSON, ignore manual traits
+        }
+      }
+
+      // Extract question-specific metric_traits from additionalProperty
+      const questionMetricTraitsProp = question.additionalProperty?.find(
+        (prop) => prop.name === 'question_metric_rubric_traits'
+      );
+      if (questionMetricTraitsProp && typeof questionMetricTraitsProp.value === 'string') {
+        try {
+          const metricTraits: MetricRubricTrait[] = JSON.parse(questionMetricTraitsProp.value);
+          if (metricTraits.length > 0) {
+            if (questionRubric) {
+              questionRubric.metric_traits = metricTraits;
+            } else {
+              // Create rubric with only metric traits
+              questionRubric = { traits: [], metric_traits: metricTraits };
+            }
+          }
+        } catch {
+          // Invalid JSON, ignore metric traits
         }
       }
 
