@@ -25,6 +25,7 @@ interface ConfigurationPanelProps {
   isRunning: boolean;
   finishedTemplates?: Array<[string, unknown]>;
   rubricEnabled: boolean;
+  evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
   deepJudgmentEnabled: boolean;
@@ -40,6 +41,7 @@ interface ConfigurationPanelProps {
   onUpdateParsingModel: (id: string, updates: Partial<ModelConfiguration>) => void;
   onTogglePromptExpanded: (modelId: string) => void;
   onRubricEnabledChange: (enabled: boolean) => void;
+  onEvaluationModeChange: (mode: 'template_only' | 'template_and_rubric' | 'rubric_only') => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
   onAbstentionEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentEnabledChange: (enabled: boolean) => void;
@@ -59,6 +61,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   isRunning,
   finishedTemplates,
   rubricEnabled,
+  evaluationMode,
   correctnessEnabled,
   abstentionEnabled,
   deepJudgmentEnabled,
@@ -74,6 +77,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onUpdateParsingModel,
   onTogglePromptExpanded,
   onRubricEnabledChange,
+  onEvaluationModeChange,
   onCorrectnessEnabledChange,
   onAbstentionEnabledChange,
   onDeepJudgmentEnabledChange,
@@ -429,6 +433,32 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 (Qualitative evaluation using defined traits)
               </span>
             </label>
+
+            {/* Evaluation Mode Selector */}
+            <div className="ml-7 mt-2 space-y-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Evaluation Mode</label>
+              <select
+                value={evaluationMode}
+                onChange={(e) =>
+                  onEvaluationModeChange(e.target.value as 'template_only' | 'template_and_rubric' | 'rubric_only')
+                }
+                disabled={isRunning}
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              >
+                <option value="template_only">Template Only</option>
+                <option value="template_and_rubric" disabled={!rubricEnabled}>
+                  Template + Rubric {!rubricEnabled && '(requires rubric)'}
+                </option>
+                <option value="rubric_only" disabled={!rubricEnabled}>
+                  Rubric Only {!rubricEnabled && '(requires rubric)'}
+                </option>
+              </select>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {evaluationMode === 'template_only' && 'Verify responses against Pydantic template only (fastest)'}
+                {evaluationMode === 'template_and_rubric' && 'Verify template correctness + evaluate rubric quality'}
+                {evaluationMode === 'rubric_only' && 'Evaluate rubric quality only, skip template verification'}
+              </p>
+            </div>
 
             <label
               className="flex items-center space-x-3"
