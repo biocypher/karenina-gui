@@ -435,30 +435,63 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             </label>
 
             {/* Evaluation Mode Selector */}
-            <div className="ml-7 mt-2 space-y-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Evaluation Mode</label>
-              <select
-                value={evaluationMode}
-                onChange={(e) =>
-                  onEvaluationModeChange(e.target.value as 'template_only' | 'template_and_rubric' | 'rubric_only')
-                }
-                disabled={isRunning}
-                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-              >
-                <option value="template_only">Template Only</option>
-                <option value="template_and_rubric" disabled={!rubricEnabled}>
-                  Template + Rubric {!rubricEnabled && '(requires rubric)'}
-                </option>
-                <option value="rubric_only" disabled={!rubricEnabled}>
-                  Rubric Only {!rubricEnabled && '(requires rubric)'}
-                </option>
-              </select>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {evaluationMode === 'template_only' && 'Verify responses against Pydantic template only (fastest)'}
-                {evaluationMode === 'template_and_rubric' && 'Verify template correctness + evaluate rubric quality'}
-                {evaluationMode === 'rubric_only' && 'Evaluate rubric quality only, skip template verification'}
-              </p>
-            </div>
+            {rubricEnabled && (
+              <div className="ml-7 mt-2 space-y-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Evaluation Mode
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="evaluation-mode"
+                      value="template_only"
+                      checked={evaluationMode === 'template_only'}
+                      onChange={(e) =>
+                        onEvaluationModeChange(
+                          e.target.value as 'template_only' | 'template_and_rubric' | 'rubric_only'
+                        )
+                      }
+                      disabled={isRunning}
+                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Template Only</span>
+                  </label>
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="evaluation-mode"
+                      value="template_and_rubric"
+                      checked={evaluationMode === 'template_and_rubric'}
+                      onChange={(e) =>
+                        onEvaluationModeChange(
+                          e.target.value as 'template_only' | 'template_and_rubric' | 'rubric_only'
+                        )
+                      }
+                      disabled={isRunning}
+                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Template + Rubric</span>
+                  </label>
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="evaluation-mode"
+                      value="rubric_only"
+                      checked={evaluationMode === 'rubric_only'}
+                      onChange={(e) =>
+                        onEvaluationModeChange(
+                          e.target.value as 'template_only' | 'template_and_rubric' | 'rubric_only'
+                        )
+                      }
+                      disabled={isRunning}
+                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Rubric Only</span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             <label
               className="flex items-center space-x-3"
