@@ -763,8 +763,9 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               </tr>
                             </thead>
                             <tbody>
-                              {Object.entries(result.usage_metadata).map(
-                                ([stage, metadata]: [string, UsageMetadata]) => (
+                              {Object.entries(result.usage_metadata)
+                                .filter(([stage]) => stage.toLowerCase() !== 'total')
+                                .map(([stage, metadata]: [string, UsageMetadata]) => (
                                   <tr key={stage} className="border-b border-slate-100 dark:border-slate-600/50">
                                     <td className="py-2 px-3 text-slate-800 dark:text-slate-200 capitalize">
                                       {stage.replace(/_/g, ' ')}
@@ -782,8 +783,33 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                                       {metadata.model || 'N/A'}
                                     </td>
                                   </tr>
-                                )
-                              )}
+                                ))}
+                              {(() => {
+                                const totals = Object.entries(result.usage_metadata)
+                                  .filter(([stage]) => stage.toLowerCase() !== 'total')
+                                  .reduce(
+                                    (acc, [, metadata]) => ({
+                                      input_tokens: (acc.input_tokens || 0) + (metadata.input_tokens || 0),
+                                      output_tokens: (acc.output_tokens || 0) + (metadata.output_tokens || 0),
+                                      total_tokens: (acc.total_tokens || 0) + (metadata.total_tokens || 0),
+                                    }),
+                                    { input_tokens: 0, output_tokens: 0, total_tokens: 0 }
+                                  );
+                                return (
+                                  <tr className="border-t-2 border-slate-300 dark:border-slate-500 font-semibold">
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200">Total</td>
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200 text-right">
+                                      {totals.input_tokens.toLocaleString()}
+                                    </td>
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200 text-right">
+                                      {totals.output_tokens.toLocaleString()}
+                                    </td>
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200 text-right">
+                                      {totals.total_tokens.toLocaleString()}
+                                    </td>
+                                  </tr>
+                                );
+                              })()}
                             </tbody>
                           </table>
                         </div>
