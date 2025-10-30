@@ -491,6 +491,19 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         header: 'Verification',
         cell: (info) => {
           const value = info.getValue();
+          const row = info.row.original;
+          const templatePerformed = row.template_verification_performed;
+
+          // If template verification was not performed (rubric_only mode), show "Not evaluated"
+          if (templatePerformed === false) {
+            return (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                Not evaluated
+              </span>
+            );
+          }
+
+          // Template verification was performed, show result
           return (
             <span
               className={`inline-flex items-center px-2 py-1 rounded text-xs ${
@@ -525,12 +538,22 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       columnHelper.display({
         id: 'rubric',
         header: 'Rubric',
-        cell: (info) => (
-          <RubricCell
-            rubricResult={info.row.original.verify_rubric}
-            metricTraitMetrics={info.row.original.metric_trait_metrics}
-          />
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          const rubricPerformed = row.rubric_evaluation_performed;
+
+          // If rubric evaluation was not performed, show "Not evaluated"
+          if (rubricPerformed === false) {
+            return (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                Not evaluated
+              </span>
+            );
+          }
+
+          // Rubric evaluation was performed (or field not set - backward compatibility)
+          return <RubricCell rubricResult={row.verify_rubric} metricTraitMetrics={row.metric_trait_metrics} />;
+        },
         filterFn: (row, columnId, value) => {
           const rubricResult = row.original.verify_rubric;
           const metricTraitMetrics = row.original.metric_trait_metrics;

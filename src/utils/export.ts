@@ -16,8 +16,11 @@ export interface ExportableResult {
   raw_llm_response: string;
   parsed_gt_response?: Record<string, unknown>; // Ground truth from 'correct' field
   parsed_llm_response?: Record<string, unknown>; // LLM extracted fields (excluding 'id' and 'correct')
-  verify_result?: unknown;
+  // Evaluation mode tracking
+  template_verification_performed?: boolean; // Whether template verification was executed
+  verify_result?: unknown; // Template verification result (null if template verification skipped)
   verify_granular_result?: unknown;
+  rubric_evaluation_performed?: boolean; // Whether rubric evaluation was executed
   verify_rubric?: Record<string, number | boolean>;
   answering_model: string;
   parsing_model: string;
@@ -212,8 +215,10 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'raw_llm_response',
     'parsed_gt_answer',
     'parsed_llm_answer',
+    'template_verification_performed',
     'verify_result',
     'verify_granular_result',
+    'rubric_evaluation_performed',
     ...globalRubricHeaders,
     ...(questionSpecificTraits.length > 0 ? ['question_specific_rubrics'] : []),
     'rubric_summary',
@@ -309,9 +314,15 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       raw_llm_response: escapeCSVField(result.raw_llm_response),
       parsed_gt_answer: escapeCSVField(result.parsed_gt_response ? JSON.stringify(result.parsed_gt_response) : ''),
       parsed_llm_answer: escapeCSVField(result.parsed_llm_response ? JSON.stringify(result.parsed_llm_response) : ''),
+      template_verification_performed: escapeCSVField(
+        result.template_verification_performed !== undefined ? result.template_verification_performed : ''
+      ),
       verify_result: escapeCSVField(result.verify_result !== undefined ? JSON.stringify(result.verify_result) : 'N/A'),
       verify_granular_result: escapeCSVField(
         result.verify_granular_result !== undefined ? JSON.stringify(result.verify_granular_result) : 'N/A'
+      ),
+      rubric_evaluation_performed: escapeCSVField(
+        result.rubric_evaluation_performed !== undefined ? result.rubric_evaluation_performed : ''
       ),
       rubric_summary: escapeCSVField(rubricSummary),
       answering_model: escapeCSVField(result.answering_model),
