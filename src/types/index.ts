@@ -366,6 +366,29 @@ export interface VerificationResult {
     }
   >; // Maps trait name to confusion lists
   metric_trait_metrics?: Record<string, Record<string, number>>; // Maps trait name to computed metrics (e.g., {"precision": 0.85, "recall": 0.92})
+  // LLM usage tracking metadata
+  usage_metadata?: Record<string, UsageMetadata>; // Token usage breakdown by verification stage
+  agent_metrics?: {
+    iterations?: number; // Number of agent think-act cycles
+    tool_calls?: number; // Total tool invocations
+    tools_used?: string[]; // Unique tool names used
+  };
+}
+
+// Helper interface for LLM usage metadata
+export interface UsageMetadata {
+  input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
+  model?: string;
+  input_token_details?: {
+    audio?: number;
+    cache_read?: number;
+  };
+  output_token_details?: {
+    audio?: number;
+    reasoning?: number;
+  };
 }
 
 export interface VerificationProgress {

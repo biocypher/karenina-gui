@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { Checkpoint, VerificationResult, Rubric } from '../../types';
+import { Checkpoint, VerificationResult, Rubric, UsageMetadata } from '../../types';
 import { SearchableTextDisplay } from '../SearchableTextDisplay';
 import { SearchResultsDisplay } from '../SearchResultsDisplay';
 import { RubricResultsDisplay } from '../RubricResultsDisplay';
@@ -735,6 +735,90 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                       </div>
                     </div>
                   </div>
+
+                  {/* LLM Usage Metrics */}
+                  {result.usage_metadata && (
+                    <div>
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">LLM Usage Metrics</h4>
+                      <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-slate-200 dark:border-slate-600">
+                                <th className="text-left py-2 px-3 font-medium text-slate-600 dark:text-slate-300">
+                                  Stage
+                                </th>
+                                <th className="text-right py-2 px-3 font-medium text-slate-600 dark:text-slate-300">
+                                  Input Tokens
+                                </th>
+                                <th className="text-right py-2 px-3 font-medium text-slate-600 dark:text-slate-300">
+                                  Output Tokens
+                                </th>
+                                <th className="text-right py-2 px-3 font-medium text-slate-600 dark:text-slate-300">
+                                  Total Tokens
+                                </th>
+                                <th className="text-left py-2 px-3 font-medium text-slate-600 dark:text-slate-300">
+                                  Model
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(result.usage_metadata).map(
+                                ([stage, metadata]: [string, UsageMetadata]) => (
+                                  <tr key={stage} className="border-b border-slate-100 dark:border-slate-600/50">
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200 capitalize">
+                                      {stage.replace(/_/g, ' ')}
+                                    </td>
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200 text-right">
+                                      {metadata.input_tokens?.toLocaleString() || 0}
+                                    </td>
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200 text-right">
+                                      {metadata.output_tokens?.toLocaleString() || 0}
+                                    </td>
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200 text-right font-medium">
+                                      {metadata.total_tokens?.toLocaleString() || 0}
+                                    </td>
+                                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200 text-xs">
+                                      {metadata.model || 'N/A'}
+                                    </td>
+                                  </tr>
+                                )
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Agent Metrics (if available) */}
+                        {result.agent_metrics && (
+                          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+                            <h5 className="font-medium text-slate-800 dark:text-slate-200 mb-2">Agent Execution</h5>
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Iterations:</span>
+                                <p className="text-slate-800 dark:text-slate-200">
+                                  {result.agent_metrics.iterations || 0}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Tool Calls:</span>
+                                <p className="text-slate-800 dark:text-slate-200">
+                                  {result.agent_metrics.tool_calls || 0}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Tools Used:</span>
+                                <p className="text-slate-800 dark:text-slate-200 text-xs">
+                                  {result.agent_metrics.tools_used && result.agent_metrics.tools_used.length > 0
+                                    ? result.agent_metrics.tools_used.join(', ')
+                                    : 'None'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             } catch (e) {

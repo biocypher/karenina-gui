@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from '../constants/api';
-import type { Rubric, RubricTrait } from '../types';
+import type { Rubric, RubricTrait, UsageMetadata } from '../types';
 
 /**
  * ExportableResult interface for GUI exports.
@@ -80,6 +80,13 @@ export interface ExportableResult {
     }
   >;
   metric_trait_metrics?: Record<string, Record<string, number>>;
+  // LLM usage tracking metadata
+  usage_metadata?: Record<string, UsageMetadata>;
+  agent_metrics?: {
+    iterations?: number;
+    tool_calls?: number;
+    tools_used?: string[];
+  };
 }
 
 /**
@@ -261,6 +268,9 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     // Metric trait fields
     'metric_trait_confusion_lists',
     'metric_trait_metrics',
+    // LLM usage tracking fields
+    'usage_metadata',
+    'agent_metrics',
   ];
 
   // Filter headers based on selected fields if provided
@@ -382,6 +392,9 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       metric_trait_metrics: escapeCSVField(
         result.metric_trait_metrics ? JSON.stringify(result.metric_trait_metrics) : ''
       ),
+      // LLM usage tracking fields
+      usage_metadata: escapeCSVField(result.usage_metadata ? JSON.stringify(result.usage_metadata) : ''),
+      agent_metrics: escapeCSVField(result.agent_metrics ? JSON.stringify(result.agent_metrics) : ''),
     };
 
     // Add global rubric values
