@@ -18,8 +18,16 @@ export interface BenchmarkConfiguration {
 
 export const useBenchmarkConfiguration = () => {
   // Get saved defaults from config store (not working draft values)
-  const { savedInterface, savedProvider, savedModel, savedAsyncEnabled, savedAsyncChunkSize, savedAsyncMaxWorkers } =
-    useConfigStore();
+  const {
+    savedInterface,
+    savedProvider,
+    savedModel,
+    savedEndpointBaseUrl,
+    savedEndpointApiKey,
+    savedAsyncEnabled,
+    savedAsyncChunkSize,
+    savedAsyncMaxWorkers,
+  } = useConfigStore();
 
   // Get all configuration from benchmark store (persists across tab switches)
   const {
@@ -59,18 +67,35 @@ export const useBenchmarkConfiguration = () => {
     setFewShotK,
   } = useBenchmarkStore();
 
-  // Update default models when saved config store defaults change
-  // This effect intentionally does NOT depend on answeringModels/parsingModels
-  // to avoid resetting user configurations on every re-render
+  // Update default models ONLY if they match the initial store defaults
+  // This ensures user modifications persist across tab switches
+  // but reset on page refresh (since Zustand store resets on page refresh)
   useEffect(() => {
-    // Only update if the store is empty (initial load)
-    if (answeringModels.length === 1 && parsingModels.length === 1) {
+    // Check if models are still at their initial defaults (haven't been modified by user)
+    const answeringIsDefault =
+      answeringModels.length === 1 &&
+      answeringModels[0].id === 'answering-1' &&
+      answeringModels[0].model_provider === 'google_genai' &&
+      answeringModels[0].model_name === 'gemini-2.5-flash' &&
+      answeringModels[0].interface === 'langchain';
+
+    const parsingIsDefault =
+      parsingModels.length === 1 &&
+      parsingModels[0].id === 'parsing-1' &&
+      parsingModels[0].model_provider === 'google_genai' &&
+      parsingModels[0].model_name === 'gemini-2.5-flash' &&
+      parsingModels[0].interface === 'langchain';
+
+    // Only update if both models are still at defaults
+    if (answeringIsDefault && parsingIsDefault) {
       setAnsweringModels([
         {
           ...answeringModels[0],
           interface: savedInterface,
           model_provider: savedProvider,
           model_name: savedModel,
+          endpoint_base_url: savedEndpointBaseUrl,
+          endpoint_api_key: savedEndpointApiKey,
         },
       ]);
 
@@ -80,11 +105,13 @@ export const useBenchmarkConfiguration = () => {
           interface: savedInterface,
           model_provider: savedProvider,
           model_name: savedModel,
+          endpoint_base_url: savedEndpointBaseUrl,
+          endpoint_api_key: savedEndpointApiKey,
         },
       ]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedInterface, savedProvider, savedModel]);
+  }, []); // Empty deps - only run on mount
 
   // Model management functions - wrap store functions with additional logic
   const addAnsweringModel = () => {
@@ -95,6 +122,8 @@ export const useBenchmarkConfiguration = () => {
       temperature: 0.1,
       interface: savedInterface,
       system_prompt: 'You are an expert assistant. Answer the question accurately and concisely.',
+      endpoint_base_url: savedEndpointBaseUrl,
+      endpoint_api_key: savedEndpointApiKey,
     };
     storeAddAnsweringModel(newModel);
   };
@@ -108,6 +137,8 @@ export const useBenchmarkConfiguration = () => {
       interface: savedInterface,
       system_prompt:
         'You are a validation assistant. Parse and validate responses against the given Pydantic template.',
+      endpoint_base_url: savedEndpointBaseUrl,
+      endpoint_api_key: savedEndpointApiKey,
     };
     storeAddParsingModel(newModel);
   };
@@ -130,15 +161,35 @@ export const useBenchmarkConfiguration = () => {
           if (!processedUpdates.model_provider) {
             processedUpdates.model_provider = savedProvider;
           }
+          // Clear endpoint fields for langchain
+          processedUpdates.endpoint_base_url = undefined;
+          processedUpdates.endpoint_api_key = undefined;
           break;
         case 'openrouter':
           // Clear provider field for openrouter (not needed)
           processedUpdates.model_provider = '';
+          // Clear endpoint fields for openrouter
+          processedUpdates.endpoint_base_url = undefined;
+          processedUpdates.endpoint_api_key = undefined;
+          break;
+        case 'openai_endpoint':
+          // Clear provider field for openai_endpoint (not needed)
+          processedUpdates.model_provider = '';
+          // Ensure endpoint fields have default values
+          if (!processedUpdates.endpoint_base_url) {
+            processedUpdates.endpoint_base_url = savedEndpointBaseUrl;
+          }
+          if (!processedUpdates.endpoint_api_key) {
+            processedUpdates.endpoint_api_key = savedEndpointApiKey;
+          }
           break;
         case 'manual':
           // Clear both provider and model_name for manual
           processedUpdates.model_provider = '';
           processedUpdates.model_name = '';
+          // Clear endpoint fields for manual
+          processedUpdates.endpoint_base_url = undefined;
+          processedUpdates.endpoint_api_key = undefined;
           // Clear MCP configuration for manual interface (not supported)
           processedUpdates.mcp_urls_dict = undefined;
           processedUpdates.mcp_tool_filter = undefined;
@@ -159,15 +210,35 @@ export const useBenchmarkConfiguration = () => {
           if (!processedUpdates.model_provider) {
             processedUpdates.model_provider = savedProvider;
           }
+          // Clear endpoint fields for langchain
+          processedUpdates.endpoint_base_url = undefined;
+          processedUpdates.endpoint_api_key = undefined;
           break;
         case 'openrouter':
           // Clear provider field for openrouter (not needed)
           processedUpdates.model_provider = '';
+          // Clear endpoint fields for openrouter
+          processedUpdates.endpoint_base_url = undefined;
+          processedUpdates.endpoint_api_key = undefined;
+          break;
+        case 'openai_endpoint':
+          // Clear provider field for openai_endpoint (not needed)
+          processedUpdates.model_provider = '';
+          // Ensure endpoint fields have default values
+          if (!processedUpdates.endpoint_base_url) {
+            processedUpdates.endpoint_base_url = savedEndpointBaseUrl;
+          }
+          if (!processedUpdates.endpoint_api_key) {
+            processedUpdates.endpoint_api_key = savedEndpointApiKey;
+          }
           break;
         case 'manual':
           // For parsing models, manual interface should behave like openrouter
           // (parsing models don't support manual interface according to the UI)
           processedUpdates.model_provider = '';
+          // Clear endpoint fields for manual
+          processedUpdates.endpoint_base_url = undefined;
+          processedUpdates.endpoint_api_key = undefined;
           break;
       }
     }

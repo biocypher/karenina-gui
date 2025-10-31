@@ -25,11 +25,15 @@ interface ConfigState {
   // and only applied to saved values when explicitly saved
 
   /** Draft LLM interface selection being edited in modal */
-  defaultInterface: 'langchain' | 'openrouter';
+  defaultInterface: 'langchain' | 'openrouter' | 'openai_endpoint';
   /** Draft provider name being edited in modal (e.g., 'openai', 'google_genai') */
   defaultProvider: string;
   /** Draft model name being edited in modal (e.g., 'gpt-4', 'gemini-2.0-flash') */
   defaultModel: string;
+  /** Draft endpoint base URL for openai_endpoint interface */
+  defaultEndpointBaseUrl: string;
+  /** Draft endpoint API key for openai_endpoint interface */
+  defaultEndpointApiKey: string;
   /** Draft async enabled setting being edited in modal */
   defaultAsyncEnabled: boolean;
   /** Draft async chunk size being edited in modal */
@@ -41,11 +45,15 @@ interface ConfigState {
   // These values are used by generation components and only updated when saved
 
   /** Currently saved and active LLM interface used by generation components */
-  savedInterface: 'langchain' | 'openrouter';
+  savedInterface: 'langchain' | 'openrouter' | 'openai_endpoint';
   /** Currently saved and active provider used by generation components */
   savedProvider: string;
   /** Currently saved and active model used by generation components */
   savedModel: string;
+  /** Currently saved and active endpoint base URL */
+  savedEndpointBaseUrl: string;
+  /** Currently saved and active endpoint API key */
+  savedEndpointApiKey: string;
   /** Currently saved and active async enabled setting used by generation components */
   savedAsyncEnabled: boolean;
   /** Currently saved and active async chunk size used by generation components */
@@ -58,9 +66,10 @@ interface ConfigState {
 
   /** Original defaults from server for reset functionality */
   originalDefaults: {
-    defaultInterface: 'langchain' | 'openrouter';
+    defaultInterface: 'langchain' | 'openrouter' | 'openai_endpoint';
     defaultProvider: string;
     defaultModel: string;
+    defaultEndpointBaseUrl: string;
     defaultAsyncEnabled: boolean;
     defaultAsyncChunkSize: number;
     defaultAsyncMaxWorkers: number | null;
@@ -98,11 +107,15 @@ interface ConfigState {
 
   // Working value updates (for modal editing)
   /** Update draft interface selection */
-  updateDefaultInterface: (interface: 'langchain' | 'openrouter') => void;
+  updateDefaultInterface: (interface: 'langchain' | 'openrouter' | 'openai_endpoint') => void;
   /** Update draft provider selection */
   updateDefaultProvider: (provider: string) => void;
   /** Update draft model selection */
   updateDefaultModel: (model: string) => void;
+  /** Update draft endpoint base URL */
+  updateDefaultEndpointBaseUrl: (url: string) => void;
+  /** Update draft endpoint API key */
+  updateDefaultEndpointApiKey: (key: string) => void;
   /** Update draft async enabled setting */
   updateDefaultAsyncEnabled: (enabled: boolean) => void;
   /** Update draft async chunk size */
@@ -132,6 +145,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   defaultInterface: 'langchain',
   defaultProvider: 'google_genai',
   defaultModel: 'gemini-2.5-flash',
+  defaultEndpointBaseUrl: '',
+  defaultEndpointApiKey: '',
   defaultAsyncEnabled: true,
   defaultAsyncChunkSize: 5,
   defaultAsyncMaxWorkers: null,
@@ -140,6 +155,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   savedInterface: 'langchain',
   savedProvider: 'google_genai',
   savedModel: 'gemini-2.5-flash',
+  savedEndpointBaseUrl: '',
+  savedEndpointApiKey: '',
   savedAsyncEnabled: true,
   savedAsyncChunkSize: 5,
   savedAsyncMaxWorkers: null,
@@ -148,6 +165,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     defaultInterface: 'langchain',
     defaultProvider: 'google_genai',
     defaultModel: 'gemini-2.5-flash',
+    defaultEndpointBaseUrl: '',
     defaultAsyncEnabled: true,
     defaultAsyncChunkSize: 5,
     defaultAsyncMaxWorkers: null,
@@ -166,6 +184,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       state.defaultInterface !== state.originalDefaults.defaultInterface ||
       state.defaultProvider !== state.originalDefaults.defaultProvider ||
       state.defaultModel !== state.originalDefaults.defaultModel ||
+      state.defaultEndpointBaseUrl !== state.originalDefaults.defaultEndpointBaseUrl ||
+      state.defaultEndpointApiKey !== state.savedEndpointApiKey ||
       state.defaultAsyncEnabled !== state.originalDefaults.defaultAsyncEnabled ||
       state.defaultAsyncChunkSize !== state.originalDefaults.defaultAsyncChunkSize ||
       state.defaultAsyncMaxWorkers !== state.originalDefaults.defaultAsyncMaxWorkers
@@ -190,18 +210,25 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       }
       const defaults = await defaultsResponse.json();
 
+      // Load endpoint API key from localStorage if available
+      const storedApiKey = localStorage.getItem('openai_endpoint_api_key') || '';
+
       set({
         envVariables,
         // Set both working and saved values from backend
         defaultInterface: defaults.default_interface,
         defaultProvider: defaults.default_provider,
         defaultModel: defaults.default_model,
+        defaultEndpointBaseUrl: defaults.default_endpoint_base_url || '',
+        defaultEndpointApiKey: storedApiKey,
         defaultAsyncEnabled: defaults.default_async_enabled ?? true,
         defaultAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
         defaultAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
         savedInterface: defaults.default_interface,
         savedProvider: defaults.default_provider,
         savedModel: defaults.default_model,
+        savedEndpointBaseUrl: defaults.default_endpoint_base_url || '',
+        savedEndpointApiKey: storedApiKey,
         savedAsyncEnabled: defaults.default_async_enabled ?? true,
         savedAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
         savedAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
@@ -209,6 +236,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           defaultInterface: defaults.default_interface,
           defaultProvider: defaults.default_provider,
           defaultModel: defaults.default_model,
+          defaultEndpointBaseUrl: defaults.default_endpoint_base_url || '',
           defaultAsyncEnabled: defaults.default_async_enabled ?? true,
           defaultAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
           defaultAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
@@ -254,6 +282,15 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     set({ defaultModel: model });
   },
 
+  // Update endpoint configuration
+  updateDefaultEndpointBaseUrl: (url) => {
+    set({ defaultEndpointBaseUrl: url });
+  },
+
+  updateDefaultEndpointApiKey: (key) => {
+    set({ defaultEndpointApiKey: key });
+  },
+
   // Update async settings
   updateDefaultAsyncEnabled: (enabled) => {
     set({ defaultAsyncEnabled: enabled });
@@ -276,6 +313,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         default_interface: state.defaultInterface,
         default_provider: state.defaultProvider,
         default_model: state.defaultModel,
+        default_endpoint_base_url: state.defaultEndpointBaseUrl,
         default_async_enabled: state.defaultAsyncEnabled,
         default_async_chunk_size: state.defaultAsyncChunkSize,
         default_async_max_workers: state.defaultAsyncMaxWorkers,
@@ -292,11 +330,18 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         throw new Error(error.detail || 'Failed to save defaults');
       }
 
+      // Store API key in localStorage for convenience (if provided)
+      if (state.defaultEndpointApiKey) {
+        localStorage.setItem('openai_endpoint_api_key', state.defaultEndpointApiKey);
+      }
+
       // Update saved values and original defaults to match current working values
       set({
         savedInterface: state.defaultInterface,
         savedProvider: state.defaultProvider,
         savedModel: state.defaultModel,
+        savedEndpointBaseUrl: state.defaultEndpointBaseUrl,
+        savedEndpointApiKey: state.defaultEndpointApiKey,
         savedAsyncEnabled: state.defaultAsyncEnabled,
         savedAsyncChunkSize: state.defaultAsyncChunkSize,
         savedAsyncMaxWorkers: state.defaultAsyncMaxWorkers,
@@ -304,6 +349,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           defaultInterface: state.defaultInterface,
           defaultProvider: state.defaultProvider,
           defaultModel: state.defaultModel,
+          defaultEndpointBaseUrl: state.defaultEndpointBaseUrl,
           defaultAsyncEnabled: state.defaultAsyncEnabled,
           defaultAsyncChunkSize: state.defaultAsyncChunkSize,
           defaultAsyncMaxWorkers: state.defaultAsyncMaxWorkers,
@@ -326,6 +372,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       defaultInterface: state.originalDefaults.defaultInterface,
       defaultProvider: state.originalDefaults.defaultProvider,
       defaultModel: state.originalDefaults.defaultModel,
+      defaultEndpointBaseUrl: state.originalDefaults.defaultEndpointBaseUrl,
+      defaultEndpointApiKey: state.savedEndpointApiKey,
       defaultAsyncEnabled: state.originalDefaults.defaultAsyncEnabled,
       defaultAsyncChunkSize: state.originalDefaults.defaultAsyncChunkSize,
       defaultAsyncMaxWorkers: state.originalDefaults.defaultAsyncMaxWorkers,

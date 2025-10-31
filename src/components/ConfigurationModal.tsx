@@ -13,6 +13,8 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
     defaultInterface,
     defaultProvider,
     defaultModel,
+    defaultEndpointBaseUrl,
+    defaultEndpointApiKey,
     envVariables,
     unmaskedEnvVariables,
     isLoading,
@@ -25,6 +27,8 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
     updateDefaultInterface,
     updateDefaultProvider,
     updateDefaultModel,
+    updateDefaultEndpointBaseUrl,
+    updateDefaultEndpointApiKey,
     saveDefaults,
     resetDefaults,
     updateEnvVariable,
@@ -56,7 +60,15 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
     if (saveSuccess && hasUnsavedDefaults()) {
       setSaveSuccess(false);
     }
-  }, [defaultInterface, defaultProvider, defaultModel, saveSuccess, hasUnsavedDefaults]);
+  }, [
+    defaultInterface,
+    defaultProvider,
+    defaultModel,
+    defaultEndpointBaseUrl,
+    defaultEndpointApiKey,
+    saveSuccess,
+    hasUnsavedDefaults,
+  ]);
 
   // Load .env file content
   const loadEnvFileContent = async () => {
@@ -158,6 +170,16 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">OpenRouter</span>
           </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="openai_endpoint"
+              checked={defaultInterface === 'openai_endpoint'}
+              onChange={() => updateDefaultInterface('openai_endpoint')}
+              className="mr-2"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">OpenAI Endpoint</span>
+          </label>
         </div>
       </div>
 
@@ -171,7 +193,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
               value={defaultProvider}
               onChange={(e) => updateDefaultProvider(e.target.value)}
               placeholder="e.g., openai, google_genai, anthropic, ollama"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                        bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                        focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -183,13 +205,13 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
               value={defaultModel}
               onChange={(e) => updateDefaultModel(e.target.value)}
               placeholder="e.g., gpt-4, gemini-pro"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                        bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                        focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
-      ) : (
+      ) : defaultInterface === 'openrouter' ? (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Default OpenRouter Model
@@ -199,10 +221,61 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
             value={defaultModel}
             onChange={(e) => updateDefaultModel(e.target.value)}
             placeholder="e.g., openai/gpt-4"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                      bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                      focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Endpoint Base URL <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="url"
+              value={defaultEndpointBaseUrl}
+              onChange={(e) => updateDefaultEndpointBaseUrl(e.target.value)}
+              placeholder="e.g., http://localhost:11434/v1"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              OpenAI-compatible API endpoint (e.g., vLLM, Ollama, Azure OpenAI)
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              API Key <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="password"
+              value={defaultEndpointApiKey}
+              onChange={(e) => updateDefaultEndpointApiKey(e.target.value)}
+              placeholder="Enter your API key"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-300">
+              Stored securely in your browser's local storage
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Model Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={defaultModel}
+              onChange={(e) => updateDefaultModel(e.target.value)}
+              placeholder="e.g., llama2, gpt-4"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
       )}
 
@@ -261,6 +334,18 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
           Template Generator, Benchmark) immediately. This affects both new and existing configurations.
         </p>
       </div>
+
+      {/* OpenAI Endpoint specific notice */}
+      {defaultInterface === 'openai_endpoint' && (
+        <div className="text-sm text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900 p-3 rounded-md">
+          <p className="font-medium">OpenAI Endpoint Interface:</p>
+          <p className="mt-1">
+            Unlike other interfaces, the API key is stored in your browser's localStorage and never sent to the Karenina
+            server. The base URL is saved server-side. Your API key will be passed directly to your custom endpoint with
+            each request.
+          </p>
+        </div>
+      )}
     </div>
   );
 
