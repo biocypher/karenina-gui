@@ -9,8 +9,11 @@ interface ModelConfiguration {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint';
   system_prompt: string;
+  // OpenAI Endpoint configuration
+  endpoint_base_url?: string;
+  endpoint_api_key?: string;
   // MCP (Model Context Protocol) configuration
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
@@ -141,7 +144,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {/* Interface Selection */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Interface</label>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap">
           <label className="flex items-center text-slate-900 dark:text-white">
             <input
               type="radio"
@@ -149,7 +152,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               value="langchain"
               checked={model.interface === 'langchain'}
               onChange={(e) => {
-                const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
+                const update = {
+                  interface: e.target.value as 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint',
+                };
                 if (isAnswering) {
                   onUpdateAnsweringModel(model.id, update);
                 } else {
@@ -168,7 +173,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               value="openrouter"
               checked={model.interface === 'openrouter'}
               onChange={(e) => {
-                const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
+                const update = {
+                  interface: e.target.value as 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint',
+                };
                 if (isAnswering) {
                   onUpdateAnsweringModel(model.id, update);
                 } else {
@@ -180,6 +187,27 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             />
             OpenRouter
           </label>
+          <label className="flex items-center text-slate-900 dark:text-white">
+            <input
+              type="radio"
+              name={`${model.id}-interface`}
+              value="openai_endpoint"
+              checked={model.interface === 'openai_endpoint'}
+              onChange={(e) => {
+                const update = {
+                  interface: e.target.value as 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint',
+                };
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
+              }}
+              disabled={isRunning}
+              className="mr-2"
+            />
+            OpenAI Endpoint
+          </label>
           {isAnswering && (
             <label className="flex items-center text-slate-900 dark:text-white">
               <input
@@ -188,7 +216,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 value="manual"
                 checked={model.interface === 'manual'}
                 onChange={(e) => {
-                  const update = { interface: e.target.value as 'langchain' | 'openrouter' | 'manual' };
+                  const update = {
+                    interface: e.target.value as 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint',
+                  };
                   if (isAnswering) {
                     onUpdateAnsweringModel(model.id, update);
                   } else {
@@ -226,6 +256,78 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
+      {/* OpenAI Endpoint Configuration - Show only for openai_endpoint interface */}
+      {model.interface === 'openai_endpoint' && (
+        <div className="space-y-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Endpoint Base URL <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="url"
+              value={model.endpoint_base_url || ''}
+              onChange={(e) => {
+                const update = { endpoint_base_url: e.target.value };
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
+              }}
+              disabled={isRunning}
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              placeholder="e.g., http://localhost:11434/v1"
+            />
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              OpenAI-compatible API endpoint (e.g., vLLM, Ollama, Azure OpenAI)
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              API Key <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="password"
+              value={model.endpoint_api_key || ''}
+              onChange={(e) => {
+                const update = { endpoint_api_key: e.target.value };
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
+              }}
+              disabled={isRunning}
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              placeholder="Enter your API key"
+            />
+            <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-300">
+              Passed directly to your endpoint (not stored server-side)
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Model Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={model.model_name}
+              onChange={(e) => {
+                const update = { model_name: e.target.value };
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
+              }}
+              disabled={isRunning}
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              placeholder="e.g., llama2, gpt-4"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Model Name - Show for LangChain and OpenRouter interfaces */}
       {(model.interface === 'langchain' || model.interface === 'openrouter') && (
         <div className="mb-4">
@@ -248,8 +350,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* Temperature - Show for LangChain and OpenRouter interfaces */}
-      {(model.interface === 'langchain' || model.interface === 'openrouter') && (
+      {/* Temperature - Show for LangChain, OpenRouter, and OpenAI Endpoint interfaces */}
+      {(model.interface === 'langchain' ||
+        model.interface === 'openrouter' ||
+        model.interface === 'openai_endpoint') && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Temperature: {model.temperature}
@@ -274,8 +378,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* System Prompt - Show for LangChain and OpenRouter interfaces */}
-      {(model.interface === 'langchain' || model.interface === 'openrouter') && (
+      {/* System Prompt - Show for LangChain, OpenRouter, and OpenAI Endpoint interfaces */}
+      {(model.interface === 'langchain' ||
+        model.interface === 'openrouter' ||
+        model.interface === 'openai_endpoint') && (
         <div className="mb-2">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">System Prompt</label>
