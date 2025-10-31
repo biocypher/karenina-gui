@@ -86,6 +86,8 @@ export interface ExportableResult {
     iterations?: number;
     tool_calls?: number;
     tools_used?: string[];
+    suspect_failed_tool_calls?: number;
+    suspect_failed_tools?: string[];
   };
 }
 

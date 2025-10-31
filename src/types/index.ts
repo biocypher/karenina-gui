@@ -372,6 +372,8 @@ export interface VerificationResult {
     iterations?: number; // Number of agent think-act cycles
     tool_calls?: number; // Total tool invocations
     tools_used?: string[]; // Unique tool names used
+    suspect_failed_tool_calls?: number; // Count of tool calls with error-like output patterns
+    suspect_failed_tools?: string[]; // List of tools with suspected failures
   };
 }
 
