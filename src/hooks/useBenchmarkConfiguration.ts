@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { ModelConfiguration } from '../types';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useBenchmarkStore } from '../stores/useBenchmarkStore';
@@ -67,15 +67,27 @@ export const useBenchmarkConfiguration = () => {
     setFewShotK,
   } = useBenchmarkStore();
 
-  // Track if we've initialized the default models
-  const hasInitializedDefaults = useRef(false);
-
-  // Update default models ONLY on initial mount
+  // Update default models ONLY if they match the initial store defaults
   // This ensures user modifications persist across tab switches
-  // but reset on page refresh (since refs reset on page refresh)
+  // but reset on page refresh (since Zustand store resets on page refresh)
   useEffect(() => {
-    // Only run once on initial mount
-    if (!hasInitializedDefaults.current && answeringModels.length === 1 && parsingModels.length === 1) {
+    // Check if models are still at their initial defaults (haven't been modified by user)
+    const answeringIsDefault =
+      answeringModels.length === 1 &&
+      answeringModels[0].id === 'answering-1' &&
+      answeringModels[0].model_provider === 'google_genai' &&
+      answeringModels[0].model_name === 'gemini-2.5-flash' &&
+      answeringModels[0].interface === 'langchain';
+
+    const parsingIsDefault =
+      parsingModels.length === 1 &&
+      parsingModels[0].id === 'parsing-1' &&
+      parsingModels[0].model_provider === 'google_genai' &&
+      parsingModels[0].model_name === 'gemini-2.5-flash' &&
+      parsingModels[0].interface === 'langchain';
+
+    // Only update if both models are still at defaults
+    if (answeringIsDefault && parsingIsDefault) {
       setAnsweringModels([
         {
           ...answeringModels[0],
@@ -97,8 +109,6 @@ export const useBenchmarkConfiguration = () => {
           endpoint_api_key: savedEndpointApiKey,
         },
       ]);
-
-      hasInitializedDefaults.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - only run on mount
