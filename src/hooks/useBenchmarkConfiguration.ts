@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ModelConfiguration } from '../types';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useBenchmarkStore } from '../stores/useBenchmarkStore';
@@ -67,18 +67,23 @@ export const useBenchmarkConfiguration = () => {
     setFewShotK,
   } = useBenchmarkStore();
 
-  // Update default models when saved config store defaults change
-  // This effect intentionally does NOT depend on answeringModels/parsingModels
-  // to avoid resetting user configurations on every re-render
+  // Track if we've initialized the default models
+  const hasInitializedDefaults = useRef(false);
+
+  // Update default models ONLY on initial mount
+  // This ensures user modifications persist across tab switches
+  // but reset on page refresh (since refs reset on page refresh)
   useEffect(() => {
-    // Only update if the store is empty (initial load)
-    if (answeringModels.length === 1 && parsingModels.length === 1) {
+    // Only run once on initial mount
+    if (!hasInitializedDefaults.current && answeringModels.length === 1 && parsingModels.length === 1) {
       setAnsweringModels([
         {
           ...answeringModels[0],
           interface: savedInterface,
           model_provider: savedProvider,
           model_name: savedModel,
+          endpoint_base_url: savedEndpointBaseUrl,
+          endpoint_api_key: savedEndpointApiKey,
         },
       ]);
 
@@ -88,11 +93,15 @@ export const useBenchmarkConfiguration = () => {
           interface: savedInterface,
           model_provider: savedProvider,
           model_name: savedModel,
+          endpoint_base_url: savedEndpointBaseUrl,
+          endpoint_api_key: savedEndpointApiKey,
         },
       ]);
+
+      hasInitializedDefaults.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedInterface, savedProvider, savedModel]);
+  }, []); // Empty deps - only run on mount
 
   // Model management functions - wrap store functions with additional logic
   const addAnsweringModel = () => {
@@ -103,6 +112,8 @@ export const useBenchmarkConfiguration = () => {
       temperature: 0.1,
       interface: savedInterface,
       system_prompt: 'You are an expert assistant. Answer the question accurately and concisely.',
+      endpoint_base_url: savedEndpointBaseUrl,
+      endpoint_api_key: savedEndpointApiKey,
     };
     storeAddAnsweringModel(newModel);
   };
@@ -116,6 +127,8 @@ export const useBenchmarkConfiguration = () => {
       interface: savedInterface,
       system_prompt:
         'You are a validation assistant. Parse and validate responses against the given Pydantic template.',
+      endpoint_base_url: savedEndpointBaseUrl,
+      endpoint_api_key: savedEndpointApiKey,
     };
     storeAddParsingModel(newModel);
   };
