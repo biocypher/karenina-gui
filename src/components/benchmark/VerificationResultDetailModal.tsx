@@ -832,10 +832,44 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                                 </p>
                               </div>
                               <div>
+                                <span className="font-medium text-slate-600 dark:text-slate-300">
+                                  Suspect Failed Calls:
+                                </span>
+                                <p
+                                  className={`${
+                                    (result.agent_metrics.suspect_failed_tool_calls || 0) > 0
+                                      ? 'text-red-600 dark:text-red-400 font-semibold'
+                                      : 'text-slate-800 dark:text-slate-200'
+                                  }`}
+                                >
+                                  {result.agent_metrics.suspect_failed_tool_calls || 0}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm mt-3">
+                              <div>
                                 <span className="font-medium text-slate-600 dark:text-slate-300">Tools Used:</span>
-                                <p className="text-slate-800 dark:text-slate-200 text-xs">
+                                <p className="text-slate-800 dark:text-slate-200 text-xs mt-1">
                                   {result.agent_metrics.tools_used && result.agent_metrics.tools_used.length > 0
                                     ? result.agent_metrics.tools_used.join(', ')
+                                    : 'None'}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-slate-600 dark:text-slate-300">
+                                  Suspect Failed Tools:
+                                </span>
+                                <p
+                                  className={`text-xs mt-1 ${
+                                    result.agent_metrics.suspect_failed_tools &&
+                                    result.agent_metrics.suspect_failed_tools.length > 0
+                                      ? 'text-red-600 dark:text-red-400 font-semibold'
+                                      : 'text-slate-800 dark:text-slate-200'
+                                  }`}
+                                >
+                                  {result.agent_metrics.suspect_failed_tools &&
+                                  result.agent_metrics.suspect_failed_tools.length > 0
+                                    ? result.agent_metrics.suspect_failed_tools.join(', ')
                                     : 'None'}
                                 </p>
                               </div>
