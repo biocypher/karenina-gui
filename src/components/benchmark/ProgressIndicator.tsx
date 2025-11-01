@@ -26,6 +26,7 @@ interface ProgressIndicatorProps {
   selectedTestsCount: number;
   answeringModelsCount: number;
   parsingModelsCount: number;
+  replicateCount: number;
   finishedTemplates?: Array<[string, FinishedTemplateData]>;
 }
 
@@ -43,13 +44,14 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   selectedTestsCount,
   answeringModelsCount,
   parsingModelsCount,
+  replicateCount,
   finishedTemplates,
 }) => {
   if (!isRunning) {
     return null;
   }
 
-  const totalTests = selectedTestsCount * answeringModelsCount * parsingModelsCount;
+  const totalTests = selectedTestsCount * answeringModelsCount * parsingModelsCount * replicateCount;
 
   // Helper to get question text from question ID
   const getQuestionText = (questionId: string): string => {

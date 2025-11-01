@@ -231,12 +231,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   if (data.results && typeof data.results === 'object') {
                     console.log('Setting results:', Object.keys(data.results).length, 'items');
                     const sanitizedResults: Record<string, VerificationResult> = {};
-                    for (const [, value] of Object.entries(data.results)) {
+                    for (const [originalKey, value] of Object.entries(data.results)) {
                       if (value && typeof value === 'object') {
                         const result = value as VerificationResult;
-                        const timestamp = result.timestamp || new Date().toISOString();
-                        const compositeKey = `${result.question_id}_${result.job_id || jobId}_${timestamp}`;
-                        sanitizedResults[compositeKey] = result;
+                        // Preserve the original key from backend which includes replicate info
+                        sanitizedResults[originalKey] = result;
                       }
                     }
                     // Accumulate results instead of replacing them
@@ -883,6 +882,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               selectedTestsCount={selectedTests.size}
               answeringModelsCount={answeringModels.length}
               parsingModelsCount={parsingModels.length}
+              replicateCount={replicateCount}
               finishedTemplates={finishedTemplates}
             />
 
