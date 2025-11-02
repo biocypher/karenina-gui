@@ -36,8 +36,6 @@ interface ConfigState {
   defaultEndpointApiKey: string;
   /** Draft async enabled setting being edited in modal */
   defaultAsyncEnabled: boolean;
-  /** Draft async chunk size being edited in modal */
-  defaultAsyncChunkSize: number;
   /** Draft async max workers being edited in modal */
   defaultAsyncMaxWorkers: number | null;
 
@@ -56,8 +54,6 @@ interface ConfigState {
   savedEndpointApiKey: string;
   /** Currently saved and active async enabled setting used by generation components */
   savedAsyncEnabled: boolean;
-  /** Currently saved and active async chunk size used by generation components */
-  savedAsyncChunkSize: number;
   /** Currently saved and active async max workers used by generation components */
   savedAsyncMaxWorkers: number | null;
 
@@ -71,7 +67,6 @@ interface ConfigState {
     defaultModel: string;
     defaultEndpointBaseUrl: string;
     defaultAsyncEnabled: boolean;
-    defaultAsyncChunkSize: number;
     defaultAsyncMaxWorkers: number | null;
   };
 
@@ -118,8 +113,6 @@ interface ConfigState {
   updateDefaultEndpointApiKey: (key: string) => void;
   /** Update draft async enabled setting */
   updateDefaultAsyncEnabled: (enabled: boolean) => void;
-  /** Update draft async chunk size */
-  updateDefaultAsyncChunkSize: (chunkSize: number) => void;
   /** Update draft async max workers */
   updateDefaultAsyncMaxWorkers: (maxWorkers: number | null) => void;
 
@@ -148,7 +141,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   defaultEndpointBaseUrl: '',
   defaultEndpointApiKey: '',
   defaultAsyncEnabled: true,
-  defaultAsyncChunkSize: 5,
   defaultAsyncMaxWorkers: null,
 
   // Saved values (used by generation components)
@@ -158,7 +150,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   savedEndpointBaseUrl: '',
   savedEndpointApiKey: '',
   savedAsyncEnabled: true,
-  savedAsyncChunkSize: 5,
   savedAsyncMaxWorkers: null,
 
   originalDefaults: {
@@ -167,7 +158,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     defaultModel: 'gemini-2.5-flash',
     defaultEndpointBaseUrl: '',
     defaultAsyncEnabled: true,
-    defaultAsyncChunkSize: 5,
     defaultAsyncMaxWorkers: null,
   },
   envVariables: {},
@@ -187,7 +177,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       state.defaultEndpointBaseUrl !== state.originalDefaults.defaultEndpointBaseUrl ||
       state.defaultEndpointApiKey !== state.savedEndpointApiKey ||
       state.defaultAsyncEnabled !== state.originalDefaults.defaultAsyncEnabled ||
-      state.defaultAsyncChunkSize !== state.originalDefaults.defaultAsyncChunkSize ||
       state.defaultAsyncMaxWorkers !== state.originalDefaults.defaultAsyncMaxWorkers
     );
   },
@@ -222,7 +211,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         defaultEndpointBaseUrl: defaults.default_endpoint_base_url || '',
         defaultEndpointApiKey: storedApiKey,
         defaultAsyncEnabled: defaults.default_async_enabled ?? true,
-        defaultAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
         defaultAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
         savedInterface: defaults.default_interface,
         savedProvider: defaults.default_provider,
@@ -230,7 +218,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         savedEndpointBaseUrl: defaults.default_endpoint_base_url || '',
         savedEndpointApiKey: storedApiKey,
         savedAsyncEnabled: defaults.default_async_enabled ?? true,
-        savedAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
         savedAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
         originalDefaults: {
           defaultInterface: defaults.default_interface,
@@ -238,7 +225,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           defaultModel: defaults.default_model,
           defaultEndpointBaseUrl: defaults.default_endpoint_base_url || '',
           defaultAsyncEnabled: defaults.default_async_enabled ?? true,
-          defaultAsyncChunkSize: defaults.default_async_chunk_size ?? 5,
           defaultAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
         },
         isLoading: false,
@@ -296,10 +282,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     set({ defaultAsyncEnabled: enabled });
   },
 
-  updateDefaultAsyncChunkSize: (chunkSize) => {
-    set({ defaultAsyncChunkSize: chunkSize });
-  },
-
   updateDefaultAsyncMaxWorkers: (maxWorkers) => {
     set({ defaultAsyncMaxWorkers: maxWorkers });
   },
@@ -315,7 +297,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         default_model: state.defaultModel,
         default_endpoint_base_url: state.defaultEndpointBaseUrl,
         default_async_enabled: state.defaultAsyncEnabled,
-        default_async_chunk_size: state.defaultAsyncChunkSize,
         default_async_max_workers: state.defaultAsyncMaxWorkers,
       };
 
@@ -343,7 +324,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         savedEndpointBaseUrl: state.defaultEndpointBaseUrl,
         savedEndpointApiKey: state.defaultEndpointApiKey,
         savedAsyncEnabled: state.defaultAsyncEnabled,
-        savedAsyncChunkSize: state.defaultAsyncChunkSize,
         savedAsyncMaxWorkers: state.defaultAsyncMaxWorkers,
         originalDefaults: {
           defaultInterface: state.defaultInterface,
@@ -351,7 +331,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           defaultModel: state.defaultModel,
           defaultEndpointBaseUrl: state.defaultEndpointBaseUrl,
           defaultAsyncEnabled: state.defaultAsyncEnabled,
-          defaultAsyncChunkSize: state.defaultAsyncChunkSize,
           defaultAsyncMaxWorkers: state.defaultAsyncMaxWorkers,
         },
         isSavingDefaults: false,
@@ -375,7 +354,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       defaultEndpointBaseUrl: state.originalDefaults.defaultEndpointBaseUrl,
       defaultEndpointApiKey: state.savedEndpointApiKey,
       defaultAsyncEnabled: state.originalDefaults.defaultAsyncEnabled,
-      defaultAsyncChunkSize: state.originalDefaults.defaultAsyncChunkSize,
       defaultAsyncMaxWorkers: state.originalDefaults.defaultAsyncMaxWorkers,
     });
   },
