@@ -220,12 +220,12 @@ export interface TemplateGenerationProgress {
   current_question: string;
   processed_count: number;
   total_count: number;
-  estimated_time_remaining?: number; // in seconds
+  start_time?: number; // Unix timestamp for client-side live clock calculation
+  duration_seconds?: number;
+  last_task_duration?: number;
   error?: string;
   result?: TemplateGenerationResult;
-  // WebSocket streaming fields
   in_progress_questions?: string[];
-  ema_seconds_per_item?: number;
 }
 
 export interface GeneratedTemplate {
@@ -402,12 +402,12 @@ export interface VerificationProgress {
   total_count: number;
   successful_count: number;
   failed_count: number;
-  estimated_time_remaining?: number;
+  start_time?: number; // Unix timestamp for client-side live clock calculation
+  duration_seconds?: number;
+  last_task_duration?: number;
   error?: string;
   results?: Record<string, VerificationResult>;
-  // WebSocket streaming fields
   in_progress_questions?: string[];
-  ema_seconds_per_item?: number;
 }
 
 // Rubric Types

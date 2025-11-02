@@ -1,19 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader } from 'lucide-react';
-
-interface VerificationProgress {
-  job_id: string;
-  status: string;
-  percentage: number;
-  current_question: string;
-  processed_count: number;
-  total_count: number;
-  successful_count: number;
-  failed_count: number;
-  estimated_time_remaining?: number;
-  error?: string;
-  results?: Record<string, unknown>;
-}
+import type { VerificationProgress } from '../../types';
+import { formatDuration, formatShortDuration } from '../../utils/time';
 
 interface FinishedTemplateData {
   question: string;
@@ -30,14 +18,6 @@ interface ProgressIndicatorProps {
   finishedTemplates?: Array<[string, FinishedTemplateData]>;
 }
 
-const formatDuration = (seconds?: number) => {
-  if (!seconds || isNaN(seconds) || seconds < 0) return 'N/A';
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.round(seconds % 60);
-  return `${minutes}m ${remainingSeconds}s`;
-};
-
 export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   isRunning,
   progress,
@@ -47,6 +27,37 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   replicateCount,
   finishedTemplates,
 }) => {
+  // State for live clock calculation
+  const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
+
+  // Set up live clock timer when start_time is available
+  useEffect(() => {
+    // Only set up timer if we have a start_time and job is running
+    if (!progress?.start_time || progress.status === 'completed' || progress.status === 'failed') {
+      setElapsedSeconds(null);
+      return;
+    }
+
+    // Calculate initial elapsed time
+    const calculateElapsed = () => {
+      if (progress.start_time) {
+        return (Date.now() - progress.start_time * 1000) / 1000;
+      }
+      return null;
+    };
+
+    // Update immediately
+    setElapsedSeconds(calculateElapsed());
+
+    // Set up interval to update every second
+    const intervalId = setInterval(() => {
+      setElapsedSeconds(calculateElapsed());
+    }, 1000);
+
+    // Cleanup interval on unmount or when dependencies change
+    return () => clearInterval(intervalId);
+  }, [progress?.start_time, progress?.status]);
+
   if (!isRunning) {
     return null;
   }
@@ -114,10 +125,23 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
             progress.current_question && (
               <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Current: {progress.current_question}</p>
             )}
-          {progress.estimated_time_remaining && progress.status !== 'completed' && (
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Estimated time remaining: {formatDuration(progress.estimated_time_remaining)}
-            </p>
+          {/* Show elapsed time while running (live clock), total time when complete */}
+          {(elapsedSeconds !== null || progress.duration_seconds !== undefined) && (
+            <div className="text-sm text-slate-500 dark:text-slate-400 mt-1 space-y-1">
+              <p>
+                {progress.status === 'completed'
+                  ? `Completed in: ${formatDuration(progress.duration_seconds)}`
+                  : `Running for: ${formatDuration(elapsedSeconds ?? progress.duration_seconds)}`}
+              </p>
+              {/* Show last task duration only while running and if available */}
+              {progress.status === 'running' &&
+                progress.last_task_duration !== null &&
+                progress.last_task_duration !== undefined && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Last item took: {formatShortDuration(progress.last_task_duration)}
+                  </p>
+                )}
+            </div>
           )}
         </>
       )}

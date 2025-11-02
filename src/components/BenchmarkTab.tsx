@@ -26,6 +26,7 @@ import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
+import { formatDuration } from '../utils/time';
 
 // Interfaces now imported from types
 
@@ -71,7 +72,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     updateParsingModel,
     togglePromptExpanded,
     getVerificationConfig,
-    getAsyncConfig,
   } = useBenchmarkConfiguration();
 
   // Rubric store
@@ -200,9 +200,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 processed_count: eventData.processed,
                 total_count: eventData.total,
                 current_question: eventData.current_question || '',
-                estimated_time_remaining: eventData.estimated_time_remaining,
+                start_time: eventData.start_time, // Unix timestamp for live clock
+                duration_seconds: eventData.duration_seconds,
+                last_task_duration: eventData.last_task_duration,
                 in_progress_questions: eventData.in_progress_questions || [],
-                ema_seconds_per_item: eventData.ema_seconds_per_item || 0,
                 successful_count: 0,
                 failed_count: 0,
               });
@@ -343,7 +344,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         question_ids: idsToRun,
         finished_templates: templatesData,
         run_name: runName.trim() || undefined, // Send run name if provided
-        async_config: getAsyncConfig(), // Include async configuration from config store
+        // Async control now via KARENINA_ASYNC_ENABLED env var on server
         storage_url: storageUrl || undefined, // Include storage URL for database auto-save
         benchmark_name: metadata?.name || undefined, // Include benchmark name for database auto-save
       };
@@ -886,8 +887,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               finishedTemplates={finishedTemplates}
             />
 
-            {/* Aggregated Test Stats - Always show when running or have results to prevent layout shift */}
-            {(isRunning || getAllUnfilteredResults().length > 0) && (
+            {/* Aggregated Test Stats - Only show after verification completes */}
+            {!isRunning && getAllUnfilteredResults().length > 0 && (
               <div className="grid grid-cols-6 gap-3 mb-4">
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
@@ -946,6 +947,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   </div>
                   <div className="text-xs text-rose-600 dark:text-rose-400">Failed</div>
                 </div>
+              </div>
+            )}
+
+            {/* Job Duration - Show after verification completes */}
+            {!isRunning && progress?.duration_seconds !== undefined && (
+              <div className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                Last job took: {formatDuration(progress.duration_seconds)}
               </div>
             )}
 
