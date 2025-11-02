@@ -26,6 +26,7 @@ import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
+import { formatDuration } from '../utils/time';
 
 // Interfaces now imported from types
 
@@ -946,6 +947,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   </div>
                   <div className="text-xs text-rose-600 dark:text-rose-400">Failed</div>
                 </div>
+              </div>
+            )}
+
+            {/* Job Duration - Show after verification completes */}
+            {!isRunning && progress?.duration_seconds !== undefined && (
+              <div className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                Last job took: {formatDuration(progress.duration_seconds)}
               </div>
             )}
 
