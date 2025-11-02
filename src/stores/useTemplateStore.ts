@@ -484,9 +484,10 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
                 processed_count: eventData.processed,
                 total_count: eventData.total,
                 current_question: eventData.current_question || '',
-                estimated_time_remaining: eventData.estimated_time_remaining,
+                start_time: eventData.start_time, // Unix timestamp for live clock
+                duration_seconds: eventData.duration_seconds,
+                last_task_duration: eventData.last_task_duration,
                 in_progress_questions: eventData.in_progress_questions || [],
-                ema_seconds_per_item: eventData.ema_seconds_per_item || 0,
               });
               break;
 

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, Loader2 } from 'lucide-react';
 import { TemplateGenerationProgress, QuestionData } from '../types';
-import { formatDuration } from '../utils/time';
+import { formatDuration, formatShortDuration } from '../utils/time';
 
 interface TemplateProgressProps {
   progress: TemplateGenerationProgress | null;
@@ -9,6 +9,37 @@ interface TemplateProgressProps {
 }
 
 export const TemplateProgress: React.FC<TemplateProgressProps> = ({ progress, questions }) => {
+  // State for live clock calculation
+  const [elapsedSeconds, setElapsedSeconds] = useState<number | null>(null);
+
+  // Set up live clock timer when start_time is available
+  useEffect(() => {
+    // Only set up timer if we have a start_time and job is running
+    if (!progress?.start_time || progress.status === 'completed' || progress.status === 'failed') {
+      setElapsedSeconds(null);
+      return;
+    }
+
+    // Calculate initial elapsed time
+    const calculateElapsed = () => {
+      if (progress.start_time) {
+        return (Date.now() - progress.start_time * 1000) / 1000;
+      }
+      return null;
+    };
+
+    // Update immediately
+    setElapsedSeconds(calculateElapsed());
+
+    // Set up interval to update every second
+    const intervalId = setInterval(() => {
+      setElapsedSeconds(calculateElapsed());
+    }, 1000);
+
+    // Cleanup interval on unmount or when dependencies change
+    return () => clearInterval(intervalId);
+  }, [progress?.start_time, progress?.status]);
+
   if (!progress) return null;
 
   // Helper to get question text from question ID
@@ -81,10 +112,25 @@ export const TemplateProgress: React.FC<TemplateProgressProps> = ({ progress, qu
           </div>
         )}
 
-      {progress.estimated_time_remaining && (
-        <div className="mt-4 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-          <Clock className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-          <span>Estimated time remaining: {formatDuration(progress.estimated_time_remaining)}</span>
+      {/* Show elapsed time while running (live clock), total time when complete */}
+      {(elapsedSeconds !== null || progress.duration_seconds !== undefined) && (
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <Clock className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+            <span>
+              {progress.status === 'completed'
+                ? `Completed in: ${formatDuration(progress.duration_seconds)}`
+                : `Running for: ${formatDuration(elapsedSeconds ?? progress.duration_seconds)}`}
+            </span>
+          </div>
+          {/* Show last task duration only while running and if available */}
+          {progress.status === 'running' &&
+            progress.last_task_duration !== null &&
+            progress.last_task_duration !== undefined && (
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 ml-6">
+                <span>Last item took: {formatShortDuration(progress.last_task_duration)}</span>
+              </div>
+            )}
         </div>
       )}
     </div>

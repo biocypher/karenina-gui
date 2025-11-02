@@ -25,7 +25,6 @@ export const useBenchmarkConfiguration = () => {
     savedEndpointBaseUrl,
     savedEndpointApiKey,
     savedAsyncEnabled,
-    savedAsyncChunkSize,
     savedAsyncMaxWorkers,
   } = useConfigStore();
 
