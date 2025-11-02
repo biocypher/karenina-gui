@@ -1,6 +1,19 @@
 import React from 'react';
 import { Loader } from 'lucide-react';
-import type { VerificationProgress } from '../../types';
+
+interface VerificationProgress {
+  job_id: string;
+  status: string;
+  percentage: number;
+  current_question: string;
+  processed_count: number;
+  total_count: number;
+  successful_count: number;
+  failed_count: number;
+  estimated_time_remaining?: number;
+  error?: string;
+  results?: Record<string, unknown>;
+}
 
 interface FinishedTemplateData {
   question: string;
@@ -101,7 +114,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
             progress.current_question && (
               <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Current: {progress.current_question}</p>
             )}
-          {(progress.estimated_time_remaining ?? 0) > 0 && progress.status !== 'completed' && (
+          {progress.estimated_time_remaining && progress.status !== 'completed' && (
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Estimated time remaining: {formatDuration(progress.estimated_time_remaining)}
             </p>
