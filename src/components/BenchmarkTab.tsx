@@ -71,7 +71,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     updateParsingModel,
     togglePromptExpanded,
     getVerificationConfig,
-    getAsyncConfig,
   } = useBenchmarkConfiguration();
 
   // Rubric store
@@ -343,7 +342,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         question_ids: idsToRun,
         finished_templates: templatesData,
         run_name: runName.trim() || undefined, // Send run name if provided
-        async_config: getAsyncConfig(), // Include async configuration from config store
+        // Async control now via KARENINA_ASYNC_ENABLED env var on server
         storage_url: storageUrl || undefined, // Include storage URL for database auto-save
         benchmark_name: metadata?.name || undefined, // Include benchmark name for database auto-save
       };
@@ -886,8 +885,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               finishedTemplates={finishedTemplates}
             />
 
-            {/* Aggregated Test Stats - Always show when running or have results to prevent layout shift */}
-            {(isRunning || getAllUnfilteredResults().length > 0) && (
+            {/* Aggregated Test Stats - Only show when we have results */}
+            {getAllUnfilteredResults().length > 0 && (
               <div className="grid grid-cols-6 gap-3 mb-4">
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
