@@ -210,7 +210,9 @@ export interface TemplateGenerationConfig {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint';
+  endpoint_base_url?: string;
+  endpoint_api_key?: string;
 }
 
 export interface TemplateGenerationProgress {
