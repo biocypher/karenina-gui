@@ -1,19 +1,8 @@
 import React from 'react';
 import { Loader } from 'lucide-react';
+import { VerificationProgress as ImportedVerificationProgress } from '../../types';
 
-interface VerificationProgress {
-  job_id: string;
-  status: string;
-  percentage: number;
-  current_question: string;
-  processed_count: number;
-  total_count: number;
-  successful_count: number;
-  failed_count: number;
-  estimated_time_remaining?: number;
-  error?: string;
-  results?: Record<string, unknown>;
-}
+type VerificationProgress = ImportedVerificationProgress;
 
 interface FinishedTemplateData {
   question: string;
