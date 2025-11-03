@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ModelConfiguration } from '../types';
+import { VerificationConfig, FewShotConfig } from '../utils/presetApi';
 
 /**
  * Benchmark configuration and evaluation settings store
@@ -57,6 +58,10 @@ interface BenchmarkState {
   setFewShotEnabled: (enabled: boolean) => void;
   setFewShotMode: (mode: 'all' | 'k-shot' | 'custom') => void;
   setFewShotK: (k: number) => void;
+
+  // Preset Integration Methods
+  getCurrentVerificationConfig: () => VerificationConfig;
+  applyVerificationConfig: (config: VerificationConfig) => void;
 }
 
 export const useBenchmarkStore = create<BenchmarkState>((set) => ({
@@ -159,4 +164,67 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   setFewShotEnabled: (enabled) => set({ fewShotEnabled: enabled }),
   setFewShotMode: (mode) => set({ fewShotMode: mode }),
   setFewShotK: (k) => set({ fewShotK: k }),
+
+  // Preset Integration Methods
+  getCurrentVerificationConfig: () => {
+    const state = useBenchmarkStore.getState();
+
+    // Build few-shot config
+    const fewShotConfig: FewShotConfig | null = state.fewShotEnabled
+      ? {
+          enabled: true,
+          global_mode: state.fewShotMode,
+          global_k: state.fewShotK,
+          question_configs: {},
+          global_external_examples: [],
+        }
+      : null;
+
+    // Build verification config
+    const config: VerificationConfig = {
+      answering_models: JSON.parse(JSON.stringify(state.answeringModels)), // Deep clone
+      parsing_models: JSON.parse(JSON.stringify(state.parsingModels)), // Deep clone
+      replicate_count: state.replicateCount,
+      parsing_only: false,
+      rubric_enabled: state.rubricEnabled,
+      rubric_trait_names: null,
+      evaluation_mode: state.evaluationMode,
+      abstention_enabled: state.abstentionEnabled,
+      deep_judgment_enabled: state.deepJudgmentEnabled,
+      deep_judgment_search_enabled: state.deepJudgmentSearchEnabled,
+      few_shot_config: fewShotConfig,
+      db_config: null, // Presets don't include DB config
+    };
+
+    return config;
+  },
+
+  applyVerificationConfig: (config: VerificationConfig) => {
+    // Deep clone model arrays to prevent reference sharing
+    const answeringModels = JSON.parse(JSON.stringify(config.answering_models));
+    const parsingModels = JSON.parse(JSON.stringify(config.parsing_models));
+
+    // Extract few-shot settings
+    const fewShotEnabled = config.few_shot_config?.enabled ?? false;
+    const fewShotMode = config.few_shot_config?.global_mode ?? 'all';
+    const fewShotK = config.few_shot_config?.global_k ?? 3;
+
+    // Apply configuration to store
+    set({
+      answeringModels,
+      parsingModels,
+      replicateCount: config.replicate_count,
+      rubricEnabled: config.rubric_enabled ?? false,
+      evaluationMode: config.evaluation_mode ?? 'template_only',
+      abstentionEnabled: config.abstention_enabled ?? false,
+      deepJudgmentEnabled: config.deep_judgment_enabled ?? false,
+      deepJudgmentSearchEnabled: config.deep_judgment_search_enabled ?? false,
+      fewShotEnabled,
+      fewShotMode,
+      fewShotK,
+      // Clear UI-only state
+      expandedPrompts: new Set<string>(),
+      // Don't change runName - it's job-specific, not part of preset
+    });
+  },
 }));

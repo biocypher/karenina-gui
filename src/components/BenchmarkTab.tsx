@@ -18,6 +18,7 @@ import { Card } from './ui/Card';
 import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
 import { exportFromServer, exportFilteredResults, ExportableResult } from '../utils/export';
 import { ConfigurationPanel } from './benchmark/ConfigurationPanel';
+import { PresetManager } from './benchmark/PresetManager';
 import { ProgressIndicator } from './benchmark/ProgressIndicator';
 import { VerificationResultDetailModal } from './benchmark/VerificationResultDetailModal';
 import { BenchmarkTable } from './BenchmarkTable';
@@ -573,6 +574,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               setError(`Manual trace upload failed: ${errorMessage}`);
             }}
           />
+
+          {/* Preset Management Section */}
+          <PresetManager />
 
           {/* Run Management Section */}
           <Card>
