@@ -169,6 +169,43 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   getCurrentVerificationConfig: () => {
     const state = useBenchmarkStore.getState();
 
+    // Helper function to sanitize model configuration
+    const sanitizeModelConfig = (model: ModelConfiguration): Record<string, unknown> => {
+      const sanitized: Record<string, unknown> = {
+        id: model.id,
+        model_provider: model.model_provider,
+        model_name: model.model_name,
+        temperature: model.temperature,
+        interface: model.interface,
+        system_prompt: model.system_prompt,
+      };
+
+      // Only include max_retries if it's set
+      if (model.max_retries !== undefined) {
+        sanitized.max_retries = model.max_retries;
+      }
+
+      // Only include endpoint fields for openai_endpoint interface
+      if (model.interface === 'openai_endpoint') {
+        if (model.endpoint_base_url) {
+          sanitized.endpoint_base_url = model.endpoint_base_url;
+        }
+        if (model.endpoint_api_key) {
+          sanitized.endpoint_api_key = model.endpoint_api_key;
+        }
+      }
+
+      // Only include MCP fields if they have values
+      if (model.mcp_urls_dict && Object.keys(model.mcp_urls_dict).length > 0) {
+        sanitized.mcp_urls_dict = model.mcp_urls_dict;
+      }
+      if (model.mcp_tool_filter && model.mcp_tool_filter.length > 0) {
+        sanitized.mcp_tool_filter = model.mcp_tool_filter;
+      }
+
+      return sanitized;
+    };
+
     // Build few-shot config
     const fewShotConfig: FewShotConfig | null = state.fewShotEnabled
       ? {
@@ -180,10 +217,10 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
         }
       : null;
 
-    // Build verification config
+    // Build verification config with sanitized models
     const config: VerificationConfig = {
-      answering_models: JSON.parse(JSON.stringify(state.answeringModels)), // Deep clone
-      parsing_models: JSON.parse(JSON.stringify(state.parsingModels)), // Deep clone
+      answering_models: state.answeringModels.map(sanitizeModelConfig),
+      parsing_models: state.parsingModels.map(sanitizeModelConfig),
       replicate_count: state.replicateCount,
       parsing_only: false,
       rubric_enabled: state.rubricEnabled,

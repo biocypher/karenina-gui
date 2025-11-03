@@ -11,6 +11,7 @@ import {
   Settings,
   ChevronRight,
   ChevronDown,
+  BookmarkPlus,
 } from 'lucide-react';
 import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
@@ -18,7 +19,7 @@ import { Card } from './ui/Card';
 import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
 import { exportFromServer, exportFilteredResults, ExportableResult } from '../utils/export';
 import { ConfigurationPanel } from './benchmark/ConfigurationPanel';
-import { PresetManager } from './benchmark/PresetManager';
+import { PresetManager } from './presets/PresetManager';
 import { ProgressIndicator } from './benchmark/ProgressIndicator';
 import { VerificationResultDetailModal } from './benchmark/VerificationResultDetailModal';
 import { BenchmarkTable } from './BenchmarkTable';
@@ -102,6 +103,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const [totalCount, setTotalCount] = useState<number>(0);
   // Custom export dialog state
   const [isCustomExportDialogOpen, setIsCustomExportDialogOpen] = useState(false);
+  // Preset modal state
+  const [showPresetModal, setShowPresetModal] = useState(false);
 
   // Get finished templates from checkpoint
   const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
@@ -534,6 +537,18 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     try {
       return (
         <div className="space-y-6">
+          {/* Preset Manager Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowPresetModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isRunning}
+            >
+              <BookmarkPlus className="w-5 h-5" />
+              Manage Presets
+            </button>
+          </div>
+
           <ConfigurationPanel
             answeringModels={answeringModels}
             parsingModels={parsingModels}
@@ -574,9 +589,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               setError(`Manual trace upload failed: ${errorMessage}`);
             }}
           />
-
-          {/* Preset Management Section */}
-          <PresetManager />
 
           {/* Run Management Section */}
           <Card>
@@ -1113,6 +1125,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         globalRubric={currentRubric}
         onExport={handleCustomExport}
       />
+      <PresetManager isOpen={showPresetModal} onClose={() => setShowPresetModal(false)} />
     </ErrorBoundary>
   );
 };
