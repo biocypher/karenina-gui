@@ -19,7 +19,7 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
   onSwitchToCurator,
 }) => {
   // Configuration store - use saved values (not working draft values)
-  const { savedInterface, savedProvider, savedModel } = useConfigStore();
+  const { savedInterface, savedProvider, savedModel, savedEndpointBaseUrl, savedEndpointApiKey } = useConfigStore();
 
   // Template store state
   const {
@@ -49,7 +49,9 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     if (
       config.interface === savedInterface &&
       config.model_provider === savedProvider &&
-      config.model_name === savedModel
+      config.model_name === savedModel &&
+      config.endpoint_base_url === savedEndpointBaseUrl &&
+      config.endpoint_api_key === savedEndpointApiKey
     ) {
       return;
     }
@@ -59,9 +61,11 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
       interface: savedInterface,
       model_provider: savedProvider,
       model_name: savedModel,
+      endpoint_base_url: savedEndpointBaseUrl,
+      endpoint_api_key: savedEndpointApiKey,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedInterface, savedProvider, savedModel]);
+  }, [savedInterface, savedProvider, savedModel, savedEndpointBaseUrl, savedEndpointApiKey]);
 
   // Get pending questions using the store getter
   const pendingQuestions = getPendingQuestions(questions);
