@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
-import { CheckCircle, Eye, EyeOff, RefreshCw, Save, Trash2, RotateCcw } from 'lucide-react';
+import { usePresetStore } from '../stores/usePresetStore';
+import { CheckCircle, Eye, EyeOff, RefreshCw, Save, Trash2, RotateCcw, FileText } from 'lucide-react';
 
 interface ConfigurationModalProps {
   isOpen: boolean;
@@ -36,6 +37,8 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
     removeEnvVariable,
   } = useConfigStore();
 
+  const { presets, loadPresets, getPresetDetail } = usePresetStore();
+
   const [activeTab, setActiveTab] = useState<'defaults' | 'env'>('defaults');
   const [envFileContent, setEnvFileContent] = useState('');
   const [isEditingEnv, setIsEditingEnv] = useState(false);
@@ -44,21 +47,29 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
   const [newEnvValue, setNewEnvValue] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [presetAppliedSuccess, setPresetAppliedSuccess] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('');
 
-  // Load configuration when modal opens
+  // Load configuration and presets when modal opens
   useEffect(() => {
     if (isOpen) {
       loadConfiguration();
+      loadPresets();
       loadEnvFileContent();
       setSaveSuccess(false);
+      setPresetAppliedSuccess(false);
       setLocalError(null);
+      setSelectedPresetId('');
     }
-  }, [isOpen, loadConfiguration]);
+  }, [isOpen, loadConfiguration, loadPresets]);
 
   // Clear success state when user makes changes
   useEffect(() => {
     if (saveSuccess && hasUnsavedDefaults()) {
       setSaveSuccess(false);
+    }
+    if (presetAppliedSuccess && hasUnsavedDefaults()) {
+      setPresetAppliedSuccess(false);
     }
   }, [
     defaultInterface,
@@ -67,6 +78,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
     defaultEndpointBaseUrl,
     defaultEndpointApiKey,
     saveSuccess,
+    presetAppliedSuccess,
     hasUnsavedDefaults,
   ]);
 
@@ -115,6 +127,52 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
     setLocalError(null);
   };
 
+  // Handle applying preset settings to default configuration
+  const handleApplyPreset = async (presetId: string) => {
+    if (!presetId) return;
+
+    setLocalError(null);
+    setPresetAppliedSuccess(false);
+
+    try {
+      const preset = await getPresetDetail(presetId);
+      if (!preset) {
+        setLocalError('Failed to load preset details');
+        return;
+      }
+
+      // Extract first answering model as source for default settings
+      const answeringModels = preset.config.answering_models;
+      if (!answeringModels || answeringModels.length === 0) {
+        setLocalError('Preset has no answering models configured');
+        return;
+      }
+
+      const model = answeringModels[0];
+
+      // Apply model configuration to default settings
+      updateDefaultInterface(model.interface as 'langchain' | 'openrouter' | 'openai_endpoint');
+      updateDefaultProvider(model.model_provider || '');
+      updateDefaultModel(model.model_name || '');
+
+      // Apply endpoint-specific settings if using openai_endpoint interface
+      if (model.interface === 'openai_endpoint') {
+        updateDefaultEndpointBaseUrl(model.endpoint_base_url || '');
+        updateDefaultEndpointApiKey(model.endpoint_api_key || '');
+      } else {
+        // Clear endpoint settings for non-endpoint interfaces
+        updateDefaultEndpointBaseUrl('');
+        updateDefaultEndpointApiKey('');
+      }
+
+      // Show success feedback
+      setPresetAppliedSuccess(true);
+      setTimeout(() => setPresetAppliedSuccess(false), 3000);
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Failed to apply preset');
+    }
+  };
+
   // Handle adding new environment variable
   const handleAddEnvVariable = async () => {
     if (!newEnvKey.trim()) {
@@ -146,6 +204,56 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
 
   const renderDefaultsTab = () => (
     <div className="space-y-6">
+      {/* Preset Selector - Only show if presets are available */}
+      {presets.length > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">Apply Settings from Preset</h4>
+            </div>
+            {presetAppliedSuccess && (
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-xs">Preset applied!</span>
+              </div>
+            )}
+          </div>
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+            Select a benchmark preset to apply its model configuration as your default settings. This uses the first
+            answering model from the preset.
+          </p>
+          <div className="flex gap-2">
+            <select
+              value={selectedPresetId}
+              onChange={(e) => setSelectedPresetId(e.target.value)}
+              className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- Select a preset --</option>
+              {presets.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.name}
+                  {preset.description
+                    ? ` - ${preset.description.substring(0, 50)}${preset.description.length > 50 ? '...' : ''}`
+                    : ''}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => handleApplyPreset(selectedPresetId)}
+              disabled={!selectedPresetId}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-colors
+                       flex items-center gap-2 whitespace-nowrap"
+            >
+              Apply Preset
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Default Interface Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default LLM Interface</label>
