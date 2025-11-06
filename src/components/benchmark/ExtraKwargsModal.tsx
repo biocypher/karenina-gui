@@ -44,12 +44,16 @@ const ExtraKwargsModal: React.FC<ExtraKwargsModalProps> = ({ isOpen, onClose, on
     }
   };
 
-  const handleTest = () => {
-    const parsed = validateJson();
-    if (parsed !== null) {
-      // Show success message briefly
-      setError('✓ Valid JSON');
-      setTimeout(() => setError(null), 2000);
+  const handleIndent = () => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      // Format with 2-space indentation
+      const formatted = JSON.stringify(parsed, null, 2);
+      setJsonText(formatted);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid JSON';
+      setError(errorMessage);
     }
   };
 
@@ -213,10 +217,10 @@ const ExtraKwargsModal: React.FC<ExtraKwargsModalProps> = ({ isOpen, onClose, on
           </button>
           <div className="flex items-center space-x-3">
             <button
-              onClick={handleTest}
+              onClick={handleIndent}
               className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
             >
-              Test
+              Indent
             </button>
             <button
               onClick={onClose}
