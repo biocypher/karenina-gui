@@ -203,6 +203,11 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
         sanitized.mcp_tool_filter = model.mcp_tool_filter;
       }
 
+      // Only include extra_kwargs if it has values
+      if (model.extra_kwargs && Object.keys(model.extra_kwargs).length > 0) {
+        sanitized.extra_kwargs = model.extra_kwargs;
+      }
+
       return sanitized;
     };
 
