@@ -273,6 +273,8 @@ export interface ModelConfiguration {
   // MCP (Model Context Protocol) configuration
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
+  // Extra keyword arguments
+  extra_kwargs?: Record<string, unknown>;
 }
 
 export interface VerificationConfig {

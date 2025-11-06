@@ -3,6 +3,7 @@ import { BarChart3, Plus, Trash2, ChevronDown, ChevronUp, Settings } from 'lucid
 import { Card } from '../ui/Card';
 import { ManualTraceUpload } from '../ManualTraceUpload';
 import { MCPConfigurationModal } from './MCPConfigurationModal';
+import ExtraKwargsModal from './ExtraKwargsModal';
 
 interface ModelConfiguration {
   id: string;
@@ -18,6 +19,8 @@ interface ModelConfiguration {
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
   mcp_validated_servers?: Record<string, string>;
+  // Extra keyword arguments
+  extra_kwargs?: Record<string, unknown>;
 }
 
 interface ConfigurationPanelProps {
@@ -96,6 +99,16 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     modelId: null,
   });
 
+  const [extraKwargsModalState, setExtraKwargsModalState] = useState<{
+    isOpen: boolean;
+    modelId: string | null;
+    isAnswering: boolean;
+  }>({
+    isOpen: false,
+    modelId: null,
+    isAnswering: true,
+  });
+
   const handleMCPSave = (config: {
     mcp_urls_dict: Record<string, string>;
     mcp_tool_filter: string[];
@@ -124,6 +137,27 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     }
 
     return undefined;
+  };
+
+  const handleExtraKwargsSave = (kwargs: Record<string, unknown>) => {
+    if (extraKwargsModalState.modelId) {
+      if (extraKwargsModalState.isAnswering) {
+        onUpdateAnsweringModel(extraKwargsModalState.modelId, { extra_kwargs: kwargs });
+      } else {
+        onUpdateParsingModel(extraKwargsModalState.modelId, { extra_kwargs: kwargs });
+      }
+    }
+    setExtraKwargsModalState({ isOpen: false, modelId: null, isAnswering: true });
+  };
+
+  const getCurrentExtraKwargs = () => {
+    if (!extraKwargsModalState.modelId) return undefined;
+
+    const model = extraKwargsModalState.isAnswering
+      ? answeringModels.find((m) => m.id === extraKwargsModalState.modelId)
+      : parsingModels.find((m) => m.id === extraKwargsModalState.modelId);
+
+    return model?.extra_kwargs;
   };
 
   const renderModelConfiguration = (model: ModelConfiguration, index: number, isAnswering: boolean) => (
@@ -420,19 +454,37 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* MCP Configuration - Show only for answering models with non-manual interface */}
-      {isAnswering && model.interface !== 'manual' && (
-        <div className="mt-3">
+      {/* MCP and Extra Arguments Configuration - Show for non-manual interface */}
+      {model.interface !== 'manual' && (
+        <div className="mt-3 flex items-center gap-2">
+          {/* MCP Configuration - Show only for answering models */}
+          {isAnswering && (
+            <button
+              onClick={() => setMcpModalState({ isOpen: true, modelId: model.id })}
+              className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center space-x-2 disabled:opacity-50"
+              disabled={isRunning}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Configure MCP</span>
+              {model.mcp_tool_filter && model.mcp_tool_filter.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
+                  {model.mcp_tool_filter.length} tools
+                </span>
+              )}
+            </button>
+          )}
+
+          {/* Extra Arguments Configuration - Show for all models */}
           <button
-            onClick={() => setMcpModalState({ isOpen: true, modelId: model.id })}
+            onClick={() => setExtraKwargsModalState({ isOpen: true, modelId: model.id, isAnswering })}
             className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center space-x-2 disabled:opacity-50"
             disabled={isRunning}
           >
             <Settings className="w-4 h-4" />
-            <span>Configure MCP</span>
-            {model.mcp_tool_filter && model.mcp_tool_filter.length > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
-                {model.mcp_tool_filter.length} tools
+            <span>Extra Arguments</span>
+            {model.extra_kwargs && Object.keys(model.extra_kwargs).length > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs">
+                {Object.keys(model.extra_kwargs).length} params
               </span>
             )}
           </button>
@@ -773,6 +825,13 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         onClose={() => setMcpModalState({ isOpen: false, modelId: null })}
         onSave={handleMCPSave}
         initialConfig={getCurrentMCPConfig()}
+      />
+
+      <ExtraKwargsModal
+        isOpen={extraKwargsModalState.isOpen}
+        onClose={() => setExtraKwargsModalState({ isOpen: false, modelId: null, isAnswering: true })}
+        onSave={handleExtraKwargsSave}
+        initialKwargs={getCurrentExtraKwargs()}
       />
     </>
   );

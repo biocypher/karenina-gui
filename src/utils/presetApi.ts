@@ -39,6 +39,7 @@ export interface ModelConfig {
   mcp_tool_filter?: string[] | null;
   endpoint_base_url?: string | null;
   endpoint_api_key?: string | null;
+  extra_kwargs?: Record<string, unknown> | null;
 }
 
 /**
