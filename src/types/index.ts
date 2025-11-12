@@ -379,6 +379,25 @@ export interface VerificationResult {
     suspect_failed_tool_calls?: number; // Count of tool calls with error-like output patterns
     suspect_failed_tools?: string[]; // List of tools with suspected failures
   };
+  // Unified rubric results interface (computed property, not stored in backend)
+  // This is a convenience accessor that organizes all rubric results by evaluation method
+  rubric_results?: {
+    llm?: Record<string, number>; // LLM-evaluated trait scores (1-5)
+    manual?: Record<string, boolean>; // Manual/regex trait results (true/false)
+    metric?: Record<
+      string,
+      {
+        metrics: Record<string, number>; // Computed metrics (precision, recall, F1, etc.)
+        confusion: {
+          // Confusion matrix data
+          tp: string[];
+          tn: string[];
+          fp: string[];
+          fn: string[];
+        };
+      }
+    >;
+  };
 }
 
 // Helper interface for LLM usage metadata
