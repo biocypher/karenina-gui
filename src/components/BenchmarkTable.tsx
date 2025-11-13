@@ -122,7 +122,7 @@ const RubricCell: React.FC<{
 
 const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) => {
   // Not enabled - show disabled state
-  if (!result.deep_judgment_enabled) {
+  if (!result.deep_judgment?.deep_judgment_enabled) {
     return (
       <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
         Disabled
@@ -131,7 +131,7 @@ const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) 
   }
 
   // Enabled but not performed - show not performed state
-  if (!result.deep_judgment_performed) {
+  if (!result.deep_judgment?.deep_judgment_performed) {
     return (
       <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
         Not Performed
@@ -140,11 +140,12 @@ const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) 
   }
 
   // Check if search was enabled (hallucination risk assessment present)
-  const searchEnabled = result.deep_judgment_search_enabled && result.hallucination_risk_assessment;
+  const searchEnabled =
+    result.deep_judgment?.deep_judgment_search_enabled && result.deep_judgment?.hallucination_risk_assessment;
 
   // If search was enabled, show Hallucination Risk badge
-  if (searchEnabled && result.hallucination_risk_assessment) {
-    const riskValues = Object.values(result.hallucination_risk_assessment);
+  if (searchEnabled && result.deep_judgment?.hallucination_risk_assessment) {
+    const riskValues = Object.values(result.deep_judgment.hallucination_risk_assessment);
 
     // Find the highest risk level across all attributes
     let highestRisk: 'none' | 'low' | 'medium' | 'high' = 'none';
@@ -288,7 +289,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         enableSorting: false,
         enableColumnFilter: false,
       }),
-      columnHelper.accessor('question_text', {
+      columnHelper.accessor((row) => row.metadata.question_text, {
+        id: 'question_text',
         header: 'Question',
         cell: (info) => (
           <span className="max-w-xs truncate block" title={info.getValue()}>
@@ -300,7 +302,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       columnHelper.accessor(
         (row) => {
           // Access the expected raw answer from checkpoint using question_id
-          return checkpoint?.[row.question_id]?.raw_answer || '';
+          return checkpoint?.[row.metadata.question_id]?.raw_answer || '';
         },
         {
           id: 'raw_answer',
@@ -318,7 +320,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           filterFn: 'includesString',
         }
       ),
-      columnHelper.accessor('parsed_gt_response', {
+      columnHelper.accessor((row) => row.template?.parsed_gt_response, {
+        id: 'parsed_gt_response',
         header: 'Ground Truth',
         cell: (info) => {
           const value = info.getValue();
@@ -338,7 +341,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'includesString',
       }),
-      columnHelper.accessor('parsed_llm_response', {
+      columnHelper.accessor((row) => row.template?.parsed_llm_response, {
+        id: 'parsed_llm_response',
         header: 'LLM Extraction',
         cell: (info) => {
           const value = info.getValue();
@@ -358,7 +362,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'includesString',
       }),
-      columnHelper.accessor('keywords', {
+      columnHelper.accessor((row) => row.metadata.keywords, {
+        id: 'keywords',
         header: 'Keywords',
         cell: (info) => {
           const keywords = info.getValue();
@@ -386,7 +391,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor('answering_model', {
+      columnHelper.accessor((row) => row.metadata.answering_model, {
+        id: 'answering_model',
         header: 'Answering Model',
         cell: (info) => (
           <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200 px-2 py-1 rounded truncate block">
@@ -395,7 +401,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor('parsing_model', {
+      columnHelper.accessor((row) => row.metadata.parsing_model, {
+        id: 'parsing_model',
         header: 'Parsing Model',
         cell: (info) => (
           <span className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200 px-2 py-1 rounded truncate block">
@@ -404,7 +411,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor('answering_mcp_servers', {
+      columnHelper.accessor((row) => row.template?.answering_mcp_servers, {
+        id: 'answering_mcp_servers',
         header: 'MCP Servers',
         cell: (info) => {
           const servers = info.getValue();
@@ -427,13 +435,14 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor('completed_without_errors', {
+      columnHelper.accessor((row) => row.metadata.completed_without_errors, {
+        id: 'completed_without_errors',
         header: 'Completed Without Errors',
         cell: (info) => {
           const row = info.row.original;
 
           // Check for abstention first
-          if (row.abstention_detected && row.abstention_check_performed) {
+          if (row.template?.abstention_detected && row.template?.abstention_check_performed) {
             return (
               <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
                 Abstained
@@ -463,7 +472,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
 
           // Check for abstention
           if (value.has('abstained')) {
-            if (original.abstention_detected && original.abstention_check_performed) {
+            if (original.template?.abstention_detected && original.template?.abstention_check_performed) {
               return true;
             }
           }
@@ -472,14 +481,14 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           if (
             value.has(true) &&
             rowValue === true &&
-            !(original.abstention_detected && original.abstention_check_performed)
+            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
           ) {
             return true;
           }
           if (
             value.has(false) &&
             rowValue === false &&
-            !(original.abstention_detected && original.abstention_check_performed)
+            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
           ) {
             return true;
           }
@@ -487,12 +496,13 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           return false;
         },
       }),
-      columnHelper.accessor('verify_result', {
+      columnHelper.accessor((row) => row.template?.verify_result, {
+        id: 'verify_result',
         header: 'Verification',
         cell: (info) => {
           const value = info.getValue();
           const row = info.row.original;
-          const templatePerformed = row.template_verification_performed;
+          const templatePerformed = row.template?.template_verification_performed;
 
           // If template verification was not performed (rubric_only mode), show "Not evaluated"
           if (templatePerformed === false) {
@@ -520,7 +530,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'equals',
       }),
-      columnHelper.accessor('verify_granular_result', {
+      columnHelper.accessor((row) => row.template?.verify_granular_result, {
+        id: 'verify_granular_result',
         header: 'Granular',
         cell: (info) => (
           <span
@@ -540,7 +551,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         header: 'Rubric',
         cell: (info) => {
           const row = info.row.original;
-          const rubricPerformed = row.rubric_evaluation_performed;
+          const rubricPerformed = row.rubric?.rubric_evaluation_performed;
 
           // If rubric evaluation was not performed, show "Not evaluated"
           if (rubricPerformed === false) {
@@ -552,11 +563,16 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           }
 
           // Rubric evaluation was performed (or field not set - backward compatibility)
-          return <RubricCell rubricResult={row.verify_rubric} metricTraitMetrics={row.metric_trait_metrics} />;
+          return (
+            <RubricCell
+              rubricResult={row.rubric?.verify_rubric || null}
+              metricTraitMetrics={row.rubric?.metric_trait_metrics}
+            />
+          );
         },
         filterFn: (row, columnId, value) => {
-          const rubricResult = row.original.verify_rubric;
-          const metricTraitMetrics = row.original.metric_trait_metrics;
+          const rubricResult = row.original.rubric?.verify_rubric;
+          const metricTraitMetrics = row.original.rubric?.metric_trait_metrics;
 
           const hasLLMTraits = rubricResult && Object.keys(rubricResult).length > 0;
           const hasMetricTraits = metricTraitMetrics && Object.keys(metricTraitMetrics).length > 0;
@@ -581,23 +597,26 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         header: 'Hallucination Risk',
         cell: (info) => <DeepJudgmentCell result={info.row.original} />,
       }),
-      columnHelper.accessor('execution_time', {
+      columnHelper.accessor((row) => row.metadata.execution_time, {
+        id: 'execution_time',
         header: 'Time',
         cell: (info) => (info.getValue() ? `${info.getValue().toFixed(2)}s` : 'N/A'),
         filterFn: 'inNumberRange',
       }),
-      columnHelper.accessor('timestamp', {
+      columnHelper.accessor((row) => row.metadata.timestamp, {
+        id: 'timestamp',
         header: 'Timestamp',
         cell: (info) => (info.getValue() ? new Date(info.getValue()).toLocaleString() : 'N/A'),
         sortingFn: 'datetime',
         filterFn: 'inDateRange',
       }),
-      columnHelper.accessor('run_name', {
+      columnHelper.accessor((row) => row.metadata.run_name, {
+        id: 'run_name',
         header: 'Run',
         cell: (info) => info.getValue() || 'N/A',
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor((row) => row.answering_replicate || row.parsing_replicate, {
+      columnHelper.accessor((row) => row.metadata.answering_replicate || row.metadata.parsing_replicate, {
         id: 'replicate',
         header: 'Replicate',
         cell: (info) => info.getValue()?.toString() || '',

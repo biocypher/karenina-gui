@@ -13,6 +13,8 @@ export interface ExportableResultMetadata {
   keywords?: string[];
   answering_model: string;
   parsing_model: string;
+  answering_system_prompt?: string;
+  parsing_system_prompt?: string;
   execution_time: number;
   timestamp: string;
   run_name?: string;
@@ -31,8 +33,6 @@ export interface ExportableResultTemplate {
   template_verification_performed?: boolean;
   verify_result?: unknown;
   verify_granular_result?: unknown;
-  answering_system_prompt?: string;
-  parsing_system_prompt?: string;
   // Embeddings
   embedding_check_performed?: boolean;
   embedding_similarity_score?: number;
