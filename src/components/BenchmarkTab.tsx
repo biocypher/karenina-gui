@@ -936,21 +936,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 </div>
                 <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                    {
-                      getAllUnfilteredResults().filter(
-                        (r) => r.template?.verify_result?.completed_without_errors === true
-                      ).length
-                    }
+                    {getAllUnfilteredResults().filter((r) => r.template?.verify_result === true).length}
                   </div>
                   <div className="text-xs text-emerald-600 dark:text-emerald-400">Passed</div>
                 </div>
                 <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
-                    {
-                      getAllUnfilteredResults().filter(
-                        (r) => r.template?.verify_result?.completed_without_errors === false
-                      ).length
-                    }
+                    {getAllUnfilteredResults().filter((r) => r.template?.verify_result === false).length}
                   </div>
                   <div className="text-xs text-rose-600 dark:text-rose-400">Failed</div>
                 </div>
