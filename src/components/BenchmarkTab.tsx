@@ -938,13 +938,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
                     {
                       getAllUnfilteredResults().filter(
-                        (r) =>
-                          r.template?.verify_result === true ||
-                          (typeof r.template?.verify_result === 'object' &&
-                            r.template?.verify_result !== null &&
-                            r.template.verify_result &&
-                            'completed_without_errors' in r.template.verify_result &&
-                            r.template.verify_result.completed_without_errors === true)
+                        (r) => r.template?.verify_result?.completed_without_errors === true
                       ).length
                     }
                   </div>
@@ -954,13 +948,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
                     {
                       getAllUnfilteredResults().filter(
-                        (r) =>
-                          r.template?.verify_result === false ||
-                          (typeof r.template?.verify_result === 'object' &&
-                            r.template?.verify_result !== null &&
-                            r.template.verify_result &&
-                            'completed_without_errors' in r.template.verify_result &&
-                            r.template.verify_result.completed_without_errors === false)
+                        (r) => r.template?.verify_result?.completed_without_errors === false
                       ).length
                     }
                   </div>

@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { Eye, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
-import { VerificationResult } from '../types';
+import { VerificationResult, Checkpoint } from '../types';
 import {
   useReactTable,
   getCoreRowModel,
@@ -25,7 +25,7 @@ declare module '@tanstack/react-table' {
 
 interface BenchmarkTableProps {
   benchmarkResults: Record<string, VerificationResult>;
-  checkpoint?: Record<string, { raw_answer?: string; [key: string]: unknown }>;
+  checkpoint?: Checkpoint;
   onViewResult: (result: VerificationResult) => void;
   onFilteredCountChange?: (filteredCount: number, totalCount: number) => void;
 }
