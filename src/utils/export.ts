@@ -2,51 +2,94 @@ import { API_ENDPOINTS } from '../constants/api';
 import type { Rubric, RubricTrait, UsageMetadata } from '../types';
 
 /**
- * ExportableResult interface for GUI exports.
- *
- * MUST mirror backend VerificationResult model exactly.
- *
- * When adding fields: Update this interface, allHeaders array, and allRowData object.
- * See docs: .agents/dev/recurring-issues.md#issue-1-gui-export-sync-when-adding-verificationresult-fields
+ * Metadata subclass - core identity and tracking fields
  */
-export interface ExportableResult {
+export interface ExportableResultMetadata {
   question_id: string;
-  question_text: string;
-  raw_answer?: string; // Ground truth answer from checkpoint
-  raw_llm_response: string;
-  parsed_gt_response?: Record<string, unknown>; // Ground truth from 'correct' field
-  parsed_llm_response?: Record<string, unknown>; // LLM extracted fields (excluding 'id' and 'correct')
-  // Evaluation mode tracking
-  template_verification_performed?: boolean; // Whether template verification was executed
-  verify_result?: unknown; // Template verification result (null if template verification skipped)
-  verify_granular_result?: unknown;
-  rubric_evaluation_performed?: boolean; // Whether rubric evaluation was executed
-  verify_rubric?: Record<string, number | boolean>;
-  answering_model: string;
-  parsing_model: string;
-  answering_replicate?: number;
-  parsing_replicate?: number;
-  answering_system_prompt?: string;
-  parsing_system_prompt?: string;
+  template_id: string;
   completed_without_errors: boolean;
   error?: string;
+  question_text: string;
+  keywords?: string[];
+  answering_model: string;
+  parsing_model: string;
   execution_time: number;
   timestamp: string;
   run_name?: string;
   job_id?: string;
-  // MCP server metadata
-  answering_mcp_servers?: string[];
-  // Embedding check metadata
+  answering_replicate?: number;
+  parsing_replicate?: number;
+}
+
+/**
+ * Template subclass - answer generation and verification fields
+ */
+export interface ExportableResultTemplate {
+  raw_llm_response: string;
+  parsed_gt_response?: Record<string, unknown>;
+  parsed_llm_response?: Record<string, unknown>;
+  template_verification_performed?: boolean;
+  verify_result?: unknown;
+  verify_granular_result?: unknown;
+  answering_system_prompt?: string;
+  parsing_system_prompt?: string;
+  // Embeddings
   embedding_check_performed?: boolean;
   embedding_similarity_score?: number;
   embedding_override_applied?: boolean;
   embedding_model_used?: string;
-  // Abstention detection metadata
+  // Regex checks
+  regex_validations_performed?: boolean;
+  regex_validation_results?: Record<string, boolean>;
+  regex_validation_details?: Record<string, Record<string, unknown>>;
+  regex_overall_success?: boolean;
+  regex_extraction_results?: Record<string, unknown>;
+  // Recursion limit
+  recursion_limit_reached?: boolean;
+  // Abstention
   abstention_check_performed?: boolean;
   abstention_detected?: boolean | null;
   abstention_override_applied?: boolean;
   abstention_reasoning?: string | null;
-  // Deep-judgment metadata
+  // MCP
+  answering_mcp_servers?: string[];
+  // Usage
+  usage_metadata?: Record<string, UsageMetadata>;
+  agent_metrics?: {
+    iterations?: number;
+    tool_calls?: number;
+    tools_used?: string[];
+    suspect_failed_tool_calls?: number;
+    suspect_failed_tools?: string[];
+  };
+}
+
+/**
+ * Rubric subclass - rubric evaluation with split trait types
+ */
+export interface ExportableResultRubric {
+  rubric_evaluation_performed?: boolean;
+  // Split trait scores by type (replaces old verify_rubric)
+  llm_trait_scores?: Record<string, number>; // 1-5 scale
+  manual_trait_scores?: Record<string, boolean>; // regex-based
+  metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
+  evaluation_rubric?: Record<string, unknown>;
+  // Metric trait confusion matrices
+  metric_trait_confusion_lists?: Record<
+    string,
+    {
+      tp: string[];
+      tn: string[];
+      fp: string[];
+      fn: string[];
+    }
+  >;
+}
+
+/**
+ * Deep-judgment subclass - multi-stage parsing with excerpts
+ */
+export interface ExportableResultDeepJudgment {
   deep_judgment_enabled?: boolean;
   deep_judgment_performed?: boolean;
   extracted_excerpts?: Record<
@@ -66,29 +109,25 @@ export interface ExportableResult {
   deep_judgment_model_calls?: number;
   deep_judgment_excerpt_retry_count?: number;
   attributes_without_excerpts?: string[];
-  // Search-enhanced deep-judgment metadata
+  // Search-enhanced deep-judgment
   deep_judgment_search_enabled?: boolean;
   hallucination_risk_assessment?: Record<string, string>;
-  // Metric trait evaluation metadata (confusion-matrix analysis)
-  metric_trait_confusion_lists?: Record<
-    string,
-    {
-      tp: string[];
-      tn: string[];
-      fp: string[];
-      fn: string[];
-    }
-  >;
-  metric_trait_metrics?: Record<string, Record<string, number>>;
-  // LLM usage tracking metadata
-  usage_metadata?: Record<string, UsageMetadata>;
-  agent_metrics?: {
-    iterations?: number;
-    tool_calls?: number;
-    tools_used?: string[];
-    suspect_failed_tool_calls?: number;
-    suspect_failed_tools?: string[];
-  };
+}
+
+/**
+ * ExportableResult interface for GUI exports with nested structure.
+ *
+ * MUST mirror backend VerificationResult model exactly.
+ *
+ * BREAKING CHANGE: Now uses nested composition instead of flat structure.
+ * When adding fields: Update the appropriate subinterface, allHeaders array, and allRowData object.
+ * See docs: .agents/dev/recurring-issues.md#issue-1-gui-export-sync-when-adding-verificationresult-fields
+ */
+export interface ExportableResult {
+  metadata: ExportableResultMetadata;
+  template?: ExportableResultTemplate;
+  rubric?: ExportableResultRubric;
+  deep_judgment?: ExportableResultDeepJudgment;
 }
 
 /**
@@ -138,12 +177,17 @@ export function exportToJSON(results: ExportableResult[], selectedFields?: strin
   const resultsWithIndex = results.map((result, index) => {
     // Replace completed_without_errors boolean with "abstained" string when abstention is detected
     const completedWithoutErrorsValue =
-      result.abstention_detected && result.abstention_override_applied ? 'abstained' : result.completed_without_errors;
+      result.template?.abstention_detected && result.template?.abstention_override_applied
+        ? 'abstained'
+        : result.metadata.completed_without_errors;
 
     const resultWithIndex = {
       row_index: index + 1,
       ...result,
-      completed_without_errors: completedWithoutErrorsValue,
+      metadata: {
+        ...result.metadata,
+        completed_without_errors: completedWithoutErrorsValue,
+      },
     };
 
     if (selectedFields) {
@@ -180,10 +224,17 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
   // Extract all unique rubric trait names from results to create dynamic columns
   const allRubricTraitNames = new Set<string>();
   results.forEach((result) => {
-    if (result.verify_rubric) {
-      Object.keys(result.verify_rubric).forEach((traitName) => {
-        allRubricTraitNames.add(traitName);
-      });
+    if (result.rubric) {
+      // Collect from all three trait score dicts (llm, manual, metric)
+      [result.rubric.llm_trait_scores, result.rubric.manual_trait_scores, result.rubric.metric_trait_scores].forEach(
+        (traitDict) => {
+          if (traitDict) {
+            Object.keys(traitDict).forEach((traitName) => {
+              allRubricTraitNames.add(traitName);
+            });
+          }
+        }
+      );
     }
   });
 
@@ -281,12 +332,20 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
   const csvRows = [headers.join(',')];
 
   results.forEach((result, index) => {
+    // Merge all trait scores for CSV export (from all three rubric dicts)
+    const mergedTraits: Record<string, number | boolean | Record<string, number>> = {};
+    if (result.rubric) {
+      if (result.rubric.llm_trait_scores) Object.assign(mergedTraits, result.rubric.llm_trait_scores);
+      if (result.rubric.manual_trait_scores) Object.assign(mergedTraits, result.rubric.manual_trait_scores);
+      if (result.rubric.metric_trait_scores) Object.assign(mergedTraits, result.rubric.metric_trait_scores);
+    }
+
     // Create question-specific rubrics JSON
-    const questionSpecificRubrics: Record<string, number | boolean> = {};
-    if (result.verify_rubric) {
+    const questionSpecificRubrics: Record<string, number | boolean | Record<string, number>> = {};
+    if (Object.keys(mergedTraits).length > 0) {
       questionSpecificTraits.forEach((trait) => {
-        if (trait in result.verify_rubric!) {
-          questionSpecificRubrics[trait] = result.verify_rubric![trait];
+        if (trait in mergedTraits) {
+          questionSpecificRubrics[trait] = mergedTraits[trait];
         }
       });
     }
@@ -295,10 +354,10 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
 
     // Create rubric summary
     let rubricSummary = '';
-    if (result.verify_rubric) {
-      const traits = Object.entries(result.verify_rubric);
+    if (Object.keys(mergedTraits).length > 0) {
+      const traits = Object.entries(mergedTraits);
       const passedTraits = traits.filter(([, value]) =>
-        typeof value === 'boolean' ? value : value && value >= 3
+        typeof value === 'boolean' ? value : typeof value === 'number' ? value && value >= 3 : false
       ).length;
       rubricSummary = `${passedTraits}/${traits.length}`;
     }
@@ -320,88 +379,116 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
      */
     const allRowData: Record<string, string> = {
       row_index: String(index + 1),
-      question_id: escapeCSVField(result.question_id),
-      question_text: escapeCSVField(result.question_text),
-      raw_answer: escapeCSVField(result.raw_answer || ''),
-      raw_llm_response: escapeCSVField(result.raw_llm_response),
-      parsed_gt_answer: escapeCSVField(result.parsed_gt_response ? JSON.stringify(result.parsed_gt_response) : ''),
-      parsed_llm_answer: escapeCSVField(result.parsed_llm_response ? JSON.stringify(result.parsed_llm_response) : ''),
-      template_verification_performed: escapeCSVField(
-        result.template_verification_performed !== undefined ? result.template_verification_performed : ''
-      ),
-      verify_result: escapeCSVField(result.verify_result !== undefined ? JSON.stringify(result.verify_result) : 'N/A'),
-      verify_granular_result: escapeCSVField(
-        result.verify_granular_result !== undefined ? JSON.stringify(result.verify_granular_result) : 'N/A'
-      ),
-      rubric_evaluation_performed: escapeCSVField(
-        result.rubric_evaluation_performed !== undefined ? result.rubric_evaluation_performed : ''
-      ),
-      rubric_summary: escapeCSVField(rubricSummary),
-      answering_model: escapeCSVField(result.answering_model),
-      parsing_model: escapeCSVField(result.parsing_model),
-      answering_replicate: escapeCSVField(result.answering_replicate || ''),
-      parsing_replicate: escapeCSVField(result.parsing_replicate || ''),
-      answering_system_prompt: escapeCSVField(result.answering_system_prompt || ''),
-      parsing_system_prompt: escapeCSVField(result.parsing_system_prompt || ''),
-      // MCP server fields
-      answering_mcp_servers: escapeCSVField(
-        result.answering_mcp_servers ? JSON.stringify(result.answering_mcp_servers) : ''
-      ),
+      // Metadata fields
+      question_id: escapeCSVField(result.metadata.question_id),
+      question_text: escapeCSVField(result.metadata.question_text),
+      raw_answer: '', // No longer in structure, legacy field
+      answering_model: escapeCSVField(result.metadata.answering_model),
+      parsing_model: escapeCSVField(result.metadata.parsing_model),
+      answering_replicate: escapeCSVField(result.metadata.answering_replicate || ''),
+      parsing_replicate: escapeCSVField(result.metadata.parsing_replicate || ''),
       completed_without_errors: escapeCSVField(
-        result.abstention_detected && result.abstention_override_applied ? 'abstained' : result.completed_without_errors
+        result.template?.abstention_detected && result.template?.abstention_override_applied
+          ? 'abstained'
+          : result.metadata.completed_without_errors
       ),
-      error: escapeCSVField(result.error || ''),
-      execution_time: escapeCSVField(result.execution_time),
-      timestamp: escapeCSVField(result.timestamp),
-      run_name: escapeCSVField(result.run_name || ''),
-      job_id: escapeCSVField(result.job_id || ''),
-      // Embedding check fields
-      embedding_check_performed: escapeCSVField(result.embedding_check_performed || false),
-      embedding_similarity_score: escapeCSVField(result.embedding_similarity_score || ''),
-      embedding_override_applied: escapeCSVField(result.embedding_override_applied || false),
-      embedding_model_used: escapeCSVField(result.embedding_model_used || ''),
-      // Abstention detection fields
-      abstention_check_performed: escapeCSVField(result.abstention_check_performed || false),
-      abstention_detected: escapeCSVField(
-        result.abstention_detected !== null && result.abstention_detected !== undefined
-          ? result.abstention_detected
+      error: escapeCSVField(result.metadata.error || ''),
+      execution_time: escapeCSVField(result.metadata.execution_time),
+      timestamp: escapeCSVField(result.metadata.timestamp),
+      run_name: escapeCSVField(result.metadata.run_name || ''),
+      job_id: escapeCSVField(result.metadata.job_id || ''),
+      // Template fields
+      raw_llm_response: escapeCSVField(result.template?.raw_llm_response || ''),
+      parsed_gt_answer: escapeCSVField(
+        result.template?.parsed_gt_response ? JSON.stringify(result.template.parsed_gt_response) : ''
+      ),
+      parsed_llm_answer: escapeCSVField(
+        result.template?.parsed_llm_response ? JSON.stringify(result.template.parsed_llm_response) : ''
+      ),
+      template_verification_performed: escapeCSVField(
+        result.template?.template_verification_performed !== undefined
+          ? result.template.template_verification_performed
           : ''
       ),
-      abstention_override_applied: escapeCSVField(result.abstention_override_applied || false),
-      abstention_reasoning: escapeCSVField(result.abstention_reasoning || ''),
-      // Deep-judgment fields
-      deep_judgment_enabled: escapeCSVField(result.deep_judgment_enabled || false),
-      deep_judgment_performed: escapeCSVField(result.deep_judgment_performed || false),
-      extracted_excerpts: escapeCSVField(result.extracted_excerpts ? JSON.stringify(result.extracted_excerpts) : ''),
-      attribute_reasoning: escapeCSVField(result.attribute_reasoning ? JSON.stringify(result.attribute_reasoning) : ''),
-      deep_judgment_stages_completed: escapeCSVField(
-        result.deep_judgment_stages_completed ? JSON.stringify(result.deep_judgment_stages_completed) : ''
+      verify_result: escapeCSVField(
+        result.template?.verify_result !== undefined ? JSON.stringify(result.template.verify_result) : 'N/A'
       ),
-      deep_judgment_model_calls: escapeCSVField(result.deep_judgment_model_calls || 0),
-      deep_judgment_excerpt_retry_count: escapeCSVField(result.deep_judgment_excerpt_retry_count || 0),
-      attributes_without_excerpts: escapeCSVField(
-        result.attributes_without_excerpts ? JSON.stringify(result.attributes_without_excerpts) : ''
+      verify_granular_result: escapeCSVField(
+        result.template?.verify_granular_result !== undefined
+          ? JSON.stringify(result.template.verify_granular_result)
+          : 'N/A'
       ),
-      // Search-enhanced deep-judgment fields
-      deep_judgment_search_enabled: escapeCSVField(result.deep_judgment_search_enabled || false),
-      hallucination_risk_assessment: escapeCSVField(
-        result.hallucination_risk_assessment ? JSON.stringify(result.hallucination_risk_assessment) : ''
+      answering_system_prompt: escapeCSVField(result.template?.answering_system_prompt || ''),
+      parsing_system_prompt: escapeCSVField(result.template?.parsing_system_prompt || ''),
+      // Embedding check fields
+      embedding_check_performed: escapeCSVField(result.template?.embedding_check_performed || false),
+      embedding_similarity_score: escapeCSVField(result.template?.embedding_similarity_score || ''),
+      embedding_override_applied: escapeCSVField(result.template?.embedding_override_applied || false),
+      embedding_model_used: escapeCSVField(result.template?.embedding_model_used || ''),
+      // Abstention detection fields
+      abstention_check_performed: escapeCSVField(result.template?.abstention_check_performed || false),
+      abstention_detected: escapeCSVField(
+        result.template?.abstention_detected !== null && result.template?.abstention_detected !== undefined
+          ? result.template.abstention_detected
+          : ''
       ),
-      // Metric trait fields
-      metric_trait_confusion_lists: escapeCSVField(
-        result.metric_trait_confusion_lists ? JSON.stringify(result.metric_trait_confusion_lists) : ''
-      ),
-      metric_trait_metrics: escapeCSVField(
-        result.metric_trait_metrics ? JSON.stringify(result.metric_trait_metrics) : ''
+      abstention_override_applied: escapeCSVField(result.template?.abstention_override_applied || false),
+      abstention_reasoning: escapeCSVField(result.template?.abstention_reasoning || ''),
+      // MCP server fields
+      answering_mcp_servers: escapeCSVField(
+        result.template?.answering_mcp_servers ? JSON.stringify(result.template.answering_mcp_servers) : ''
       ),
       // LLM usage tracking fields
-      usage_metadata: escapeCSVField(result.usage_metadata ? JSON.stringify(result.usage_metadata) : ''),
-      agent_metrics: escapeCSVField(result.agent_metrics ? JSON.stringify(result.agent_metrics) : ''),
+      usage_metadata: escapeCSVField(
+        result.template?.usage_metadata ? JSON.stringify(result.template.usage_metadata) : ''
+      ),
+      agent_metrics: escapeCSVField(
+        result.template?.agent_metrics ? JSON.stringify(result.template.agent_metrics) : ''
+      ),
+      // Rubric fields
+      rubric_evaluation_performed: escapeCSVField(
+        result.rubric?.rubric_evaluation_performed !== undefined ? result.rubric.rubric_evaluation_performed : ''
+      ),
+      rubric_summary: escapeCSVField(rubricSummary),
+      metric_trait_confusion_lists: escapeCSVField(
+        result.rubric?.metric_trait_confusion_lists ? JSON.stringify(result.rubric.metric_trait_confusion_lists) : ''
+      ),
+      metric_trait_metrics: escapeCSVField(
+        result.rubric?.metric_trait_scores ? JSON.stringify(result.rubric.metric_trait_scores) : ''
+      ),
+      // Deep-judgment fields
+      deep_judgment_enabled: escapeCSVField(result.deep_judgment?.deep_judgment_enabled || false),
+      deep_judgment_performed: escapeCSVField(result.deep_judgment?.deep_judgment_performed || false),
+      extracted_excerpts: escapeCSVField(
+        result.deep_judgment?.extracted_excerpts ? JSON.stringify(result.deep_judgment.extracted_excerpts) : ''
+      ),
+      attribute_reasoning: escapeCSVField(
+        result.deep_judgment?.attribute_reasoning ? JSON.stringify(result.deep_judgment.attribute_reasoning) : ''
+      ),
+      deep_judgment_stages_completed: escapeCSVField(
+        result.deep_judgment?.deep_judgment_stages_completed
+          ? JSON.stringify(result.deep_judgment.deep_judgment_stages_completed)
+          : ''
+      ),
+      deep_judgment_model_calls: escapeCSVField(result.deep_judgment?.deep_judgment_model_calls || 0),
+      deep_judgment_excerpt_retry_count: escapeCSVField(result.deep_judgment?.deep_judgment_excerpt_retry_count || 0),
+      attributes_without_excerpts: escapeCSVField(
+        result.deep_judgment?.attributes_without_excerpts
+          ? JSON.stringify(result.deep_judgment.attributes_without_excerpts)
+          : ''
+      ),
+      // Search-enhanced deep-judgment fields
+      deep_judgment_search_enabled: escapeCSVField(result.deep_judgment?.deep_judgment_search_enabled || false),
+      hallucination_risk_assessment: escapeCSVField(
+        result.deep_judgment?.hallucination_risk_assessment
+          ? JSON.stringify(result.deep_judgment.hallucination_risk_assessment)
+          : ''
+      ),
     };
 
-    // Add global rubric values
+    // Add global rubric values from merged traits
     globalTraits.forEach((traitName) => {
-      const value = result.verify_rubric?.[traitName];
+      const value = mergedTraits[traitName];
       allRowData[`rubric_${traitName}`] = escapeCSVField(value !== undefined ? value : '');
     });
 
