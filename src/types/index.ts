@@ -372,7 +372,8 @@ export interface VerificationResultRubric {
   verify_rubric?: Record<string, number | boolean>;
   // Split trait scores by type
   llm_trait_scores?: Record<string, number>; // 1-5 scale
-  manual_trait_scores?: Record<string, boolean>; // regex-based
+  regex_trait_scores?: Record<string, boolean>; // regex-based
+  callable_trait_scores?: Record<string, boolean | number>; // boolean or score (1-5)
   metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
   evaluation_rubric?: Rubric;
   // Metric trait confusion matrices
@@ -389,7 +390,8 @@ export interface VerificationResultRubric {
   // Unified rubric results interface (computed property)
   rubric_results?: {
     llm?: Record<string, number>;
-    manual?: Record<string, boolean>;
+    regex?: Record<string, boolean>;
+    callable?: Record<string, boolean | number>;
     metric?: Record<
       string,
       {
