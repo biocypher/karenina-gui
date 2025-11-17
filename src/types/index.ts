@@ -130,7 +130,15 @@ export interface SchemaOrgRating {
   description?: string;
   bestRating: number;
   worstRating: number;
-  additionalType: 'GlobalRubricTrait' | 'QuestionSpecificRubricTrait';
+  additionalType:
+    | 'GlobalRubricTrait'
+    | 'QuestionSpecificRubricTrait'
+    | 'GlobalRegexTrait'
+    | 'QuestionSpecificRegexTrait'
+    | 'GlobalCallableTrait'
+    | 'QuestionSpecificCallableTrait'
+    | 'GlobalMetricRubricTrait'
+    | 'QuestionSpecificMetricRubricTrait';
   ratingExplanation?: string;
 }
 
@@ -193,7 +201,7 @@ export type JsonLdCheckpoint = SchemaOrgDataFeed;
 
 // Conversion mapping types
 export interface RubricTraitToRatingMapping {
-  rubricTrait: RubricTrait;
+  rubricTrait: LLMRubricTrait;
   ratingValue?: number; // Set when trait is evaluated
   isEvaluated: boolean;
 }
@@ -477,7 +485,7 @@ export interface VerificationProgress {
 // Rubric Types
 export type TraitKind = 'boolean' | 'score';
 
-export interface RubricTrait {
+export interface LLMRubricTrait {
   name: string;
   description?: string;
   kind: TraitKind;
@@ -485,12 +493,21 @@ export interface RubricTrait {
   max_score?: number; // For score traits
 }
 
-export interface ManualRubricTrait {
+export interface RegexTrait {
   name: string;
   description?: string;
-  pattern?: string; // Regex pattern (mutually exclusive with callable_name)
-  callable_name?: string; // Callable function name (mutually exclusive with pattern)
+  pattern: string; // Regex pattern
   case_sensitive?: boolean; // Whether pattern matching should be case sensitive (default: true)
+  invert_result?: boolean; // Whether to invert the boolean result (default: false)
+}
+
+export interface CallableTrait {
+  name: string;
+  description?: string;
+  callable_code: string; // Base64-encoded callable code (read-only in GUI)
+  kind: TraitKind;
+  min_score?: number; // For score traits
+  max_score?: number; // For score traits
   invert_result?: boolean; // Whether to invert the boolean result (default: false)
 }
 
@@ -505,8 +522,9 @@ export interface MetricRubricTrait {
 }
 
 export interface Rubric {
-  traits: RubricTrait[];
-  manual_traits?: ManualRubricTrait[];
+  traits: LLMRubricTrait[];
+  regex_traits?: RegexTrait[];
+  callable_traits?: CallableTrait[];
   metric_traits?: MetricRubricTrait[];
 }
 
@@ -526,7 +544,7 @@ export interface RubricTraitGenerationRequest {
 }
 
 export interface RubricTraitGenerationResponse {
-  traits: RubricTrait[];
+  traits: LLMRubricTrait[];
   job_id?: string;
 }
 
