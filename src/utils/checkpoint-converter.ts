@@ -641,7 +641,7 @@ export function jsonLdToV2(
     // Convert DataFeedItem objects back to CheckpointItem
     const checkpoint: { [key: string]: CheckpointItem } = {};
 
-    jsonLdCheckpoint.dataFeedElement.forEach((dataFeedItem, index) => {
+    (jsonLdCheckpoint.dataFeedElement || []).forEach((dataFeedItem, index) => {
       const question = dataFeedItem.item;
 
       // Generate a question ID (use index if no ID preserved)
