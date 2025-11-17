@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { PlusIcon, TrashIcon, XMarkIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
-import { RubricTrait, TraitKind, ManualRubricTrait, MetricRubricTrait } from '../types';
+import { LLMRubricTrait, TraitKind, RegexTrait, MetricRubricTrait } from '../types';
 
-type TraitType = 'boolean' | 'score' | 'manual' | 'metric';
+type TraitType = 'boolean' | 'score' | 'regex' | 'metric';
 
 // Valid metrics for each evaluation mode
 const VALID_METRICS_TP_ONLY = ['precision', 'recall', 'f1'] as const;
@@ -32,8 +32,8 @@ export default function RubricTraitEditor() {
     addTrait,
     updateTrait,
     removeTrait,
-    updateManualTrait,
-    removeManualTrait,
+    updateRegexTrait,
+    removeRegexTrait,
     updateMetricTrait,
     removeMetricTrait,
     saveRubric,
@@ -49,7 +49,7 @@ export default function RubricTraitEditor() {
     if (!currentRubric) {
       setCurrentRubric({
         traits: [],
-        manual_traits: [],
+        regex_traits: [],
         metric_traits: [],
       });
     }
@@ -58,11 +58,11 @@ export default function RubricTraitEditor() {
   const handleAddTrait = () => {
     const totalTraits =
       (currentRubric?.traits.length || 0) +
-      (currentRubric?.manual_traits?.length || 0) +
+      (currentRubric?.regex_traits?.length || 0) +
       (currentRubric?.metric_traits?.length || 0);
 
     // Always add Binary trait by default - user can change type via dropdown
-    const newTrait: RubricTrait = {
+    const newTrait: LLMRubricTrait = {
       name: `Trait ${totalTraits + 1}`,
       description: '',
       kind: 'boolean',
@@ -70,24 +70,24 @@ export default function RubricTraitEditor() {
     addTrait(newTrait);
   };
 
-  const handleTraitTypeChange = (index: number, newType: TraitType, source: 'llm' | 'manual' | 'metric') => {
+  const handleTraitTypeChange = (index: number, newType: TraitType, source: 'llm' | 'regex' | 'metric') => {
     if (!currentRubric) return;
 
-    if (source === 'manual') {
+    if (source === 'regex') {
       // Converting from manual trait
-      const manualTrait = currentRubric.manual_traits?.[index];
-      if (!manualTrait) return;
+      const regexTrait = currentRubric.regex_traits?.[index];
+      if (!regexTrait) return;
 
-      if (newType === 'manual') return; // Already manual
+      if (newType === 'regex') return; // Already manual
 
-      // Remove from manual_traits
-      const updatedManualTraits = currentRubric.manual_traits.filter((_, i) => i !== index);
+      // Remove from regex_traits
+      const updatedRegexTraits = currentRubric.regex_traits.filter((_, i) => i !== index);
 
       if (newType === 'metric') {
         // Convert to metric trait
         const convertedTrait: MetricRubricTrait = {
-          name: manualTrait.name,
-          description: manualTrait.description || '',
+          name: regexTrait.name,
+          description: regexTrait.description || '',
           evaluation_mode: 'tp_only',
           metrics: ['precision'],
           tp_instructions: [],
@@ -97,14 +97,14 @@ export default function RubricTraitEditor() {
 
         setCurrentRubric({
           ...currentRubric,
-          manual_traits: updatedManualTraits,
+          regex_traits: updatedRegexTraits,
           metric_traits: [...(currentRubric.metric_traits || []), convertedTrait],
         });
       } else {
         // Convert to LLM trait
-        const convertedTrait: RubricTrait = {
-          name: manualTrait.name,
-          description: manualTrait.description || '',
+        const convertedTrait: LLMRubricTrait = {
+          name: regexTrait.name,
+          description: regexTrait.description || '',
           kind: newType as TraitKind,
           ...(newType === 'score' && { min_score: 1, max_score: 5 }),
         };
@@ -112,7 +112,7 @@ export default function RubricTraitEditor() {
         setCurrentRubric({
           ...currentRubric,
           traits: [...currentRubric.traits, convertedTrait],
-          manual_traits: updatedManualTraits,
+          regex_traits: updatedRegexTraits,
         });
       }
     } else if (source === 'metric') {
@@ -125,9 +125,9 @@ export default function RubricTraitEditor() {
       // Remove from metric_traits
       const updatedMetricTraits = currentRubric.metric_traits.filter((_, i) => i !== index);
 
-      if (newType === 'manual') {
+      if (newType === 'regex') {
         // Convert to manual trait
-        const convertedTrait: ManualRubricTrait = {
+        const convertedTrait: RegexTrait = {
           name: metricTrait.name,
           description: metricTrait.description || '',
           pattern: '',
@@ -138,11 +138,11 @@ export default function RubricTraitEditor() {
         setCurrentRubric({
           ...currentRubric,
           metric_traits: updatedMetricTraits,
-          manual_traits: [...(currentRubric.manual_traits || []), convertedTrait],
+          regex_traits: [...(currentRubric.regex_traits || []), convertedTrait],
         });
       } else {
         // Convert to LLM trait
-        const convertedTrait: RubricTrait = {
+        const convertedTrait: LLMRubricTrait = {
           name: metricTrait.name,
           description: metricTrait.description || '',
           kind: newType as TraitKind,
@@ -160,9 +160,9 @@ export default function RubricTraitEditor() {
       const llmTrait = currentRubric.traits[index];
       if (!llmTrait) return;
 
-      if (newType === 'manual') {
+      if (newType === 'regex') {
         // Convert to manual trait
-        const convertedTrait: ManualRubricTrait = {
+        const convertedTrait: RegexTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
           pattern: '',
@@ -175,7 +175,7 @@ export default function RubricTraitEditor() {
         setCurrentRubric({
           ...currentRubric,
           traits: updatedTraits,
-          manual_traits: [...(currentRubric.manual_traits || []), convertedTrait],
+          regex_traits: [...(currentRubric.regex_traits || []), convertedTrait],
         });
       } else if (newType === 'metric') {
         // Convert to metric trait
@@ -198,7 +198,7 @@ export default function RubricTraitEditor() {
         });
       } else {
         // Change LLM trait type (boolean <-> score)
-        const updatedTrait: RubricTrait = {
+        const updatedTrait: LLMRubricTrait = {
           ...llmTrait,
           kind: newType as TraitKind,
           ...(newType === 'score' && { min_score: 1, max_score: 5 }),
@@ -213,7 +213,7 @@ export default function RubricTraitEditor() {
     if (!currentRubric || index < 0 || index >= currentRubric.traits.length) return;
 
     const currentTrait = currentRubric.traits[index];
-    const updatedTrait: RubricTrait = { ...currentTrait, [field]: value };
+    const updatedTrait: LLMRubricTrait = { ...currentTrait, [field]: value };
 
     // Set default min/max for score traits
     if (field === 'kind') {
@@ -229,13 +229,13 @@ export default function RubricTraitEditor() {
     updateTrait(index, updatedTrait);
   };
 
-  const handleManualTraitChange = (index: number, field: keyof ManualRubricTrait, value: string | boolean) => {
-    if (!currentRubric?.manual_traits || index < 0 || index >= currentRubric.manual_traits.length) return;
+  const handleRegexTraitChange = (index: number, field: keyof RegexTrait, value: string | boolean) => {
+    if (!currentRubric?.regex_traits || index < 0 || index >= currentRubric.regex_traits.length) return;
 
-    const currentTrait = currentRubric.manual_traits[index];
-    const updatedTrait: ManualRubricTrait = { ...currentTrait, [field]: value };
+    const currentTrait = currentRubric.regex_traits[index];
+    const updatedTrait: RegexTrait = { ...currentTrait, [field]: value };
 
-    updateManualTrait(index, updatedTrait);
+    updateRegexTrait(index, updatedTrait);
   };
 
   const handleMetricTraitChange = (
@@ -324,10 +324,10 @@ export default function RubricTraitEditor() {
 
     // Validate rubric before saving (must have at least one trait of any type)
     const hasTraits = currentRubric.traits.length > 0;
-    const hasManualTraits = currentRubric.manual_traits && currentRubric.manual_traits.length > 0;
+    const hasRegexTraits = currentRubric.regex_traits && currentRubric.regex_traits.length > 0;
     const hasMetricTraits = currentRubric.metric_traits && currentRubric.metric_traits.length > 0;
 
-    if (!hasTraits && !hasManualTraits && !hasMetricTraits) {
+    if (!hasTraits && !hasRegexTraits && !hasMetricTraits) {
       return;
     }
 
@@ -401,7 +401,7 @@ export default function RubricTraitEditor() {
                   >
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
-                    <option value="manual">Manual (Regex)</option>
+                    <option value="manual">Regex</option>
                     <option value="metric">Metric (Confusion Matrix)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -490,26 +490,26 @@ export default function RubricTraitEditor() {
           </div>
         ))}
 
-        {/* Manual (Regex) Traits */}
-        {(currentRubric.manual_traits || []).map((trait, index) => (
+        {/* Regex Traits */}
+        {(currentRubric.regex_traits || []).map((trait, index) => (
           <div
-            key={`manual-${index}`}
+            key={`regex-${index}`}
             className="bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
               {/* Trait Name */}
               <div className="col-span-3">
                 <label
-                  htmlFor={`manual-trait-name-${index}`}
+                  htmlFor={`regex-trait-name-${index}`}
                   className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                 >
                   Trait Name
                 </label>
                 <input
-                  id={`manual-trait-name-${index}`}
+                  id={`regex-trait-name-${index}`}
                   type="text"
                   value={trait.name}
-                  onChange={(e) => handleManualTraitChange(index, 'name', e.target.value)}
+                  onChange={(e) => handleRegexTraitChange(index, 'name', e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
                              bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
                              focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -520,16 +520,16 @@ export default function RubricTraitEditor() {
               {/* Trait Type Selector */}
               <div className="col-span-2">
                 <label
-                  htmlFor={`manual-trait-type-${index}`}
+                  htmlFor={`regex-trait-type-${index}`}
                   className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                 >
                   Trait Type
                 </label>
                 <div className="relative">
                   <select
-                    id={`manual-trait-type-${index}`}
+                    id={`regex-trait-type-${index}`}
                     value="manual"
-                    onChange={(e) => handleTraitTypeChange(index, e.target.value as TraitType, 'manual')}
+                    onChange={(e) => handleTraitTypeChange(index, e.target.value as TraitType, 'regex')}
                     className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
                                bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
                                focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8
@@ -538,7 +538,7 @@ export default function RubricTraitEditor() {
                   >
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
-                    <option value="manual">Manual (Regex)</option>
+                    <option value="manual">Regex</option>
                     <option value="metric">Metric (Confusion Matrix)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -552,16 +552,16 @@ export default function RubricTraitEditor() {
               {/* Description */}
               <div className="col-span-6">
                 <label
-                  htmlFor={`manual-trait-description-${index}`}
+                  htmlFor={`regex-trait-description-${index}`}
                   className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                 >
                   Trait Description
                 </label>
                 <input
-                  id={`manual-trait-description-${index}`}
+                  id={`regex-trait-description-${index}`}
                   type="text"
                   value={trait.description || ''}
-                  onChange={(e) => handleManualTraitChange(index, 'description', e.target.value)}
+                  onChange={(e) => handleRegexTraitChange(index, 'description', e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
                              bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
                              focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -572,7 +572,7 @@ export default function RubricTraitEditor() {
               {/* Delete Button */}
               <div className="col-span-1 flex justify-end mt-6">
                 <button
-                  onClick={() => removeManualTrait(index)}
+                  onClick={() => removeRegexTrait(index)}
                   className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
                              hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                   title="Delete manual trait"
@@ -586,7 +586,7 @@ export default function RubricTraitEditor() {
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-1">
                 <label
-                  htmlFor={`manual-trait-pattern-${index}`}
+                  htmlFor={`regex-trait-pattern-${index}`}
                   className="block text-xs font-medium text-slate-700 dark:text-slate-300"
                 >
                   Regex Pattern
@@ -664,10 +664,10 @@ export default function RubricTraitEditor() {
                 </div>
               </div>
               <input
-                id={`manual-trait-pattern-${index}`}
+                id={`regex-trait-pattern-${index}`}
                 type="text"
                 value={trait.pattern || ''}
-                onChange={(e) => handleManualTraitChange(index, 'pattern', e.target.value)}
+                onChange={(e) => handleRegexTraitChange(index, 'pattern', e.target.value)}
                 className="w-full px-3 py-2 text-sm font-mono border border-slate-300 dark:border-slate-600 rounded-md
                            bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
                            focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -681,7 +681,7 @@ export default function RubricTraitEditor() {
                 <input
                   type="checkbox"
                   checked={trait.case_sensitive ?? true}
-                  onChange={(e) => handleManualTraitChange(index, 'case_sensitive', e.target.checked)}
+                  onChange={(e) => handleRegexTraitChange(index, 'case_sensitive', e.target.checked)}
                   className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-slate-700 dark:text-slate-300">Case Sensitive</span>
@@ -691,7 +691,7 @@ export default function RubricTraitEditor() {
                   <input
                     type="checkbox"
                     checked={trait.invert_result ?? false}
-                    onChange={(e) => handleManualTraitChange(index, 'invert_result', e.target.checked)}
+                    onChange={(e) => handleRegexTraitChange(index, 'invert_result', e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm text-slate-700 dark:text-slate-300">Invert Result</span>
@@ -788,7 +788,7 @@ export default function RubricTraitEditor() {
                   >
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
-                    <option value="manual">Manual (Regex)</option>
+                    <option value="manual">Regex</option>
                     <option value="metric">Metric (Confusion Matrix)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -1013,7 +1013,7 @@ export default function RubricTraitEditor() {
 
       {/* Rubric Summary */}
       {(currentRubric.traits.length > 0 ||
-        (currentRubric.manual_traits && currentRubric.manual_traits.length > 0) ||
+        (currentRubric.regex_traits && currentRubric.regex_traits.length > 0) ||
         (currentRubric.metric_traits && currentRubric.metric_traits.length > 0)) && (
         <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
@@ -1037,7 +1037,7 @@ export default function RubricTraitEditor() {
               <span className="text-slate-600 dark:text-slate-400 font-medium">Total Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
                 {currentRubric.traits.length +
-                  (currentRubric.manual_traits?.length || 0) +
+                  (currentRubric.regex_traits?.length || 0) +
                   (currentRubric.metric_traits?.length || 0)}
               </span>
             </div>
@@ -1061,7 +1061,7 @@ export default function RubricTraitEditor() {
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-amber-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {currentRubric.manual_traits?.length || 0}
+                    {currentRubric.regex_traits?.length || 0}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">manual</span>
                 </span>
