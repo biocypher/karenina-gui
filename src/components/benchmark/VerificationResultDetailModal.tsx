@@ -55,26 +55,28 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                     <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Completed Without Errors</h4>
                     <div
                       className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                        result.completed_without_errors
+                        result.metadata.completed_without_errors
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
                           : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
                       }`}
                     >
-                      {result.completed_without_errors ? (
+                      {result.metadata.completed_without_errors ? (
                         <CheckCircle className="w-4 h-4" />
                       ) : (
                         <AlertCircle className="w-4 h-4" />
                       )}
-                      {result.completed_without_errors ? 'true' : 'false'}
+                      {result.metadata.completed_without_errors ? 'true' : 'false'}
                     </div>
-                    {result.error && <p className="text-red-600 dark:text-red-400 mt-2">{result.error}</p>}
+                    {result.metadata.error && (
+                      <p className="text-red-600 dark:text-red-400 mt-2">{result.metadata.error}</p>
+                    )}
                   </div>
 
                   {/* Raw Question */}
                   <div>
                     <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Raw Question</h4>
                     <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                      <p className="text-slate-800 dark:text-slate-200">{result.question_text || 'N/A'}</p>
+                      <p className="text-slate-800 dark:text-slate-200">{result.metadata.question_text || 'N/A'}</p>
                     </div>
                   </div>
 
@@ -83,7 +85,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                     <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Raw Answer (Expected)</h4>
                     <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                       <p className="text-slate-800 dark:text-slate-200">
-                        {checkpoint[result.question_id]?.raw_answer || 'N/A'}
+                        {checkpoint[result.metadata.question_id]?.raw_answer || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -94,22 +96,22 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                       Raw LLM Response (Generated)
                     </h4>
                     <SearchableTextDisplay
-                      text={result.raw_llm_response || 'N/A'}
+                      text={result.template?.raw_llm_response || 'N/A'}
                       className="text-slate-800 dark:text-slate-200"
                     />
                   </div>
 
                   {/* Ground Truth (Expected) */}
-                  {result.parsed_gt_response && (
+                  {result.template?.parsed_gt_response && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Ground Truth (Expected)</h4>
                       <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                         <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
                           {(() => {
                             try {
-                              return JSON.stringify(result.parsed_gt_response, null, 2);
+                              return JSON.stringify(result.template.parsed_gt_response, null, 2);
                             } catch {
-                              return String(result.parsed_gt_response);
+                              return String(result.template.parsed_gt_response);
                             }
                           })()}
                         </pre>
@@ -118,7 +120,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   )}
 
                   {/* LLM Extraction (Generated) */}
-                  {result.parsed_llm_response && (
+                  {result.template?.parsed_llm_response && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
                         LLM Extraction (Generated)
@@ -127,9 +129,9 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                         <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
                           {(() => {
                             try {
-                              return JSON.stringify(result.parsed_llm_response, null, 2);
+                              return JSON.stringify(result.template.parsed_llm_response, null, 2);
                             } catch {
-                              return String(result.parsed_llm_response);
+                              return String(result.template.parsed_llm_response);
                             }
                           })()}
                         </pre>
@@ -138,7 +140,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   )}
 
                   {/* Regex Ground Truth (Expected) */}
-                  {result.regex_validation_details && (
+                  {result.template?.regex_validation_details && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
                         Regex Ground Truth (Expected)
@@ -148,16 +150,18 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                           {(() => {
                             try {
                               const regexGroundTruth: Record<string, Record<string, unknown>> = {};
-                              Object.entries(result.regex_validation_details).forEach(([fieldName, details]) => {
-                                regexGroundTruth[fieldName] = {
-                                  pattern: details.pattern,
-                                  expected: details.expected,
-                                  match_type: details.match_type,
-                                };
-                              });
+                              Object.entries(result.template.regex_validation_details).forEach(
+                                ([fieldName, details]) => {
+                                  regexGroundTruth[fieldName] = {
+                                    pattern: details.pattern,
+                                    expected: details.expected,
+                                    match_type: details.match_type,
+                                  };
+                                }
+                              );
                               return JSON.stringify(regexGroundTruth, null, 2);
                             } catch {
-                              return String(result.regex_validation_details);
+                              return String(result.template.regex_validation_details);
                             }
                           })()}
                         </pre>
@@ -166,38 +170,39 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   )}
 
                   {/* Regex Extraction (Generated) */}
-                  {result.regex_extraction_results && Object.keys(result.regex_extraction_results).length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                        Regex Extraction (Generated)
-                      </h4>
-                      <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3">
-                        <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
-                          {(() => {
-                            try {
-                              return JSON.stringify(result.regex_extraction_results, null, 2);
-                            } catch {
-                              return String(result.regex_extraction_results);
-                            }
-                          })()}
-                        </pre>
+                  {result.template?.regex_extraction_results &&
+                    Object.keys(result.template.regex_extraction_results).length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                          Regex Extraction (Generated)
+                        </h4>
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3">
+                          <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
+                            {(() => {
+                              try {
+                                return JSON.stringify(result.template.regex_extraction_results, null, 2);
+                              } catch {
+                                return String(result.template.regex_extraction_results);
+                              }
+                            })()}
+                          </pre>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Verification Results */}
-                  {result.verify_result && (
+                  {result.template?.verify_result && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Verify Result</h4>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                         <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
                           {(() => {
                             try {
-                              return typeof result.verify_result === 'string'
-                                ? result.verify_result
-                                : JSON.stringify(result.verify_result, null, 2);
+                              return typeof result.template.verify_result === 'string'
+                                ? result.template.verify_result
+                                : JSON.stringify(result.template.verify_result, null, 2);
                             } catch {
-                              return String(result.verify_result);
+                              return String(result.template.verify_result);
                             }
                           })()}
                         </pre>
@@ -205,18 +210,18 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                     </div>
                   )}
 
-                  {result.verify_granular_result && (
+                  {result.template?.verify_granular_result && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Granular Verify Result</h4>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                         <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm overflow-x-auto">
                           {(() => {
                             try {
-                              return typeof result.verify_granular_result === 'string'
-                                ? result.verify_granular_result
-                                : JSON.stringify(result.verify_granular_result, null, 2);
+                              return typeof result.template.verify_granular_result === 'string'
+                                ? result.template.verify_granular_result
+                                : JSON.stringify(result.template.verify_granular_result, null, 2);
                             } catch {
-                              return String(result.verify_granular_result);
+                              return String(result.template.verify_granular_result);
                             }
                           })()}
                         </pre>
@@ -225,115 +230,119 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   )}
 
                   {/* Rubric Evaluation Results */}
-                  {result.verify_rubric && (
+                  {result.rubric?.verify_rubric && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Rubric Evaluation Results</h4>
                       <RubricResultsDisplay
-                        rubricResults={result.verify_rubric}
-                        metricTraitMetrics={result.metric_trait_metrics}
+                        rubricResults={result.rubric.verify_rubric}
+                        metricTraitMetrics={result.rubric.metric_trait_metrics}
                         currentRubric={currentRubric}
-                        evaluationRubric={result.evaluation_rubric}
+                        evaluationRubric={result.rubric.evaluation_rubric}
                       />
                     </div>
                   )}
 
                   {/* Metric Trait Confusion Matrix Details */}
-                  {result.metric_trait_confusion_lists &&
-                    Object.keys(result.metric_trait_confusion_lists).length > 0 && (
+                  {result.rubric?.metric_trait_confusion_lists &&
+                    Object.keys(result.rubric.metric_trait_confusion_lists).length > 0 && (
                       <div>
                         <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
                           Metric Trait Confusion Matrix Details
                         </h4>
                         <div className="space-y-4">
-                          {Object.entries(result.metric_trait_confusion_lists).map(([traitName, confusionLists]) => (
-                            <div
-                              key={traitName}
-                              className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-lg p-4"
-                            >
-                              <h5 className="font-medium text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
-                                {traitName}
-                                <span className="text-xs px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">
-                                  Confusion Matrix
-                                </span>
-                              </h5>
+                          {Object.entries(result.rubric.metric_trait_confusion_lists).map(
+                            ([traitName, confusionLists]) => (
+                              <div
+                                key={traitName}
+                                className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-lg p-4"
+                              >
+                                <h5 className="font-medium text-purple-900 dark:text-purple-100 mb-3 flex items-center gap-2">
+                                  {traitName}
+                                  <span className="text-xs px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">
+                                    Confusion Matrix
+                                  </span>
+                                </h5>
 
-                              {/* Metrics Summary */}
-                              {result.metric_trait_metrics?.[traitName] && (
-                                <div className="mb-3 flex flex-wrap gap-2">
-                                  {Object.entries(result.metric_trait_metrics[traitName]).map(([metricName, value]) => (
-                                    <span
-                                      key={metricName}
-                                      className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700"
-                                    >
-                                      <span className="capitalize">{metricName}:</span>
-                                      <span className="ml-1 font-semibold">{(value * 100).toFixed(1)}%</span>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Extraction Results */}
-                              <div className="grid grid-cols-2 gap-3">
-                                {/* Correct Extractions (TP) */}
-                                <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h6 className="text-sm font-medium text-green-900 dark:text-green-100">
-                                      Correct Extractions (TP)
-                                    </h6>
-                                    <span className="text-xs px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300">
-                                      {confusionLists.tp?.length || 0}
-                                    </span>
-                                  </div>
-                                  {confusionLists.tp && confusionLists.tp.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1">
-                                      {confusionLists.tp.map((excerpt, idx) => (
+                                {/* Metrics Summary */}
+                                {result.rubric.metric_trait_metrics?.[traitName] && (
+                                  <div className="mb-3 flex flex-wrap gap-2">
+                                    {Object.entries(result.rubric.metric_trait_metrics[traitName]).map(
+                                      ([metricName, value]) => (
                                         <span
-                                          key={idx}
-                                          className="inline-block px-2 py-1 text-xs bg-white dark:bg-slate-800 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700 rounded"
+                                          key={metricName}
+                                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700"
                                         >
-                                          {excerpt}
+                                          <span className="capitalize">{metricName}:</span>
+                                          <span className="ml-1 font-semibold">{(value * 100).toFixed(1)}%</span>
                                         </span>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <p className="text-xs text-green-600 dark:text-green-400 italic">None found</p>
-                                  )}
-                                </div>
-
-                                {/* Incorrect Extractions (FP) */}
-                                <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h6 className="text-sm font-medium text-red-900 dark:text-red-100">
-                                      Incorrect Extractions (FP)
-                                    </h6>
-                                    <span className="text-xs px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300">
-                                      {confusionLists.fp?.length || 0}
-                                    </span>
+                                      )
+                                    )}
                                   </div>
-                                  {confusionLists.fp && confusionLists.fp.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1">
-                                      {confusionLists.fp.map((excerpt, idx) => (
-                                        <span
-                                          key={idx}
-                                          className="inline-block px-2 py-1 text-xs bg-white dark:bg-slate-800 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700 rounded"
-                                        >
-                                          {excerpt}
-                                        </span>
-                                      ))}
+                                )}
+
+                                {/* Extraction Results */}
+                                <div className="grid grid-cols-2 gap-3">
+                                  {/* Correct Extractions (TP) */}
+                                  <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h6 className="text-sm font-medium text-green-900 dark:text-green-100">
+                                        Correct Extractions (TP)
+                                      </h6>
+                                      <span className="text-xs px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300">
+                                        {confusionLists.tp?.length || 0}
+                                      </span>
                                     </div>
-                                  ) : (
-                                    <p className="text-xs text-red-600 dark:text-red-400 italic">None found</p>
-                                  )}
+                                    {confusionLists.tp && confusionLists.tp.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {confusionLists.tp.map((excerpt, idx) => (
+                                          <span
+                                            key={idx}
+                                            className="inline-block px-2 py-1 text-xs bg-white dark:bg-slate-800 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700 rounded"
+                                          >
+                                            {excerpt}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-green-600 dark:text-green-400 italic">None found</p>
+                                    )}
+                                  </div>
+
+                                  {/* Incorrect Extractions (FP) */}
+                                  <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h6 className="text-sm font-medium text-red-900 dark:text-red-100">
+                                        Incorrect Extractions (FP)
+                                      </h6>
+                                      <span className="text-xs px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300">
+                                        {confusionLists.fp?.length || 0}
+                                      </span>
+                                    </div>
+                                    {confusionLists.fp && confusionLists.fp.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {confusionLists.fp.map((excerpt, idx) => (
+                                          <span
+                                            key={idx}
+                                            className="inline-block px-2 py-1 text-xs bg-white dark:bg-slate-800 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700 rounded"
+                                          >
+                                            {excerpt}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-red-600 dark:text-red-400 italic">None found</p>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       </div>
                     )}
 
                   {/* Embedding Check Results */}
-                  {result.embedding_check_performed && (
+                  {result.template?.embedding_check_performed && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Embedding Check Results</h4>
                       <div className="space-y-3">
@@ -343,18 +352,18 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               Similarity Score:
                             </h5>
                             <p className="text-slate-800 dark:text-slate-200 text-sm">
-                              {result.embedding_similarity_score?.toFixed(3) || 'N/A'}
+                              {result.template.embedding_similarity_score?.toFixed(3) || 'N/A'}
                             </p>
                           </div>
                           <div>
                             <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Model Used:</h5>
                             <p className="text-slate-800 dark:text-slate-200 text-sm">
-                              {result.embedding_model_used || 'N/A'}
+                              {result.template.embedding_model_used || 'N/A'}
                             </p>
                           </div>
                         </div>
 
-                        {result.embedding_override_applied && (
+                        {result.template.embedding_override_applied && (
                           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
                             <div className="flex items-center space-x-2">
                               <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -373,7 +382,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   )}
 
                   {/* Abstention Detection Results */}
-                  {result.abstention_check_performed && (
+                  {result.template?.abstention_check_performed && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
                         Abstention Detection Results
@@ -385,7 +394,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               Check Performed:
                             </h5>
                             <p className="text-slate-800 dark:text-slate-200 text-sm">
-                              {result.abstention_check_performed ? 'Yes' : 'No'}
+                              {result.template.abstention_check_performed ? 'Yes' : 'No'}
                             </p>
                           </div>
                           <div>
@@ -393,16 +402,16 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               Abstention Detected:
                             </h5>
                             <p className="text-slate-800 dark:text-slate-200 text-sm">
-                              {result.abstention_detected === true
+                              {result.template.abstention_detected === true
                                 ? 'Yes'
-                                : result.abstention_detected === false
+                                : result.template.abstention_detected === false
                                   ? 'No'
                                   : 'N/A'}
                             </p>
                           </div>
                         </div>
 
-                        {result.abstention_detected && result.abstention_override_applied && (
+                        {result.template.abstention_detected && result.template.abstention_override_applied && (
                           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
                             <div className="flex items-center space-x-2">
                               <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
@@ -414,13 +423,13 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               The model refused to answer or abstained from providing a substantive response. The result
                               was marked as abstained regardless of other verification outcomes.
                             </p>
-                            {result.abstention_reasoning && (
+                            {result.template.abstention_reasoning && (
                               <div className="mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800">
                                 <h5 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
                                   Detector Reasoning:
                                 </h5>
                                 <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                                  {result.abstention_reasoning}
+                                  {result.template.abstention_reasoning}
                                 </p>
                               </div>
                             )}
@@ -431,7 +440,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   )}
 
                   {/* Deep-Judgment Results */}
-                  {result.deep_judgment_performed && (
+                  {result.deep_judgment?.deep_judgment_performed && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Deep-Judgment Results</h4>
                       <div className="space-y-3">
@@ -442,7 +451,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               Stages Completed:
                             </h5>
                             <p className="text-slate-800 dark:text-slate-200 text-sm">
-                              {result.deep_judgment_stages_completed?.join(', ') || 'N/A'}
+                              {result.deep_judgment.deep_judgment_stages_completed?.join(', ') || 'N/A'}
                             </p>
                           </div>
                           <div>
@@ -450,7 +459,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               Model Calls:
                             </h5>
                             <p className="text-slate-800 dark:text-slate-200 text-sm">
-                              {result.deep_judgment_model_calls || 0}
+                              {result.deep_judgment.deep_judgment_model_calls || 0}
                             </p>
                           </div>
                           <div>
@@ -458,203 +467,214 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               Excerpt Retries:
                             </h5>
                             <p className="text-slate-800 dark:text-slate-200 text-sm">
-                              {result.deep_judgment_excerpt_retry_count || 0}
+                              {result.deep_judgment.deep_judgment_excerpt_retry_count || 0}
                             </p>
                           </div>
                         </div>
 
                         {/* Extracted Excerpts */}
-                        {result.extracted_excerpts && Object.keys(result.extracted_excerpts).length > 0 && (
-                          <div>
-                            <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                              Extracted Excerpts:
-                            </h5>
-                            <div className="space-y-2">
-                              {Object.entries(result.extracted_excerpts).map(([attributeName, excerpts]) => {
-                                // Get hallucination risk for this attribute
-                                const riskLevel = result.hallucination_risk_assessment?.[attributeName];
-                                const getRiskStyle = (risk: string) => {
-                                  switch (risk) {
-                                    case 'high':
-                                      return {
-                                        bg: 'bg-red-100 dark:bg-red-900/40',
-                                        text: 'text-red-800 dark:text-red-200',
-                                        border: 'border-red-300 dark:border-red-700',
-                                      };
-                                    case 'medium':
-                                      return {
-                                        bg: 'bg-orange-100 dark:bg-orange-900/40',
-                                        text: 'text-orange-800 dark:text-orange-200',
-                                        border: 'border-orange-300 dark:border-orange-700',
-                                      };
-                                    case 'low':
-                                      return {
-                                        bg: 'bg-yellow-100 dark:bg-yellow-900/40',
-                                        text: 'text-yellow-800 dark:text-yellow-200',
-                                        border: 'border-yellow-300 dark:border-yellow-700',
-                                      };
-                                    case 'none':
-                                    default:
-                                      return {
-                                        bg: 'bg-green-100 dark:bg-green-900/40',
-                                        text: 'text-green-800 dark:text-green-200',
-                                        border: 'border-green-300 dark:border-green-700',
-                                      };
-                                  }
-                                };
+                        {result.deep_judgment.extracted_excerpts &&
+                          Object.keys(result.deep_judgment.extracted_excerpts).length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Extracted Excerpts:
+                              </h5>
+                              <div className="space-y-2">
+                                {Object.entries(result.deep_judgment.extracted_excerpts).map(
+                                  ([attributeName, excerpts]) => {
+                                    // Get hallucination risk for this attribute
+                                    const riskLevel =
+                                      result.deep_judgment?.hallucination_risk_assessment?.[attributeName];
+                                    const getRiskStyle = (risk: string) => {
+                                      switch (risk) {
+                                        case 'high':
+                                          return {
+                                            bg: 'bg-red-100 dark:bg-red-900/40',
+                                            text: 'text-red-800 dark:text-red-200',
+                                            border: 'border-red-300 dark:border-red-700',
+                                          };
+                                        case 'medium':
+                                          return {
+                                            bg: 'bg-orange-100 dark:bg-orange-900/40',
+                                            text: 'text-orange-800 dark:text-orange-200',
+                                            border: 'border-orange-300 dark:border-orange-700',
+                                          };
+                                        case 'low':
+                                          return {
+                                            bg: 'bg-yellow-100 dark:bg-yellow-900/40',
+                                            text: 'text-yellow-800 dark:text-yellow-200',
+                                            border: 'border-yellow-300 dark:border-yellow-700',
+                                          };
+                                        case 'none':
+                                        default:
+                                          return {
+                                            bg: 'bg-green-100 dark:bg-green-900/40',
+                                            text: 'text-green-800 dark:text-green-200',
+                                            border: 'border-green-300 dark:border-green-700',
+                                          };
+                                      }
+                                    };
 
-                                return (
-                                  <div
-                                    key={attributeName}
-                                    className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
-                                  >
-                                    <div className="flex items-center justify-between mb-2">
-                                      <div className="font-medium text-blue-900 dark:text-blue-100">
-                                        {attributeName}
-                                      </div>
-                                      {/* Hallucination Risk Badge */}
-                                      {riskLevel && (
-                                        <span
-                                          className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                                            getRiskStyle(riskLevel).bg
-                                          } ${getRiskStyle(riskLevel).text} border ${getRiskStyle(riskLevel).border}`}
-                                        >
-                                          Max Hallucination Risk: {riskLevel.toUpperCase()}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="space-y-2">
-                                      {excerpts.map((excerpt, idx) => (
-                                        <div
-                                          key={idx}
-                                          className={`rounded p-2 border ${
-                                            excerpt.explanation
-                                              ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-                                              : 'bg-white dark:bg-slate-800 border-blue-100 dark:border-blue-900'
-                                          }`}
-                                        >
-                                          {excerpt.explanation ? (
-                                            // Display explanation for missing excerpts
-                                            <div>
-                                              <p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-1">
-                                                No excerpt found
-                                              </p>
-                                              <p className="text-amber-700 dark:text-amber-300 text-sm italic">
-                                                {excerpt.explanation}
-                                              </p>
-                                            </div>
-                                          ) : (
-                                            // Display normal excerpt
-                                            <>
-                                              <p className="text-slate-800 dark:text-slate-200 text-sm mb-1">
-                                                "{excerpt.text}"
-                                              </p>
-                                              <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
-                                                <span>Extraction confidence: {excerpt.confidence}</span>
-                                                <span>
-                                                  {excerpt.similarity_score === 1
-                                                    ? 'Verbatim match'
-                                                    : `Fuzzy match (${excerpt.similarity_score.toFixed(3)})`}
-                                                </span>
-                                              </div>
-                                              {/* Search Results (if search was performed) */}
-                                              {excerpt.search_results && (
-                                                <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
-                                                  <SearchResultsDisplay searchResults={excerpt.search_results} />
-                                                </div>
-                                              )}
-                                              {/* Hallucination Justification (if available) */}
-                                              {excerpt.hallucination_justification && (
-                                                <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                                                  <div className="flex items-center gap-2 mb-1">
-                                                    <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                                      Hallucination Risk Reasoning:
-                                                    </p>
-                                                    {excerpt.hallucination_risk && (
-                                                      <span
-                                                        className={`inline-flex items-center px-2 py-1 rounded text-xs border ${
-                                                          excerpt.hallucination_risk === 'high'
-                                                            ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
-                                                            : excerpt.hallucination_risk === 'medium'
-                                                              ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700'
-                                                              : excerpt.hallucination_risk === 'low'
-                                                                ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'
-                                                                : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700'
-                                                        }`}
-                                                      >
-                                                        Risk: {excerpt.hallucination_risk.toUpperCase()}
-                                                      </span>
-                                                    )}
-                                                  </div>
-                                                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                                                    {excerpt.hallucination_justification}
-                                                  </p>
-                                                </div>
-                                              )}
-                                            </>
+                                    return (
+                                      <div
+                                        key={attributeName}
+                                        className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
+                                      >
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div className="font-medium text-blue-900 dark:text-blue-100">
+                                            {attributeName}
+                                          </div>
+                                          {/* Hallucination Risk Badge */}
+                                          {riskLevel && (
+                                            <span
+                                              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+                                                getRiskStyle(riskLevel).bg
+                                              } ${getRiskStyle(riskLevel).text} border ${getRiskStyle(riskLevel).border}`}
+                                            >
+                                              Max Hallucination Risk: {riskLevel.toUpperCase()}
+                                            </span>
                                           )}
                                         </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                                        <div className="space-y-2">
+                                          {excerpts.map((excerpt, idx) => (
+                                            <div
+                                              key={idx}
+                                              className={`rounded p-2 border ${
+                                                excerpt.explanation
+                                                  ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                                                  : 'bg-white dark:bg-slate-800 border-blue-100 dark:border-blue-900'
+                                              }`}
+                                            >
+                                              {excerpt.explanation ? (
+                                                // Display explanation for missing excerpts
+                                                <div>
+                                                  <p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-1">
+                                                    No excerpt found
+                                                  </p>
+                                                  <p className="text-amber-700 dark:text-amber-300 text-sm italic">
+                                                    {excerpt.explanation}
+                                                  </p>
+                                                </div>
+                                              ) : (
+                                                // Display normal excerpt
+                                                <>
+                                                  <p className="text-slate-800 dark:text-slate-200 text-sm mb-1">
+                                                    "{excerpt.text}"
+                                                  </p>
+                                                  <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+                                                    <span>Extraction confidence: {excerpt.confidence}</span>
+                                                    <span>
+                                                      {excerpt.similarity_score === 1
+                                                        ? 'Verbatim match'
+                                                        : `Fuzzy match (${excerpt.similarity_score.toFixed(3)})`}
+                                                    </span>
+                                                  </div>
+                                                  {/* Search Results (if search was performed) */}
+                                                  {excerpt.search_results && (
+                                                    <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                                                      <SearchResultsDisplay searchResults={excerpt.search_results} />
+                                                    </div>
+                                                  )}
+                                                  {/* Hallucination Justification (if available) */}
+                                                  {excerpt.hallucination_justification && (
+                                                    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                                      <div className="flex items-center gap-2 mb-1">
+                                                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                                          Hallucination Risk Reasoning:
+                                                        </p>
+                                                        {excerpt.hallucination_risk && (
+                                                          <span
+                                                            className={`inline-flex items-center px-2 py-1 rounded text-xs border ${
+                                                              excerpt.hallucination_risk === 'high'
+                                                                ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
+                                                                : excerpt.hallucination_risk === 'medium'
+                                                                  ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-700'
+                                                                  : excerpt.hallucination_risk === 'low'
+                                                                    ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700'
+                                                                    : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700'
+                                                            }`}
+                                                          >
+                                                            Risk: {excerpt.hallucination_risk.toUpperCase()}
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                                                        {excerpt.hallucination_justification}
+                                                      </p>
+                                                    </div>
+                                                  )}
+                                                </>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         {/* Attribute Reasoning */}
-                        {result.attribute_reasoning && Object.keys(result.attribute_reasoning).length > 0 && (
-                          <div>
-                            <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                              Attribute Reasoning:
-                            </h5>
-                            <div className="space-y-2">
-                              {Object.entries(result.attribute_reasoning).map(([attributeName, reasoning]) => (
-                                <div
-                                  key={attributeName}
-                                  className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3"
-                                >
-                                  <div className="font-medium text-purple-900 dark:text-purple-100 mb-1">
-                                    {attributeName}
-                                  </div>
-                                  <p className="text-slate-800 dark:text-slate-200 text-sm">{reasoning}</p>
-                                </div>
-                              ))}
+                        {result.deep_judgment.attribute_reasoning &&
+                          Object.keys(result.deep_judgment.attribute_reasoning).length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Attribute Reasoning:
+                              </h5>
+                              <div className="space-y-2">
+                                {Object.entries(result.deep_judgment.attribute_reasoning).map(
+                                  ([attributeName, reasoning]) => (
+                                    <div
+                                      key={attributeName}
+                                      className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3"
+                                    >
+                                      <div className="font-medium text-purple-900 dark:text-purple-100 mb-1">
+                                        {attributeName}
+                                      </div>
+                                      <p className="text-slate-800 dark:text-slate-200 text-sm">{reasoning}</p>
+                                    </div>
+                                  )
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         {/* Attributes Without Excerpts */}
-                        {result.attributes_without_excerpts && result.attributes_without_excerpts.length > 0 && (
-                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                              <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                Attributes Without Excerpts
-                              </span>
-                            </div>
-                            <p className="text-amber-700 dark:text-amber-300 text-sm mb-2">
-                              The following attributes could not be supported with verbatim excerpts from the raw
-                              response:
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {result.attributes_without_excerpts.map((attrName) => (
-                                <span
-                                  key={attrName}
-                                  className="inline-flex items-center px-2 py-1 rounded text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700"
-                                >
-                                  {attrName}
+                        {result.deep_judgment.attributes_without_excerpts &&
+                          result.deep_judgment.attributes_without_excerpts.length > 0 && (
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                  Attributes Without Excerpts
                                 </span>
-                              ))}
+                              </div>
+                              <p className="text-amber-700 dark:text-amber-300 text-sm mb-2">
+                                The following attributes could not be supported with verbatim excerpts from the raw
+                                response:
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {result.deep_judgment.attributes_without_excerpts.map((attrName) => (
+                                  <span
+                                    key={attrName}
+                                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700"
+                                  >
+                                    {attrName}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         {/* No Data Message */}
-                        {(!result.extracted_excerpts || Object.keys(result.extracted_excerpts).length === 0) &&
-                          (!result.attribute_reasoning || Object.keys(result.attribute_reasoning).length === 0) &&
-                          (!result.attributes_without_excerpts || result.attributes_without_excerpts.length === 0) && (
+                        {(!result.deep_judgment.extracted_excerpts ||
+                          Object.keys(result.deep_judgment.extracted_excerpts).length === 0) &&
+                          (!result.deep_judgment.attribute_reasoning ||
+                            Object.keys(result.deep_judgment.attribute_reasoning).length === 0) &&
+                          (!result.deep_judgment.attributes_without_excerpts ||
+                            result.deep_judgment.attributes_without_excerpts.length === 0) && (
                             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 text-center">
                               <p className="text-slate-600 dark:text-slate-400 text-sm">
                                 Deep-judgment was performed but no data was generated.
@@ -666,30 +686,30 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   )}
 
                   {/* System Prompts */}
-                  {(result.answering_system_prompt || result.parsing_system_prompt) && (
+                  {(result.metadata.answering_system_prompt || result.metadata.parsing_system_prompt) && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">System Prompts Used</h4>
                       <div className="space-y-3">
-                        {result.answering_system_prompt && (
+                        {result.metadata.answering_system_prompt && (
                           <div>
                             <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                               Answering Model System Prompt:
                             </h5>
                             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                               <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                {result.answering_system_prompt}
+                                {result.metadata.answering_system_prompt}
                               </p>
                             </div>
                           </div>
                         )}
-                        {result.parsing_system_prompt && (
+                        {result.metadata.parsing_system_prompt && (
                           <div>
                             <h5 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                               Parsing Model System Prompt:
                             </h5>
                             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                               <p className="text-slate-800 dark:text-slate-200 text-sm">
-                                {result.parsing_system_prompt}
+                                {result.metadata.parsing_system_prompt}
                               </p>
                             </div>
                           </div>
@@ -705,30 +725,32 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="font-medium text-slate-600 dark:text-slate-300">Answering Model:</span>
-                          <p className="text-slate-800 dark:text-slate-200">{result.answering_model || 'N/A'}</p>
+                          <p className="text-slate-800 dark:text-slate-200">
+                            {result.metadata.answering_model || 'N/A'}
+                          </p>
                         </div>
                         <div>
                           <span className="font-medium text-slate-600 dark:text-slate-300">Parsing Model:</span>
-                          <p className="text-slate-800 dark:text-slate-200">{result.parsing_model || 'N/A'}</p>
+                          <p className="text-slate-800 dark:text-slate-200">{result.metadata.parsing_model || 'N/A'}</p>
                         </div>
                         <div>
                           <span className="font-medium text-slate-600 dark:text-slate-300">Execution Time:</span>
                           <p className="text-slate-800 dark:text-slate-200">
-                            {result.execution_time ? `${result.execution_time.toFixed(2)}s` : 'N/A'}
+                            {result.metadata.execution_time ? `${result.metadata.execution_time.toFixed(2)}s` : 'N/A'}
                           </p>
                         </div>
                         <div>
                           <span className="font-medium text-slate-600 dark:text-slate-300">Timestamp:</span>
                           <p className="text-slate-800 dark:text-slate-200">
-                            {result.timestamp ? new Date(result.timestamp).toLocaleString() : 'N/A'}
+                            {result.metadata.timestamp ? new Date(result.metadata.timestamp).toLocaleString() : 'N/A'}
                           </p>
                         </div>
                         {/* MCP Server Information */}
-                        {result.answering_mcp_servers && result.answering_mcp_servers.length > 0 && (
+                        {result.template?.answering_mcp_servers && result.template.answering_mcp_servers.length > 0 && (
                           <div>
                             <span className="font-medium text-slate-600 dark:text-slate-300">MCP Servers:</span>
                             <p className="text-slate-800 dark:text-slate-200">
-                              {result.answering_mcp_servers.join(', ')}
+                              {result.template.answering_mcp_servers.join(', ')}
                             </p>
                           </div>
                         )}
@@ -737,7 +759,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   </div>
 
                   {/* LLM Usage Metrics */}
-                  {result.usage_metadata && (
+                  {result.template?.usage_metadata && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">LLM Usage Metrics</h4>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
@@ -763,7 +785,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               </tr>
                             </thead>
                             <tbody>
-                              {Object.entries(result.usage_metadata)
+                              {Object.entries(result.template.usage_metadata)
                                 .filter(([stage]) => stage.toLowerCase() !== 'total')
                                 .map(([stage, metadata]: [string, UsageMetadata]) => (
                                   <tr key={stage} className="border-b border-slate-100 dark:border-slate-600/50">
@@ -785,7 +807,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                                   </tr>
                                 ))}
                               {(() => {
-                                const totals = Object.entries(result.usage_metadata)
+                                const totals = Object.entries(result.template.usage_metadata)
                                   .filter(([stage]) => stage.toLowerCase() !== 'total')
                                   .reduce(
                                     (acc, [, metadata]) => ({
@@ -815,20 +837,20 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                         </div>
 
                         {/* Agent Metrics (if available) */}
-                        {result.agent_metrics && (
+                        {result.template.agent_metrics && (
                           <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
                             <h5 className="font-medium text-slate-800 dark:text-slate-200 mb-2">Agent Execution</h5>
                             <div className="grid grid-cols-3 gap-4 text-sm">
                               <div>
                                 <span className="font-medium text-slate-600 dark:text-slate-300">Iterations:</span>
                                 <p className="text-slate-800 dark:text-slate-200">
-                                  {result.agent_metrics.iterations || 0}
+                                  {result.template.agent_metrics.iterations || 0}
                                 </p>
                               </div>
                               <div>
                                 <span className="font-medium text-slate-600 dark:text-slate-300">Tool Calls:</span>
                                 <p className="text-slate-800 dark:text-slate-200">
-                                  {result.agent_metrics.tool_calls || 0}
+                                  {result.template.agent_metrics.tool_calls || 0}
                                 </p>
                               </div>
                               <div>
@@ -837,12 +859,12 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                                 </span>
                                 <p
                                   className={`${
-                                    (result.agent_metrics.suspect_failed_tool_calls || 0) > 0
+                                    (result.template.agent_metrics.suspect_failed_tool_calls || 0) > 0
                                       ? 'text-red-600 dark:text-red-400 font-semibold'
                                       : 'text-slate-800 dark:text-slate-200'
                                   }`}
                                 >
-                                  {result.agent_metrics.suspect_failed_tool_calls || 0}
+                                  {result.template.agent_metrics.suspect_failed_tool_calls || 0}
                                 </p>
                               </div>
                             </div>
@@ -850,8 +872,9 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                               <div>
                                 <span className="font-medium text-slate-600 dark:text-slate-300">Tools Used:</span>
                                 <p className="text-slate-800 dark:text-slate-200 text-xs mt-1">
-                                  {result.agent_metrics.tools_used && result.agent_metrics.tools_used.length > 0
-                                    ? result.agent_metrics.tools_used.join(', ')
+                                  {result.template.agent_metrics.tools_used &&
+                                  result.template.agent_metrics.tools_used.length > 0
+                                    ? result.template.agent_metrics.tools_used.join(', ')
                                     : 'None'}
                                 </p>
                               </div>
@@ -861,15 +884,15 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                                 </span>
                                 <p
                                   className={`text-xs mt-1 ${
-                                    result.agent_metrics.suspect_failed_tools &&
-                                    result.agent_metrics.suspect_failed_tools.length > 0
+                                    result.template.agent_metrics.suspect_failed_tools &&
+                                    result.template.agent_metrics.suspect_failed_tools.length > 0
                                       ? 'text-red-600 dark:text-red-400 font-semibold'
                                       : 'text-slate-800 dark:text-slate-200'
                                   }`}
                                 >
-                                  {result.agent_metrics.suspect_failed_tools &&
-                                  result.agent_metrics.suspect_failed_tools.length > 0
-                                    ? result.agent_metrics.suspect_failed_tools.join(', ')
+                                  {result.template.agent_metrics.suspect_failed_tools &&
+                                  result.template.agent_metrics.suspect_failed_tools.length > 0
+                                    ? result.template.agent_metrics.suspect_failed_tools.join(', ')
                                     : 'None'}
                                 </p>
                               </div>

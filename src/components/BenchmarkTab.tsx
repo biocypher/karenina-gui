@@ -123,7 +123,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const handleExportFilteredResults = async (format: 'json' | 'csv') => {
     const filteredResults = Object.values(benchmarkResults).map((result) => ({
       ...result,
-      raw_answer: checkpoint[result.question_id]?.raw_answer,
+      raw_answer: checkpoint[result.metadata.question_id]?.raw_answer,
     })) as ExportableResult[];
 
     exportFilteredResults(
@@ -140,7 +140,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const handleCustomExport = (selectedFields: string[], format: 'json' | 'csv') => {
     const filteredResults = Object.values(benchmarkResults).map((result) => ({
       ...result,
-      raw_answer: checkpoint[result.question_id]?.raw_answer,
+      raw_answer: checkpoint[result.metadata.question_id]?.raw_answer,
     })) as ExportableResult[];
     exportFilteredResults(
       filteredResults,
@@ -914,52 +914,35 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    {getAllUnfilteredResults().filter((r) => r.completed_without_errors).length}
+                    {getAllUnfilteredResults().filter((r) => r.metadata.completed_without_errors).length}
                   </div>
                   <div className="text-xs text-green-600 dark:text-green-400">Completed Without Errors</div>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                    {getAllUnfilteredResults().filter((r) => !r.completed_without_errors).length}
+                    {getAllUnfilteredResults().filter((r) => !r.metadata.completed_without_errors).length}
                   </div>
                   <div className="text-xs text-red-600 dark:text-red-400">With Errors</div>
                 </div>
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
                     {
-                      getAllUnfilteredResults().filter((r) => r.abstention_detected && r.abstention_check_performed)
-                        .length
+                      getAllUnfilteredResults().filter(
+                        (r) => r.template?.abstention_detected && r.template?.abstention_check_performed
+                      ).length
                     }
                   </div>
                   <div className="text-xs text-yellow-600 dark:text-yellow-400">Abstained</div>
                 </div>
                 <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                    {
-                      getAllUnfilteredResults().filter(
-                        (r) =>
-                          r.verify_result === true ||
-                          (typeof r.verify_result === 'object' &&
-                            r.verify_result !== null &&
-                            'completed_without_errors' in r.verify_result &&
-                            r.verify_result.completed_without_errors === true)
-                      ).length
-                    }
+                    {getAllUnfilteredResults().filter((r) => r.template?.verify_result === true).length}
                   </div>
                   <div className="text-xs text-emerald-600 dark:text-emerald-400">Passed</div>
                 </div>
                 <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
-                    {
-                      getAllUnfilteredResults().filter(
-                        (r) =>
-                          r.verify_result === false ||
-                          (typeof r.verify_result === 'object' &&
-                            r.verify_result !== null &&
-                            'completed_without_errors' in r.verify_result &&
-                            r.verify_result.completed_without_errors === false)
-                      ).length
-                    }
+                    {getAllUnfilteredResults().filter((r) => r.template?.verify_result === false).length}
                   </div>
                   <div className="text-xs text-rose-600 dark:text-rose-400">Failed</div>
                 </div>
@@ -1119,7 +1102,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         results={
           Object.values(benchmarkResults).map((result) => ({
             ...result,
-            raw_answer: checkpoint[result.question_id]?.raw_answer,
+            raw_answer: checkpoint[result.metadata.question_id]?.raw_answer,
           })) as ExportableResult[]
         }
         globalRubric={currentRubric}

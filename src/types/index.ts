@@ -290,53 +290,117 @@ export interface VerificationConfig {
   few_shot_k?: number;
 }
 
-export interface VerificationResult {
+/**
+ * Metadata subclass - core identity and tracking fields
+ */
+export interface VerificationResultMetadata {
   question_id: string;
+  template_id: string;
   completed_without_errors: boolean;
   error?: string;
   question_text: string;
-  raw_llm_response: string;
-  parsed_gt_response?: Record<string, unknown>; // Ground truth from 'correct' field
-  parsed_llm_response?: Record<string, unknown>; // LLM extracted fields (excluding 'id' and 'correct')
-  // Evaluation mode tracking
-  template_verification_performed?: boolean; // Whether template verification was executed
-  verify_result?: VerificationOutcome | null; // Template verification result (null if template verification skipped in rubric_only mode)
-  verify_granular_result?: GranularVerificationResult;
-  rubric_evaluation_performed?: boolean; // Whether rubric evaluation was executed
-  verify_rubric?: Record<string, number | boolean>;
-  evaluation_rubric?: Rubric; // The merged rubric used for evaluation (global + question-specific)
-  keywords?: string[]; // Keywords associated with the question
+  keywords?: string[];
   answering_model: string;
   parsing_model: string;
-  execution_time: number;
-  timestamp: string;
   answering_system_prompt?: string;
   parsing_system_prompt?: string;
+  execution_time: number;
+  timestamp: string;
   run_name?: string;
   job_id?: string;
   answering_model_id?: string;
   parsing_model_id?: string;
   answering_replicate?: number;
   parsing_replicate?: number;
-  // Embedding check metadata
+}
+
+/**
+ * Template subclass - answer generation and verification fields
+ */
+export interface VerificationResultTemplate {
+  raw_llm_response: string;
+  parsed_gt_response?: Record<string, unknown>;
+  parsed_llm_response?: Record<string, unknown>;
+  template_verification_performed?: boolean;
+  verify_result?: VerificationOutcome | null;
+  verify_granular_result?: GranularVerificationResult;
+  // Embeddings
   embedding_check_performed?: boolean;
   embedding_similarity_score?: number;
   embedding_override_applied?: boolean;
   embedding_model_used?: string;
-  // Regex validation metadata
+  // Regex checks
   regex_validations_performed?: boolean;
   regex_validation_results?: Record<string, boolean>;
   regex_validation_details?: Record<string, Record<string, unknown>>;
   regex_overall_success?: boolean;
   regex_extraction_results?: Record<string, unknown>;
-  // Abstention detection metadata
+  // Recursion limit
+  recursion_limit_reached?: boolean;
+  // Abstention
   abstention_check_performed?: boolean;
   abstention_detected?: boolean | null;
   abstention_override_applied?: boolean;
   abstention_reasoning?: string | null;
-  // MCP server metadata
+  // MCP
   answering_mcp_servers?: string[];
-  // Deep-judgment metadata (multi-stage parsing with excerpts and reasoning)
+  // Usage
+  usage_metadata?: Record<string, UsageMetadata>;
+  agent_metrics?: {
+    iterations?: number;
+    tool_calls?: number;
+    tools_used?: string[];
+    suspect_failed_tool_calls?: number;
+    suspect_failed_tools?: string[];
+  };
+}
+
+/**
+ * Rubric subclass - rubric evaluation with split trait types
+ */
+export interface VerificationResultRubric {
+  rubric_evaluation_performed?: boolean;
+  // Legacy flat rubric scores (deprecated, use split trait scores below)
+  verify_rubric?: Record<string, number | boolean>;
+  // Split trait scores by type
+  llm_trait_scores?: Record<string, number>; // 1-5 scale
+  manual_trait_scores?: Record<string, boolean>; // regex-based
+  metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
+  evaluation_rubric?: Rubric;
+  // Metric trait confusion matrices
+  metric_trait_confusion_lists?: Record<
+    string,
+    {
+      tp: string[];
+      tn: string[];
+      fp: string[];
+      fn: string[];
+    }
+  >;
+  metric_trait_metrics?: Record<string, Record<string, number>>;
+  // Unified rubric results interface (computed property)
+  rubric_results?: {
+    llm?: Record<string, number>;
+    manual?: Record<string, boolean>;
+    metric?: Record<
+      string,
+      {
+        metrics: Record<string, number>;
+        confusion: {
+          tp: string[];
+          tn: string[];
+          fp: string[];
+          fn: string[];
+        };
+      }
+    >;
+  };
+}
+
+/**
+ * Deep-judgment subclass - multi-stage parsing with excerpts
+ */
+export interface VerificationResultDeepJudgment {
   deep_judgment_enabled?: boolean;
   deep_judgment_performed?: boolean;
   extracted_excerpts?: Record<
@@ -346,9 +410,9 @@ export interface VerificationResult {
       confidence: string;
       similarity_score: number;
       explanation?: string;
-      search_results?: SearchResultItem[]; // External search validation when search is enabled (structured)
-      hallucination_risk?: string; // Per-excerpt risk: "none" | "low" | "medium" | "high"
-      hallucination_justification?: string; // Explanation for the risk level
+      search_results?: SearchResultItem[];
+      hallucination_risk?: string;
+      hallucination_justification?: string;
     }>
   >;
   attribute_reasoning?: Record<string, string>;
@@ -356,48 +420,25 @@ export interface VerificationResult {
   deep_judgment_model_calls?: number;
   deep_judgment_excerpt_retry_count?: number;
   attributes_without_excerpts?: string[];
-  // Search-enhanced deep-judgment metadata
+  // Search-enhanced deep-judgment
   deep_judgment_search_enabled?: boolean;
-  hallucination_risk_assessment?: Record<string, string>; // Maps attribute to "none" | "low" | "medium" | "high"
-  // Metric trait evaluation metadata (confusion-matrix analysis)
-  metric_trait_confusion_lists?: Record<
-    string,
-    {
-      tp: string[]; // True Positives
-      tn: string[]; // True Negatives
-      fp: string[]; // False Positives
-      fn: string[]; // False Negatives
-    }
-  >; // Maps trait name to confusion lists
-  metric_trait_metrics?: Record<string, Record<string, number>>; // Maps trait name to computed metrics (e.g., {"precision": 0.85, "recall": 0.92})
-  // LLM usage tracking metadata
-  usage_metadata?: Record<string, UsageMetadata>; // Token usage breakdown by verification stage
-  agent_metrics?: {
-    iterations?: number; // Number of agent think-act cycles
-    tool_calls?: number; // Total tool invocations
-    tools_used?: string[]; // Unique tool names used
-    suspect_failed_tool_calls?: number; // Count of tool calls with error-like output patterns
-    suspect_failed_tools?: string[]; // List of tools with suspected failures
-  };
-  // Unified rubric results interface (computed property, not stored in backend)
-  // This is a convenience accessor that organizes all rubric results by evaluation method
-  rubric_results?: {
-    llm?: Record<string, number>; // LLM-evaluated trait scores (1-5)
-    manual?: Record<string, boolean>; // Manual/regex trait results (true/false)
-    metric?: Record<
-      string,
-      {
-        metrics: Record<string, number>; // Computed metrics (precision, recall, F1, etc.)
-        confusion: {
-          // Confusion matrix data
-          tp: string[];
-          tn: string[];
-          fp: string[];
-          fn: string[];
-        };
-      }
-    >;
-  };
+  hallucination_risk_assessment?: Record<string, string>;
+}
+
+/**
+ * VerificationResult interface with nested structure.
+ *
+ * MUST mirror backend VerificationResult model exactly.
+ *
+ * BREAKING CHANGE: Now uses nested composition instead of flat structure.
+ * When adding fields: Update the appropriate subinterface.
+ * See docs: .agents/dev/recurring-issues.md#issue-1-gui-export-sync-when-adding-verificationresult-fields
+ */
+export interface VerificationResult {
+  metadata: VerificationResultMetadata;
+  template?: VerificationResultTemplate;
+  rubric?: VerificationResultRubric;
+  deep_judgment?: VerificationResultDeepJudgment;
 }
 
 // Helper interface for LLM usage metadata
