@@ -57,7 +57,7 @@ export default function RubricTraitEditor() {
 
   const handleAddTrait = () => {
     const totalTraits =
-      (currentRubric?.traits.length || 0) +
+      (currentRubric?.llm_traits.length || 0) +
       (currentRubric?.regex_traits?.length || 0) +
       (currentRubric?.metric_traits?.length || 0);
 
@@ -157,7 +157,7 @@ export default function RubricTraitEditor() {
       }
     } else {
       // Converting from LLM trait
-      const llmTrait = currentRubric.traits[index];
+      const llmTrait = currentRubric.llm_traits[index];
       if (!llmTrait) return;
 
       if (newType === 'regex') {
@@ -170,7 +170,7 @@ export default function RubricTraitEditor() {
           invert_result: false,
         };
 
-        const updatedTraits = currentRubric.traits.filter((_, i) => i !== index);
+        const updatedTraits = currentRubric.llm_traits.filter((_, i) => i !== index);
 
         setCurrentRubric({
           ...currentRubric,
@@ -189,7 +189,7 @@ export default function RubricTraitEditor() {
           repeated_extraction: true,
         };
 
-        const updatedTraits = currentRubric.traits.filter((_, i) => i !== index);
+        const updatedTraits = currentRubric.llm_traits.filter((_, i) => i !== index);
 
         setCurrentRubric({
           ...currentRubric,
@@ -210,9 +210,9 @@ export default function RubricTraitEditor() {
   };
 
   const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
-    if (!currentRubric || index < 0 || index >= currentRubric.traits.length) return;
+    if (!currentRubric || index < 0 || index >= currentRubric.llm_traits.length) return;
 
-    const currentTrait = currentRubric.traits[index];
+    const currentTrait = currentRubric.llm_traits[index];
     const updatedTrait: LLMRubricTrait = { ...currentTrait, [field]: value };
 
     // Set default min/max for score traits
@@ -323,7 +323,7 @@ export default function RubricTraitEditor() {
     if (!currentRubric) return;
 
     // Validate rubric before saving (must have at least one trait of any type)
-    const hasTraits = currentRubric.traits.length > 0;
+    const hasTraits = currentRubric.llm_traits.length > 0;
     const hasRegexTraits = currentRubric.regex_traits && currentRubric.regex_traits.length > 0;
     const hasMetricTraits = currentRubric.metric_traits && currentRubric.metric_traits.length > 0;
 
@@ -352,7 +352,7 @@ export default function RubricTraitEditor() {
       {/* Traits List */}
       <div className="space-y-3 mb-4">
         {/* LLM-based Traits */}
-        {currentRubric.traits.map((trait, index) => (
+        {currentRubric.llm_traits.map((trait, index) => (
           <div
             key={index}
             className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
@@ -1003,7 +1003,7 @@ export default function RubricTraitEditor() {
       <div className="flex justify-end space-x-3">
         <button
           onClick={handleSaveRubric}
-          disabled={isSavingRubric || currentRubric.traits.length === 0}
+          disabled={isSavingRubric || currentRubric.llm_traits.length === 0}
           className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-md hover:bg-slate-900 dark:hover:bg-slate-600 
                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
@@ -1012,7 +1012,7 @@ export default function RubricTraitEditor() {
       </div>
 
       {/* Rubric Summary */}
-      {(currentRubric.traits.length > 0 ||
+      {(currentRubric.llm_traits.length > 0 ||
         (currentRubric.regex_traits && currentRubric.regex_traits.length > 0) ||
         (currentRubric.metric_traits && currentRubric.metric_traits.length > 0)) && (
         <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -1036,7 +1036,7 @@ export default function RubricTraitEditor() {
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Total Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {currentRubric.traits.length +
+                {currentRubric.llm_traits.length +
                   (currentRubric.regex_traits?.length || 0) +
                   (currentRubric.metric_traits?.length || 0)}
               </span>
@@ -1047,14 +1047,14 @@ export default function RubricTraitEditor() {
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {currentRubric.traits.filter((t) => t.kind === 'boolean').length}
+                    {currentRubric.llm_traits.filter((t) => t.kind === 'boolean').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">binary</span>
                 </span>
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {currentRubric.traits.filter((t) => t.kind === 'score').length}
+                    {currentRubric.llm_traits.filter((t) => t.kind === 'score').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
                 </span>

@@ -53,7 +53,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   useEffect(() => {
     if (isInitialized && !questionRubric) {
       setQuestionRubricState({
-        traits: [],
+        llm_traits: [],
         regex_traits: [],
         metric_traits: [],
       });
@@ -64,8 +64,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     if (!questionRubric) return;
 
     const totalTraits =
-      questionRubric.traits.length +
+      (questionRubric.llm_traits?.length || 0) +
       (questionRubric.regex_traits?.length || 0) +
+      (questionRubric.callable_traits?.length || 0) +
       (questionRubric.metric_traits?.length || 0);
 
     // Always add Binary trait by default - user can change type via dropdown
@@ -77,7 +78,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
     const updatedRubric = {
       ...questionRubric,
-      traits: [...questionRubric.traits, newTrait],
+      llm_traits: [...(questionRubric.llm_traits || []), newTrait],
     };
 
     setQuestionRubricState(updatedRubric);
@@ -96,7 +97,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       if (newType === 'regex') return; // Already regex
 
       // Remove from regex_traits
-      const updatedRegexTraits = questionRubric.regex_traits.filter((_, i) => i !== index);
+      const updatedRegexTraits = (questionRubric.regex_traits || []).filter((_, i) => i !== index);
 
       if (newType === 'metric') {
         // Convert to metric trait
@@ -129,7 +130,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
         const updatedRubric = {
           ...questionRubric,
-          traits: [...questionRubric.traits, convertedTrait],
+          llm_traits: [...(questionRubric.llm_traits || []), convertedTrait],
           regex_traits: updatedRegexTraits,
         };
 
@@ -138,7 +139,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       }
     } else {
       // Converting from LLM trait
-      const llmTrait = questionRubric.traits[index];
+      const llmTrait = questionRubric.llm_traits[index];
       if (!llmTrait) return;
 
       if (newType === 'regex') {
@@ -155,16 +156,16 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
         const insertPosition = 0;
 
         // Update both arrays atomically
-        const updatedTraits = questionRubric.traits.filter((_, i) => i !== index);
+        const updatedTraits = (questionRubric.llm_traits || []).filter((_, i) => i !== index);
         const updatedRegexTraits = [
-          ...questionRubric.regex_traits.slice(0, insertPosition),
+          ...(questionRubric.regex_traits || []).slice(0, insertPosition),
           convertedTrait,
-          ...questionRubric.regex_traits.slice(insertPosition),
+          ...(questionRubric.regex_traits || []).slice(insertPosition),
         ];
 
         const updatedRubric = {
           ...questionRubric,
-          traits: updatedTraits,
+          llm_traits: updatedTraits,
           regex_traits: updatedRegexTraits,
         };
 
@@ -182,11 +183,11 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
           repeated_extraction: true,
         };
 
-        const updatedTraits = questionRubric.traits.filter((_, i) => i !== index);
+        const updatedTraits = (questionRubric.llm_traits || []).filter((_, i) => i !== index);
 
         const updatedRubric = {
           ...questionRubric,
-          traits: updatedTraits,
+          llm_traits: updatedTraits,
           metric_traits: [...(questionRubric.metric_traits || []), convertedTrait],
         };
 
@@ -200,9 +201,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   };
 
   const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
-    if (!questionRubric || index < 0 || index >= questionRubric.traits.length) return;
+    if (!questionRubric || index < 0 || index >= questionRubric.llm_traits.length) return;
 
-    const currentTrait = questionRubric.traits[index];
+    const currentTrait = questionRubric.llm_traits[index];
     const updatedTrait: RubricTrait = { ...currentTrait, [field]: value };
 
     // Set default min/max for score traits
@@ -218,9 +219,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
     // Check for trait name conflicts across all traits
     if (field === 'name') {
-      const globalLLMNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
+      const globalLLMNames = (globalRubric?.llm_traits || []).map((t) => t.name.toLowerCase());
       const globalRegexNames = (globalRubric?.regex_traits || []).map((t) => t.name.toLowerCase());
-      const questionLLMNames = questionRubric.traits
+      const questionLLMNames = questionRubric.llm_traits
         .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
         .filter(Boolean);
       const questionRegexNames = (questionRubric.regex_traits || []).map((t) => t.name.toLowerCase());
@@ -232,20 +233,20 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       }
     }
 
-    const updatedTraits = [...questionRubric.traits];
+    const updatedTraits = [...questionRubric.llm_traits];
     updatedTraits[index] = updatedTrait;
 
-    const updatedRubric = { ...questionRubric, traits: updatedTraits };
+    const updatedRubric = { ...questionRubric, llm_traits: updatedTraits };
     setQuestionRubricState(updatedRubric);
     setQuestionRubric(questionId, updatedRubric);
     setLastError(null);
   };
 
   const handleRemoveTrait = (index: number) => {
-    if (!questionRubric || index < 0 || index >= questionRubric.traits.length) return;
+    if (!questionRubric || index < 0 || index >= questionRubric.llm_traits.length) return;
 
-    const updatedTraits = questionRubric.traits.filter((_, i) => i !== index);
-    const updatedRubric = { ...questionRubric, traits: updatedTraits };
+    const updatedTraits = (questionRubric.llm_traits || []).filter((_, i) => i !== index);
+    const updatedRubric = { ...questionRubric, llm_traits: updatedTraits };
 
     setQuestionRubricState(updatedRubric);
     setQuestionRubric(questionId, updatedRubric);
@@ -260,10 +261,10 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
     // Check for name conflicts if changing name
     if (field === 'name') {
-      const globalLLMNames = (globalRubric?.traits || []).map((t) => t.name.toLowerCase());
+      const globalLLMNames = (globalRubric?.llm_traits || []).map((t) => t.name.toLowerCase());
       const globalRegexNames = (globalRubric?.regex_traits || []).map((t) => t.name.toLowerCase());
-      const questionLLMNames = questionRubric.traits.map((t) => t.name.toLowerCase());
-      const questionRegexNames = questionRubric.regex_traits
+      const questionLLMNames = (questionRubric.llm_traits || []).map((t) => t.name.toLowerCase());
+      const questionRegexNames = (questionRubric.regex_traits || [])
         .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
         .filter(Boolean);
       const allExistingNames = [...globalLLMNames, ...globalRegexNames, ...questionLLMNames, ...questionRegexNames];
@@ -286,7 +287,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   const handleRemoveRegexTrait = (index: number) => {
     if (!questionRubric?.regex_traits || index < 0 || index >= questionRubric.regex_traits.length) return;
 
-    const updatedRegexTraits = questionRubric.regex_traits.filter((_, i) => i !== index);
+    const updatedRegexTraits = (questionRubric.regex_traits || []).filter((_, i) => i !== index);
     const updatedRubric = { ...questionRubric, regex_traits: updatedRegexTraits };
 
     setQuestionRubricState(updatedRubric);
@@ -388,7 +389,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   const handleRemoveMetricTrait = (index: number) => {
     if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
 
-    const updatedMetricTraits = questionRubric.metric_traits.filter((_, i) => i !== index);
+    const updatedMetricTraits = (questionRubric.metric_traits || []).filter((_, i) => i !== index);
     const updatedRubric = { ...questionRubric, metric_traits: updatedMetricTraits };
 
     setQuestionRubricState(updatedRubric);
@@ -398,7 +399,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
   const handleClearRubric = () => {
     clearQuestionRubric(questionId);
-    setQuestionRubricState({ traits: [], regex_traits: [], metric_traits: [] });
+    setQuestionRubricState({ llm_traits: [], regex_traits: [], metric_traits: [] });
     setLastError(null);
   };
 
@@ -419,7 +420,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Question-Specific Rubric</h3>
-        {questionRubric.traits.length > 0 && (
+        {(questionRubric.llm_traits?.length || 0) > 0 && (
           <button
             onClick={handleClearRubric}
             className="px-3 py-1.5 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
@@ -431,13 +432,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
       {/* Global Rubric Summary */}
       {globalRubric &&
-        (globalRubric.traits.length > 0 || (globalRubric.regex_traits && globalRubric.regex_traits.length > 0)) && (
+        (globalRubric.llm_traits.length > 0 || (globalRubric.regex_traits && globalRubric.regex_traits.length > 0)) && (
           <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
             <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
               Global Rubric Traits (will be included in evaluation)
             </h4>
             <div className="flex flex-wrap gap-2">
-              {globalRubric.traits.map((trait, index) => (
+              {(globalRubric.llm_traits || []).map((trait, index) => (
                 <span
                   key={`llm-${index}`}
                   className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 rounded-md text-xs font-medium"
@@ -459,7 +460,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
       {/* Question-Specific Traits */}
       <div className="space-y-3 mb-4">
-        {questionRubric.traits.map((trait, index) => (
+        {(questionRubric.llm_traits || []).map((trait, index) => (
           <div
             key={index}
             className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
@@ -506,7 +507,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                   >
                     <option value="boolean">Binary</option>
                     <option value="score">Score</option>
-                    <option value="manual">Manual (Regex)</option>
+                    <option value="regex">Regex</option>
                     <option value="metric">Metric (Confusion Matrix)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -583,6 +584,65 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                   <TrashIcon className="h-4 w-4" />
                 </button>
               </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Callable Traits (Read-Only) */}
+        {(questionRubric.callable_traits || []).map((trait, index) => (
+          <div
+            key={`callable-${index}`}
+            className="bg-teal-50 dark:bg-teal-900/10 rounded-lg border border-teal-200 dark:border-teal-800 p-6 shadow-sm"
+          >
+            <div className="grid grid-cols-12 gap-4 items-start">
+              {/* Trait Name */}
+              <div className="col-span-3">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trait Name</label>
+                <div className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                  {trait.name}
+                </div>
+              </div>
+
+              {/* Trait Type */}
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trait Type</label>
+                <div className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                  Callable ({trait.kind})
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="col-span-7">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Trait Description
+                </label>
+                <div className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                  {trait.description || 'No description'}
+                </div>
+              </div>
+            </div>
+
+            {/* Callable Code (Read-Only) */}
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Callable Code (Read-Only)
+              </label>
+              <div className="px-3 py-2 text-xs font-mono border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 max-h-32 overflow-y-auto">
+                {trait.callable_code ? atob(trait.callable_code) : 'No callable code'}
+              </div>
+            </div>
+
+            {/* Read-Only Badge */}
+            <div className="mt-3 flex items-center gap-2 text-xs text-teal-700 dark:text-teal-400">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+              <span className="font-medium">Read-Only (loaded from checkpoint)</span>
             </div>
           </div>
         ))}
@@ -865,7 +925,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                     value="metric"
                     onChange={() => {
                       // For metric traits, we need a different approach since handleTraitTypeChange expects isManual boolean
-                      // For now, let them convert via the dropdowns in LLM/manual sections
+                      // For now, let them convert via the dropdowns in LLM/regex sections
                     }}
                     className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
                                bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
@@ -1112,16 +1172,18 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Global Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {(globalRubric?.traits.length || 0) +
+                {(globalRubric?.llm_traits.length || 0) +
                   (globalRubric?.regex_traits?.length || 0) +
+                  (globalRubric?.callable_traits?.length || 0) +
                   (globalRubric?.metric_traits?.length || 0)}
               </span>
             </div>
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Question Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {questionRubric.traits.length +
+                {(questionRubric.llm_traits?.length || 0) +
                   (questionRubric.regex_traits?.length || 0) +
+                  (questionRubric.callable_traits?.length || 0) +
                   (questionRubric.metric_traits?.length || 0)}
               </span>
             </div>
@@ -1130,11 +1192,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Total Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {(globalRubric?.traits.length || 0) +
+                {(globalRubric?.llm_traits?.length || 0) +
                   (globalRubric?.regex_traits?.length || 0) +
+                  (globalRubric?.callable_traits?.length || 0) +
                   (globalRubric?.metric_traits?.length || 0) +
-                  questionRubric.traits.length +
+                  (questionRubric.llm_traits?.length || 0) +
                   (questionRubric.regex_traits?.length || 0) +
+                  (questionRubric.callable_traits?.length || 0) +
                   (questionRubric.metric_traits?.length || 0)}
               </span>
             </div>
@@ -1144,14 +1208,14 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-indigo-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {questionRubric.traits.filter((t) => t.kind === 'boolean').length}
+                    {(questionRubric.llm_traits || []).filter((t) => t.kind === 'boolean').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">binary</span>
                 </span>
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {questionRubric.traits.filter((t) => t.kind === 'score').length}
+                    {(questionRubric.llm_traits || []).filter((t) => t.kind === 'score').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
                 </span>
@@ -1161,6 +1225,13 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                     {questionRubric.regex_traits?.length || 0}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">regex</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-teal-500 rounded-full mr-1"></span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {questionRubric.callable_traits?.length || 0}
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">callable</span>
                 </span>
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-purple-500 rounded-full mr-1"></span>

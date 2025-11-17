@@ -524,7 +524,7 @@ export interface MetricRubricTrait {
 }
 
 export interface Rubric {
-  traits: LLMRubricTrait[];
+  llm_traits: LLMRubricTrait[];
   regex_traits?: RegexTrait[];
   callable_traits?: CallableTrait[];
   metric_traits?: MetricRubricTrait[];

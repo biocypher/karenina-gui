@@ -117,7 +117,7 @@ export const handlers = [
   // Rubric trait generation endpoint
   http.post('/api/generate-rubric-traits', () => {
     return HttpResponse.json({
-      traits: [
+      llm_traits: [
         {
           name: 'accuracy',
           description: 'Is the response factually accurate?',
@@ -147,7 +147,7 @@ export const handlers = [
   http.get('/api/rubric', () => {
     return HttpResponse.json({
       title: 'Test Rubric',
-      traits: [
+      llm_traits: [
         {
           name: 'accuracy',
           description: 'Is the response factually accurate?',

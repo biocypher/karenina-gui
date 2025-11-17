@@ -368,7 +368,7 @@ export function v2ToJsonLd(
 
       // Add only question-specific rubric traits (global traits will be stored at Dataset level)
       if (item.question_rubric) {
-        item.question_rubric.traits.forEach((trait) => {
+        item.question_rubric.llm_traits.forEach((trait) => {
           const rating = convertRubricTraitToRating(trait, 'question-specific');
           ratings.push(rating);
         });
@@ -555,6 +555,12 @@ export function jsonLdToV2(
 
       // Convert LLM traits
       const llmTraits = globalLLMRatings.length > 0 ? globalLLMRatings.map(convertRatingToRubricTrait) : [];
+      // Normalize legacy "binary" kind to "boolean"
+      llmTraits.forEach((trait) => {
+        if ((trait.kind as string) === 'binary') {
+          trait.kind = 'boolean';
+        }
+      });
 
       // Convert regex traits
       const regexTraits = globalRegexRatings.length > 0 ? globalRegexRatings.map(convertRatingToRegexTrait) : [];
@@ -565,7 +571,7 @@ export function jsonLdToV2(
 
       if (llmTraits.length > 0 || regexTraits.length > 0 || callableTraits.length > 0) {
         globalRubric = {
-          traits: llmTraits,
+          llm_traits: llmTraits,
           ...(regexTraits.length > 0 && { regex_traits: regexTraits }),
           ...(callableTraits.length > 0 && { callable_traits: callableTraits }),
         };
@@ -590,7 +596,7 @@ export function jsonLdToV2(
       if (globalRubric) {
         globalRubric.regex_traits = [...(globalRubric.regex_traits || []), ...globalRegexTraits];
       } else {
-        globalRubric = { traits: [], regex_traits: globalRegexTraits };
+        globalRubric = { llm_traits: [], regex_traits: globalRegexTraits };
       }
     }
 
@@ -612,7 +618,7 @@ export function jsonLdToV2(
       if (globalRubric) {
         globalRubric.callable_traits = [...(globalRubric.callable_traits || []), ...globalCallableTraits];
       } else {
-        globalRubric = { traits: [], callable_traits: globalCallableTraits };
+        globalRubric = { llm_traits: [], callable_traits: globalCallableTraits };
       }
     }
 
@@ -634,7 +640,7 @@ export function jsonLdToV2(
       if (globalRubric) {
         globalRubric.metric_traits = globalMetricTraits;
       } else {
-        globalRubric = { traits: [], metric_traits: globalMetricTraits };
+        globalRubric = { llm_traits: [], metric_traits: globalMetricTraits };
       }
     }
 
@@ -710,6 +716,12 @@ export function jsonLdToV2(
 
         // Convert LLM traits
         const llmTraits = questionLLMRatings.length > 0 ? questionLLMRatings.map(convertRatingToRubricTrait) : [];
+        // Normalize legacy "binary" kind to "boolean"
+        llmTraits.forEach((trait) => {
+          if ((trait.kind as string) === 'binary') {
+            trait.kind = 'boolean';
+          }
+        });
 
         // Convert regex traits
         const regexTraits = questionRegexRatings.length > 0 ? questionRegexRatings.map(convertRatingToRegexTrait) : [];
@@ -718,14 +730,49 @@ export function jsonLdToV2(
         const callableTraits =
           questionCallableRatings.length > 0 ? questionCallableRatings.map(convertRatingToCallableTrait) : [];
 
+        // Debug logging
+        if (questionCallableRatings.length > 0 || callableTraits.length > 0) {
+          console.log(`📋 Question callable traits:`, {
+            questionId: question['@id'],
+            callableRatingsCount: questionCallableRatings.length,
+            callableTraitsCount: callableTraits.length,
+            callableTraits,
+          });
+        }
+
         // Note: MetricRubricTrait uses different schema - stored in additionalProperty as JSON
 
         if (llmTraits.length > 0 || regexTraits.length > 0 || callableTraits.length > 0) {
           questionRubric = {
-            traits: llmTraits,
+            llm_traits: llmTraits,
             ...(regexTraits.length > 0 && { regex_traits: regexTraits }),
             ...(callableTraits.length > 0 && { callable_traits: callableTraits }),
           };
+        }
+      }
+
+      // Extract question-specific llm_traits from additionalProperty (legacy format)
+      const questionLLMTraitsProp = question.additionalProperty?.find(
+        (prop) => prop.name === 'question_llm_rubric_traits'
+      );
+      if (questionLLMTraitsProp && typeof questionLLMTraitsProp.value === 'string') {
+        try {
+          const llmTraits: LLMRubricTrait[] = JSON.parse(questionLLMTraitsProp.value);
+          // Normalize legacy "binary" kind to "boolean"
+          llmTraits.forEach((trait) => {
+            if ((trait.kind as string) === 'binary') {
+              trait.kind = 'boolean';
+            }
+          });
+          if (llmTraits.length > 0) {
+            if (questionRubric) {
+              questionRubric.llm_traits = [...(questionRubric.llm_traits || []), ...llmTraits];
+            } else {
+              questionRubric = { llm_traits: llmTraits };
+            }
+          }
+        } catch {
+          // Invalid JSON, ignore LLM traits
         }
       }
 
@@ -740,7 +787,7 @@ export function jsonLdToV2(
             if (questionRubric) {
               questionRubric.regex_traits = [...(questionRubric.regex_traits || []), ...regexTraits];
             } else {
-              questionRubric = { traits: [], regex_traits: regexTraits };
+              questionRubric = { llm_traits: [], regex_traits: regexTraits };
             }
           }
         } catch {
@@ -759,7 +806,7 @@ export function jsonLdToV2(
             if (questionRubric) {
               questionRubric.callable_traits = [...(questionRubric.callable_traits || []), ...callableTraits];
             } else {
-              questionRubric = { traits: [], callable_traits: callableTraits };
+              questionRubric = { llm_traits: [], callable_traits: callableTraits };
             }
           }
         } catch {
@@ -779,12 +826,27 @@ export function jsonLdToV2(
             if (questionRubric) {
               questionRubric.metric_traits = metricTraits;
             } else {
-              questionRubric = { traits: [], metric_traits: metricTraits };
+              questionRubric = { llm_traits: [], metric_traits: metricTraits };
             }
           }
         } catch {
           // Invalid JSON, ignore metric traits
         }
+      }
+
+      // Log final question rubric state
+      if (questionRubric) {
+        console.log(`📊 Final question rubric for: ${question.text.substring(0, 50)}...`, {
+          hasLLMTraits: !!questionRubric.llm_traits && questionRubric.llm_traits.length > 0,
+          llmTraitsCount: questionRubric.llm_traits?.length || 0,
+          hasRegexTraits: !!questionRubric.regex_traits && questionRubric.regex_traits.length > 0,
+          regexTraitsCount: questionRubric.regex_traits?.length || 0,
+          hasCallableTraits: !!questionRubric.callable_traits && questionRubric.callable_traits.length > 0,
+          callableTraitsCount: questionRubric.callable_traits?.length || 0,
+          hasMetricTraits: !!questionRubric.metric_traits && questionRubric.metric_traits.length > 0,
+          metricTraitsCount: questionRubric.metric_traits?.length || 0,
+          questionRubric,
+        });
       }
 
       const checkpointItem: CheckpointItem = {

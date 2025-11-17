@@ -24,7 +24,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [
+      llm_traits: [
         {
           name: 'accuracy',
           description: 'Is the response accurate?',
@@ -47,7 +47,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [],
+      llm_traits: [],
     };
 
     act(() => {
@@ -67,7 +67,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [],
+      llm_traits: [],
     };
 
     act(() => {
@@ -94,7 +94,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [
+      llm_traits: [
         {
           name: 'accuracy',
           description: 'First accuracy trait',
@@ -129,7 +129,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [
+      llm_traits: [
         {
           name: 'accuracy',
           description: 'Original description',
@@ -163,7 +163,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [
+      llm_traits: [
         {
           name: 'accuracy',
           description: 'Accuracy trait',
@@ -197,7 +197,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [
+      llm_traits: [
         {
           name: 'accuracy',
           description: 'Accuracy trait',
@@ -231,7 +231,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [
+      llm_traits: [
         {
           name: 'existing',
           description: 'Existing trait',
@@ -301,7 +301,7 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     const mockRubric = {
-      traits: [],
+      llm_traits: [],
     };
 
     // Set various state values
