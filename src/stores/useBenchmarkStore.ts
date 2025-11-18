@@ -22,6 +22,7 @@ interface BenchmarkState {
 
   // Evaluation Settings
   rubricEnabled: boolean;
+  rubricEvaluationStrategy: 'batch' | 'sequential';
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
@@ -50,6 +51,7 @@ interface BenchmarkState {
 
   // Evaluation Settings Actions
   setRubricEnabled: (enabled: boolean) => void;
+  setRubricEvaluationStrategy: (strategy: 'batch' | 'sequential') => void;
   setEvaluationMode: (mode: 'template_only' | 'template_and_rubric' | 'rubric_only') => void;
   setCorrectnessEnabled: (enabled: boolean) => void;
   setAbstentionEnabled: (enabled: boolean) => void;
@@ -97,7 +99,8 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
 
   // Initial state - Evaluation Settings
   rubricEnabled: false,
-  evaluationMode: 'template_only',
+  rubricEvaluationStrategy: 'batch',
+  evaluationMode: 'template_and_rubric',
   correctnessEnabled: true,
   abstentionEnabled: false,
   deepJudgmentEnabled: false,
@@ -156,6 +159,7 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
 
   // Evaluation Settings Actions
   setRubricEnabled: (enabled) => set({ rubricEnabled: enabled }),
+  setRubricEvaluationStrategy: (strategy) => set({ rubricEvaluationStrategy: strategy }),
   setEvaluationMode: (mode) => set({ evaluationMode: mode }),
   setCorrectnessEnabled: (enabled) => set({ correctnessEnabled: enabled }),
   setAbstentionEnabled: (enabled) => set({ abstentionEnabled: enabled }),
@@ -230,6 +234,7 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
       parsing_only: false,
       rubric_enabled: state.rubricEnabled,
       rubric_trait_names: null,
+      rubric_evaluation_strategy: state.rubricEvaluationStrategy,
       evaluation_mode: state.evaluationMode,
       abstention_enabled: state.abstentionEnabled,
       deep_judgment_enabled: state.deepJudgmentEnabled,
@@ -257,6 +262,7 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
       parsingModels,
       replicateCount: config.replicate_count,
       rubricEnabled: config.rubric_enabled ?? false,
+      rubricEvaluationStrategy: config.rubric_evaluation_strategy ?? 'batch',
       evaluationMode: config.evaluation_mode ?? 'template_only',
       abstentionEnabled: config.abstention_enabled ?? false,
       deepJudgmentEnabled: config.deep_judgment_enabled ?? false,

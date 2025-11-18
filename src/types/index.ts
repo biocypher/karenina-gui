@@ -292,6 +292,7 @@ export interface VerificationConfig {
   rubric_enabled?: boolean;
   evaluation_mode?: 'template_only' | 'template_and_rubric' | 'rubric_only'; // Evaluation mode selection
   rubric_trait_names?: string[];
+  rubric_evaluation_strategy?: 'batch' | 'sequential'; // Strategy for evaluating LLM rubric traits
   abstention_enabled?: boolean; // Enable abstention/refusal detection
   few_shot_enabled?: boolean;
   few_shot_mode?: 'all' | 'k-shot' | 'custom';

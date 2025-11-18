@@ -47,6 +47,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     expandedPrompts,
     runName,
     rubricEnabled,
+    rubricEvaluationStrategy,
     evaluationMode,
     correctnessEnabled,
     abstentionEnabled,
@@ -58,6 +59,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setReplicateCount,
     setRunName,
     setRubricEnabled,
+    setRubricEvaluationStrategy,
     setEvaluationMode,
     setCorrectnessEnabled,
     setAbstentionEnabled,
@@ -562,6 +564,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             isRunning={isRunning}
             finishedTemplates={finishedTemplates}
             rubricEnabled={rubricEnabled}
+            rubricEvaluationStrategy={rubricEvaluationStrategy}
             evaluationMode={evaluationMode}
             correctnessEnabled={correctnessEnabled}
             abstentionEnabled={abstentionEnabled}
@@ -578,6 +581,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onUpdateParsingModel={updateParsingModel}
             onTogglePromptExpanded={togglePromptExpanded}
             onRubricEnabledChange={setRubricEnabled}
+            onRubricEvaluationStrategyChange={setRubricEvaluationStrategy}
             onEvaluationModeChange={setEvaluationMode}
             onCorrectnessEnabledChange={setCorrectnessEnabled}
             onAbstentionEnabledChange={setAbstentionEnabled}

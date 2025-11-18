@@ -31,6 +31,7 @@ interface ConfigurationPanelProps {
   isRunning: boolean;
   finishedTemplates?: Array<[string, unknown]>;
   rubricEnabled: boolean;
+  rubricEvaluationStrategy: 'batch' | 'sequential';
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
@@ -47,6 +48,7 @@ interface ConfigurationPanelProps {
   onUpdateParsingModel: (id: string, updates: Partial<ModelConfiguration>) => void;
   onTogglePromptExpanded: (modelId: string) => void;
   onRubricEnabledChange: (enabled: boolean) => void;
+  onRubricEvaluationStrategyChange: (strategy: 'batch' | 'sequential') => void;
   onEvaluationModeChange: (mode: 'template_only' | 'template_and_rubric' | 'rubric_only') => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
   onAbstentionEnabledChange: (enabled: boolean) => void;
@@ -67,6 +69,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   isRunning,
   finishedTemplates,
   rubricEnabled,
+  rubricEvaluationStrategy,
   evaluationMode,
   correctnessEnabled,
   abstentionEnabled,
@@ -83,6 +86,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onUpdateParsingModel,
   onTogglePromptExpanded,
   onRubricEnabledChange,
+  onRubricEvaluationStrategyChange,
   onEvaluationModeChange,
   onCorrectnessEnabledChange,
   onAbstentionEnabledChange,
@@ -603,22 +607,6 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                     <input
                       type="radio"
                       name="evaluation-mode"
-                      value="template_only"
-                      checked={evaluationMode === 'template_only'}
-                      onChange={(e) =>
-                        onEvaluationModeChange(
-                          e.target.value as 'template_only' | 'template_and_rubric' | 'rubric_only'
-                        )
-                      }
-                      disabled={isRunning}
-                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Template Only</span>
-                  </label>
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="evaluation-mode"
                       value="template_and_rubric"
                       checked={evaluationMode === 'template_and_rubric'}
                       onChange={(e) =>
@@ -646,6 +634,41 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                       className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
                     />
                     <span className="text-sm text-slate-700 dark:text-slate-300">Rubric Only</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Rubric Evaluation Strategy Selector */}
+            {rubricEnabled && (
+              <div className="ml-7 mt-2 space-y-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Rubric Evaluation Strategy
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="rubric-strategy"
+                      value="batch"
+                      checked={rubricEvaluationStrategy === 'batch'}
+                      onChange={(e) => onRubricEvaluationStrategyChange(e.target.value as 'batch' | 'sequential')}
+                      disabled={isRunning}
+                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">All Together (Batch)</span>
+                  </label>
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="rubric-strategy"
+                      value="sequential"
+                      checked={rubricEvaluationStrategy === 'sequential'}
+                      onChange={(e) => onRubricEvaluationStrategyChange(e.target.value as 'batch' | 'sequential')}
+                      disabled={isRunning}
+                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">One by One (Sequential)</span>
                   </label>
                 </div>
               </div>
