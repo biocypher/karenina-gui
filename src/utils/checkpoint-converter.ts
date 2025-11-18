@@ -586,6 +586,13 @@ export function jsonLdToV2(
     if (globalRegexTraitsProp && typeof globalRegexTraitsProp.value === 'string') {
       try {
         globalRegexTraits = JSON.parse(globalRegexTraitsProp.value);
+        // Normalize legacy "invert" field to "invert_result"
+        globalRegexTraits?.forEach((trait: RegexTrait & { invert?: boolean }) => {
+          if (trait.invert !== undefined && trait.invert_result === undefined) {
+            trait.invert_result = trait.invert;
+            delete trait.invert;
+          }
+        });
       } catch {
         // Invalid JSON, ignore regex traits
       }
@@ -783,6 +790,13 @@ export function jsonLdToV2(
       if (questionRegexTraitsProp && typeof questionRegexTraitsProp.value === 'string') {
         try {
           const regexTraits: RegexTrait[] = JSON.parse(questionRegexTraitsProp.value);
+          // Normalize legacy "invert" field to "invert_result"
+          regexTraits.forEach((trait: RegexTrait & { invert?: boolean }) => {
+            if (trait.invert !== undefined && trait.invert_result === undefined) {
+              trait.invert_result = trait.invert;
+              delete trait.invert;
+            }
+          });
           if (regexTraits.length > 0) {
             if (questionRubric) {
               questionRubric.regex_traits = [...(questionRubric.regex_traits || []), ...regexTraits];
