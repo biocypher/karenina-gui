@@ -40,8 +40,8 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
     const rubricToUse = evaluationRubric || currentRubric;
     if (!rubricToUse) return {};
 
-    // Search across all trait types
-    let trait = rubricToUse.traits.find((t) => t.name === traitName);
+    // Search across all trait types (use llm_traits, not traits)
+    let trait = rubricToUse.llm_traits?.find((t) => t.name === traitName);
     if (!trait) trait = rubricToUse.regex_traits?.find((t) => t.name === traitName);
     if (!trait) trait = rubricToUse.callable_traits?.find((t) => t.name === traitName);
     if (!trait) trait = rubricToUse.metric_traits?.find((t) => t.name === traitName);
@@ -53,7 +53,7 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
     let isQuestionSpecific = false;
     if (evaluationRubric && currentRubric) {
       const existsInGlobal =
-        currentRubric.traits.some((t) => t.name === traitName) ||
+        currentRubric.llm_traits?.some((t) => t.name === traitName) ||
         currentRubric.regex_traits?.some((t) => t.name === traitName) ||
         currentRubric.callable_traits?.some((t) => t.name === traitName) ||
         currentRubric.metric_traits?.some((t) => t.name === traitName);
