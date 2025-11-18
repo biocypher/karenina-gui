@@ -233,14 +233,19 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 .then((res) => res.json())
                 .then(async (data) => {
                   setIsRunning(false);
-                  if (data.results && typeof data.results === 'object') {
-                    console.log('Setting results:', Object.keys(data.results).length, 'items');
+                  // Handle new VerificationResultSet format
+                  if (data.result_set && Array.isArray(data.result_set.results)) {
+                    console.log('Setting results:', data.result_set.results.length, 'items');
                     const sanitizedResults: Record<string, VerificationResult> = {};
-                    for (const [originalKey, value] of Object.entries(data.results)) {
-                      if (value && typeof value === 'object') {
-                        const result = value as VerificationResult;
-                        // Preserve the original key from backend which includes replicate info
-                        sanitizedResults[originalKey] = result;
+
+                    // Convert VerificationResultSet.results array to dictionary
+                    for (const result of data.result_set.results) {
+                      if (result && typeof result === 'object') {
+                        // Generate key from result metadata (matching backend format)
+                        const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
+                          result.metadata.answering_replicate ? `_rep${result.metadata.answering_replicate}` : ''
+                        }`;
+                        sanitizedResults[key] = result as VerificationResult;
                       }
                     }
                     // Accumulate results instead of replacing them

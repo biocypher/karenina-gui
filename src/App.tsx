@@ -1065,7 +1065,7 @@ function App() {
                     <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Manual Trait Editor</h3>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300 mb-6">
-                    {currentRubric && currentRubric.llm_traits.length > 0
+                    {currentRubric && currentRubric.llm_traits && currentRubric.llm_traits.length > 0
                       ? `Editing ${currentRubric.llm_traits.length + (currentRubric.regex_traits?.length || 0) + (currentRubric.callable_traits?.length || 0)} global rubric traits. These traits are available for evaluation across all questions in your benchmark suite.`
                       : 'Manually create, edit, and organize global rubric traits. These traits will be available for evaluation across all questions in your benchmark suite.'}
                   </p>

@@ -201,7 +201,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   };
 
   const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
-    if (!questionRubric || index < 0 || index >= questionRubric.llm_traits.length) return;
+    if (!questionRubric || !questionRubric.llm_traits || index < 0 || index >= questionRubric.llm_traits.length) return;
 
     const currentTrait = questionRubric.llm_traits[index];
     const updatedTrait: RubricTrait = { ...currentTrait, [field]: value };
@@ -243,7 +243,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   };
 
   const handleRemoveTrait = (index: number) => {
-    if (!questionRubric || index < 0 || index >= questionRubric.llm_traits.length) return;
+    if (!questionRubric || !questionRubric.llm_traits || index < 0 || index >= questionRubric.llm_traits.length) return;
 
     const updatedTraits = (questionRubric.llm_traits || []).filter((_, i) => i !== index);
     const updatedRubric = { ...questionRubric, llm_traits: updatedTraits };
@@ -432,7 +432,8 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
       {/* Global Rubric Summary */}
       {globalRubric &&
-        (globalRubric.llm_traits.length > 0 || (globalRubric.regex_traits && globalRubric.regex_traits.length > 0)) && (
+        ((globalRubric.llm_traits && globalRubric.llm_traits.length > 0) ||
+          (globalRubric.regex_traits && globalRubric.regex_traits.length > 0)) && (
           <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
             <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
               Global Rubric Traits (will be included in evaluation)
@@ -1191,7 +1192,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Global Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
-                {(globalRubric?.llm_traits.length || 0) +
+                {(globalRubric?.llm_traits?.length || 0) +
                   (globalRubric?.regex_traits?.length || 0) +
                   (globalRubric?.callable_traits?.length || 0) +
                   (globalRubric?.metric_traits?.length || 0)}
