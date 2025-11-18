@@ -12,6 +12,7 @@ export interface VerificationConfig {
   parsing_only?: boolean;
   rubric_enabled?: boolean;
   rubric_trait_names?: string[] | null;
+  rubric_evaluation_strategy?: 'batch' | 'sequential';
   evaluation_mode?: 'template_only' | 'template_and_rubric' | 'rubric_only';
   abstention_enabled?: boolean;
   deep_judgment_enabled?: boolean;

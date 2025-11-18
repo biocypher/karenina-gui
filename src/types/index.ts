@@ -130,7 +130,15 @@ export interface SchemaOrgRating {
   description?: string;
   bestRating: number;
   worstRating: number;
-  additionalType: 'GlobalRubricTrait' | 'QuestionSpecificRubricTrait';
+  additionalType:
+    | 'GlobalRubricTrait'
+    | 'QuestionSpecificRubricTrait'
+    | 'GlobalRegexTrait'
+    | 'QuestionSpecificRegexTrait'
+    | 'GlobalCallableTrait'
+    | 'QuestionSpecificCallableTrait'
+    | 'GlobalMetricRubricTrait'
+    | 'QuestionSpecificMetricRubricTrait';
   ratingExplanation?: string;
 }
 
@@ -193,7 +201,7 @@ export type JsonLdCheckpoint = SchemaOrgDataFeed;
 
 // Conversion mapping types
 export interface RubricTraitToRatingMapping {
-  rubricTrait: RubricTrait;
+  rubricTrait: LLMRubricTrait;
   ratingValue?: number; // Set when trait is evaluated
   isEvaluated: boolean;
 }
@@ -284,6 +292,7 @@ export interface VerificationConfig {
   rubric_enabled?: boolean;
   evaluation_mode?: 'template_only' | 'template_and_rubric' | 'rubric_only'; // Evaluation mode selection
   rubric_trait_names?: string[];
+  rubric_evaluation_strategy?: 'batch' | 'sequential'; // Strategy for evaluating LLM rubric traits
   abstention_enabled?: boolean; // Enable abstention/refusal detection
   few_shot_enabled?: boolean;
   few_shot_mode?: 'all' | 'k-shot' | 'custom';
@@ -364,7 +373,8 @@ export interface VerificationResultRubric {
   verify_rubric?: Record<string, number | boolean>;
   // Split trait scores by type
   llm_trait_scores?: Record<string, number>; // 1-5 scale
-  manual_trait_scores?: Record<string, boolean>; // regex-based
+  regex_trait_scores?: Record<string, boolean>; // regex-based
+  callable_trait_scores?: Record<string, boolean | number>; // boolean or score (1-5)
   metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
   evaluation_rubric?: Rubric;
   // Metric trait confusion matrices
@@ -381,7 +391,8 @@ export interface VerificationResultRubric {
   // Unified rubric results interface (computed property)
   rubric_results?: {
     llm?: Record<string, number>;
-    manual?: Record<string, boolean>;
+    regex?: Record<string, boolean>;
+    callable?: Record<string, boolean | number>;
     metric?: Record<
       string,
       {
@@ -477,7 +488,7 @@ export interface VerificationProgress {
 // Rubric Types
 export type TraitKind = 'boolean' | 'score';
 
-export interface RubricTrait {
+export interface LLMRubricTrait {
   name: string;
   description?: string;
   kind: TraitKind;
@@ -485,12 +496,21 @@ export interface RubricTrait {
   max_score?: number; // For score traits
 }
 
-export interface ManualRubricTrait {
+export interface RegexTrait {
   name: string;
   description?: string;
-  pattern?: string; // Regex pattern (mutually exclusive with callable_name)
-  callable_name?: string; // Callable function name (mutually exclusive with pattern)
+  pattern: string; // Regex pattern
   case_sensitive?: boolean; // Whether pattern matching should be case sensitive (default: true)
+  invert_result?: boolean; // Whether to invert the boolean result (default: false)
+}
+
+export interface CallableTrait {
+  name: string;
+  description?: string;
+  callable_code: string; // Base64-encoded callable code (read-only in GUI)
+  kind: TraitKind;
+  min_score?: number; // For score traits
+  max_score?: number; // For score traits
   invert_result?: boolean; // Whether to invert the boolean result (default: false)
 }
 
@@ -505,8 +525,9 @@ export interface MetricRubricTrait {
 }
 
 export interface Rubric {
-  traits: RubricTrait[];
-  manual_traits?: ManualRubricTrait[];
+  llm_traits: LLMRubricTrait[];
+  regex_traits?: RegexTrait[];
+  callable_traits?: CallableTrait[];
   metric_traits?: MetricRubricTrait[];
 }
 
@@ -526,7 +547,7 @@ export interface RubricTraitGenerationRequest {
 }
 
 export interface RubricTraitGenerationResponse {
-  traits: RubricTrait[];
+  traits: LLMRubricTrait[];
   job_id?: string;
 }
 

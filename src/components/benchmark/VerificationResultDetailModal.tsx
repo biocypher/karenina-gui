@@ -230,12 +230,21 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                   )}
 
                   {/* Rubric Evaluation Results */}
-                  {result.rubric?.verify_rubric && (
+                  {(result.rubric?.verify_rubric ||
+                    result.rubric?.llm_trait_scores ||
+                    result.rubric?.regex_trait_scores ||
+                    result.rubric?.callable_trait_scores) && (
                     <div>
                       <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Rubric Evaluation Results</h4>
                       <RubricResultsDisplay
-                        rubricResults={result.rubric.verify_rubric}
-                        metricTraitMetrics={result.rubric.metric_trait_metrics}
+                        rubricResults={
+                          result.rubric.verify_rubric || {
+                            ...result.rubric.llm_trait_scores,
+                            ...result.rubric.regex_trait_scores,
+                            ...result.rubric.callable_trait_scores,
+                          }
+                        }
+                        metricTraitMetrics={result.rubric.metric_trait_scores}
                         currentRubric={currentRubric}
                         evaluationRubric={result.rubric.evaluation_rubric}
                       />

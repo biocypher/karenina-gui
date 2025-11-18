@@ -563,16 +563,25 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           }
 
           // Rubric evaluation was performed (or field not set - backward compatibility)
+          // Combine split trait scores into single object for display
+          const combinedRubricResult = row.rubric?.verify_rubric || {
+            ...row.rubric?.llm_trait_scores,
+            ...row.rubric?.regex_trait_scores,
+            ...row.rubric?.callable_trait_scores,
+          };
+
           return (
-            <RubricCell
-              rubricResult={row.rubric?.verify_rubric || null}
-              metricTraitMetrics={row.rubric?.metric_trait_metrics}
-            />
+            <RubricCell rubricResult={combinedRubricResult} metricTraitMetrics={row.rubric?.metric_trait_scores} />
           );
         },
         filterFn: (row, columnId, value) => {
-          const rubricResult = row.original.rubric?.verify_rubric;
-          const metricTraitMetrics = row.original.rubric?.metric_trait_metrics;
+          // Combine split trait scores for filtering (use new fields, fallback to legacy)
+          const rubricResult = row.original.rubric?.verify_rubric || {
+            ...row.original.rubric?.llm_trait_scores,
+            ...row.original.rubric?.regex_trait_scores,
+            ...row.original.rubric?.callable_trait_scores,
+          };
+          const metricTraitMetrics = row.original.rubric?.metric_trait_scores;
 
           const hasLLMTraits = rubricResult && Object.keys(rubricResult).length > 0;
           const hasMetricTraits = metricTraitMetrics && Object.keys(metricTraitMetrics).length > 0;

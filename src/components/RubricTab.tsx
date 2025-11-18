@@ -82,12 +82,12 @@ export const RubricTab: React.FC<RubricTabProps> = ({ questions }) => {
           >
             <div className="flex items-center gap-2 mb-4">
               <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Manual Trait Editor</h3>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Rubric Trait Editor</h3>
             </div>
             <p className="text-slate-600 dark:text-slate-300 mb-6">
               {hasGlobalRubric
-                ? `Editing ${currentRubric.traits.length} global rubric traits. These traits are available for evaluation across all questions in your benchmark suite.`
-                : 'Manually create, edit, and organize global rubric traits. These traits will be available for evaluation across all questions in your benchmark suite.'}
+                ? `Editing ${currentRubric.traits.length} LLM-evaluated traits${(currentRubric.regex_traits?.length || 0) > 0 ? `, ${currentRubric.regex_traits.length} regex traits` : ''}${(currentRubric.metric_traits?.length || 0) > 0 ? `, ${currentRubric.metric_traits.length} metric traits` : ''}. These traits are available for evaluation across all questions.`
+                : 'Create, edit, and organize global rubric traits (LLM-evaluated, regex, and metric). These traits will be available for evaluation across all questions in your benchmark suite.'}
             </p>
             <RubricTraitEditor />
           </div>

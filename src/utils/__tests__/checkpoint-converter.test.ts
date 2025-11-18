@@ -8,9 +8,18 @@ import {
   generateQuestionId,
   convertRubricTraitToRating,
   convertRatingToRubricTrait,
+  convertRatingToRegexTrait,
+  convertRatingToCallableTrait,
   CheckpointConversionError,
 } from '../checkpoint-converter';
-import type { UnifiedCheckpoint, JsonLdCheckpoint, RubricTrait, SchemaOrgRating } from '../../types';
+import type {
+  UnifiedCheckpoint,
+  JsonLdCheckpoint,
+  RubricTrait,
+  RegexTrait,
+  CallableTrait,
+  SchemaOrgRating,
+} from '../../types';
 
 // Test data
 const mockV2Checkpoint: UnifiedCheckpoint = {
@@ -1269,6 +1278,142 @@ describe('checkpoint-converter', () => {
 
       expect(roundTripItem).toBeDefined();
       expect(roundTripItem?.keywords).toEqual(originalKeywords);
+    });
+  });
+
+  describe('convertRatingToRegexTrait', () => {
+    it('should convert regex rating to RegexTrait', () => {
+      const rating: SchemaOrgRating = {
+        '@type': 'Rating',
+        name: 'No Uncertainty',
+        description: 'Should not contain uncertainty markers',
+        bestRating: 1,
+        worstRating: 0,
+        additionalType: 'GlobalRegexTrait',
+        additionalProperty: [
+          { '@type': 'PropertyValue', name: 'pattern', value: '\\b(might|possibly|maybe)\\b' },
+          { '@type': 'PropertyValue', name: 'case_sensitive', value: false },
+          { '@type': 'PropertyValue', name: 'invert_result', value: true },
+        ],
+      };
+
+      const regexTrait: RegexTrait = convertRatingToRegexTrait(rating);
+
+      expect(regexTrait.name).toBe('No Uncertainty');
+      expect(regexTrait.description).toBe('Should not contain uncertainty markers');
+      expect(regexTrait.pattern).toBe('\\b(might|possibly|maybe)\\b');
+      expect(regexTrait.case_sensitive).toBe(false);
+      expect(regexTrait.invert_result).toBe(true);
+    });
+
+    it('should use default values for optional regex fields', () => {
+      const rating: SchemaOrgRating = {
+        '@type': 'Rating',
+        name: 'Test Regex',
+        bestRating: 1,
+        worstRating: 0,
+        additionalType: 'GlobalRegexTrait',
+        additionalProperty: [{ '@type': 'PropertyValue', name: 'pattern', value: 'test' }],
+      };
+
+      const regexTrait: RegexTrait = convertRatingToRegexTrait(rating);
+
+      expect(regexTrait.case_sensitive).toBe(true); // default
+      expect(regexTrait.invert_result).toBe(false); // default
+    });
+
+    it('should throw error if pattern is missing', () => {
+      const rating: SchemaOrgRating = {
+        '@type': 'Rating',
+        name: 'Invalid Regex',
+        bestRating: 1,
+        worstRating: 0,
+        additionalType: 'GlobalRegexTrait',
+        additionalProperty: [],
+      };
+
+      expect(() => convertRatingToRegexTrait(rating)).toThrow(CheckpointConversionError);
+      expect(() => convertRatingToRegexTrait(rating)).toThrow(/pattern is required/);
+    });
+  });
+
+  describe('convertRatingToCallableTrait', () => {
+    it('should convert boolean callable rating to CallableTrait', () => {
+      const rating: SchemaOrgRating = {
+        '@type': 'Rating',
+        name: 'Contains Citations',
+        description: 'Checks for citation markers',
+        bestRating: 1,
+        worstRating: 0,
+        additionalType: 'GlobalCallableTrait',
+        additionalProperty: [
+          { '@type': 'PropertyValue', name: 'callable_code', value: 'base64encodedcode' },
+          { '@type': 'PropertyValue', name: 'kind', value: 'boolean' },
+          { '@type': 'PropertyValue', name: 'invert_result', value: false },
+        ],
+      };
+
+      const callableTrait: CallableTrait = convertRatingToCallableTrait(rating);
+
+      expect(callableTrait.name).toBe('Contains Citations');
+      expect(callableTrait.description).toBe('Checks for citation markers');
+      expect(callableTrait.callable_code).toBe('base64encodedcode');
+      expect(callableTrait.kind).toBe('boolean');
+      expect(callableTrait.invert_result).toBe(false);
+    });
+
+    it('should convert score callable rating with min/max scores', () => {
+      const rating: SchemaOrgRating = {
+        '@type': 'Rating',
+        name: 'Response Quality',
+        description: 'Evaluates response quality',
+        bestRating: 5,
+        worstRating: 1,
+        additionalType: 'GlobalCallableTrait',
+        additionalProperty: [
+          { '@type': 'PropertyValue', name: 'callable_code', value: 'base64encodedcode' },
+          { '@type': 'PropertyValue', name: 'kind', value: 'score' },
+          { '@type': 'PropertyValue', name: 'min_score', value: 1 },
+          { '@type': 'PropertyValue', name: 'max_score', value: 5 },
+        ],
+      };
+
+      const callableTrait: CallableTrait = convertRatingToCallableTrait(rating);
+
+      expect(callableTrait.kind).toBe('score');
+      expect(callableTrait.min_score).toBe(1);
+      expect(callableTrait.max_score).toBe(5);
+    });
+
+    it('should throw error if callable_code is missing', () => {
+      const rating: SchemaOrgRating = {
+        '@type': 'Rating',
+        name: 'Invalid Callable',
+        bestRating: 1,
+        worstRating: 0,
+        additionalType: 'GlobalCallableTrait',
+        additionalProperty: [{ '@type': 'PropertyValue', name: 'kind', value: 'boolean' }],
+      };
+
+      expect(() => convertRatingToCallableTrait(rating)).toThrow(CheckpointConversionError);
+      expect(() => convertRatingToCallableTrait(rating)).toThrow(/callable_code is required/);
+    });
+
+    it('should throw error if kind is invalid', () => {
+      const rating: SchemaOrgRating = {
+        '@type': 'Rating',
+        name: 'Invalid Callable',
+        bestRating: 1,
+        worstRating: 0,
+        additionalType: 'GlobalCallableTrait',
+        additionalProperty: [
+          { '@type': 'PropertyValue', name: 'callable_code', value: 'code' },
+          { '@type': 'PropertyValue', name: 'kind', value: 'invalid' },
+        ],
+      };
+
+      expect(() => convertRatingToCallableTrait(rating)).toThrow(CheckpointConversionError);
+      expect(() => convertRatingToCallableTrait(rating)).toThrow(/kind must be 'boolean' or 'score'/);
     });
   });
 });

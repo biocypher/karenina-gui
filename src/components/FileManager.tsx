@@ -144,7 +144,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         if (unifiedCheckpoint.global_rubric) {
           const { setCurrentRubric, saveRubric } = useRubricStore.getState();
           setCurrentRubric(unifiedCheckpoint.global_rubric);
-          console.log('✅ Loaded global rubric with', unifiedCheckpoint.global_rubric.traits.length, 'traits');
+          console.log('✅ Loaded global rubric with', unifiedCheckpoint.global_rubric.llm_traits.length, 'traits');
 
           // Sync the rubric to the backend so verification can access it
           console.log('🔄 Syncing global rubric to backend...');
@@ -162,7 +162,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
         const itemCount = Object.keys(unifiedCheckpoint.checkpoint).length;
         const rubricText = unifiedCheckpoint.global_rubric
-          ? ` and global rubric with ${unifiedCheckpoint.global_rubric.traits.length} traits`
+          ? ` and global rubric with ${unifiedCheckpoint.global_rubric.llm_traits.length} traits`
           : '';
 
         alert(
@@ -315,7 +315,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
     if (loadedCheckpoint.global_rubric) {
       const { setCurrentRubric, saveRubric } = useRubricStore.getState();
       setCurrentRubric(loadedCheckpoint.global_rubric);
-      console.log('✅ Loaded global rubric with', loadedCheckpoint.global_rubric.traits.length, 'traits');
+      console.log('✅ Loaded global rubric with', loadedCheckpoint.global_rubric.llm_traits.length, 'traits');
 
       // Sync the rubric to the backend so verification can access it
       console.log('🔄 Syncing global rubric to backend...');

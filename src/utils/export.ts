@@ -71,7 +71,8 @@ export interface ExportableResultRubric {
   rubric_evaluation_performed?: boolean;
   // Split trait scores by type (replaces old verify_rubric)
   llm_trait_scores?: Record<string, number>; // 1-5 scale
-  manual_trait_scores?: Record<string, boolean>; // regex-based
+  regex_trait_scores?: Record<string, boolean>; // regex-based
+  callable_trait_scores?: Record<string, boolean | number>; // boolean or score (1-5)
   metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
   evaluation_rubric?: Record<string, unknown>;
   // Metric trait confusion matrices
@@ -225,25 +226,45 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
   const allRubricTraitNames = new Set<string>();
   results.forEach((result) => {
     if (result.rubric) {
-      // Collect from all three trait score dicts (llm, manual, metric)
-      [result.rubric.llm_trait_scores, result.rubric.manual_trait_scores, result.rubric.metric_trait_scores].forEach(
-        (traitDict) => {
-          if (traitDict) {
-            Object.keys(traitDict).forEach((traitName) => {
-              allRubricTraitNames.add(traitName);
-            });
-          }
+      // Collect from all trait score dicts (llm, regex, callable, metric)
+      [
+        result.rubric.llm_trait_scores,
+        result.rubric.regex_trait_scores,
+        result.rubric.callable_trait_scores,
+        result.rubric.metric_trait_scores,
+      ].forEach((traitDict) => {
+        if (traitDict) {
+          Object.keys(traitDict).forEach((traitName) => {
+            allRubricTraitNames.add(traitName);
+          });
         }
-      );
+      });
     }
   });
 
   // Determine global vs question-specific rubrics
   const globalTraitNames = new Set<string>();
-  if (globalRubric && globalRubric.traits) {
-    globalRubric.traits.forEach((trait: RubricTrait) => {
-      globalTraitNames.add(trait.name);
-    });
+  if (globalRubric) {
+    if (globalRubric.traits) {
+      globalRubric.traits.forEach((trait: RubricTrait) => {
+        globalTraitNames.add(trait.name);
+      });
+    }
+    if (globalRubric.regex_traits) {
+      globalRubric.regex_traits.forEach((trait) => {
+        globalTraitNames.add(trait.name);
+      });
+    }
+    if (globalRubric.callable_traits) {
+      globalRubric.callable_traits.forEach((trait) => {
+        globalTraitNames.add(trait.name);
+      });
+    }
+    if (globalRubric.metric_traits) {
+      globalRubric.metric_traits.forEach((trait) => {
+        globalTraitNames.add(trait.name);
+      });
+    }
   }
 
   // Separate traits into global and question-specific
@@ -332,11 +353,12 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
   const csvRows = [headers.join(',')];
 
   results.forEach((result, index) => {
-    // Merge all trait scores for CSV export (from all three rubric dicts)
+    // Merge all trait scores for CSV export (from all trait score dicts)
     const mergedTraits: Record<string, number | boolean | Record<string, number>> = {};
     if (result.rubric) {
       if (result.rubric.llm_trait_scores) Object.assign(mergedTraits, result.rubric.llm_trait_scores);
-      if (result.rubric.manual_trait_scores) Object.assign(mergedTraits, result.rubric.manual_trait_scores);
+      if (result.rubric.regex_trait_scores) Object.assign(mergedTraits, result.rubric.regex_trait_scores);
+      if (result.rubric.callable_trait_scores) Object.assign(mergedTraits, result.rubric.callable_trait_scores);
       if (result.rubric.metric_trait_scores) Object.assign(mergedTraits, result.rubric.metric_trait_scores);
     }
 

@@ -40,14 +40,23 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
     const rubricToUse = evaluationRubric || currentRubric;
     if (!rubricToUse) return {};
 
-    const trait = rubricToUse.traits.find((t) => t.name === traitName);
+    // Search across all trait types (use llm_traits, not traits)
+    let trait = rubricToUse.llm_traits?.find((t) => t.name === traitName);
+    if (!trait) trait = rubricToUse.regex_traits?.find((t) => t.name === traitName);
+    if (!trait) trait = rubricToUse.callable_traits?.find((t) => t.name === traitName);
+    if (!trait) trait = rubricToUse.metric_traits?.find((t) => t.name === traitName);
+
     if (!trait) return {};
 
     // Determine if this trait is question-specific by checking if it exists in currentRubric
     // If evaluationRubric has it but currentRubric doesn't, it's question-specific
     let isQuestionSpecific = false;
     if (evaluationRubric && currentRubric) {
-      const existsInGlobal = currentRubric.traits.some((t) => t.name === traitName);
+      const existsInGlobal =
+        currentRubric.llm_traits?.some((t) => t.name === traitName) ||
+        currentRubric.regex_traits?.some((t) => t.name === traitName) ||
+        currentRubric.callable_traits?.some((t) => t.name === traitName) ||
+        currentRubric.metric_traits?.some((t) => t.name === traitName);
       isQuestionSpecific = !existsInGlobal;
     }
 

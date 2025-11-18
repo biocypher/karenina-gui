@@ -7,7 +7,8 @@ import {
   SchemaOrgPropertyValue,
   CheckpointItem,
   RubricTrait,
-  ManualRubricTrait,
+  RegexTrait,
+  CallableTrait,
   MetricRubricTrait,
   Rubric,
   CheckpointConversionMetadata,
@@ -206,6 +207,80 @@ export function convertRatingToRubricTrait(rating: SchemaOrgRating): RubricTrait
   };
 }
 
+export function convertRatingToRegexTrait(rating: SchemaOrgRating): RegexTrait {
+  // Validate rating object
+  if (!rating || typeof rating !== 'object') {
+    throw new CheckpointConversionError('Invalid rating object: rating must be a valid object');
+  }
+
+  if (typeof rating.name !== 'string' || !rating.name.trim()) {
+    throw new CheckpointConversionError('Invalid rating object: name is required and must be a non-empty string');
+  }
+
+  // Extract regex-specific fields from additionalProperty
+  const patternProp = rating.additionalProperty?.find((prop) => prop.name === 'pattern');
+  const caseSensitiveProp = rating.additionalProperty?.find((prop) => prop.name === 'case_sensitive');
+  const invertResultProp = rating.additionalProperty?.find((prop) => prop.name === 'invert_result');
+
+  const pattern = patternProp?.value as string | undefined;
+  const caseSensitive = caseSensitiveProp?.value as boolean | undefined;
+  const invertResult = invertResultProp?.value as boolean | undefined;
+
+  if (!pattern) {
+    throw new CheckpointConversionError(`Invalid regex trait "${rating.name}": pattern is required`);
+  }
+
+  return {
+    name: rating.name,
+    description: rating.description,
+    pattern,
+    case_sensitive: caseSensitive ?? true,
+    invert_result: invertResult ?? false,
+  };
+}
+
+export function convertRatingToCallableTrait(rating: SchemaOrgRating): CallableTrait {
+  // Validate rating object
+  if (!rating || typeof rating !== 'object') {
+    throw new CheckpointConversionError('Invalid rating object: rating must be a valid object');
+  }
+
+  if (typeof rating.name !== 'string' || !rating.name.trim()) {
+    throw new CheckpointConversionError('Invalid rating object: name is required and must be a non-empty string');
+  }
+
+  // Extract callable-specific fields from additionalProperty
+  const callableCodeProp = rating.additionalProperty?.find((prop) => prop.name === 'callable_code');
+  const kindProp = rating.additionalProperty?.find((prop) => prop.name === 'kind');
+  const minScoreProp = rating.additionalProperty?.find((prop) => prop.name === 'min_score');
+  const maxScoreProp = rating.additionalProperty?.find((prop) => prop.name === 'max_score');
+  const invertResultProp = rating.additionalProperty?.find((prop) => prop.name === 'invert_result');
+
+  const callableCode = callableCodeProp?.value as string | undefined;
+  const kind = kindProp?.value as 'boolean' | 'score' | undefined;
+  const minScore = minScoreProp?.value as number | undefined;
+  const maxScore = maxScoreProp?.value as number | undefined;
+  const invertResult = invertResultProp?.value as boolean | undefined;
+
+  if (!callableCode) {
+    throw new CheckpointConversionError(`Invalid callable trait "${rating.name}": callable_code is required`);
+  }
+
+  if (!kind || (kind !== 'boolean' && kind !== 'score')) {
+    throw new CheckpointConversionError(`Invalid callable trait "${rating.name}": kind must be 'boolean' or 'score'`);
+  }
+
+  return {
+    name: rating.name,
+    description: rating.description,
+    callable_code: callableCode,
+    kind,
+    ...(minScore !== undefined && { min_score: minScore }),
+    ...(maxScore !== undefined && { max_score: maxScore }),
+    invert_result: invertResult ?? false,
+  };
+}
+
 export function v2ToJsonLd(
   checkpoint: UnifiedCheckpoint,
   options: ConversionOptions = DEFAULT_CONVERSION_OPTIONS
@@ -293,17 +368,26 @@ export function v2ToJsonLd(
 
       // Add only question-specific rubric traits (global traits will be stored at Dataset level)
       if (item.question_rubric) {
-        item.question_rubric.traits.forEach((trait) => {
+        item.question_rubric.llm_traits.forEach((trait) => {
           const rating = convertRubricTraitToRating(trait, 'question-specific');
           ratings.push(rating);
         });
 
-        // Add question-specific manual_traits to additionalProperty if present
-        if (item.question_rubric.manual_traits && item.question_rubric.manual_traits.length > 0) {
+        // Add question-specific regex_traits to additionalProperty if present
+        if (item.question_rubric.regex_traits && item.question_rubric.regex_traits.length > 0) {
           question.additionalProperty.push({
             '@type': 'PropertyValue' as const,
-            name: 'question_manual_rubric_traits',
-            value: JSON.stringify(item.question_rubric.manual_traits),
+            name: 'question_regex_rubric_traits',
+            value: JSON.stringify(item.question_rubric.regex_traits),
+          });
+        }
+
+        // Add question-specific callable_traits to additionalProperty if present
+        if (item.question_rubric.callable_traits && item.question_rubric.callable_traits.length > 0) {
+          question.additionalProperty.push({
+            '@type': 'PropertyValue' as const,
+            name: 'question_callable_rubric_traits',
+            value: JSON.stringify(item.question_rubric.callable_traits),
           });
         }
 
@@ -374,12 +458,21 @@ export function v2ToJsonLd(
       globalRatings = checkpoint.global_rubric.traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
     }
 
-    // Add global manual_traits to additionalProperties if present
-    if (checkpoint.global_rubric?.manual_traits && checkpoint.global_rubric.manual_traits.length > 0) {
+    // Add global regex_traits to additionalProperties if present
+    if (checkpoint.global_rubric?.regex_traits && checkpoint.global_rubric.regex_traits.length > 0) {
       additionalProperties.push({
         '@type': 'PropertyValue',
-        name: 'global_manual_rubric_traits',
-        value: JSON.stringify(checkpoint.global_rubric.manual_traits),
+        name: 'global_regex_rubric_traits',
+        value: JSON.stringify(checkpoint.global_rubric.regex_traits),
+      });
+    }
+
+    // Add global callable_traits to additionalProperties if present
+    if (checkpoint.global_rubric?.callable_traits && checkpoint.global_rubric.callable_traits.length > 0) {
+      additionalProperties.push({
+        '@type': 'PropertyValue',
+        name: 'global_callable_rubric_traits',
+        value: JSON.stringify(checkpoint.global_rubric.callable_traits),
       });
     }
 
@@ -449,35 +542,90 @@ export function jsonLdToV2(
     // Extract global rubric from Dataset rating array
     let globalRubric: Rubric | null = null;
     if (jsonLdCheckpoint.rating && jsonLdCheckpoint.rating.length > 0) {
-      // Filter for global rubric traits
-      const globalRatings = jsonLdCheckpoint.rating.filter((rating) => rating.additionalType === 'GlobalRubricTrait');
+      // Filter for different trait types
+      const globalLLMRatings = jsonLdCheckpoint.rating.filter(
+        (rating) => rating.additionalType === 'GlobalRubricTrait'
+      );
+      const globalRegexRatings = jsonLdCheckpoint.rating.filter(
+        (rating) => rating.additionalType === 'GlobalRegexTrait'
+      );
+      const globalCallableRatings = jsonLdCheckpoint.rating.filter(
+        (rating) => rating.additionalType === 'GlobalCallableTrait'
+      );
 
-      if (globalRatings.length > 0) {
-        const traits = globalRatings.map(convertRatingToRubricTrait);
-        globalRubric = { traits };
+      // Convert LLM traits
+      const llmTraits = globalLLMRatings.length > 0 ? globalLLMRatings.map(convertRatingToRubricTrait) : [];
+      // Normalize legacy "binary" kind to "boolean"
+      llmTraits.forEach((trait) => {
+        if ((trait.kind as string) === 'binary') {
+          trait.kind = 'boolean';
+        }
+      });
+
+      // Convert regex traits
+      const regexTraits = globalRegexRatings.length > 0 ? globalRegexRatings.map(convertRatingToRegexTrait) : [];
+
+      // Convert callable traits
+      const callableTraits =
+        globalCallableRatings.length > 0 ? globalCallableRatings.map(convertRatingToCallableTrait) : [];
+
+      if (llmTraits.length > 0 || regexTraits.length > 0 || callableTraits.length > 0) {
+        globalRubric = {
+          llm_traits: llmTraits,
+          ...(regexTraits.length > 0 && { regex_traits: regexTraits }),
+          ...(callableTraits.length > 0 && { callable_traits: callableTraits }),
+        };
       }
     }
 
-    // Extract global manual_traits from additionalProperty
-    let globalManualTraits: ManualRubricTrait[] | undefined;
-    const globalManualTraitsProp = jsonLdCheckpoint.additionalProperty?.find(
-      (prop) => prop.name === 'global_manual_rubric_traits'
+    // Extract global regex_traits from additionalProperty (legacy format)
+    let globalRegexTraits: RegexTrait[] | undefined;
+    const globalRegexTraitsProp = jsonLdCheckpoint.additionalProperty?.find(
+      (prop) => prop.name === 'global_regex_rubric_traits'
     );
-    if (globalManualTraitsProp && typeof globalManualTraitsProp.value === 'string') {
+    if (globalRegexTraitsProp && typeof globalRegexTraitsProp.value === 'string') {
       try {
-        globalManualTraits = JSON.parse(globalManualTraitsProp.value);
+        globalRegexTraits = JSON.parse(globalRegexTraitsProp.value);
+        // Normalize legacy "invert" field to "invert_result"
+        globalRegexTraits?.forEach((trait: RegexTrait & { invert?: boolean }) => {
+          if (trait.invert !== undefined && trait.invert_result === undefined) {
+            trait.invert_result = trait.invert;
+            delete trait.invert;
+          }
+        });
       } catch {
-        // Invalid JSON, ignore manual traits
+        // Invalid JSON, ignore regex traits
       }
     }
 
-    // Merge manual_traits into global rubric
-    if (globalManualTraits && globalManualTraits.length > 0) {
+    // Merge regex_traits into global rubric (legacy format)
+    if (globalRegexTraits && globalRegexTraits.length > 0) {
       if (globalRubric) {
-        globalRubric.manual_traits = globalManualTraits;
+        globalRubric.regex_traits = [...(globalRubric.regex_traits || []), ...globalRegexTraits];
       } else {
-        // Create rubric with only manual traits
-        globalRubric = { traits: [], manual_traits: globalManualTraits };
+        globalRubric = { llm_traits: [], regex_traits: globalRegexTraits };
+      }
+    }
+
+    // Extract global callable_traits from additionalProperty (legacy format)
+    let globalCallableTraits: CallableTrait[] | undefined;
+    const globalCallableTraitsProp = jsonLdCheckpoint.additionalProperty?.find(
+      (prop) => prop.name === 'global_callable_rubric_traits'
+    );
+    if (globalCallableTraitsProp && typeof globalCallableTraitsProp.value === 'string') {
+      try {
+        globalCallableTraits = JSON.parse(globalCallableTraitsProp.value);
+      } catch {
+        // Invalid JSON, ignore callable traits
+      }
+    }
+
+    // Merge callable_traits into global rubric (legacy format)
+    if (globalCallableTraits && globalCallableTraits.length > 0) {
+      if (globalRubric) {
+        globalRubric.callable_traits = [...(globalRubric.callable_traits || []), ...globalCallableTraits];
+      } else {
+        globalRubric = { llm_traits: [], callable_traits: globalCallableTraits };
       }
     }
 
@@ -499,15 +647,14 @@ export function jsonLdToV2(
       if (globalRubric) {
         globalRubric.metric_traits = globalMetricTraits;
       } else {
-        // Create rubric with only metric traits
-        globalRubric = { traits: [], metric_traits: globalMetricTraits };
+        globalRubric = { llm_traits: [], metric_traits: globalMetricTraits };
       }
     }
 
     // Convert DataFeedItem objects back to CheckpointItem
     const checkpoint: { [key: string]: CheckpointItem } = {};
 
-    jsonLdCheckpoint.dataFeedElement.forEach((dataFeedItem, index) => {
+    (jsonLdCheckpoint.dataFeedElement || []).forEach((dataFeedItem, index) => {
       const question = dataFeedItem.item;
 
       // Generate a question ID (use index if no ID preserved)
@@ -563,38 +710,126 @@ export function jsonLdToV2(
       // Convert ratings back to question-specific rubric
       let questionRubric: Rubric | undefined;
       if (question.rating && question.rating.length > 0) {
-        const questionSpecificRatings = question.rating.filter(
+        // Filter for different trait types
+        const questionLLMRatings = question.rating.filter(
           (rating) => rating.additionalType === 'QuestionSpecificRubricTrait'
         );
+        const questionRegexRatings = question.rating.filter(
+          (rating) => rating.additionalType === 'QuestionSpecificRegexTrait'
+        );
+        const questionCallableRatings = question.rating.filter(
+          (rating) => rating.additionalType === 'QuestionSpecificCallableTrait'
+        );
 
-        if (questionSpecificRatings.length > 0) {
+        // Convert LLM traits
+        const llmTraits = questionLLMRatings.length > 0 ? questionLLMRatings.map(convertRatingToRubricTrait) : [];
+        // Normalize legacy "binary" kind to "boolean"
+        llmTraits.forEach((trait) => {
+          if ((trait.kind as string) === 'binary') {
+            trait.kind = 'boolean';
+          }
+        });
+
+        // Convert regex traits
+        const regexTraits = questionRegexRatings.length > 0 ? questionRegexRatings.map(convertRatingToRegexTrait) : [];
+
+        // Convert callable traits
+        const callableTraits =
+          questionCallableRatings.length > 0 ? questionCallableRatings.map(convertRatingToCallableTrait) : [];
+
+        // Debug logging
+        if (questionCallableRatings.length > 0 || callableTraits.length > 0) {
+          console.log(`📋 Question callable traits:`, {
+            questionId: question['@id'],
+            callableRatingsCount: questionCallableRatings.length,
+            callableTraitsCount: callableTraits.length,
+            callableTraits,
+          });
+        }
+
+        // Note: MetricRubricTrait uses different schema - stored in additionalProperty as JSON
+
+        if (llmTraits.length > 0 || regexTraits.length > 0 || callableTraits.length > 0) {
           questionRubric = {
-            traits: questionSpecificRatings.map(convertRatingToRubricTrait),
+            llm_traits: llmTraits,
+            ...(regexTraits.length > 0 && { regex_traits: regexTraits }),
+            ...(callableTraits.length > 0 && { callable_traits: callableTraits }),
           };
         }
       }
 
-      // Extract question-specific manual_traits from additionalProperty
-      const questionManualTraitsProp = question.additionalProperty?.find(
-        (prop) => prop.name === 'question_manual_rubric_traits'
+      // Extract question-specific llm_traits from additionalProperty (legacy format)
+      const questionLLMTraitsProp = question.additionalProperty?.find(
+        (prop) => prop.name === 'question_llm_rubric_traits'
       );
-      if (questionManualTraitsProp && typeof questionManualTraitsProp.value === 'string') {
+      if (questionLLMTraitsProp && typeof questionLLMTraitsProp.value === 'string') {
         try {
-          const manualTraits: ManualRubricTrait[] = JSON.parse(questionManualTraitsProp.value);
-          if (manualTraits.length > 0) {
+          const llmTraits: LLMRubricTrait[] = JSON.parse(questionLLMTraitsProp.value);
+          // Normalize legacy "binary" kind to "boolean"
+          llmTraits.forEach((trait) => {
+            if ((trait.kind as string) === 'binary') {
+              trait.kind = 'boolean';
+            }
+          });
+          if (llmTraits.length > 0) {
             if (questionRubric) {
-              questionRubric.manual_traits = manualTraits;
+              questionRubric.llm_traits = [...(questionRubric.llm_traits || []), ...llmTraits];
             } else {
-              // Create rubric with only manual traits
-              questionRubric = { traits: [], manual_traits: manualTraits };
+              questionRubric = { llm_traits: llmTraits };
             }
           }
         } catch {
-          // Invalid JSON, ignore manual traits
+          // Invalid JSON, ignore LLM traits
+        }
+      }
+
+      // Extract question-specific regex_traits from additionalProperty (legacy format)
+      const questionRegexTraitsProp = question.additionalProperty?.find(
+        (prop) => prop.name === 'question_regex_rubric_traits'
+      );
+      if (questionRegexTraitsProp && typeof questionRegexTraitsProp.value === 'string') {
+        try {
+          const regexTraits: RegexTrait[] = JSON.parse(questionRegexTraitsProp.value);
+          // Normalize legacy "invert" field to "invert_result"
+          regexTraits.forEach((trait: RegexTrait & { invert?: boolean }) => {
+            if (trait.invert !== undefined && trait.invert_result === undefined) {
+              trait.invert_result = trait.invert;
+              delete trait.invert;
+            }
+          });
+          if (regexTraits.length > 0) {
+            if (questionRubric) {
+              questionRubric.regex_traits = [...(questionRubric.regex_traits || []), ...regexTraits];
+            } else {
+              questionRubric = { llm_traits: [], regex_traits: regexTraits };
+            }
+          }
+        } catch {
+          // Invalid JSON, ignore regex traits
+        }
+      }
+
+      // Extract question-specific callable_traits from additionalProperty (legacy format)
+      const questionCallableTraitsProp = question.additionalProperty?.find(
+        (prop) => prop.name === 'question_callable_rubric_traits'
+      );
+      if (questionCallableTraitsProp && typeof questionCallableTraitsProp.value === 'string') {
+        try {
+          const callableTraits: CallableTrait[] = JSON.parse(questionCallableTraitsProp.value);
+          if (callableTraits.length > 0) {
+            if (questionRubric) {
+              questionRubric.callable_traits = [...(questionRubric.callable_traits || []), ...callableTraits];
+            } else {
+              questionRubric = { llm_traits: [], callable_traits: callableTraits };
+            }
+          }
+        } catch {
+          // Invalid JSON, ignore callable traits
         }
       }
 
       // Extract question-specific metric_traits from additionalProperty
+      // Metric traits are ALWAYS stored as JSON in additionalProperty (not as Rating objects)
       const questionMetricTraitsProp = question.additionalProperty?.find(
         (prop) => prop.name === 'question_metric_rubric_traits'
       );
@@ -605,13 +840,27 @@ export function jsonLdToV2(
             if (questionRubric) {
               questionRubric.metric_traits = metricTraits;
             } else {
-              // Create rubric with only metric traits
-              questionRubric = { traits: [], metric_traits: metricTraits };
+              questionRubric = { llm_traits: [], metric_traits: metricTraits };
             }
           }
         } catch {
           // Invalid JSON, ignore metric traits
         }
+      }
+
+      // Log final question rubric state
+      if (questionRubric) {
+        console.log(`📊 Final question rubric for: ${question.text.substring(0, 50)}...`, {
+          hasLLMTraits: !!questionRubric.llm_traits && questionRubric.llm_traits.length > 0,
+          llmTraitsCount: questionRubric.llm_traits?.length || 0,
+          hasRegexTraits: !!questionRubric.regex_traits && questionRubric.regex_traits.length > 0,
+          regexTraitsCount: questionRubric.regex_traits?.length || 0,
+          hasCallableTraits: !!questionRubric.callable_traits && questionRubric.callable_traits.length > 0,
+          callableTraitsCount: questionRubric.callable_traits?.length || 0,
+          hasMetricTraits: !!questionRubric.metric_traits && questionRubric.metric_traits.length > 0,
+          metricTraitsCount: questionRubric.metric_traits?.length || 0,
+          questionRubric,
+        });
       }
 
       const checkpointItem: CheckpointItem = {
@@ -722,11 +971,21 @@ export function validateJsonLdCheckpoint(checkpoint: JsonLdCheckpoint): void {
           errors.push(`Question ${index} rating ${ratingIndex} must have numeric bestRating and worstRating`);
         }
 
-        if (
-          !rating.additionalType ||
-          (rating.additionalType !== 'GlobalRubricTrait' && rating.additionalType !== 'QuestionSpecificRubricTrait')
-        ) {
-          errors.push(`Question ${index} rating ${ratingIndex} must have valid additionalType`);
+        const validAdditionalTypes = [
+          'GlobalRubricTrait',
+          'QuestionSpecificRubricTrait',
+          'GlobalRegexTrait',
+          'QuestionSpecificRegexTrait',
+          'GlobalCallableTrait',
+          'QuestionSpecificCallableTrait',
+          'GlobalMetricRubricTrait',
+          'QuestionSpecificMetricRubricTrait',
+        ];
+
+        if (!rating.additionalType || !validAdditionalTypes.includes(rating.additionalType)) {
+          errors.push(
+            `Question ${index} rating ${ratingIndex} must have valid additionalType (got: ${rating.additionalType})`
+          );
         }
       });
     }
