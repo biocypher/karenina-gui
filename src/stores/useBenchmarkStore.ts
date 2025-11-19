@@ -100,7 +100,7 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   // Initial state - Evaluation Settings
   rubricEnabled: false,
   rubricEvaluationStrategy: 'batch',
-  evaluationMode: 'template_and_rubric',
+  evaluationMode: 'template_only',
   correctnessEnabled: true,
   abstentionEnabled: false,
   deepJudgmentEnabled: false,
@@ -158,7 +158,21 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
     }),
 
   // Evaluation Settings Actions
-  setRubricEnabled: (enabled) => set({ rubricEnabled: enabled }),
+  setRubricEnabled: (enabled) =>
+    set((state) => {
+      // When disabling rubric, force evaluation_mode to template_only
+      if (!enabled) {
+        return {
+          rubricEnabled: false,
+          evaluationMode: 'template_only',
+        };
+      }
+      // When enabling rubric, switch from template_only to template_and_rubric
+      return {
+        rubricEnabled: true,
+        evaluationMode: state.evaluationMode === 'template_only' ? 'template_and_rubric' : state.evaluationMode,
+      };
+    }),
   setRubricEvaluationStrategy: (strategy) => set({ rubricEvaluationStrategy: strategy }),
   setEvaluationMode: (mode) => set({ evaluationMode: mode }),
   setCorrectnessEnabled: (enabled) => set({ correctnessEnabled: enabled }),
@@ -253,17 +267,32 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
 
     // Extract few-shot settings
     const fewShotEnabled = config.few_shot_config?.enabled ?? false;
-    const fewShotMode = config.few_shot_config?.global_mode ?? 'all';
+    // Convert 'none' to 'all' since our UI doesn't support 'none' mode
+    const rawMode = config.few_shot_config?.global_mode ?? 'all';
+    const fewShotMode: 'all' | 'k-shot' | 'custom' = rawMode === 'none' ? 'all' : rawMode;
     const fewShotK = config.few_shot_config?.global_k ?? 3;
+
+    // Ensure evaluation_mode is consistent with rubric_enabled
+    const rubricEnabled = config.rubric_enabled ?? false;
+    let evaluationMode = config.evaluation_mode ?? 'template_only';
+
+    // If rubric is disabled, force evaluation_mode to template_only
+    if (!rubricEnabled && evaluationMode !== 'template_only') {
+      evaluationMode = 'template_only';
+    }
+    // If rubric is enabled and mode is template_only, default to template_and_rubric
+    if (rubricEnabled && evaluationMode === 'template_only') {
+      evaluationMode = 'template_and_rubric';
+    }
 
     // Apply configuration to store
     set({
       answeringModels,
       parsingModels,
       replicateCount: config.replicate_count,
-      rubricEnabled: config.rubric_enabled ?? false,
+      rubricEnabled,
       rubricEvaluationStrategy: config.rubric_evaluation_strategy ?? 'batch',
-      evaluationMode: config.evaluation_mode ?? 'template_only',
+      evaluationMode,
       abstentionEnabled: config.abstention_enabled ?? false,
       deepJudgmentEnabled: config.deep_judgment_enabled ?? false,
       deepJudgmentSearchEnabled: config.deep_judgment_search_enabled ?? false,
