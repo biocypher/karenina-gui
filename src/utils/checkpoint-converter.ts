@@ -281,6 +281,54 @@ export function convertRatingToCallableTrait(rating: SchemaOrgRating): CallableT
   };
 }
 
+export function convertRatingToMetricTrait(rating: SchemaOrgRating): MetricRubricTrait {
+  // Validate rating object
+  if (!rating || typeof rating !== 'object') {
+    throw new CheckpointConversionError('Invalid rating object: rating must be a valid object');
+  }
+
+  if (typeof rating.name !== 'string' || !rating.name.trim()) {
+    throw new CheckpointConversionError('Invalid rating object: name is required and must be a non-empty string');
+  }
+
+  // Extract metric-specific fields from additionalProperty
+  const evaluationModeProp = rating.additionalProperty?.find((prop) => prop.name === 'evaluation_mode');
+  const metricsProp = rating.additionalProperty?.find((prop) => prop.name === 'metrics');
+  const tpInstructionsProp = rating.additionalProperty?.find((prop) => prop.name === 'tp_instructions');
+  const tnInstructionsProp = rating.additionalProperty?.find((prop) => prop.name === 'tn_instructions');
+  const repeatedExtractionProp = rating.additionalProperty?.find((prop) => prop.name === 'repeated_extraction');
+
+  const evaluationMode = evaluationModeProp?.value as 'tp_only' | 'tn_only' | 'tp_and_tn' | undefined;
+  const metrics = metricsProp?.value as string[] | undefined;
+  const tpInstructions = tpInstructionsProp?.value as string[] | undefined;
+  const tnInstructions = tnInstructionsProp?.value as string[] | undefined;
+  const repeatedExtraction = repeatedExtractionProp?.value as boolean | undefined;
+
+  if (!evaluationMode || !['tp_only', 'tn_only', 'tp_and_tn'].includes(evaluationMode)) {
+    throw new CheckpointConversionError(
+      `Invalid metric trait "${rating.name}": evaluation_mode must be 'tp_only', 'tn_only', or 'tp_and_tn'`
+    );
+  }
+
+  if (!metrics || !Array.isArray(metrics) || metrics.length === 0) {
+    throw new CheckpointConversionError(`Invalid metric trait "${rating.name}": metrics array is required`);
+  }
+
+  if (!tpInstructions || !Array.isArray(tpInstructions)) {
+    throw new CheckpointConversionError(`Invalid metric trait "${rating.name}": tp_instructions array is required`);
+  }
+
+  return {
+    name: rating.name,
+    description: rating.description,
+    evaluation_mode: evaluationMode,
+    metrics,
+    tp_instructions: tpInstructions,
+    tn_instructions: tnInstructions ?? [],
+    repeated_extraction: repeatedExtraction ?? false,
+  };
+}
+
 export function v2ToJsonLd(
   checkpoint: UnifiedCheckpoint,
   options: ConversionOptions = DEFAULT_CONVERSION_OPTIONS
@@ -720,6 +768,9 @@ export function jsonLdToV2(
         const questionCallableRatings = question.rating.filter(
           (rating) => rating.additionalType === 'QuestionSpecificCallableTrait'
         );
+        const questionMetricRatings = question.rating.filter(
+          (rating) => rating.additionalType === 'QuestionSpecificMetricRubricTrait'
+        );
 
         // Convert LLM traits
         const llmTraits = questionLLMRatings.length > 0 ? questionLLMRatings.map(convertRatingToRubricTrait) : [];
@@ -737,6 +788,10 @@ export function jsonLdToV2(
         const callableTraits =
           questionCallableRatings.length > 0 ? questionCallableRatings.map(convertRatingToCallableTrait) : [];
 
+        // Convert metric traits
+        const metricTraits =
+          questionMetricRatings.length > 0 ? questionMetricRatings.map(convertRatingToMetricTrait) : [];
+
         // Debug logging
         if (questionCallableRatings.length > 0 || callableTraits.length > 0) {
           console.log(`📋 Question callable traits:`, {
@@ -747,104 +802,13 @@ export function jsonLdToV2(
           });
         }
 
-        // Note: MetricRubricTrait uses different schema - stored in additionalProperty as JSON
-
-        if (llmTraits.length > 0 || regexTraits.length > 0 || callableTraits.length > 0) {
+        if (llmTraits.length > 0 || regexTraits.length > 0 || callableTraits.length > 0 || metricTraits.length > 0) {
           questionRubric = {
             llm_traits: llmTraits,
             ...(regexTraits.length > 0 && { regex_traits: regexTraits }),
             ...(callableTraits.length > 0 && { callable_traits: callableTraits }),
+            ...(metricTraits.length > 0 && { metric_traits: metricTraits }),
           };
-        }
-      }
-
-      // Extract question-specific llm_traits from additionalProperty (legacy format)
-      const questionLLMTraitsProp = question.additionalProperty?.find(
-        (prop) => prop.name === 'question_llm_rubric_traits'
-      );
-      if (questionLLMTraitsProp && typeof questionLLMTraitsProp.value === 'string') {
-        try {
-          const llmTraits: LLMRubricTrait[] = JSON.parse(questionLLMTraitsProp.value);
-          // Normalize legacy "binary" kind to "boolean"
-          llmTraits.forEach((trait) => {
-            if ((trait.kind as string) === 'binary') {
-              trait.kind = 'boolean';
-            }
-          });
-          if (llmTraits.length > 0) {
-            if (questionRubric) {
-              questionRubric.llm_traits = [...(questionRubric.llm_traits || []), ...llmTraits];
-            } else {
-              questionRubric = { llm_traits: llmTraits };
-            }
-          }
-        } catch {
-          // Invalid JSON, ignore LLM traits
-        }
-      }
-
-      // Extract question-specific regex_traits from additionalProperty (legacy format)
-      const questionRegexTraitsProp = question.additionalProperty?.find(
-        (prop) => prop.name === 'question_regex_rubric_traits'
-      );
-      if (questionRegexTraitsProp && typeof questionRegexTraitsProp.value === 'string') {
-        try {
-          const regexTraits: RegexTrait[] = JSON.parse(questionRegexTraitsProp.value);
-          // Normalize legacy "invert" field to "invert_result"
-          regexTraits.forEach((trait: RegexTrait & { invert?: boolean }) => {
-            if (trait.invert !== undefined && trait.invert_result === undefined) {
-              trait.invert_result = trait.invert;
-              delete trait.invert;
-            }
-          });
-          if (regexTraits.length > 0) {
-            if (questionRubric) {
-              questionRubric.regex_traits = [...(questionRubric.regex_traits || []), ...regexTraits];
-            } else {
-              questionRubric = { llm_traits: [], regex_traits: regexTraits };
-            }
-          }
-        } catch {
-          // Invalid JSON, ignore regex traits
-        }
-      }
-
-      // Extract question-specific callable_traits from additionalProperty (legacy format)
-      const questionCallableTraitsProp = question.additionalProperty?.find(
-        (prop) => prop.name === 'question_callable_rubric_traits'
-      );
-      if (questionCallableTraitsProp && typeof questionCallableTraitsProp.value === 'string') {
-        try {
-          const callableTraits: CallableTrait[] = JSON.parse(questionCallableTraitsProp.value);
-          if (callableTraits.length > 0) {
-            if (questionRubric) {
-              questionRubric.callable_traits = [...(questionRubric.callable_traits || []), ...callableTraits];
-            } else {
-              questionRubric = { llm_traits: [], callable_traits: callableTraits };
-            }
-          }
-        } catch {
-          // Invalid JSON, ignore callable traits
-        }
-      }
-
-      // Extract question-specific metric_traits from additionalProperty
-      // Metric traits are ALWAYS stored as JSON in additionalProperty (not as Rating objects)
-      const questionMetricTraitsProp = question.additionalProperty?.find(
-        (prop) => prop.name === 'question_metric_rubric_traits'
-      );
-      if (questionMetricTraitsProp && typeof questionMetricTraitsProp.value === 'string') {
-        try {
-          const metricTraits: MetricRubricTrait[] = JSON.parse(questionMetricTraitsProp.value);
-          if (metricTraits.length > 0) {
-            if (questionRubric) {
-              questionRubric.metric_traits = metricTraits;
-            } else {
-              questionRubric = { llm_traits: [], metric_traits: metricTraits };
-            }
-          }
-        } catch {
-          // Invalid JSON, ignore metric traits
         }
       }
 
