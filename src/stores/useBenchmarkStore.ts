@@ -26,8 +26,11 @@ interface BenchmarkState {
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
-  deepJudgmentEnabled: boolean;
+  deepJudgmentTemplateEnabled: boolean;
   deepJudgmentSearchEnabled: boolean;
+  deepJudgmentRubricEnabled: boolean;
+  deepJudgmentRubricMode: 'enable_all' | 'use_checkpoint';
+  deepJudgmentRubricExtractExcerpts: boolean;
   fewShotEnabled: boolean;
   fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
@@ -55,8 +58,11 @@ interface BenchmarkState {
   setEvaluationMode: (mode: 'template_only' | 'template_and_rubric' | 'rubric_only') => void;
   setCorrectnessEnabled: (enabled: boolean) => void;
   setAbstentionEnabled: (enabled: boolean) => void;
-  setDeepJudgmentEnabled: (enabled: boolean) => void;
+  setDeepJudgmentTemplateEnabled: (enabled: boolean) => void;
   setDeepJudgmentSearchEnabled: (enabled: boolean) => void;
+  setDeepJudgmentRubricEnabled: (enabled: boolean) => void;
+  setDeepJudgmentRubricMode: (mode: 'enable_all' | 'use_checkpoint') => void;
+  setDeepJudgmentRubricExtractExcerpts: (enabled: boolean) => void;
   setFewShotEnabled: (enabled: boolean) => void;
   setFewShotMode: (mode: 'all' | 'k-shot' | 'custom') => void;
   setFewShotK: (k: number) => void;
@@ -100,11 +106,14 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   // Initial state - Evaluation Settings
   rubricEnabled: false,
   rubricEvaluationStrategy: 'batch',
-  evaluationMode: 'template_and_rubric',
+  evaluationMode: 'template_only',
   correctnessEnabled: true,
   abstentionEnabled: false,
-  deepJudgmentEnabled: false,
+  deepJudgmentTemplateEnabled: false,
   deepJudgmentSearchEnabled: false,
+  deepJudgmentRubricEnabled: false,
+  deepJudgmentRubricMode: 'enable_all',
+  deepJudgmentRubricExtractExcerpts: true,
   fewShotEnabled: false,
   fewShotMode: 'all',
   fewShotK: 3,
@@ -158,13 +167,30 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
     }),
 
   // Evaluation Settings Actions
-  setRubricEnabled: (enabled) => set({ rubricEnabled: enabled }),
+  setRubricEnabled: (enabled) =>
+    set((state) => {
+      // When disabling rubric, force evaluation_mode to template_only
+      if (!enabled) {
+        return {
+          rubricEnabled: false,
+          evaluationMode: 'template_only',
+        };
+      }
+      // When enabling rubric, switch from template_only to template_and_rubric
+      return {
+        rubricEnabled: true,
+        evaluationMode: state.evaluationMode === 'template_only' ? 'template_and_rubric' : state.evaluationMode,
+      };
+    }),
   setRubricEvaluationStrategy: (strategy) => set({ rubricEvaluationStrategy: strategy }),
   setEvaluationMode: (mode) => set({ evaluationMode: mode }),
   setCorrectnessEnabled: (enabled) => set({ correctnessEnabled: enabled }),
   setAbstentionEnabled: (enabled) => set({ abstentionEnabled: enabled }),
-  setDeepJudgmentEnabled: (enabled) => set({ deepJudgmentEnabled: enabled }),
+  setDeepJudgmentTemplateEnabled: (enabled) => set({ deepJudgmentTemplateEnabled: enabled }),
   setDeepJudgmentSearchEnabled: (enabled) => set({ deepJudgmentSearchEnabled: enabled }),
+  setDeepJudgmentRubricEnabled: (enabled) => set({ deepJudgmentRubricEnabled: enabled }),
+  setDeepJudgmentRubricMode: (mode) => set({ deepJudgmentRubricMode: mode }),
+  setDeepJudgmentRubricExtractExcerpts: (enabled) => set({ deepJudgmentRubricExtractExcerpts: enabled }),
   setFewShotEnabled: (enabled) => set({ fewShotEnabled: enabled }),
   setFewShotMode: (mode) => set({ fewShotMode: mode }),
   setFewShotK: (k) => set({ fewShotK: k }),
@@ -237,8 +263,10 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
       rubric_evaluation_strategy: state.rubricEvaluationStrategy,
       evaluation_mode: state.evaluationMode,
       abstention_enabled: state.abstentionEnabled,
-      deep_judgment_enabled: state.deepJudgmentEnabled,
+      deep_judgment_enabled: state.deepJudgmentTemplateEnabled,
       deep_judgment_search_enabled: state.deepJudgmentSearchEnabled,
+      deep_judgment_rubric_mode: state.deepJudgmentRubricEnabled ? state.deepJudgmentRubricMode : 'disabled',
+      deep_judgment_rubric_global_excerpts: state.deepJudgmentRubricExtractExcerpts,
       few_shot_config: fewShotConfig,
       db_config: null, // Presets don't include DB config
     };
@@ -253,20 +281,45 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
 
     // Extract few-shot settings
     const fewShotEnabled = config.few_shot_config?.enabled ?? false;
-    const fewShotMode = config.few_shot_config?.global_mode ?? 'all';
+    // Convert 'none' to 'all' since our UI doesn't support 'none' mode
+    const rawMode = config.few_shot_config?.global_mode ?? 'all';
+    const fewShotMode: 'all' | 'k-shot' | 'custom' = rawMode === 'none' ? 'all' : rawMode;
     const fewShotK = config.few_shot_config?.global_k ?? 3;
+
+    // Ensure evaluation_mode is consistent with rubric_enabled
+    const rubricEnabled = config.rubric_enabled ?? false;
+    let evaluationMode = config.evaluation_mode ?? 'template_only';
+
+    // If rubric is disabled, force evaluation_mode to template_only
+    if (!rubricEnabled && evaluationMode !== 'template_only') {
+      evaluationMode = 'template_only';
+    }
+    // If rubric is enabled and mode is template_only, default to template_and_rubric
+    if (rubricEnabled && evaluationMode === 'template_only') {
+      evaluationMode = 'template_and_rubric';
+    }
+
+    // Parse deep judgment rubric configuration
+    const deepJudgmentRubricMode = (config.deep_judgment_rubric_mode ?? 'disabled') as
+      | 'disabled'
+      | 'enable_all'
+      | 'use_checkpoint';
+    const deepJudgmentRubricEnabled = deepJudgmentRubricMode !== 'disabled';
 
     // Apply configuration to store
     set({
       answeringModels,
       parsingModels,
       replicateCount: config.replicate_count,
-      rubricEnabled: config.rubric_enabled ?? false,
+      rubricEnabled,
       rubricEvaluationStrategy: config.rubric_evaluation_strategy ?? 'batch',
-      evaluationMode: config.evaluation_mode ?? 'template_only',
+      evaluationMode,
       abstentionEnabled: config.abstention_enabled ?? false,
-      deepJudgmentEnabled: config.deep_judgment_enabled ?? false,
+      deepJudgmentTemplateEnabled: config.deep_judgment_enabled ?? false,
       deepJudgmentSearchEnabled: config.deep_judgment_search_enabled ?? false,
+      deepJudgmentRubricEnabled,
+      deepJudgmentRubricMode: deepJudgmentRubricEnabled ? deepJudgmentRubricMode : 'enable_all',
+      deepJudgmentRubricExtractExcerpts: config.deep_judgment_rubric_global_excerpts ?? true,
       fewShotEnabled,
       fewShotMode,
       fewShotK,

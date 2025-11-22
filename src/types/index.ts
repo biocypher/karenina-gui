@@ -140,6 +140,13 @@ export interface SchemaOrgRating {
     | 'GlobalMetricRubricTrait'
     | 'QuestionSpecificMetricRubricTrait';
   ratingExplanation?: string;
+  // Deep Judgment configuration (for LLM traits only)
+  deep_judgment_enabled?: boolean;
+  deep_judgment_excerpt_enabled?: boolean;
+  deep_judgment_max_excerpts?: number;
+  deep_judgment_fuzzy_match_threshold?: number;
+  deep_judgment_excerpt_retry_attempts?: number;
+  deep_judgment_search_enabled?: boolean;
 }
 
 export interface SchemaOrgPropertyValue {
@@ -437,6 +444,67 @@ export interface VerificationResultDeepJudgment {
 }
 
 /**
+ * Deep-judgment metadata for rubric trait evaluation.
+ *
+ * This component stores enhanced evaluation data when deep-judgment is applied to rubric traits,
+ * including extracted excerpts, reasoning, and hallucination risk assessments.
+ */
+export interface VerificationResultDeepJudgmentRubric {
+  deep_judgment_rubric_performed: boolean;
+
+  // Per-trait excerpts (only for traits with deep_judgment_excerpt_enabled=True)
+  extracted_rubric_excerpts?: Record<
+    string,
+    Array<{
+      text: string;
+      confidence: string;
+      similarity_score: number;
+      search_results?: SearchResultItem[];
+      hallucination_risk?: string;
+      hallucination_justification?: string;
+    }>
+  >;
+
+  // Per-trait reasoning (ALL deep-judgment-enabled traits)
+  rubric_trait_reasoning?: Record<string, string>;
+
+  // Per-trait scores from deep-judgment evaluation
+  deep_judgment_rubric_scores?: Record<string, number | boolean>;
+
+  // Standard evaluation scores (non-deep-judgment traits)
+  standard_rubric_scores?: Record<string, number | boolean>;
+
+  // Per-trait metadata
+  trait_metadata?: Record<
+    string,
+    {
+      stages_completed: string[];
+      model_calls: number;
+      had_excerpts: boolean;
+      excerpt_retry_count: number;
+      excerpt_validation_failed?: boolean;
+    }
+  >;
+
+  // Auto-fail tracking
+  traits_without_valid_excerpts?: string[];
+
+  // Search-enhanced metadata
+  rubric_hallucination_risk_assessment?: Record<
+    string,
+    {
+      overall_risk: string;
+      per_excerpt_risks: string[];
+    }
+  >;
+
+  // Aggregated statistics
+  total_deep_judgment_model_calls: number;
+  total_traits_evaluated: number;
+  total_excerpt_retries: number;
+}
+
+/**
  * VerificationResult interface with nested structure.
  *
  * MUST mirror backend VerificationResult model exactly.
@@ -450,6 +518,7 @@ export interface VerificationResult {
   template?: VerificationResultTemplate;
   rubric?: VerificationResultRubric;
   deep_judgment?: VerificationResultDeepJudgment;
+  deep_judgment_rubric?: VerificationResultDeepJudgmentRubric;
 }
 
 // Helper interface for LLM usage metadata
@@ -494,6 +563,13 @@ export interface LLMRubricTrait {
   kind: TraitKind;
   min_score?: number; // For score traits
   max_score?: number; // For score traits
+  // Deep Judgment fields
+  deep_judgment_enabled?: boolean; // Enable deep judgment for this trait (default: false)
+  deep_judgment_excerpt_enabled?: boolean; // Extract excerpts from answer (default: true)
+  deep_judgment_max_excerpts?: number; // Maximum excerpts to extract (overrides global default)
+  deep_judgment_fuzzy_match_threshold?: number; // Fuzzy matching threshold 0.0-1.0 (overrides global default)
+  deep_judgment_excerpt_retry_attempts?: number; // Retry attempts for excerpt extraction (overrides global default)
+  deep_judgment_search_enabled?: boolean; // Enable search-enhanced hallucination detection (default: false)
 }
 
 export interface RegexTrait {

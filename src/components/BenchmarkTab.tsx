@@ -51,8 +51,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     evaluationMode,
     correctnessEnabled,
     abstentionEnabled,
-    deepJudgmentEnabled,
+    deepJudgmentTemplateEnabled,
     deepJudgmentSearchEnabled,
+    deepJudgmentRubricEnabled,
+    deepJudgmentRubricMode,
+    deepJudgmentRubricExtractExcerpts,
     fewShotEnabled,
     fewShotMode,
     fewShotK,
@@ -63,8 +66,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setEvaluationMode,
     setCorrectnessEnabled,
     setAbstentionEnabled,
-    setDeepJudgmentEnabled,
+    setDeepJudgmentTemplateEnabled,
     setDeepJudgmentSearchEnabled,
+    setDeepJudgmentRubricEnabled,
+    setDeepJudgmentRubricMode,
+    setDeepJudgmentRubricExtractExcerpts,
     setFewShotEnabled,
     setFewShotMode,
     setFewShotK,
@@ -235,21 +241,32 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 .then((res) => res.json())
                 .then(async (data) => {
                   setIsRunning(false);
-                  // Handle new VerificationResultSet format
-                  if (data.result_set && Array.isArray(data.result_set.results)) {
-                    console.log('Setting results:', data.result_set.results.length, 'items');
-                    const sanitizedResults: Record<string, VerificationResult> = {};
+                  // Handle verification results - server now returns dict with backend-generated keys
+                  if (data.result_set) {
+                    let sanitizedResults: Record<string, VerificationResult> = {};
 
-                    // Convert VerificationResultSet.results array to dictionary
-                    for (const result of data.result_set.results) {
-                      if (result && typeof result === 'object') {
-                        // Generate key from result metadata (matching backend format)
-                        const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
-                          result.metadata.answering_replicate ? `_rep${result.metadata.answering_replicate}` : ''
-                        }`;
-                        sanitizedResults[key] = result as VerificationResult;
+                    // New format: dict with backend-generated keys (includes timestamp for uniqueness)
+                    // Keys like: {question_id}_{answering_model}_{parsing_model}_rep{N}_{timestamp_ms}
+                    if (typeof data.result_set === 'object' && !Array.isArray(data.result_set)) {
+                      console.log('Setting results from dict:', Object.keys(data.result_set).length, 'items');
+                      // Use backend keys directly - they already include timestamp for uniqueness
+                      sanitizedResults = data.result_set as Record<string, VerificationResult>;
+                    }
+                    // Legacy format: VerificationResultSet with results array (backward compatibility)
+                    else if (Array.isArray(data.result_set.results)) {
+                      console.log('Setting results from array:', data.result_set.results.length, 'items');
+                      // Convert array to dict (legacy path)
+                      for (const result of data.result_set.results) {
+                        if (result && typeof result === 'object') {
+                          // Generate key from result metadata
+                          const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
+                            result.metadata.answering_replicate ? `_rep${result.metadata.answering_replicate}` : ''
+                          }`;
+                          sanitizedResults[key] = result as VerificationResult;
+                        }
                       }
                     }
+
                     // Accumulate results instead of replacing them
                     setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
                     console.log('Results set successfully');
@@ -568,8 +585,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             evaluationMode={evaluationMode}
             correctnessEnabled={correctnessEnabled}
             abstentionEnabled={abstentionEnabled}
-            deepJudgmentEnabled={deepJudgmentEnabled}
+            deepJudgmentTemplateEnabled={deepJudgmentTemplateEnabled}
             deepJudgmentSearchEnabled={deepJudgmentSearchEnabled}
+            deepJudgmentRubricEnabled={deepJudgmentRubricEnabled}
+            deepJudgmentRubricMode={deepJudgmentRubricMode}
+            deepJudgmentRubricExtractExcerpts={deepJudgmentRubricExtractExcerpts}
             fewShotEnabled={fewShotEnabled}
             fewShotMode={fewShotMode}
             fewShotK={fewShotK}
@@ -585,8 +605,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onEvaluationModeChange={setEvaluationMode}
             onCorrectnessEnabledChange={setCorrectnessEnabled}
             onAbstentionEnabledChange={setAbstentionEnabled}
-            onDeepJudgmentEnabledChange={setDeepJudgmentEnabled}
+            onDeepJudgmentTemplateEnabledChange={setDeepJudgmentTemplateEnabled}
             onDeepJudgmentSearchEnabledChange={setDeepJudgmentSearchEnabled}
+            onDeepJudgmentRubricEnabledChange={setDeepJudgmentRubricEnabled}
+            onDeepJudgmentRubricModeChange={setDeepJudgmentRubricMode}
+            onDeepJudgmentRubricExtractExcerptsChange={setDeepJudgmentRubricExtractExcerpts}
             onFewShotEnabledChange={setFewShotEnabled}
             onFewShotModeChange={setFewShotMode}
             onFewShotKChange={setFewShotK}

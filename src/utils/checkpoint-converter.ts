@@ -138,15 +138,33 @@ export function convertRubricTraitToRating(
 ): SchemaOrgRating {
   const additionalType = rubricType === 'global' ? 'GlobalRubricTrait' : 'QuestionSpecificRubricTrait';
 
+  // Base rating object
+  const baseRating = {
+    '@type': 'Rating' as const,
+    '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
+    name: trait.name,
+    description: trait.description,
+    additionalType,
+  };
+
+  // Add deep judgment configuration if present (for LLM traits)
+  const deepJudgmentFields = trait.deep_judgment_enabled
+    ? {
+        deep_judgment_enabled: trait.deep_judgment_enabled,
+        deep_judgment_excerpt_enabled: trait.deep_judgment_excerpt_enabled,
+        deep_judgment_max_excerpts: trait.deep_judgment_max_excerpts,
+        deep_judgment_fuzzy_match_threshold: trait.deep_judgment_fuzzy_match_threshold,
+        deep_judgment_excerpt_retry_attempts: trait.deep_judgment_excerpt_retry_attempts,
+        deep_judgment_search_enabled: trait.deep_judgment_search_enabled,
+      }
+    : {};
+
   if (trait.kind === 'boolean') {
     return {
-      '@type': 'Rating',
-      '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
-      name: trait.name,
-      description: trait.description,
+      ...baseRating,
       bestRating: 1,
       worstRating: 0,
-      additionalType,
+      ...deepJudgmentFields,
     };
   } else {
     // Score trait - validate and handle score ranges
@@ -161,13 +179,10 @@ export function convertRubricTraitToRating(
     }
 
     return {
-      '@type': 'Rating',
-      '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
-      name: trait.name,
-      description: trait.description,
+      ...baseRating,
       bestRating: maxScore,
       worstRating: minScore,
-      additionalType,
+      ...deepJudgmentFields,
     };
   }
 }
@@ -198,13 +213,26 @@ export function convertRatingToRubricTrait(rating: SchemaOrgRating): RubricTrait
     );
   }
 
-  return {
+  // Restore deep judgment configuration if present
+  const trait: RubricTrait = {
     name: rating.name,
     description: rating.description,
     kind: isBoolean ? 'boolean' : 'score',
     min_score: isBoolean ? undefined : rating.worstRating,
     max_score: isBoolean ? undefined : rating.bestRating,
   };
+
+  // Add deep judgment fields if they were saved
+  if (rating.deep_judgment_enabled !== undefined) {
+    trait.deep_judgment_enabled = rating.deep_judgment_enabled;
+    trait.deep_judgment_excerpt_enabled = rating.deep_judgment_excerpt_enabled;
+    trait.deep_judgment_max_excerpts = rating.deep_judgment_max_excerpts;
+    trait.deep_judgment_fuzzy_match_threshold = rating.deep_judgment_fuzzy_match_threshold;
+    trait.deep_judgment_excerpt_retry_attempts = rating.deep_judgment_excerpt_retry_attempts;
+    trait.deep_judgment_search_enabled = rating.deep_judgment_search_enabled;
+  }
+
+  return trait;
 }
 
 export function convertRatingToRegexTrait(rating: SchemaOrgRating): RegexTrait {
@@ -502,8 +530,8 @@ export function v2ToJsonLd(
 
     // Convert global rubric traits to Rating objects for Dataset level
     let globalRatings: SchemaOrgRating[] | undefined;
-    if (checkpoint.global_rubric) {
-      globalRatings = checkpoint.global_rubric.traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
+    if (checkpoint.global_rubric && checkpoint.global_rubric.llm_traits) {
+      globalRatings = checkpoint.global_rubric.llm_traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
     }
 
     // Add global regex_traits to additionalProperties if present

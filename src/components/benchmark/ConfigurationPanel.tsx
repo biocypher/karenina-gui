@@ -35,8 +35,11 @@ interface ConfigurationPanelProps {
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
-  deepJudgmentEnabled: boolean;
+  deepJudgmentTemplateEnabled: boolean;
   deepJudgmentSearchEnabled: boolean;
+  deepJudgmentRubricEnabled: boolean;
+  deepJudgmentRubricMode: 'enable_all' | 'use_checkpoint';
+  deepJudgmentRubricExtractExcerpts: boolean;
   fewShotEnabled: boolean;
   fewShotMode: 'all' | 'k-shot' | 'custom';
   fewShotK: number;
@@ -52,8 +55,11 @@ interface ConfigurationPanelProps {
   onEvaluationModeChange: (mode: 'template_only' | 'template_and_rubric' | 'rubric_only') => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
   onAbstentionEnabledChange: (enabled: boolean) => void;
-  onDeepJudgmentEnabledChange: (enabled: boolean) => void;
+  onDeepJudgmentTemplateEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentSearchEnabledChange: (enabled: boolean) => void;
+  onDeepJudgmentRubricEnabledChange: (enabled: boolean) => void;
+  onDeepJudgmentRubricModeChange: (mode: 'enable_all' | 'use_checkpoint') => void;
+  onDeepJudgmentRubricExtractExcerptsChange: (enabled: boolean) => void;
   onFewShotEnabledChange: (enabled: boolean) => void;
   onFewShotModeChange: (mode: 'all' | 'k-shot' | 'custom') => void;
   onFewShotKChange: (k: number) => void;
@@ -73,8 +79,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   evaluationMode,
   correctnessEnabled,
   abstentionEnabled,
-  deepJudgmentEnabled,
+  deepJudgmentTemplateEnabled,
   deepJudgmentSearchEnabled,
+  deepJudgmentRubricEnabled,
+  deepJudgmentRubricMode,
+  deepJudgmentRubricExtractExcerpts,
   fewShotEnabled,
   fewShotMode,
   fewShotK,
@@ -90,8 +99,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onEvaluationModeChange,
   onCorrectnessEnabledChange,
   onAbstentionEnabledChange,
-  onDeepJudgmentEnabledChange,
+  onDeepJudgmentTemplateEnabledChange,
   onDeepJudgmentSearchEnabledChange,
+  onDeepJudgmentRubricEnabledChange,
+  onDeepJudgmentRubricModeChange,
+  onDeepJudgmentRubricExtractExcerptsChange,
   onFewShotEnabledChange,
   onFewShotModeChange,
   onFewShotKChange,
@@ -691,43 +703,129 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               </span>
             </label>
 
-            <label
-              className="flex items-center space-x-3"
-              title="Multi-stage parsing that extracts verbatim excerpts, generates reasoning traces, and validates attribute values. Increases LLM calls but provides detailed evidence."
-            >
-              <input
-                type="checkbox"
-                checked={deepJudgmentEnabled}
-                onChange={(e) => onDeepJudgmentEnabledChange(e.target.checked)}
-                disabled={isRunning}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-              />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Deep-Judgment</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                (Extract excerpts and reasoning traces)
-              </span>
-            </label>
+            {/* Deep-Judgment Configuration */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Deep-Judgment</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  (Multi-stage LLM evaluation with evidence extraction)
+                </span>
+              </div>
 
-            {deepJudgmentEnabled && (
-              <div className="ml-8 mt-2">
+              {/* Templates Deep-Judgment */}
+              <div className="ml-4 space-y-2">
                 <label
                   className="flex items-center space-x-3"
-                  title="Validate excerpts against external search results to detect potential hallucinations. Adds search API calls to verification."
+                  title="Extract excerpts and reasoning for template validation. Always extracts excerpts when enabled."
                 >
                   <input
                     type="checkbox"
-                    checked={deepJudgmentSearchEnabled}
-                    onChange={(e) => onDeepJudgmentSearchEnabledChange(e.target.checked)}
+                    checked={deepJudgmentTemplateEnabled}
+                    onChange={(e) => onDeepJudgmentTemplateEnabledChange(e.target.checked)}
                     disabled={isRunning}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
                   />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Search Enhancement</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    (Validate excerpts with external search)
-                  </span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Templates</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">(Always extracts excerpts)</span>
                 </label>
+
+                {deepJudgmentTemplateEnabled && (
+                  <div className="ml-7 mt-2">
+                    <label
+                      className="flex items-center space-x-3"
+                      title="Validate excerpts against external search results to detect potential hallucinations."
+                    >
+                      <input
+                        type="checkbox"
+                        checked={deepJudgmentSearchEnabled}
+                        onChange={(e) => onDeepJudgmentSearchEnabledChange(e.target.checked)}
+                        disabled={isRunning}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Search Enhancement</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        (Validate with external search)
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Rubrics Deep-Judgment */}
+              <div className="ml-4 space-y-2">
+                <label
+                  className="flex items-center space-x-3"
+                  title="Extract excerpts and reasoning for LLM trait evaluation in rubrics."
+                >
+                  <input
+                    type="checkbox"
+                    checked={deepJudgmentRubricEnabled}
+                    onChange={(e) => onDeepJudgmentRubricEnabledChange(e.target.checked)}
+                    disabled={isRunning}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Rubrics</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">(LLM trait evaluation)</span>
+                </label>
+
+                {deepJudgmentRubricEnabled && (
+                  <div className="ml-7 mt-2 space-y-3">
+                    {/* Mode Selection */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Mode</label>
+                      <div className="space-y-1">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name="deep-judgment-rubric-mode"
+                            value="enable_all"
+                            checked={deepJudgmentRubricMode === 'enable_all'}
+                            onChange={(e) =>
+                              onDeepJudgmentRubricModeChange(e.target.value as 'enable_all' | 'use_checkpoint')
+                            }
+                            disabled={isRunning}
+                            className="h-3 w-3 text-violet-600 focus:ring-violet-500 border-slate-300"
+                          />
+                          <span className="text-xs text-slate-700 dark:text-slate-300">Enable All</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">(Apply to all LLM traits)</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name="deep-judgment-rubric-mode"
+                            value="use_checkpoint"
+                            checked={deepJudgmentRubricMode === 'use_checkpoint'}
+                            onChange={(e) =>
+                              onDeepJudgmentRubricModeChange(e.target.value as 'enable_all' | 'use_checkpoint')
+                            }
+                            disabled={isRunning}
+                            className="h-3 w-3 text-violet-600 focus:ring-violet-500 border-slate-300"
+                          />
+                          <span className="text-xs text-slate-700 dark:text-slate-300">Use Checkpoint</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">(Per-trait configuration)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Extract Excerpts - Only show for enable_all mode */}
+                    {deepJudgmentRubricMode === 'enable_all' && (
+                      <div className="ml-0">
+                        <label className="flex items-center space-x-2" title="Extract excerpts for rubric traits.">
+                          <input
+                            type="checkbox"
+                            checked={deepJudgmentRubricExtractExcerpts}
+                            onChange={(e) => onDeepJudgmentRubricExtractExcerptsChange(e.target.checked)}
+                            disabled={isRunning}
+                            className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                          />
+                          <span className="text-xs text-slate-700 dark:text-slate-300">Extract Excerpts</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
             <label className="flex items-center space-x-3">
               <input
