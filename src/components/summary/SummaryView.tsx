@@ -33,45 +33,52 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
 
   const passRate = summary.template_pass_overall.pass_pct;
 
+  // Common table row classes
+  const rowClass =
+    'border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors';
+  const labelClass = 'py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3';
+  const valueClass = 'py-2.5 px-4 text-slate-900 dark:text-slate-100 font-mono';
+  const sectionClass = 'bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4';
+  const headerClass =
+    'text-sm font-mono font-bold text-blue-600 dark:text-blue-400 mb-4 pb-2 border-b-2 border-blue-200 dark:border-blue-800';
+
   return (
     <div className="space-y-6">
       {/* Overview Section */}
-      <div>
-        <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 pb-2 border-b border-slate-300 dark:border-slate-600">
-          === OVERVIEW ===
-        </h3>
+      <div className={sectionClass}>
+        <h3 className={headerClass}>=== OVERVIEW ===</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Total Results:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">{summary.num_results}</td>
+          <table className="w-full text-sm border-collapse">
+            <tbody>
+              <tr className={rowClass}>
+                <td className={labelClass}>Total Results:</td>
+                <td className={valueClass}>{summary.num_results}</td>
               </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Questions:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">{summary.num_questions}</td>
+              <tr className={rowClass}>
+                <td className={labelClass}>Questions:</td>
+                <td className={valueClass}>{summary.num_questions}</td>
               </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Models:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">
-                  {summary.num_models} answering x {summary.num_parsing_models} parsing
+              <tr className={rowClass}>
+                <td className={labelClass}>Models:</td>
+                <td className={valueClass}>
+                  {summary.num_models} answering × {summary.num_parsing_models} parsing
                 </td>
               </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Replicates:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">{summary.num_replicates}</td>
+              <tr className={rowClass}>
+                <td className={labelClass}>Replicates:</td>
+                <td className={valueClass}>{summary.num_replicates}</td>
               </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Total Execution Time:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">
-                  {formatDuration(summary.total_execution_time)}
-                </td>
+              <tr className={rowClass}>
+                <td className={labelClass}>Total Execution Time:</td>
+                <td className={valueClass}>{formatDuration(summary.total_execution_time)}</td>
               </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Total Tokens:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">
-                  {formatNumber(summary.tokens.total_input)} input, {formatNumber(summary.tokens.total_output)} output
-                  <div className="ml-4 mt-1 text-xs text-slate-600 dark:text-slate-400">
+              <tr className={rowClass}>
+                <td className={labelClass}>Total Tokens:</td>
+                <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
+                  <div className="font-mono">
+                    {formatNumber(summary.tokens.total_input)} input, {formatNumber(summary.tokens.total_output)} output
+                  </div>
+                  <div className="ml-4 mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1 font-normal">
                     <div>
                       └─ Templates: {formatNumber(summary.tokens.template_input)} input,{' '}
                       {formatNumber(summary.tokens.template_output)} output
@@ -95,28 +102,32 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
       </div>
 
       {/* Completion Status */}
-      <div>
-        <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 pb-2 border-b border-slate-300 dark:border-slate-600">
-          === COMPLETION STATUS ===
-        </h3>
+      <div className={sectionClass}>
+        <h3 className={headerClass}>=== COMPLETION STATUS ===</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">By Model Combination:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">
-                  {Object.entries(summary.completion_by_combo).map(([combo, stats]) => (
-                    <div key={combo} className="mb-1">
-                      {combo}: {stats.completed}/{stats.total} completed ({stats.completion_pct.toFixed(1)}%)
-                    </div>
-                  ))}
+          <table className="w-full text-sm border-collapse">
+            <tbody>
+              <tr className={rowClass}>
+                <td className={labelClass}>By Model Combination:</td>
+                <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
+                  <div className="space-y-1">
+                    {Object.entries(summary.completion_by_combo).map(([combo, stats]) => (
+                      <div key={combo} className="font-mono text-xs">
+                        {combo}:{' '}
+                        <span className="text-green-600 dark:text-green-400">
+                          {stats.completed}/{stats.total}
+                        </span>{' '}
+                        completed ({stats.completion_pct.toFixed(1)}%)
+                      </div>
+                    ))}
+                  </div>
                 </td>
               </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Overall:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">
+              <tr className={rowClass}>
+                <td className={labelClass}>Overall:</td>
+                <td className={valueClass}>
                   <span
-                    className="cursor-pointer text-green-600 dark:text-green-400 hover:underline"
+                    className="cursor-pointer text-green-600 dark:text-green-400 hover:underline font-semibold"
                     onClick={onDrillDown ? () => onDrillDown({ type: 'completed' }) : undefined}
                   >
                     {summary.num_completed}/{summary.num_results} completed (
@@ -130,67 +141,73 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
       </div>
 
       {/* Evaluation Types */}
-      <div>
-        <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 pb-2 border-b border-slate-300 dark:border-slate-600">
-          === EVALUATION TYPES ===
-        </h3>
+      <div className={sectionClass}>
+        <h3 className={headerClass}>=== EVALUATION TYPES ===</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Template Verification:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">{summary.num_with_template} results</td>
+          <table className="w-full text-sm border-collapse">
+            <tbody>
+              <tr className={rowClass}>
+                <td className={labelClass}>Template Verification:</td>
+                <td className={valueClass}>{summary.num_with_template} results</td>
               </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Rubric Evaluation:</td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">
-                  {summary.num_with_rubric} results
-                  {summary.rubric_traits && (
-                    <div className="ml-4 mt-1 text-xs text-slate-600 dark:text-slate-400">
-                      <div>
-                        Total Trait Evaluations:{' '}
-                        {summary.rubric_traits.global_traits.llm.count +
-                          summary.rubric_traits.global_traits.regex.count +
-                          summary.rubric_traits.global_traits.callable.count +
-                          summary.rubric_traits.global_traits.metric.count +
-                          summary.rubric_traits.question_specific_traits.llm.count +
-                          summary.rubric_traits.question_specific_traits.regex.count +
-                          summary.rubric_traits.question_specific_traits.callable.count +
-                          summary.rubric_traits.question_specific_traits.metric.count}
-                      </div>
-                      <div>
-                        Global:{' '}
-                        {summary.rubric_traits.global_traits.llm.count +
-                          summary.rubric_traits.global_traits.regex.count +
-                          summary.rubric_traits.global_traits.callable.count +
-                          summary.rubric_traits.global_traits.metric.count}
-                      </div>
-                      <div className="ml-4">└─ LLM: {summary.rubric_traits.global_traits.llm.count}</div>
-                      {summary.rubric_traits.global_traits.regex.count > 0 && (
-                        <div className="ml-4">└─ Regex: {summary.rubric_traits.global_traits.regex.count}</div>
-                      )}
-                      {summary.rubric_traits.global_traits.metric.count > 0 && (
-                        <div className="ml-4">└─ Metric: {summary.rubric_traits.global_traits.metric.count}</div>
-                      )}
-                      <div>
-                        Question-Specific:{' '}
-                        {summary.rubric_traits.question_specific_traits.llm.count +
-                          summary.rubric_traits.question_specific_traits.regex.count +
-                          summary.rubric_traits.question_specific_traits.callable.count +
-                          summary.rubric_traits.question_specific_traits.metric.count}
-                      </div>
-                      <div className="ml-4">
-                        └─ LLM: {summary.rubric_traits.question_specific_traits.llm.count}, Metric:{' '}
-                        {summary.rubric_traits.question_specific_traits.metric.count}
-                      </div>
-                    </div>
-                  )}
+              <tr className={rowClass}>
+                <td className={labelClass}>Rubric Evaluation:</td>
+                <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
+                  <div className="font-mono">{summary.num_with_rubric} results</div>
+                  {summary.rubric_traits &&
+                    (() => {
+                      const globalLlm = summary.rubric_traits.global_traits?.llm?.count || 0;
+                      const globalRegex = summary.rubric_traits.global_traits?.regex?.count || 0;
+                      const globalCallable = summary.rubric_traits.global_traits?.callable?.count || 0;
+                      const globalMetric = summary.rubric_traits.global_traits?.metric?.count || 0;
+                      const qsLlm = summary.rubric_traits.question_specific_traits?.llm?.count || 0;
+                      const qsRegex = summary.rubric_traits.question_specific_traits?.regex?.count || 0;
+                      const qsCallable = summary.rubric_traits.question_specific_traits?.callable?.count || 0;
+                      const qsMetric = summary.rubric_traits.question_specific_traits?.metric?.count || 0;
+
+                      const globalTotal = globalLlm + globalRegex + globalCallable + globalMetric;
+                      const qsTotal = qsLlm + qsRegex + qsCallable + qsMetric;
+                      const total = globalTotal + qsTotal;
+
+                      return (
+                        <div className="ml-4 mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1 font-normal">
+                          <div>
+                            Total Trait Evaluations:{' '}
+                            <span className="font-mono text-slate-900 dark:text-slate-100">{total}</span>
+                          </div>
+                          <div>
+                            Global: <span className="font-mono text-slate-900 dark:text-slate-100">{globalTotal}</span>
+                          </div>
+                          <div className="ml-4">
+                            └─ LLM: <span className="font-mono">{globalLlm}</span>
+                          </div>
+                          {globalRegex > 0 && (
+                            <div className="ml-4">
+                              └─ Regex: <span className="font-mono">{globalRegex}</span>
+                            </div>
+                          )}
+                          {globalMetric > 0 && (
+                            <div className="ml-4">
+                              └─ Metric: <span className="font-mono">{globalMetric}</span>
+                            </div>
+                          )}
+                          <div>
+                            Question-Specific:{' '}
+                            <span className="font-mono text-slate-900 dark:text-slate-100">{qsTotal}</span>
+                          </div>
+                          <div className="ml-4">
+                            └─ LLM: <span className="font-mono">{qsLlm}</span>, Metric:{' '}
+                            <span className="font-mono">{qsMetric}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                 </td>
               </tr>
               {summary.num_with_judgment > 0 && (
-                <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                  <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Deep Judgment:</td>
-                  <td className="py-2 px-3 text-slate-900 dark:text-slate-100">{summary.num_with_judgment} results</td>
+                <tr className={rowClass}>
+                  <td className={labelClass}>Deep Judgment:</td>
+                  <td className={valueClass}>{summary.num_with_judgment} results</td>
                 </tr>
               )}
             </tbody>
@@ -199,30 +216,38 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
       </div>
 
       {/* Template Pass Rates */}
-      <div>
-        <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 pb-2 border-b border-slate-300 dark:border-slate-600">
-          === TEMPLATE PASS RATES ===
-        </h3>
+      <div className={sectionClass}>
+        <h3 className={headerClass}>=== TEMPLATE PASS RATES ===</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">
-                  By Model Combination (+ MCP if used):
-                </td>
-                <td className="py-2 px-3 text-slate-900 dark:text-slate-100">
-                  {Object.entries(summary.template_pass_by_combo).map(([combo, stats]) => (
-                    <div key={combo} className="mb-1">
-                      {combo}: {stats.passed}/{stats.total} passed ({stats.pass_pct.toFixed(1)}%)
-                    </div>
-                  ))}
+          <table className="w-full text-sm border-collapse">
+            <tbody>
+              <tr className={rowClass}>
+                <td className={labelClass}>By Model Combination (+ MCP if used):</td>
+                <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
+                  <div className="space-y-1">
+                    {Object.entries(summary.template_pass_by_combo).map(([combo, stats]) => (
+                      <div key={combo} className="font-mono text-xs">
+                        {combo}:{' '}
+                        <span
+                          className={
+                            stats.pass_pct >= 70
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-red-600 dark:text-red-400'
+                          }
+                        >
+                          {stats.passed}/{stats.total}
+                        </span>{' '}
+                        passed ({stats.pass_pct.toFixed(1)}%)
+                      </div>
+                    ))}
+                  </div>
                 </td>
               </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">Overall:</td>
-                <td className="py-2 px-3">
+              <tr className={rowClass}>
+                <td className={labelClass}>Overall:</td>
+                <td className={valueClass}>
                   <span
-                    className={`cursor-pointer hover:underline ${
+                    className={`cursor-pointer hover:underline font-semibold ${
                       passRate >= 70 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                     }`}
                     onClick={onDrillDown ? () => onDrillDown({ type: 'passed' }) : undefined}
@@ -239,26 +264,35 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
 
       {/* Replicate Statistics (if available) */}
       {summary.replicate_stats && summary.num_replicates > 1 && (
-        <div>
-          <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3 pb-2 border-b border-slate-300 dark:border-slate-600">
-            === REPLICATE STATISTICS ===
-          </h3>
+        <div className={sectionClass}>
+          <h3 className={headerClass}>=== REPLICATE STATISTICS ===</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                  <td className="py-2 px-3 font-medium text-slate-700 dark:text-slate-300">
-                    Template Pass Rate by Replicate:
-                  </td>
-                  <td className="py-2 px-3 text-slate-900 dark:text-slate-100">
-                    {Object.entries(summary.replicate_stats.replicate_pass_rates).map(([replicate, stats]) => (
-                      <div key={replicate} className="mb-1">
-                        Replicate {replicate}: {stats.passed}/{stats.total} passed ({stats.pass_pct.toFixed(1)}%)
-                      </div>
-                    ))}
-                    <div className="mt-2 text-xs text-slate-600 dark:text-slate-400">
-                      Summary: mean={summary.replicate_stats.replicate_summary.mean.toFixed(3)}, std=
-                      {summary.replicate_stats.replicate_summary.std.toFixed(3)}
+            <table className="w-full text-sm border-collapse">
+              <tbody>
+                <tr className={rowClass}>
+                  <td className={labelClass}>Template Pass Rate by Replicate:</td>
+                  <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
+                    <div className="space-y-1">
+                      {Object.entries(summary.replicate_stats.replicate_pass_rates).map(([replicate, stats]) => (
+                        <div key={replicate} className="font-mono text-xs">
+                          Replicate {replicate}:{' '}
+                          <span
+                            className={
+                              stats.pass_pct >= 70
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-red-600 dark:text-red-400'
+                            }
+                          >
+                            {stats.passed}/{stats.total}
+                          </span>{' '}
+                          passed ({stats.pass_pct.toFixed(1)}%)
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 font-normal">
+                      Summary: mean=
+                      <span className="font-mono">{summary.replicate_stats.replicate_summary.mean.toFixed(3)}</span>,
+                      std=<span className="font-mono">{summary.replicate_stats.replicate_summary.std.toFixed(3)}</span>
                     </div>
                   </td>
                 </tr>
@@ -269,8 +303,8 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
       )}
 
       {/* Charts */}
-      <div>
-        <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3">Visualizations</h3>
+      <div className={sectionClass}>
+        <h3 className={headerClass}>Visualizations</h3>
         <SummaryCharts summary={summary} />
       </div>
     </div>
