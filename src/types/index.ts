@@ -749,3 +749,130 @@ export interface SearchResultItem {
   content: string; // Required - the main text
   url?: string | null; // Optional - will not show clickable link if missing
 }
+
+// Summary Statistics Types (from VerificationResultSet.get_summary())
+export interface TokenUsage {
+  total_input: number;
+  total_output: number;
+  template_input: number;
+  template_output: number;
+  rubric_input: number;
+  rubric_output: number;
+  deep_judgment_input?: number;
+  deep_judgment_output?: number;
+}
+
+export interface PassRateStats {
+  total: number;
+  passed: number;
+  pass_pct: number;
+}
+
+export interface ReplicatePassRate {
+  total: number;
+  passed: number;
+  pass_pct: number;
+  pass_rate: number;
+}
+
+export interface ReplicateStats {
+  replicate_pass_rates: Record<number, ReplicatePassRate>;
+  replicate_summary: {
+    mean: number;
+    std: number;
+  };
+}
+
+export interface TraitBreakdown {
+  count: number;
+  names: string[];
+}
+
+export interface RubricTraitStats {
+  global_traits: {
+    llm: TraitBreakdown;
+    regex: TraitBreakdown;
+    callable: TraitBreakdown;
+    metric: TraitBreakdown;
+  };
+  question_specific_traits: {
+    llm: TraitBreakdown;
+    regex: TraitBreakdown;
+    callable: TraitBreakdown;
+    metric: TraitBreakdown;
+  };
+}
+
+export interface SummaryStats {
+  // Basic counts
+  num_results: number;
+  num_completed: number;
+  num_with_template: number;
+  num_with_rubric: number;
+  num_with_judgment: number;
+  num_questions: number;
+  num_models: number;
+  num_parsing_models: number;
+  num_replicates: number;
+
+  // Execution
+  total_execution_time: number;
+
+  // Token usage
+  tokens: TokenUsage;
+
+  // Completion status
+  completion_by_combo: Record<
+    string,
+    {
+      total: number;
+      completed: number;
+      completion_pct: number;
+    }
+  >;
+
+  // Template pass rates
+  template_pass_by_combo: Record<string, PassRateStats>;
+  template_pass_overall: PassRateStats;
+
+  // Rubric traits (optional)
+  rubric_traits?: RubricTraitStats;
+
+  // Replicate statistics (optional)
+  replicate_stats?: ReplicateStats;
+}
+
+export interface SummaryRequest {
+  results: Record<string, VerificationResult>;
+  run_name?: string | null;
+}
+
+// Model Comparison Types
+export interface ModelConfig {
+  answering_model: string;
+  mcp_config: string;
+}
+
+export interface HeatmapCell {
+  passed: boolean | null;
+  score: number | null;
+  abstained: boolean;
+  error: boolean;
+}
+
+export interface HeatmapQuestion {
+  question_id: string;
+  question_text: string;
+  results_by_model: Record<string, HeatmapCell>;
+}
+
+export interface ModelComparisonRequest {
+  results: Record<string, VerificationResult>;
+  models: ModelConfig[];
+  parsing_model: string;
+}
+
+export interface ModelComparisonResponse {
+  model_summaries: Record<string, SummaryStats>;
+  heatmap_data: HeatmapQuestion[];
+}

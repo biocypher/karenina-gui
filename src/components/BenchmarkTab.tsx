@@ -13,6 +13,7 @@ import {
   ChevronDown,
   BookmarkPlus,
 } from 'lucide-react';
+import { ColumnFiltersState } from '@tanstack/react-table';
 import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
@@ -28,6 +29,7 @@ import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
+import { SummaryStatisticsPanel } from './summary/SummaryStatisticsPanel';
 import { formatDuration } from '../utils/time';
 
 // Interfaces now imported from types
@@ -109,6 +111,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   // Filter state for table results
   const [filteredCount, setFilteredCount] = useState<number | null>(null);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [externalFilters, setExternalFilters] = useState<ColumnFiltersState | undefined>(undefined);
+
   // Custom export dialog state
   const [isCustomExportDialogOpen, setIsCustomExportDialogOpen] = useState(false);
   // Preset modal state
@@ -1101,8 +1105,50 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               checkpoint={checkpoint}
               onViewResult={setSelectedResult}
               onFilteredCountChange={handleFilteredCountChange}
+              externalFilters={externalFilters}
             />
           </Card>
+
+          {/* Summary Statistics Panel */}
+          {Object.keys(benchmarkResults).length > 0 && (
+            <SummaryStatisticsPanel
+              benchmarkResults={benchmarkResults}
+              onDrillDown={(filter) => {
+                // Build column filters based on drill-down type
+                const filters: ColumnFiltersState = [];
+
+                if (filter.type === 'completed') {
+                  filters.push({ id: 'completed_without_errors', value: true });
+                } else if (filter.type === 'errors') {
+                  filters.push({ id: 'completed_without_errors', value: false });
+                } else if (filter.type === 'passed') {
+                  filters.push({ id: 'verify_result', value: true });
+                } else if (filter.type === 'failed') {
+                  filters.push({ id: 'verify_result', value: false });
+                } else if (filter.type === 'abstained') {
+                  filters.push({ id: 'abstained', value: true });
+                }
+
+                if (filter.questionId) {
+                  filters.push({ id: 'question_text', value: filter.questionId });
+                }
+
+                if (filter.modelKey) {
+                  // Model key is in format "model_name|mcp_config"
+                  const [modelName] = filter.modelKey.split('|');
+                  filters.push({ id: 'answering_model', value: modelName });
+                }
+
+                setExternalFilters(filters);
+
+                // Scroll to summary panel
+                setTimeout(() => {
+                  const summaryElement = document.querySelector('[class*="Summary Statistics"]');
+                  summaryElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+              }}
+            />
+          )}
 
           {/* Results Modal */}
           <VerificationResultDetailModal
