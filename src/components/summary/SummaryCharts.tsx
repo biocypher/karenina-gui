@@ -16,9 +16,18 @@ interface SummaryChartsProps {
 }
 
 export function SummaryCharts({ summary }: SummaryChartsProps) {
+  // Parse combo into readable format
+  const parseCombo = (combo: string): string => {
+    const parts = combo.split(',');
+    const answering = parts[0] || 'Unknown';
+    const parsing = parts[1] || 'Unknown';
+    const mcp = parts[2] === 'None' ? 'None' : parts.slice(2).join(',');
+    return `${answering}\n${parsing}\n${mcp}`;
+  };
+
   // Prepare data for template pass rates bar chart
   const passRateData = Object.entries(summary.template_pass_by_combo).map(([combo, stats]) => ({
-    combo: combo.replace('|', '\n'), // Split combo for readability
+    combo: parseCombo(combo),
     passed: stats.passed,
     failed: stats.total - stats.passed,
     'Pass Rate': stats.pass_pct,
@@ -93,7 +102,7 @@ export function SummaryCharts({ summary }: SummaryChartsProps) {
               data={passRateData}
               keys={['passed', 'failed']}
               indexBy="combo"
-              margin={{ top: 20, right: 130, bottom: 60, left: 60 }}
+              margin={{ top: 100, right: 130, bottom: 40, left: 60 }}
               padding={0.3}
               valueScale={{ type: 'linear' }}
               indexScale={{ type: 'band', round: true }}
@@ -102,16 +111,37 @@ export function SummaryCharts({ summary }: SummaryChartsProps) {
                 from: 'color',
                 modifiers: [['darker', 1.6]],
               }}
-              axisTop={null}
-              axisRight={null}
-              axisBottom={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: -45,
-                legend: 'Model Combination',
-                legendPosition: 'middle',
-                legendOffset: 50,
+              axisTop={{
+                tickSize: 0,
+                tickPadding: 10,
+                tickRotation: 0,
+                legend: '',
+                legendOffset: 0,
+                renderTick: (tick) => {
+                  const lines = tick.value.split('\n');
+                  return (
+                    <g transform={`translate(${tick.x},${tick.y})`}>
+                      <text
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        style={{
+                          fill: isDark ? '#cbd5e1' : '#475569',
+                          fontSize: '11px',
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        {lines.map((line, i) => (
+                          <tspan key={i} x="0" dy={i === 0 ? 0 : '1.2em'}>
+                            {line}
+                          </tspan>
+                        ))}
+                      </text>
+                    </g>
+                  );
+                },
               }}
+              axisRight={null}
+              axisBottom={null}
               axisLeft={{
                 tickSize: 5,
                 tickPadding: 5,

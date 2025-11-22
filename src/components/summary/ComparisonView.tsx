@@ -42,14 +42,23 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
 
     Object.values(results).forEach((result) => {
       const answering_model = result.metadata.answering_model;
-      const mcp_config = result.metadata.mcp_config || '[]';
+
+      // Extract MCP servers from template
+      const mcpServers = result.template?.answering_mcp_servers || [];
+      const mcp_config = JSON.stringify(mcpServers.sort()); // Sort for consistent keys
       const key = `${answering_model}|${mcp_config}`;
 
       if (!modelsMap.has(key)) {
+        // Create display name with MCP servers
+        let mcpSuffix = '';
+        if (mcpServers.length > 0) {
+          mcpSuffix = ` (MCP: ${mcpServers.join(', ')})`;
+        }
+
         modelsMap.set(key, {
           answering_model,
           mcp_config,
-          display_name: `${answering_model}${mcp_config !== '[]' ? ' (with MCP)' : ''}`,
+          display_name: `${answering_model}${mcpSuffix}`,
         });
       }
 
@@ -159,33 +168,37 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
 
                     <div className="space-y-2">
                       <MetricCard value={summary.num_results} label="Total Tests" />
-                      <MetricCard
-                        value={formatPercent(summary.template_pass_overall.pass_pct)}
-                        label="Pass Rate"
-                        bgColor={
-                          summary.template_pass_overall.pass_pct >= 90
-                            ? 'bg-green-50 dark:bg-green-900/20'
-                            : summary.template_pass_overall.pass_pct >= 70
-                              ? 'bg-yellow-50 dark:bg-yellow-900/20'
-                              : 'bg-red-50 dark:bg-red-900/20'
-                        }
-                        valueColor={
-                          summary.template_pass_overall.pass_pct >= 90
-                            ? 'text-green-700 dark:text-green-300'
-                            : summary.template_pass_overall.pass_pct >= 70
-                              ? 'text-yellow-700 dark:text-yellow-300'
-                              : 'text-red-700 dark:text-red-300'
-                        }
-                      />
+                      {summary.template_pass_overall && (
+                        <>
+                          <MetricCard
+                            value={formatPercent(summary.template_pass_overall.pass_pct)}
+                            label="Pass Rate"
+                            bgColor={
+                              summary.template_pass_overall.pass_pct >= 90
+                                ? 'bg-green-50 dark:bg-green-900/20'
+                                : summary.template_pass_overall.pass_pct >= 70
+                                  ? 'bg-yellow-50 dark:bg-yellow-900/20'
+                                  : 'bg-red-50 dark:bg-red-900/20'
+                            }
+                            valueColor={
+                              summary.template_pass_overall.pass_pct >= 90
+                                ? 'text-green-700 dark:text-green-300'
+                                : summary.template_pass_overall.pass_pct >= 70
+                                  ? 'text-yellow-700 dark:text-yellow-300'
+                                  : 'text-red-700 dark:text-red-300'
+                            }
+                          />
+                          <MetricCard
+                            value={summary.template_pass_overall.passed}
+                            label="Passed Tests"
+                            subtitle={`of ${summary.template_pass_overall.total}`}
+                          />
+                        </>
+                      )}
                       <MetricCard
                         value={summary.num_completed}
                         label="Completed"
                         subtitle={`${formatPercent((summary.num_completed / summary.num_results) * 100)}`}
-                      />
-                      <MetricCard
-                        value={summary.template_pass_overall.passed}
-                        label="Passed Tests"
-                        subtitle={`of ${summary.template_pass_overall.total}`}
                       />
                     </div>
                   </div>

@@ -31,6 +31,15 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
     return num.toLocaleString();
   };
 
+  const parseCombo = (combo: string): { answering: string; parsing: string; mcp: string } => {
+    const parts = combo.split(',');
+    return {
+      answering: parts[0] || 'Unknown',
+      parsing: parts[1] || 'Unknown',
+      mcp: parts[2] === 'None' ? 'None' : parts.slice(2).join(','),
+    };
+  };
+
   const passRate = summary.template_pass_overall.pass_pct;
 
   // Common table row classes
@@ -46,7 +55,7 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
     <div className="space-y-6">
       {/* Overview Section */}
       <div className={sectionClass}>
-        <h3 className={headerClass}>=== OVERVIEW ===</h3>
+        <h3 className={headerClass}>Overview</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <tbody>
@@ -103,23 +112,39 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
 
       {/* Completion Status */}
       <div className={sectionClass}>
-        <h3 className={headerClass}>=== COMPLETION STATUS ===</h3>
+        <h3 className={headerClass}>Completion Status</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <tbody>
               <tr className={rowClass}>
                 <td className={labelClass}>By Model Combination:</td>
                 <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
-                  <div className="space-y-1">
-                    {Object.entries(summary.completion_by_combo).map(([combo, stats]) => (
-                      <div key={combo} className="font-mono text-xs">
-                        {combo}:{' '}
-                        <span className="text-green-600 dark:text-green-400">
-                          {stats.completed}/{stats.total}
-                        </span>{' '}
-                        completed ({stats.completion_pct.toFixed(1)}%)
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    {Object.entries(summary.completion_by_combo).map(([combo, stats]) => {
+                      const parsed = parseCombo(combo);
+                      return (
+                        <div key={combo} className="text-xs space-y-0.5">
+                          <div className="font-medium text-slate-600 dark:text-slate-400">
+                            Answering Model:{' '}
+                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.answering}</span>
+                          </div>
+                          <div className="font-medium text-slate-600 dark:text-slate-400">
+                            Parsing Model:{' '}
+                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.parsing}</span>
+                          </div>
+                          <div className="font-medium text-slate-600 dark:text-slate-400">
+                            MCP Tools:{' '}
+                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.mcp}</span>
+                          </div>
+                          <div className="mt-1 font-mono">
+                            <span className="text-green-600 dark:text-green-400 font-semibold">
+                              {stats.completed}/{stats.total}
+                            </span>{' '}
+                            completed ({stats.completion_pct.toFixed(1)}%)
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </td>
               </tr>
@@ -142,7 +167,7 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
 
       {/* Evaluation Types */}
       <div className={sectionClass}>
-        <h3 className={headerClass}>=== EVALUATION TYPES ===</h3>
+        <h3 className={headerClass}>Evaluation Types</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <tbody>
@@ -217,29 +242,45 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
 
       {/* Template Pass Rates */}
       <div className={sectionClass}>
-        <h3 className={headerClass}>=== TEMPLATE PASS RATES ===</h3>
+        <h3 className={headerClass}>Template Pass Rates</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <tbody>
               <tr className={rowClass}>
                 <td className={labelClass}>By Model Combination (+ MCP if used):</td>
                 <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
-                  <div className="space-y-1">
-                    {Object.entries(summary.template_pass_by_combo).map(([combo, stats]) => (
-                      <div key={combo} className="font-mono text-xs">
-                        {combo}:{' '}
-                        <span
-                          className={
-                            stats.pass_pct >= 70
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }
-                        >
-                          {stats.passed}/{stats.total}
-                        </span>{' '}
-                        passed ({stats.pass_pct.toFixed(1)}%)
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    {Object.entries(summary.template_pass_by_combo).map(([combo, stats]) => {
+                      const parsed = parseCombo(combo);
+                      return (
+                        <div key={combo} className="text-xs space-y-0.5">
+                          <div className="font-medium text-slate-600 dark:text-slate-400">
+                            Answering Model:{' '}
+                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.answering}</span>
+                          </div>
+                          <div className="font-medium text-slate-600 dark:text-slate-400">
+                            Parsing Model:{' '}
+                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.parsing}</span>
+                          </div>
+                          <div className="font-medium text-slate-600 dark:text-slate-400">
+                            MCP Tools:{' '}
+                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.mcp}</span>
+                          </div>
+                          <div className="mt-1 font-mono">
+                            <span
+                              className={
+                                stats.pass_pct >= 70
+                                  ? 'text-green-600 dark:text-green-400 font-semibold'
+                                  : 'text-red-600 dark:text-red-400 font-semibold'
+                              }
+                            >
+                              {stats.passed}/{stats.total}
+                            </span>{' '}
+                            passed ({stats.pass_pct.toFixed(1)}%)
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </td>
               </tr>
@@ -265,7 +306,7 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
       {/* Replicate Statistics (if available) */}
       {summary.replicate_stats && summary.num_replicates > 1 && (
         <div className={sectionClass}>
-          <h3 className={headerClass}>=== REPLICATE STATISTICS ===</h3>
+          <h3 className={headerClass}>Replicate Statistics</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <tbody>
