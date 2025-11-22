@@ -502,8 +502,8 @@ export function v2ToJsonLd(
 
     // Convert global rubric traits to Rating objects for Dataset level
     let globalRatings: SchemaOrgRating[] | undefined;
-    if (checkpoint.global_rubric) {
-      globalRatings = checkpoint.global_rubric.traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
+    if (checkpoint.global_rubric && checkpoint.global_rubric.llm_traits) {
+      globalRatings = checkpoint.global_rubric.llm_traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
     }
 
     // Add global regex_traits to additionalProperties if present
