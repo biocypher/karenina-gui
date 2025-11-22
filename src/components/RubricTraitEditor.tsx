@@ -474,6 +474,154 @@ export default function RubricTraitEditor() {
                 />
               </div>
 
+              {/* Deep Judgment Configuration */}
+              <div className="col-span-11">
+                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <input
+                      type="checkbox"
+                      id={`deep-judgment-enabled-${index}`}
+                      checked={trait.deep_judgment_enabled || false}
+                      onChange={(e) => handleTraitChange(index, 'deep_judgment_enabled', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                    />
+                    <label
+                      htmlFor={`deep-judgment-enabled-${index}`}
+                      className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                    >
+                      Deep Judgment (Multi-stage evaluation with evidence)
+                    </label>
+                  </div>
+
+                  {trait.deep_judgment_enabled && (
+                    <div className="ml-6 space-y-3 mt-2">
+                      {/* Extract Excerpts */}
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`deep-judgment-excerpt-${index}`}
+                          checked={trait.deep_judgment_excerpt_enabled !== false}
+                          onChange={(e) => handleTraitChange(index, 'deep_judgment_excerpt_enabled', e.target.checked)}
+                          className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                        />
+                        <label
+                          htmlFor={`deep-judgment-excerpt-${index}`}
+                          className="text-xs text-slate-700 dark:text-slate-300"
+                        >
+                          Extract Excerpts
+                        </label>
+                      </div>
+
+                      {/* Advanced Settings */}
+                      <details className="group">
+                        <summary className="text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer hover:text-slate-800 dark:hover:text-slate-200">
+                          Advanced Settings
+                        </summary>
+                        <div className="ml-4 mt-2 space-y-2">
+                          {/* Max Excerpts */}
+                          <div>
+                            <label
+                              htmlFor={`max-excerpts-${index}`}
+                              className="block text-xs text-slate-600 dark:text-slate-400 mb-1"
+                            >
+                              Max Excerpts (override global default)
+                            </label>
+                            <input
+                              type="number"
+                              id={`max-excerpts-${index}`}
+                              value={trait.deep_judgment_max_excerpts ?? ''}
+                              onChange={(e) =>
+                                handleTraitChange(
+                                  index,
+                                  'deep_judgment_max_excerpts',
+                                  e.target.value ? parseInt(e.target.value) : undefined
+                                )
+                              }
+                              className="w-24 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                              placeholder="7"
+                              min="1"
+                              max="20"
+                            />
+                          </div>
+
+                          {/* Fuzzy Match Threshold */}
+                          <div>
+                            <label
+                              htmlFor={`fuzzy-threshold-${index}`}
+                              className="block text-xs text-slate-600 dark:text-slate-400 mb-1"
+                            >
+                              Fuzzy Match Threshold (0.0-1.0)
+                            </label>
+                            <input
+                              type="number"
+                              id={`fuzzy-threshold-${index}`}
+                              value={trait.deep_judgment_fuzzy_match_threshold ?? ''}
+                              onChange={(e) =>
+                                handleTraitChange(
+                                  index,
+                                  'deep_judgment_fuzzy_match_threshold',
+                                  e.target.value ? parseFloat(e.target.value) : undefined
+                                )
+                              }
+                              className="w-24 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                              placeholder="0.80"
+                              min="0"
+                              max="1"
+                              step="0.01"
+                            />
+                          </div>
+
+                          {/* Retry Attempts */}
+                          <div>
+                            <label
+                              htmlFor={`retry-attempts-${index}`}
+                              className="block text-xs text-slate-600 dark:text-slate-400 mb-1"
+                            >
+                              Retry Attempts
+                            </label>
+                            <input
+                              type="number"
+                              id={`retry-attempts-${index}`}
+                              value={trait.deep_judgment_excerpt_retry_attempts ?? ''}
+                              onChange={(e) =>
+                                handleTraitChange(
+                                  index,
+                                  'deep_judgment_excerpt_retry_attempts',
+                                  e.target.value ? parseInt(e.target.value) : undefined
+                                )
+                              }
+                              className="w-24 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                              placeholder="2"
+                              min="0"
+                              max="5"
+                            />
+                          </div>
+
+                          {/* Search Enhancement */}
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`deep-judgment-search-${index}`}
+                              checked={trait.deep_judgment_search_enabled || false}
+                              onChange={(e) =>
+                                handleTraitChange(index, 'deep_judgment_search_enabled', e.target.checked)
+                              }
+                              className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                            />
+                            <label
+                              htmlFor={`deep-judgment-search-${index}`}
+                              className="text-xs text-slate-700 dark:text-slate-300"
+                            >
+                              Search Enhancement (hallucination detection)
+                            </label>
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Delete Button */}
               <div className="col-span-1 flex justify-end mt-6">
                 <button
