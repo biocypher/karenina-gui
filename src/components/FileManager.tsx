@@ -232,7 +232,13 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
       // Show success message with format info
       const itemCount = Object.keys(checkpoint).length;
-      const rubricInfo = currentRubric ? ` and ${currentRubric.traits.length} rubric traits` : '';
+      const traitCount = currentRubric
+        ? (currentRubric.llm_traits?.length || 0) +
+          (currentRubric.regex_traits?.length || 0) +
+          (currentRubric.callable_traits?.length || 0) +
+          (currentRubric.metric_traits?.length || 0)
+        : 0;
+      const rubricInfo = traitCount > 0 ? ` and ${traitCount} rubric traits` : '';
 
       // Check if database save was successful
       const { isConnectedToDatabase, lastSaved } = useDatasetStore.getState();

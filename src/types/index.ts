@@ -140,6 +140,13 @@ export interface SchemaOrgRating {
     | 'GlobalMetricRubricTrait'
     | 'QuestionSpecificMetricRubricTrait';
   ratingExplanation?: string;
+  // Deep Judgment configuration (for LLM traits only)
+  deep_judgment_enabled?: boolean;
+  deep_judgment_excerpt_enabled?: boolean;
+  deep_judgment_max_excerpts?: number;
+  deep_judgment_fuzzy_match_threshold?: number;
+  deep_judgment_excerpt_retry_attempts?: number;
+  deep_judgment_search_enabled?: boolean;
 }
 
 export interface SchemaOrgPropertyValue {
