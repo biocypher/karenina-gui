@@ -116,6 +116,48 @@ export interface ExportableResultDeepJudgment {
 }
 
 /**
+ * Deep-judgment rubric subclass - enhanced rubric trait evaluation with excerpts
+ */
+export interface ExportableResultDeepJudgmentRubric {
+  deep_judgment_rubric_performed?: boolean;
+  extracted_rubric_excerpts?: Record<
+    string,
+    Array<{
+      text: string;
+      confidence: string;
+      similarity_score: number;
+      search_results?: string;
+      hallucination_risk?: string;
+      hallucination_justification?: string;
+    }>
+  >;
+  rubric_trait_reasoning?: Record<string, string>;
+  deep_judgment_rubric_scores?: Record<string, number | boolean>;
+  standard_rubric_scores?: Record<string, number | boolean>;
+  trait_metadata?: Record<
+    string,
+    {
+      stages_completed: string[];
+      model_calls: number;
+      had_excerpts: boolean;
+      excerpt_retry_count: number;
+      excerpt_validation_failed?: boolean;
+    }
+  >;
+  traits_without_valid_excerpts?: string[];
+  rubric_hallucination_risk_assessment?: Record<
+    string,
+    {
+      overall_risk: string;
+      per_excerpt_risks: string[];
+    }
+  >;
+  total_deep_judgment_model_calls?: number;
+  total_traits_evaluated?: number;
+  total_excerpt_retries?: number;
+}
+
+/**
  * ExportableResult interface for GUI exports with nested structure.
  *
  * MUST mirror backend VerificationResult model exactly.
@@ -129,6 +171,7 @@ export interface ExportableResult {
   template?: ExportableResultTemplate;
   rubric?: ExportableResultRubric;
   deep_judgment?: ExportableResultDeepJudgment;
+  deep_judgment_rubric?: ExportableResultDeepJudgmentRubric;
 }
 
 /**
@@ -339,6 +382,17 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     // Search-enhanced deep-judgment fields
     'deep_judgment_search_enabled',
     'hallucination_risk_assessment',
+    // Deep-judgment rubric fields
+    'deep_judgment_rubric_performed',
+    'deep_judgment_rubric_scores',
+    'rubric_trait_reasoning',
+    'extracted_rubric_excerpts',
+    'trait_metadata',
+    'traits_without_valid_excerpts',
+    'rubric_hallucination_risk_assessment',
+    'total_deep_judgment_model_calls',
+    'total_traits_evaluated',
+    'total_excerpt_retries',
     // Metric trait fields
     'metric_trait_confusion_lists',
     'metric_trait_metrics',
@@ -506,6 +560,43 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
           ? JSON.stringify(result.deep_judgment.hallucination_risk_assessment)
           : ''
       ),
+      // Deep-judgment rubric fields
+      deep_judgment_rubric_performed: escapeCSVField(
+        result.deep_judgment_rubric?.deep_judgment_rubric_performed || false
+      ),
+      deep_judgment_rubric_scores: escapeCSVField(
+        result.deep_judgment_rubric?.deep_judgment_rubric_scores
+          ? JSON.stringify(result.deep_judgment_rubric.deep_judgment_rubric_scores)
+          : ''
+      ),
+      rubric_trait_reasoning: escapeCSVField(
+        result.deep_judgment_rubric?.rubric_trait_reasoning
+          ? JSON.stringify(result.deep_judgment_rubric.rubric_trait_reasoning)
+          : ''
+      ),
+      extracted_rubric_excerpts: escapeCSVField(
+        result.deep_judgment_rubric?.extracted_rubric_excerpts
+          ? JSON.stringify(result.deep_judgment_rubric.extracted_rubric_excerpts)
+          : ''
+      ),
+      trait_metadata: escapeCSVField(
+        result.deep_judgment_rubric?.trait_metadata ? JSON.stringify(result.deep_judgment_rubric.trait_metadata) : ''
+      ),
+      traits_without_valid_excerpts: escapeCSVField(
+        result.deep_judgment_rubric?.traits_without_valid_excerpts
+          ? JSON.stringify(result.deep_judgment_rubric.traits_without_valid_excerpts)
+          : ''
+      ),
+      rubric_hallucination_risk_assessment: escapeCSVField(
+        result.deep_judgment_rubric?.rubric_hallucination_risk_assessment
+          ? JSON.stringify(result.deep_judgment_rubric.rubric_hallucination_risk_assessment)
+          : ''
+      ),
+      total_deep_judgment_model_calls: escapeCSVField(
+        result.deep_judgment_rubric?.total_deep_judgment_model_calls || 0
+      ),
+      total_traits_evaluated: escapeCSVField(result.deep_judgment_rubric?.total_traits_evaluated || 0),
+      total_excerpt_retries: escapeCSVField(result.deep_judgment_rubric?.total_excerpt_retries || 0),
     };
 
     // Add global rubric values from merged traits
