@@ -44,6 +44,10 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   // Replicate selection state
   const [selectedReplicate, setSelectedReplicate] = useState<number | null>(null);
 
+  // Question selection state
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
+  const [questionSearchText, setQuestionSearchText] = useState('');
+
   // Extract unique replicates from results
   const availableReplicates = useMemo(() => {
     const replicates = new Set<number>();
@@ -170,6 +174,40 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     }
   }, [comparisonData, onComparisonDataChange]);
 
+  // Extract available questions and auto-select all when data changes
+  const availableQuestions = useMemo(() => {
+    if (!comparisonData?.heatmap_data) return [];
+    return comparisonData.heatmap_data.map((q) => ({
+      id: q.question_id,
+      text: q.question_text,
+    }));
+  }, [comparisonData]);
+
+  // Auto-select all questions when available questions change
+  useEffect(() => {
+    if (availableQuestions.length > 0) {
+      setSelectedQuestions(new Set(availableQuestions.map((q) => q.id)));
+    }
+  }, [availableQuestions]);
+
+  // Filter questions based on search text
+  const filteredQuestions = useMemo(() => {
+    if (!questionSearchText) return availableQuestions;
+    const searchLower = questionSearchText.toLowerCase();
+    return availableQuestions.filter((q) => q.text.toLowerCase().includes(searchLower));
+  }, [availableQuestions, questionSearchText]);
+
+  // Filter heatmap and token data based on selected questions
+  const filteredHeatmapData = useMemo(() => {
+    if (!comparisonData?.heatmap_data) return [];
+    return comparisonData.heatmap_data.filter((q) => selectedQuestions.has(q.question_id));
+  }, [comparisonData, selectedQuestions]);
+
+  const filteredTokenData = useMemo(() => {
+    if (!comparisonData?.question_token_data) return [];
+    return comparisonData.question_token_data.filter((q) => selectedQuestions.has(q.question_id));
+  }, [comparisonData, selectedQuestions]);
+
   const getModelKey = (model: ModelConfig): string => {
     return `${model.answering_model}|${model.mcp_config}`;
   };
@@ -179,6 +217,27 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     const secs = seconds % 60;
     if (minutes > 0) return `${minutes}m ${secs.toFixed(1)}s`;
     return `${secs.toFixed(1)}s`;
+  };
+
+  // Question selection handlers
+  const handleSelectAllQuestions = () => {
+    setSelectedQuestions(new Set(availableQuestions.map((q) => q.id)));
+  };
+
+  const handleSelectNoneQuestions = () => {
+    setSelectedQuestions(new Set());
+  };
+
+  const handleToggleQuestion = (questionId: string) => {
+    setSelectedQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(questionId)) {
+        newSet.delete(questionId);
+      } else {
+        newSet.add(questionId);
+      }
+      return newSet;
+    });
   };
 
   // Handle heatmap cell click - find and display the result
@@ -530,39 +589,97 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
               Question-by-Question Comparison
             </h3>
 
-            {/* Replicate Selector */}
-            {availableReplicates.length > 1 && (
-              <div className="mb-4">
-                <label
-                  htmlFor="replicate-selector"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                >
-                  Select Replicate:
+            {/* Replicate and Question Selectors */}
+            <div className="flex gap-6 mb-4">
+              {/* Replicate Selector */}
+              {availableReplicates.length > 1 && (
+                <div>
+                  <label
+                    htmlFor="replicate-selector"
+                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  >
+                    Select Replicate:
+                  </label>
+                  <select
+                    id="replicate-selector"
+                    value={selectedReplicate ?? ''}
+                    onChange={(e) => setSelectedReplicate(Number(e.target.value))}
+                    className="block w-48 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  >
+                    {availableReplicates.map((rep) => (
+                      <option key={rep} value={rep}>
+                        Replicate {rep}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Question Selector */}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Filter Questions ({selectedQuestions.size}/{availableQuestions.length} selected):
                 </label>
-                <select
-                  id="replicate-selector"
-                  value={selectedReplicate ?? ''}
-                  onChange={(e) => setSelectedReplicate(Number(e.target.value))}
-                  className="block w-48 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                >
-                  {availableReplicates.map((rep) => (
-                    <option key={rep} value={rep}>
-                      Replicate {rep}
-                    </option>
-                  ))}
-                </select>
+                <div className="border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 p-3">
+                  {/* Search and Action Buttons */}
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      placeholder="Search questions..."
+                      value={questionSearchText}
+                      onChange={(e) => setQuestionSearchText(e.target.value)}
+                      className="flex-1 px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    />
+                    <button
+                      onClick={handleSelectAllQuestions}
+                      className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800 transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={handleSelectNoneQuestions}
+                      className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 transition-colors"
+                    >
+                      Select None
+                    </button>
+                  </div>
+
+                  {/* Question Checkboxes */}
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {filteredQuestions.length === 0 ? (
+                      <div className="text-sm text-slate-500 dark:text-slate-400 italic">No questions match search</div>
+                    ) : (
+                      filteredQuestions.map((question) => (
+                        <label
+                          key={question.id}
+                          className="flex items-start gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded cursor-pointer group"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedQuestions.has(question.id)}
+                            onChange={() => handleToggleQuestion(question.id)}
+                            className="mt-0.5 w-4 h-4 text-blue-600 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                          />
+                          <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100">
+                            {question.text}
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
 
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Click on any cell to view detailed trace</p>
             <QuestionHeatmap
-              data={comparisonData.heatmap_data}
+              data={filteredHeatmapData}
               modelKeys={selectedModels.map(getModelKey)}
               onCellClick={handleCellClick}
             />
 
             {/* Token Usage per Question */}
-            {comparisonData.question_token_data && comparisonData.question_token_data.length > 0 && (
+            {filteredTokenData.length > 0 && (
               <div className="mt-8">
                 <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
                   Token Usage per Question
@@ -575,7 +692,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                   <div>
                     <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Input Tokens</h4>
                     <QuestionTokenBarChart
-                      data={comparisonData.question_token_data}
+                      data={filteredTokenData}
                       selectedModels={selectedModels.map(getModelKey)}
                       tokenType="input"
                     />
@@ -583,7 +700,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                   <div>
                     <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Output Tokens</h4>
                     <QuestionTokenBarChart
-                      data={comparisonData.question_token_data}
+                      data={filteredTokenData}
                       selectedModels={selectedModels.map(getModelKey)}
                       tokenType="output"
                     />
