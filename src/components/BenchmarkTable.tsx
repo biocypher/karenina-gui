@@ -679,6 +679,11 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       arrIncludesSome: (row, columnId, value) => {
         if (value.size === 0) return true;
         const rowValue = row.getValue(columnId);
+        // Handle array values (e.g., MCP servers, granular checks)
+        if (Array.isArray(rowValue)) {
+          return rowValue.some((item) => value.has(item));
+        }
+        // Handle single values (e.g., other filterable columns)
         return value.has(rowValue);
       },
     },
