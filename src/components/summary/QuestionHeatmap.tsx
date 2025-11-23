@@ -73,14 +73,12 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
         // Encode status as number:
         // 0 = not tested, 1 = failed, 2 = abstained, 3 = passed, 4 = error
         let status: number;
-        if (!cell) {
+        if (!cell || cell.passed === null) {
           status = 0;
         } else if (cell.error) {
           status = 4;
         } else if (cell.abstained) {
           status = 2;
-        } else if (cell.passed === null) {
-          status = 0;
         } else if (cell.passed) {
           status = 3;
         } else {
