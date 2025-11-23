@@ -733,21 +733,30 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           return replicateValue ? replicateValue.toString() : 'Single';
         })
       );
+      // Extract unique MCP servers
+      const mcpServersSet = new Set<string>();
+      allResults.forEach((r) => {
+        const servers = r.template?.answering_mcp_servers;
+        if (servers && Array.isArray(servers)) {
+          servers.forEach((server) => mcpServersSet.add(server));
+        }
+      });
       return {
         answeringModels: Array.from(answeringModels),
         parsingModels: Array.from(parsingModels),
         runNames: Array.from(runNames),
         replicates: Array.from(replicates),
+        mcpServers: Array.from(mcpServersSet).sort(),
       };
     } catch (e) {
       console.error('Error in getUniqueModels:', e);
-      return { answeringModels: [], parsingModels: [], runNames: [], replicates: [] };
+      return { answeringModels: [], parsingModels: [], runNames: [], replicates: [], mcpServers: [] };
     }
   };
 
   const renderTable = () => {
     try {
-      const { answeringModels, parsingModels, runNames, replicates } = getUniqueModels();
+      const { answeringModels, parsingModels, runNames, replicates, mcpServers } = getUniqueModels();
 
       if (table.getRowModel().rows.length === 0) {
         return (
@@ -880,6 +889,16 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
                                   header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
                                 }}
                                 placeholder="All"
+                              />
+                            )}
+                            {header.id === 'answering_mcp_servers' && (
+                              <MultiSelectFilter
+                                options={mcpServers}
+                                selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                                onChange={(values) =>
+                                  header.column.setFilterValue(values.size > 0 ? values : undefined)
+                                }
+                                placeholder="All MCP"
                               />
                             )}
                             {header.id === 'execution_time' && (
