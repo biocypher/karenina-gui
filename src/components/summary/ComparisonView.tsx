@@ -253,7 +253,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
 
                 if (!summary) return null;
 
-                const passRate = summary.template_pass_overall.pass_pct;
+                const passRate = summary.template_pass_overall?.pass_pct ?? 0;
                 const sectionClass = 'bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4';
                 const headerClass =
                   'text-sm font-mono font-bold text-blue-600 dark:text-blue-400 mb-3 pb-2 border-b-2 border-blue-200 dark:border-blue-800';
@@ -447,8 +447,8 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                                         : 'text-red-600 dark:text-red-400 font-semibold'
                                   }
                                 >
-                                  {summary.template_pass_overall.passed}/{summary.template_pass_overall.total} passed (
-                                  {passRate.toFixed(1)}%)
+                                  {summary.template_pass_overall?.passed ?? 0}/
+                                  {summary.template_pass_overall?.total ?? 0} passed ({passRate.toFixed(1)}%)
                                 </span>
                               </td>
                             </tr>

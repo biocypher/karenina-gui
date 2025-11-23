@@ -40,7 +40,7 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
     };
   };
 
-  const passRate = summary.template_pass_overall.pass_pct;
+  const passRate = summary.template_pass_overall?.pass_pct ?? 0;
 
   // Calculate unique answering model configurations (model + MCP)
   const uniqueAnsweringConfigs = new Set<string>();
@@ -325,7 +325,7 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                     }`}
                     onClick={onDrillDown ? () => onDrillDown({ type: 'passed' }) : undefined}
                   >
-                    {summary.template_pass_overall.passed}/{summary.template_pass_overall.total} passed (
+                    {summary.template_pass_overall?.passed ?? 0}/{summary.template_pass_overall?.total ?? 0} passed (
                     {passRate.toFixed(1)}%)
                   </span>
                 </td>
