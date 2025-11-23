@@ -58,8 +58,8 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
   const questionIdToText = new Map<string, string>();
   const questionIdToActualId = new Map<string, string>();
 
-  // Reverse the data array since Nivo renders from bottom to top
-  const heatmapData = [...data].reverse().map((question, index) => {
+  // Map data array for Nivo heatmap
+  const heatmapData = [...data].map((question, index) => {
     // Use simple numeric ID for Nivo, store full text and actual ID separately
     const questionId = `q${index}`;
     questionIdToText.set(questionId, question.question_text);
