@@ -11,6 +11,8 @@ interface Props {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, tokenType }) => {
+  const isDark = document.documentElement.classList.contains('dark');
+
   // Transform data for Recharts format
   // Filter to only include models that are selected
   const chartData = data.map((question) => {
@@ -50,9 +52,9 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
   });
 
   // Calculate dynamic height based on number of questions
-  const heightPerQuestion = 140; // Increased for better separation between questions
+  const heightPerQuestion = 140; // Match heatmap cell height
   const minHeight = 400;
-  const maxHeight = 1600;
+  const maxHeight = 2400;
   const calculatedHeight = Math.max(minHeight, Math.min(maxHeight, data.length * heightPerQuestion + 100));
 
   // Custom tooltip
@@ -82,7 +84,7 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
 
             return (
               <div key={index} className="text-xs" style={{ color: entry.color }}>
-                <span className="font-medium">{name}:</span> {value.toFixed(0)} ± {error.toFixed(0)} tokens
+                <span className="font-medium">{name}:</span> {value.toLocaleString()} ± {Number(error).toLocaleString()} tokens
               </div>
             );
           })}
@@ -107,20 +109,20 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
           <XAxis
             type="number"
             domain={[0, 'auto']}
-            tick={{ fill: '#64748b', fontSize: 11 }}
+            tick={{ fill: isDark ? '#cbd5e1' : '#475569', fontSize: 11 }}
             tickFormatter={(value) => value.toLocaleString()}
             label={{
               value: `${tokenType === 'input' ? 'Input' : 'Output'} Tokens`,
               position: 'insideBottom',
               offset: -10,
-              style: { fill: '#475569', fontSize: 12 },
+              style: { fill: isDark ? '#cbd5e1' : '#475569', fontSize: 12 },
             }}
           />
           <YAxis
             type="category"
             dataKey="question"
-            width={250}
-            tick={{ fill: '#94a3b8', fontSize: 11 }}
+            width={350}
+            tick={{ fill: isDark ? '#cbd5e1' : '#475569', fontSize: 13, fontFamily: 'system-ui, -apple-system, sans-serif' }}
             interval={0}
             axisLine={false}
             tickLine={false}

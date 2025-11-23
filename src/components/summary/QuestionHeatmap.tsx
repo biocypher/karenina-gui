@@ -171,7 +171,7 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
   };
 
   // Calculate dynamic height based on number of questions
-  const cellHeight = 50; // Height per question row
+  const cellHeight = 140; // Height per question row
   const minHeight = 400;
   const calculatedHeight = Math.max(minHeight, data.length * cellHeight + 200);
 
@@ -238,7 +238,7 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
             // Get full question text from mapping
             const fullText = questionIdToText.get(tick.value as string) || (tick.value as string);
             const lines = wrapText(fullText, 50);
-            const lineHeight = 14;
+            const lineHeight = 16;
             const totalHeight = lines.length * lineHeight;
             const startY = tick.y - totalHeight / 2;
 
