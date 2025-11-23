@@ -28,6 +28,7 @@ interface BenchmarkTableProps {
   checkpoint?: Checkpoint;
   onViewResult: (result: VerificationResult) => void;
   onFilteredCountChange?: (filteredCount: number, totalCount: number) => void;
+  externalFilters?: ColumnFiltersState;
 }
 
 const columnHelper = createColumnHelper<VerificationResult>();
@@ -268,11 +269,19 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
   checkpoint,
   onViewResult,
   onFilteredCountChange,
+  externalFilters,
 }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [questionSearchText, setQuestionSearchText] = useState('');
   const [rawAnswerSearchText, setRawAnswerSearchText] = useState('');
+
+  // Apply external filters when provided (for drill-down from summary panel)
+  useEffect(() => {
+    if (externalFilters) {
+      setColumnFilters(externalFilters);
+    }
+  }, [externalFilters]);
 
   // Convert benchmarkResults to array for table
   const data = useMemo(() => {
