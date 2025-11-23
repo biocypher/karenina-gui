@@ -34,13 +34,37 @@ export function QuestionHeatmap({ data, modelKeys }: QuestionHeatmapProps) {
     );
   }
 
+  // Helper to wrap text into multiple lines
+  const wrapText = (text: string, maxLength: number): string[] => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      if ((currentLine + ' ' + word).trim().length <= maxLength) {
+        currentLine = currentLine ? currentLine + ' ' + word : word;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+    return lines;
+  };
+
   // Transform data to Nivo's expected format:
   // [{ id: string, data: [{ x: string, y: number }] }]
-  const heatmapData = data.map((question) => {
-    const questionLabel = question.question_text.slice(0, 60) + '...';
+  // Store mapping of question IDs to full text for labels
+  const questionIdToText = new Map<string, string>();
+
+  // Reverse the data array since Nivo renders from bottom to top
+  const heatmapData = [...data].reverse().map((question, index) => {
+    // Use simple numeric ID for Nivo, store full text separately
+    const questionId = `q${index}`;
+    questionIdToText.set(questionId, question.question_text);
 
     return {
-      id: questionLabel,
+      id: questionId,
       data: modelKeys.map((modelKey) => {
         const cell = question.results_by_model?.[modelKey];
 
@@ -138,41 +162,109 @@ export function QuestionHeatmap({ data, modelKeys }: QuestionHeatmapProps) {
     },
     grid: {
       line: {
-        stroke: isDark ? '#334155' : '#cbd5e1',
+        stroke: isDark ? '#475569' : '#94a3b8',
+        strokeWidth: 1,
       },
     },
   };
 
+  // Calculate dynamic height based on number of questions
+  const cellHeight = 35; // Height per question row
+  const minHeight = 400;
+  const calculatedHeight = Math.max(minHeight, data.length * cellHeight + 200);
+
   return (
-    <div className="h-[600px] bg-white dark:bg-slate-800 rounded-lg p-4">
+    <div style={{ height: `${calculatedHeight}px` }} className="bg-white dark:bg-slate-800 rounded-lg p-4">
       <ResponsiveHeatMap
         data={heatmapData}
-        margin={{ top: 100, right: 90, bottom: 60, left: 240 }}
+        margin={{ top: 160, right: 90, bottom: 60, left: 350 }}
         valueFormat=">-.0f"
         colors={getColor}
         emptyColor="#555555"
+        cellOpacity={1}
+        cellBorderWidth={1}
+        cellBorderColor={isDark ? '#334155' : '#cbd5e1'}
+        hoverTarget="cell"
+        animate={false}
         axisTop={{
-          tickSize: 0,
-          tickPadding: 10,
+          tickSize: 5,
+          tickPadding: 20,
           tickRotation: -45,
           legend: '',
           legendOffset: 0,
-          format: (value) => getModelLabel(value as string),
+          renderTick: (tick) => {
+            const label = getModelLabel(tick.value as string);
+            const lines = label.split('\n');
+
+            return (
+              <g transform={`translate(${tick.x},${tick.y - 10})`}>
+                <line x1="0" x2="0" y1="10" y2="15" style={{ stroke: isDark ? '#cbd5e1' : '#475569' }} />
+                <text
+                  textAnchor="start"
+                  dominantBaseline="middle"
+                  transform="rotate(-45)"
+                  style={{
+                    fill: isDark ? '#e2e8f0' : '#1e293b',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}
+                >
+                  {lines.map((line, i) => (
+                    <tspan key={i} x="10" dy={i === 0 ? 0 : 16}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            );
+          },
         }}
         axisRight={null}
         axisBottom={null}
         axisLeft={{
           tickSize: 5,
-          tickPadding: 5,
+          tickPadding: 15,
           tickRotation: 0,
           legend: '',
           legendPosition: 'middle',
           legendOffset: -200,
+          renderTick: (tick) => {
+            // Get full question text from mapping
+            const fullText = questionIdToText.get(tick.value as string) || (tick.value as string);
+            const lines = wrapText(fullText, 50);
+            const lineHeight = 14;
+            const totalHeight = lines.length * lineHeight;
+            const startY = tick.y - totalHeight / 2;
+
+            return (
+              <g transform={`translate(${tick.x - 10},${startY})`}>
+                <text
+                  textAnchor="end"
+                  dominantBaseline="hanging"
+                  style={{
+                    fill: isDark ? '#cbd5e1' : '#475569',
+                    fontSize: '13px',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                  }}
+                >
+                  {lines.map((line, i) => (
+                    <tspan key={i} x="0" dy={i === 0 ? 0 : lineHeight}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            );
+          },
         }}
         labelTextColor="white"
         enableLabels={false}
         tooltip={({ cell }) => {
           const status = cell.data?.y ?? 0;
+          // Get full question text from mapping
+          const fullQuestionText = questionIdToText.get(cell.serieId as string) || cell.serieId;
+
           return (
             <div
               style={{
@@ -183,7 +275,7 @@ export function QuestionHeatmap({ data, modelKeys }: QuestionHeatmapProps) {
                 boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
               }}
             >
-              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{cell.serieId}</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{fullQuestionText}</div>
               <div style={{ fontSize: '11px', marginBottom: '2px' }}>Model: {getModelLabel(cell.data.x as string)}</div>
               <div style={{ fontSize: '11px', fontWeight: 600 }}>
                 Status: <span style={{ color: getColor(cell) }}>{getStatusLabel(status)}</span>
