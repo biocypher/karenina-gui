@@ -242,8 +242,16 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
           <div>
             <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3">Metrics Comparison</h3>
 
-            {/* Detailed metrics in a grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Detailed metrics in a grid - dynamic layout based on model count */}
+            <div
+              className={`grid gap-6 ${
+                selectedModels.length === 2
+                  ? 'grid-cols-1 md:grid-cols-2'
+                  : selectedModels.length === 3
+                    ? 'grid-cols-1 md:grid-cols-3'
+                    : 'grid-cols-1 md:grid-cols-2'
+              }`}
+            >
               {selectedModels.map((model) => {
                 const modelKey = getModelKey(model);
                 const summary = comparisonData.model_summaries[modelKey];
