@@ -519,6 +519,8 @@ export interface VerificationResult {
   rubric?: VerificationResultRubric;
   deep_judgment?: VerificationResultDeepJudgment;
   deep_judgment_rubric?: VerificationResultDeepJudgmentRubric;
+  // Question data (may be added from checkpoint for display purposes)
+  raw_answer?: string;
 }
 
 // Helper interface for LLM usage metadata
