@@ -224,6 +224,11 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                               └─ Regex: <span className="font-mono">{globalRegex}</span>
                             </div>
                           )}
+                          {globalCallable > 0 && (
+                            <div className="ml-4">
+                              └─ Callable: <span className="font-mono">{globalCallable}</span>
+                            </div>
+                          )}
                           {globalMetric > 0 && (
                             <div className="ml-4">
                               └─ Metric: <span className="font-mono">{globalMetric}</span>
@@ -234,8 +239,22 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                             <span className="font-mono text-slate-900 dark:text-slate-100">{qsTotal}</span>
                           </div>
                           <div className="ml-4">
-                            └─ LLM: <span className="font-mono">{qsLlm}</span>, Metric:{' '}
-                            <span className="font-mono">{qsMetric}</span>
+                            └─ LLM: <span className="font-mono">{qsLlm}</span>
+                            {qsRegex > 0 && (
+                              <>
+                                , Regex: <span className="font-mono">{qsRegex}</span>
+                              </>
+                            )}
+                            {qsCallable > 0 && (
+                              <>
+                                , Callable: <span className="font-mono">{qsCallable}</span>
+                              </>
+                            )}
+                            {qsMetric > 0 && (
+                              <>
+                                , Metric: <span className="font-mono">{qsMetric}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       );
