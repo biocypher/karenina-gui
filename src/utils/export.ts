@@ -1,5 +1,54 @@
 import { API_ENDPOINTS } from '../constants/api';
-import type { Rubric, RubricTrait, UsageMetadata } from '../types';
+import type { Rubric, RubricTrait, UsageMetadata, VerificationConfig } from '../types';
+
+/**
+ * Job summary metadata for exports
+ */
+export interface JobSummaryMetadata {
+  total_questions: number;
+  successful_count: number;
+  failed_count: number;
+  start_time?: number;
+  end_time?: number;
+  total_duration?: number;
+}
+
+/**
+ * Model configuration for export metadata (simplified from full ModelConfiguration)
+ */
+export interface ExportModelConfig {
+  provider: string;
+  name: string;
+  temperature: number;
+  interface: string;
+}
+
+/**
+ * Verification config for export metadata
+ */
+export interface ExportVerificationConfig {
+  answering_model: ExportModelConfig;
+  parsing_model: ExportModelConfig;
+}
+
+/**
+ * Export metadata wrapper (matches backend format)
+ */
+export interface ExportMetadata {
+  export_timestamp: string;
+  karenina_version: string;
+  job_id?: string;
+  verification_config?: ExportVerificationConfig;
+  job_summary?: JobSummaryMetadata;
+}
+
+/**
+ * Unified export format (matches backend exporter.py)
+ */
+export interface UnifiedExportFormat {
+  metadata: ExportMetadata;
+  results: ExportableResult[];
+}
 
 /**
  * Metadata subclass - core identity and tracking fields
@@ -215,18 +264,24 @@ export async function exportFromServer(jobId: string, format: 'json' | 'csv'): P
 }
 
 /**
- * Converts results to JSON format
+ * Converts results to JSON format with unified export structure (matches backend format)
  */
-export function exportToJSON(results: ExportableResult[], selectedFields?: string[]): string {
-  const resultsWithIndex = results.map((result, index) => {
+export function exportToJSON(
+  results: ExportableResult[],
+  selectedFields?: string[],
+  jobId?: string,
+  verificationConfig?: VerificationConfig,
+  jobSummary?: JobSummaryMetadata
+): string {
+  // Process results (handle abstention display)
+  const processedResults = results.map((result) => {
     // Replace completed_without_errors boolean with "abstained" string when abstention is detected
     const completedWithoutErrorsValue =
       result.template?.abstention_detected && result.template?.abstention_override_applied
         ? 'abstained'
         : result.metadata.completed_without_errors;
 
-    const resultWithIndex = {
-      row_index: index + 1,
+    const processedResult = {
       ...result,
       metadata: {
         ...result.metadata,
@@ -237,16 +292,55 @@ export function exportToJSON(results: ExportableResult[], selectedFields?: strin
     if (selectedFields) {
       const filteredResult: Record<string, unknown> = {};
       selectedFields.forEach((field) => {
-        if (field in resultWithIndex) {
-          filteredResult[field] = resultWithIndex[field as keyof typeof resultWithIndex];
+        if (field in processedResult) {
+          filteredResult[field] = processedResult[field as keyof typeof processedResult];
         }
       });
-      return filteredResult;
+      return filteredResult as ExportableResult;
     }
 
-    return resultWithIndex;
+    return processedResult;
   });
-  return JSON.stringify(resultsWithIndex, null, 2);
+
+  // Build verification config metadata
+  let exportVerificationConfig: ExportVerificationConfig | undefined;
+  if (
+    verificationConfig &&
+    verificationConfig.answering_models.length > 0 &&
+    verificationConfig.parsing_models.length > 0
+  ) {
+    exportVerificationConfig = {
+      answering_model: {
+        provider: verificationConfig.answering_models[0].model_provider,
+        name: verificationConfig.answering_models[0].model_name,
+        temperature: verificationConfig.answering_models[0].temperature,
+        interface: verificationConfig.answering_models[0].interface,
+      },
+      parsing_model: {
+        provider: verificationConfig.parsing_models[0].model_provider,
+        name: verificationConfig.parsing_models[0].model_name,
+        temperature: verificationConfig.parsing_models[0].temperature,
+        interface: verificationConfig.parsing_models[0].interface,
+      },
+    };
+  }
+
+  // Build unified export structure
+  const unifiedExport: UnifiedExportFormat = {
+    metadata: {
+      export_timestamp: new Date()
+        .toISOString()
+        .replace('T', ' ')
+        .replace(/\.\d{3}Z$/, ' UTC'),
+      karenina_version: '1.0.0', // TODO: Get actual version from package.json or env
+      job_id: jobId,
+      verification_config: exportVerificationConfig,
+      job_summary: jobSummary,
+    },
+    results: processedResults,
+  };
+
+  return JSON.stringify(unifiedExport, null, 2);
 }
 
 /**
@@ -626,7 +720,10 @@ export function exportFilteredResults(
   format: 'json' | 'csv',
   onError?: (error: string) => void,
   globalRubric?: Rubric,
-  selectedFields?: string[]
+  selectedFields?: string[],
+  jobId?: string,
+  verificationConfig?: VerificationConfig,
+  jobSummary?: JobSummaryMetadata
 ): void {
   if (results.length === 0) {
     const errorMsg = 'No results match the current filters.';
@@ -644,7 +741,7 @@ export function exportFilteredResults(
     let fileName: string;
 
     if (format === 'json') {
-      content = exportToJSON(results, selectedFields);
+      content = exportToJSON(results, selectedFields, jobId, verificationConfig, jobSummary);
       mimeType = 'application/json';
       fileName = `filtered_results_${new Date().toISOString().split('T')[0]}.json`;
     } else {
