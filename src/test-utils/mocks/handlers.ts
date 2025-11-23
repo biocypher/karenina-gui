@@ -114,35 +114,6 @@ export const handlers = [
     return HttpResponse.json({ success: true });
   }),
 
-  // Rubric trait generation endpoint
-  http.post('/api/generate-rubric-traits', () => {
-    return HttpResponse.json({
-      llm_traits: [
-        {
-          name: 'accuracy',
-          description: 'Is the response factually accurate?',
-          kind: 'boolean',
-          min_score: null,
-          max_score: null,
-        },
-        {
-          name: 'completeness',
-          description: 'How complete is the response?',
-          kind: 'score',
-          min_score: 1,
-          max_score: 5,
-        },
-        {
-          name: 'clarity',
-          description: 'Is the response clear and well-written?',
-          kind: 'boolean',
-          min_score: null,
-          max_score: null,
-        },
-      ],
-    });
-  }),
-
   // Get current rubric endpoint
   http.get('/api/rubric', () => {
     return HttpResponse.json({

@@ -13,8 +13,6 @@ describe('useRubricStore', () => {
     const { result } = renderHook(() => useRubricStore());
 
     expect(result.current.currentRubric).toBeNull();
-    expect(result.current.generatedSuggestions).toEqual([]);
-    expect(result.current.isGeneratingTraits).toBe(false);
     expect(result.current.isLoadingRubric).toBe(false);
     expect(result.current.isSavingRubric).toBe(false);
     expect(result.current.lastError).toBeNull();
@@ -227,53 +225,6 @@ describe('useRubricStore', () => {
     expect(result.current.currentRubric?.traits[1].name).toBe('accuracy');
   });
 
-  it('should apply generated traits', () => {
-    const { result } = renderHook(() => useRubricStore());
-
-    const mockRubric = {
-      llm_traits: [
-        {
-          name: 'existing',
-          description: 'Existing trait',
-          kind: 'boolean' as const,
-          min_score: null,
-          max_score: null,
-        },
-      ],
-    };
-
-    act(() => {
-      result.current.setCurrentRubric(mockRubric);
-    });
-
-    const generatedTraits: RubricTrait[] = [
-      {
-        name: 'generated1',
-        description: 'Generated trait 1',
-        kind: 'boolean',
-        min_score: null,
-        max_score: null,
-      },
-      {
-        name: 'generated2',
-        description: 'Generated trait 2',
-        kind: 'score',
-        min_score: 1,
-        max_score: 3,
-      },
-    ];
-
-    act(() => {
-      result.current.applyGeneratedTraits(generatedTraits);
-    });
-
-    expect(result.current.currentRubric?.traits).toHaveLength(3);
-    expect(result.current.currentRubric?.traits[0].name).toBe('existing');
-    expect(result.current.currentRubric?.traits[1].name).toBe('generated1');
-    expect(result.current.currentRubric?.traits[2].name).toBe('generated2');
-    expect(result.current.generatedSuggestions).toEqual([]);
-  });
-
   it('should clear error', () => {
     const { result } = renderHook(() => useRubricStore());
 
@@ -308,7 +259,6 @@ describe('useRubricStore', () => {
     act(() => {
       result.current.setCurrentRubric(mockRubric);
       // Simulate some async state
-      result.current.isGeneratingTraits = true;
       result.current.isLoadingRubric = true;
       result.current.isSavingRubric = true;
     });
@@ -318,8 +268,6 @@ describe('useRubricStore', () => {
     });
 
     expect(result.current.currentRubric).toBeNull();
-    expect(result.current.generatedSuggestions).toEqual([]);
-    expect(result.current.isGeneratingTraits).toBe(false);
     expect(result.current.isLoadingRubric).toBe(false);
     expect(result.current.isSavingRubric).toBe(false);
     expect(result.current.lastError).toBeNull();

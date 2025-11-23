@@ -40,8 +40,8 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   // Modal state
   const [selectedResult, setSelectedResult] = useState<VerificationResult | null>(null);
 
-  // Replicate selection state
-  const [selectedReplicate, setSelectedReplicate] = useState<number>(1);
+  // Replicate selection state (null = all replicates)
+  const [selectedReplicate, setSelectedReplicate] = useState<number | null>(null);
 
   // Extract unique replicates from results
   const availableReplicates = useMemo(() => {
@@ -54,12 +54,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     return Array.from(replicates).sort((a, b) => a - b);
   }, [results]);
 
-  // Auto-select first replicate if available
-  useEffect(() => {
-    if (availableReplicates.length > 0 && !availableReplicates.includes(selectedReplicate)) {
-      setSelectedReplicate(availableReplicates[0]);
-    }
-  }, [availableReplicates, selectedReplicate]);
+  // No auto-select needed - defaults to null (all replicates)
 
   // Extract unique models from results on mount
   useEffect(() => {
@@ -253,7 +248,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
 
                 if (!summary) return null;
 
-                const passRate = summary.template_pass_overall.pass_pct;
+                const passRate = summary.template_pass_overall?.pass_pct ?? 0;
                 const sectionClass = 'bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4';
                 const headerClass =
                   'text-sm font-mono font-bold text-blue-600 dark:text-blue-400 mb-3 pb-2 border-b-2 border-blue-200 dark:border-blue-800';
@@ -447,8 +442,8 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                                         : 'text-red-600 dark:text-red-400 font-semibold'
                                   }
                                 >
-                                  {summary.template_pass_overall.passed}/{summary.template_pass_overall.total} passed (
-                                  {passRate.toFixed(1)}%)
+                                  {summary.template_pass_overall?.passed ?? 0}/
+                                  {summary.template_pass_overall?.total ?? 0} passed ({passRate.toFixed(1)}%)
                                 </span>
                               </td>
                             </tr>
@@ -518,10 +513,11 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                 </label>
                 <select
                   id="replicate-selector"
-                  value={selectedReplicate}
-                  onChange={(e) => setSelectedReplicate(Number(e.target.value))}
+                  value={selectedReplicate === null ? '' : selectedReplicate}
+                  onChange={(e) => setSelectedReplicate(e.target.value === '' ? null : Number(e.target.value))}
                   className="block w-48 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 >
+                  <option value="">All Replicates</option>
                   {availableReplicates.map((rep) => (
                     <option key={rep} value={rep}>
                       Replicate {rep}

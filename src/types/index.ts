@@ -607,26 +607,6 @@ export interface Rubric {
   metric_traits?: MetricRubricTrait[];
 }
 
-// Rubric Trait Generation Configuration
-export interface RubricTraitGenerationConfig {
-  model_provider: string;
-  model_name: string;
-  temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual';
-}
-
-export interface RubricTraitGenerationRequest {
-  questions: QuestionData;
-  system_prompt?: string;
-  user_suggestions?: string[];
-  config: RubricTraitGenerationConfig;
-}
-
-export interface RubricTraitGenerationResponse {
-  traits: LLMRubricTrait[];
-  job_id?: string;
-}
-
 export interface RubricEvaluation {
   trait_scores: Record<string, number | boolean>;
 }
