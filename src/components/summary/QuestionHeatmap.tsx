@@ -171,7 +171,7 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
   };
 
   // Calculate dynamic height based on number of questions
-  const cellHeight = 35; // Height per question row
+  const cellHeight = 50; // Height per question row
   const minHeight = 400;
   const calculatedHeight = Math.max(minHeight, data.length * cellHeight + 200);
 

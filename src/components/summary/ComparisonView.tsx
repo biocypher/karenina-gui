@@ -40,7 +40,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   // Modal state
   const [selectedResult, setSelectedResult] = useState<VerificationResult | null>(null);
 
-  // Replicate selection state (null = all replicates)
+  // Replicate selection state
   const [selectedReplicate, setSelectedReplicate] = useState<number | null>(null);
 
   // Extract unique replicates from results
@@ -54,7 +54,12 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     return Array.from(replicates).sort((a, b) => a - b);
   }, [results]);
 
-  // No auto-select needed - defaults to null (all replicates)
+  // Auto-select first replicate when available
+  useEffect(() => {
+    if (availableReplicates.length > 0 && selectedReplicate === null) {
+      setSelectedReplicate(availableReplicates[0]);
+    }
+  }, [availableReplicates, selectedReplicate]);
 
   // Extract unique models from results on mount
   useEffect(() => {
@@ -513,11 +518,10 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                 </label>
                 <select
                   id="replicate-selector"
-                  value={selectedReplicate === null ? '' : selectedReplicate}
-                  onChange={(e) => setSelectedReplicate(e.target.value === '' ? null : Number(e.target.value))}
+                  value={selectedReplicate ?? ''}
+                  onChange={(e) => setSelectedReplicate(Number(e.target.value))}
                   className="block w-48 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 >
-                  <option value="">All Replicates</option>
                   {availableReplicates.map((rep) => (
                     <option key={rep} value={rep}>
                       Replicate {rep}
