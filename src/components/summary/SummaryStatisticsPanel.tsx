@@ -10,11 +10,11 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, GitCompare } from 'lucide-react';
+import { BarChart3, GitCompare, Download } from 'lucide-react';
 import { SummaryView } from './SummaryView';
 import { ComparisonView } from './ComparisonView';
 import { fetchSummary } from '../../utils/summaryApi';
-import type { VerificationResult, SummaryStats, Checkpoint, Rubric } from '../../types';
+import type { VerificationResult, SummaryStats, Checkpoint, Rubric, ModelComparisonResponse } from '../../types';
 
 interface SummaryStatisticsPanelProps {
   benchmarkResults: Record<string, VerificationResult>;
@@ -39,6 +39,7 @@ export function SummaryStatisticsPanel({
   const [mode, setMode] = useState<ViewMode>('summary');
   const [selectedRunName, setSelectedRunName] = useState<string | null>(null);
   const [summaryData, setSummaryData] = useState<SummaryStats | null>(null);
+  const [comparisonData, setComparisonData] = useState<ModelComparisonResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,9 +94,34 @@ export function SummaryStatisticsPanel({
     }
   };
 
-  const handleComparisonDrillDown = (questionId: string, modelKey: string) => {
-    if (onDrillDown) {
-      onDrillDown({ questionId, modelKey });
+  // Utility function to download JSON data
+  const downloadJson = (data: unknown, filename: string) => {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Export handlers
+  const handleExportSummary = () => {
+    if (summaryData) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `summary-stats-${timestamp}.json`;
+      downloadJson(summaryData, filename);
+    }
+  };
+
+  const handleExportComparison = () => {
+    if (comparisonData) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `model-comparison-${timestamp}.json`;
+      downloadJson(comparisonData, filename);
     }
   };
 
@@ -130,6 +156,35 @@ export function SummaryStatisticsPanel({
                 </option>
               ))}
             </select>
+          )}
+
+          {/* Export Button (conditional based on mode) */}
+          {mode === 'summary' ? (
+            <button
+              onClick={handleExportSummary}
+              disabled={!summaryData}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                summaryData
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500'
+              }`}
+            >
+              <Download size={16} />
+              Export Summary
+            </button>
+          ) : (
+            <button
+              onClick={handleExportComparison}
+              disabled={!comparisonData}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                comparisonData
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500'
+              }`}
+            >
+              <Download size={16} />
+              Export Comparison
+            </button>
           )}
 
           {/* Mode Toggle */}
@@ -186,7 +241,7 @@ export function SummaryStatisticsPanel({
             results={benchmarkResults}
             checkpoint={checkpoint}
             currentRubric={currentRubric}
-            onDrillDown={handleComparisonDrillDown}
+            onComparisonDataChange={setComparisonData}
           />
         )}
       </div>

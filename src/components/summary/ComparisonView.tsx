@@ -25,9 +25,10 @@ interface ComparisonViewProps {
   results: Record<string, VerificationResult>;
   checkpoint: Checkpoint;
   currentRubric: Rubric | null;
+  onComparisonDataChange?: (data: ModelComparisonResponse | null) => void;
 }
 
-export function ComparisonView({ results, checkpoint, currentRubric }: ComparisonViewProps) {
+export function ComparisonView({ results, checkpoint, currentRubric, onComparisonDataChange }: ComparisonViewProps) {
   // Extract available models from results
   const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
   const [selectedModels, setSelectedModels] = useState<ModelConfig[]>([]);
@@ -160,6 +161,13 @@ export function ComparisonView({ results, checkpoint, currentRubric }: Compariso
 
     fetchComparison();
   }, [selectedModels, results, parsingModel, selectedReplicate]);
+
+  // Notify parent when comparison data changes
+  useEffect(() => {
+    if (onComparisonDataChange) {
+      onComparisonDataChange(comparisonData);
+    }
+  }, [comparisonData, onComparisonDataChange]);
 
   const getModelKey = (model: ModelConfig): string => {
     return `${model.answering_model}|${model.mcp_config}`;
