@@ -31,7 +31,6 @@ import { BenchmarkTab } from './components/BenchmarkTab';
 import { DocsTab } from './components/DocsTab';
 import { ThemeToggle } from './components/ThemeToggle';
 import QuestionRubricEditor from './components/QuestionRubricEditor';
-import RubricTraitGenerator from './components/RubricTraitGenerator';
 import RubricTraitEditor from './components/RubricTraitEditor';
 import { ConfigurationModal } from './components/ConfigurationModal';
 import { formatTimestamp, forceResetAllData } from './utils/dataLoader';
@@ -1035,28 +1034,6 @@ function App() {
                     questions.
                   </p>
                 </div>
-
-                {/* AI-Powered Trait Generator - Only show if we have questions */}
-                {Object.keys(questionData).length > 0 && (
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                        AI-Powered Trait Generation
-                      </h3>
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-300 mb-6">
-                      Use AI to automatically generate evaluation traits based on your questions and answers. The AI
-                      will analyze patterns and suggest relevant rubric criteria.
-                    </p>
-                    <RubricTraitGenerator
-                      questions={questionData}
-                      onTraitsGenerated={(traits) => {
-                        console.log('Generated traits:', traits);
-                      }}
-                    />
-                  </div>
-                )}
 
                 {/* Rubric Trait Editor - Always show when section is visible */}
                 <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">

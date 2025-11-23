@@ -1,26 +1,11 @@
 import { create } from 'zustand';
-import {
-  Rubric,
-  RubricTrait,
-  RegexTrait,
-  MetricRubricTrait,
-  RubricTraitGenerationRequest,
-  RubricTraitGenerationResponse,
-  RubricTraitGenerationConfig,
-} from '../types';
+import { Rubric, RubricTrait, RegexTrait, MetricRubricTrait } from '../types';
 
 interface RubricState {
   // Current rubric being edited
   currentRubric: Rubric | null;
 
-  // Generated trait suggestions from LLM
-  generatedSuggestions: RubricTrait[];
-
-  // Model configuration
-  config: RubricTraitGenerationConfig;
-
   // UI state
-  isGeneratingTraits: boolean;
   isLoadingRubric: boolean;
   isSavingRubric: boolean;
 
@@ -44,11 +29,7 @@ interface RubricState {
   updateMetricTrait: (index: number, trait: MetricRubricTrait) => void;
   removeMetricTrait: (index: number) => void;
 
-  // Configuration actions
-  setConfig: (config: RubricTraitGenerationConfig) => void;
-
   // API actions
-  generateTraits: (request: RubricTraitGenerationRequest) => Promise<void>;
   loadRubric: () => Promise<void>;
   saveRubric: () => Promise<void>;
   deleteRubric: () => Promise<void>;
@@ -56,7 +37,6 @@ interface RubricState {
   // Utility actions
   clearError: () => void;
   reset: () => void;
-  applyGeneratedTraits: (traits: RubricTrait[]) => void;
 }
 
 const defaultRubric: Rubric = {
@@ -68,14 +48,6 @@ const defaultRubric: Rubric = {
 export const useRubricStore = create<RubricState>((set, get) => ({
   // Initial state
   currentRubric: null,
-  generatedSuggestions: [],
-  config: {
-    model_provider: 'google_genai',
-    model_name: 'gemini-2.0-flash',
-    temperature: 0.1,
-    interface: 'langchain',
-  },
-  isGeneratingTraits: false,
   isLoadingRubric: false,
   isSavingRubric: false,
   lastError: null,
@@ -302,44 +274,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     });
   },
 
-  // Configuration actions
-  setConfig: (config: RubricTraitGenerationConfig) => {
-    set({ config });
-  },
-
   // API actions
-  generateTraits: async (request) => {
-    set({ isGeneratingTraits: true, lastError: null });
-
-    try {
-      const response = await fetch('/api/generate-rubric-traits', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-        throw new Error(errorData.detail || `HTTP ${response.status}`);
-      }
-
-      const data: RubricTraitGenerationResponse = await response.json();
-      set({
-        generatedSuggestions: data.traits,
-        isGeneratingTraits: false,
-        lastError: null,
-      });
-    } catch (error) {
-      console.error('Error generating traits:', error);
-      set({
-        isGeneratingTraits: false,
-        lastError: error instanceof Error ? error.message : 'Failed to generate traits',
-      });
-    }
-  },
-
   loadRubric: async () => {
     set({ isLoadingRubric: true, lastError: null });
 
@@ -457,30 +392,8 @@ export const useRubricStore = create<RubricState>((set, get) => ({
   reset: () => {
     set({
       currentRubric: null,
-      generatedSuggestions: [],
-      config: {
-        model_provider: 'google_genai',
-        model_name: 'gemini-2.0-flash',
-        temperature: 0.1,
-        interface: 'langchain',
-      },
-      isGeneratingTraits: false,
       isLoadingRubric: false,
       isSavingRubric: false,
-      lastError: null,
-    });
-  },
-
-  applyGeneratedTraits: (traits) => {
-    const { currentRubric } = get();
-    const rubric = currentRubric || defaultRubric;
-
-    set({
-      currentRubric: {
-        ...rubric,
-        llm_traits: [...rubric.llm_traits, ...traits],
-      },
-      generatedSuggestions: [],
       lastError: null,
     });
   },
