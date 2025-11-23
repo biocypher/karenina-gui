@@ -719,15 +719,17 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       }
       const allResults = Object.values(benchmarkResults);
       const answeringModels = new Set(
-        allResults.map((r) => r.answering_model).filter((model): model is string => Boolean(model))
+        allResults.map((r) => r.metadata.answering_model).filter((model): model is string => Boolean(model))
       );
       const parsingModels = new Set(
-        allResults.map((r) => r.parsing_model).filter((model): model is string => Boolean(model))
+        allResults.map((r) => r.metadata.parsing_model).filter((model): model is string => Boolean(model))
       );
-      const runNames = new Set(allResults.map((r) => r.run_name).filter((name): name is string => Boolean(name)));
+      const runNames = new Set(
+        allResults.map((r) => r.metadata.run_name).filter((name): name is string => Boolean(name))
+      );
       const replicates = new Set(
         allResults.map((r) => {
-          const replicateValue = r.answering_replicate || r.parsing_replicate;
+          const replicateValue = r.metadata.answering_replicate || r.metadata.parsing_replicate;
           return replicateValue ? replicateValue.toString() : 'Single';
         })
       );
@@ -757,183 +759,199 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         );
       }
 
+      const totalRows = table.getFilteredRowModel().rows.length;
+
       return (
-        <div className="overflow-x-auto">
-          <table className="w-full" data-testid="benchmark-results-table">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="border-b border-slate-200 dark:border-slate-600">
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className={`py-2 px-3 text-sm font-medium text-slate-700 dark:text-slate-300 ${header.id === 'index' ? 'w-16 text-center' : 'text-left'}`}
-                    >
-                      {header.isPlaceholder ? null : (
-                        <div className="space-y-2">
-                          <div
-                            {...{
-                              className: header.column.getCanSort()
-                                ? 'cursor-pointer select-none flex items-center'
-                                : '',
-                              onClick: header.column.getToggleSortingHandler(),
-                            }}
-                          >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {header.column.getCanSort() && <SortIndicator column={header.column} />}
+        <div className="space-y-2">
+          {/* Results count */}
+          <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Showing {totalRows} {totalRows === 1 ? 'result' : 'results'}
+            </span>
+          </div>
+
+          {/* Scrollable Table */}
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+            <table className="w-full" data-testid="benchmark-results-table">
+              <thead className="sticky top-0 bg-white dark:bg-slate-800 z-10">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id} className="border-b-2 border-slate-300 dark:border-slate-600">
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        className={`py-2 px-3 text-sm font-medium text-slate-700 dark:text-slate-300 ${header.id === 'index' ? 'w-16 text-center' : 'text-left'}`}
+                      >
+                        {header.isPlaceholder ? null : (
+                          <div className="space-y-2">
+                            <div
+                              {...{
+                                className: header.column.getCanSort()
+                                  ? 'cursor-pointer select-none flex items-center'
+                                  : '',
+                                onClick: header.column.getToggleSortingHandler(),
+                              }}
+                            >
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+                              {header.column.getCanSort() && <SortIndicator column={header.column} />}
+                            </div>
+                            {header.id === 'question_text' && (
+                              <input
+                                type="text"
+                                placeholder="Search questions..."
+                                value={questionSearchText}
+                                onChange={(e) => setQuestionSearchText(e.target.value)}
+                                className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                              />
+                            )}
+                            {header.id === 'raw_answer' && (
+                              <input
+                                type="text"
+                                placeholder="Search answers..."
+                                value={rawAnswerSearchText}
+                                onChange={(e) => setRawAnswerSearchText(e.target.value)}
+                                className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                              />
+                            )}
+                            {['answering_model', 'parsing_model', 'run_name', 'replicate'].includes(header.id) && (
+                              <MultiSelectFilter
+                                options={
+                                  header.id === 'answering_model'
+                                    ? answeringModels
+                                    : header.id === 'parsing_model'
+                                      ? parsingModels
+                                      : header.id === 'run_name'
+                                        ? runNames
+                                        : replicates
+                                }
+                                selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                                onChange={(values) =>
+                                  header.column.setFilterValue(values.size > 0 ? values : undefined)
+                                }
+                                placeholder={`All ${header.id.includes('model') ? 'models' : header.id === 'run_name' ? 'runs' : ''}`}
+                              />
+                            )}
+                            {header.id === 'completed_without_errors' && (
+                              <MultiSelectFilter
+                                options={['true', 'false', 'abstained']}
+                                selectedValues={(() => {
+                                  const filterValue = header.column.getFilterValue() as
+                                    | Set<boolean | string>
+                                    | undefined;
+                                  if (!filterValue) return new Set();
+                                  const displayValues = new Set<string>();
+                                  if (filterValue.has(true)) displayValues.add('true');
+                                  if (filterValue.has(false)) displayValues.add('false');
+                                  if (filterValue.has('abstained')) displayValues.add('abstained');
+                                  return displayValues;
+                                })()}
+                                onChange={(values) => {
+                                  const filterValues = new Set<boolean | string>();
+                                  if (values.has('true')) filterValues.add(true);
+                                  if (values.has('false')) filterValues.add(false);
+                                  if (values.has('abstained')) filterValues.add('abstained');
+                                  header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
+                                }}
+                                placeholder="All statuses"
+                              />
+                            )}
+                            {header.id === 'verify_result' && (
+                              <MultiSelectFilter
+                                options={['Passed', 'Failed', 'N/A']}
+                                selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                                onChange={(values) => {
+                                  const filterValues = new Set<boolean | string>();
+                                  if (values.has('Passed')) filterValues.add(true);
+                                  if (values.has('Failed')) filterValues.add(false);
+                                  if (values.has('N/A')) filterValues.add('N/A');
+                                  header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
+                                }}
+                                placeholder="All results"
+                              />
+                            )}
+                            {header.id === 'verify_granular_result' && (
+                              <MultiSelectFilter
+                                options={['Yes', 'No']}
+                                selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                                onChange={(values) => {
+                                  const filterValues = new Set<string>();
+                                  if (values.has('Yes')) filterValues.add('Yes');
+                                  if (values.has('No')) filterValues.add('No');
+                                  header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
+                                }}
+                                placeholder="All"
+                              />
+                            )}
+                            {header.id === 'execution_time' && (
+                              <div className="flex gap-1">
+                                <input
+                                  type="number"
+                                  placeholder="Min"
+                                  value={(header.column.getFilterValue() as [number, number])?.[0] ?? ''}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue((old: [number, number]) => [
+                                      e.target.value ? Number(e.target.value) : undefined,
+                                      old?.[1],
+                                    ])
+                                  }
+                                  className="w-12 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                  step="0.1"
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="Max"
+                                  value={(header.column.getFilterValue() as [number, number])?.[1] ?? ''}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue((old: [number, number]) => [
+                                      old?.[0],
+                                      e.target.value ? Number(e.target.value) : undefined,
+                                    ])
+                                  }
+                                  className="w-12 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                  step="0.1"
+                                />
+                              </div>
+                            )}
+                            {header.id === 'timestamp' && (
+                              <div className="space-y-1">
+                                <input
+                                  type="date"
+                                  value={(header.column.getFilterValue() as [string, string])?.[0] ?? ''}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue((old: [string, string]) => [e.target.value, old?.[1]])
+                                  }
+                                  className="w-full px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                />
+                                <input
+                                  type="date"
+                                  value={(header.column.getFilterValue() as [string, string])?.[1] ?? ''}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue((old: [string, string]) => [old?.[0], e.target.value])
+                                  }
+                                  className="w-full px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                />
+                              </div>
+                            )}
                           </div>
-                          {header.id === 'question_text' && (
-                            <input
-                              type="text"
-                              placeholder="Search questions..."
-                              value={questionSearchText}
-                              onChange={(e) => setQuestionSearchText(e.target.value)}
-                              className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                            />
-                          )}
-                          {header.id === 'raw_answer' && (
-                            <input
-                              type="text"
-                              placeholder="Search answers..."
-                              value={rawAnswerSearchText}
-                              onChange={(e) => setRawAnswerSearchText(e.target.value)}
-                              className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                            />
-                          )}
-                          {['answering_model', 'parsing_model', 'run_name', 'replicate'].includes(header.id) && (
-                            <MultiSelectFilter
-                              options={
-                                header.id === 'answering_model'
-                                  ? answeringModels
-                                  : header.id === 'parsing_model'
-                                    ? parsingModels
-                                    : header.id === 'run_name'
-                                      ? runNames
-                                      : replicates
-                              }
-                              selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
-                              onChange={(values) => header.column.setFilterValue(values.size > 0 ? values : undefined)}
-                              placeholder={`All ${header.id.includes('model') ? 'models' : header.id === 'run_name' ? 'runs' : ''}`}
-                            />
-                          )}
-                          {header.id === 'completed_without_errors' && (
-                            <MultiSelectFilter
-                              options={['true', 'false', 'abstained']}
-                              selectedValues={(() => {
-                                const filterValue = header.column.getFilterValue() as Set<boolean | string> | undefined;
-                                if (!filterValue) return new Set();
-                                const displayValues = new Set<string>();
-                                if (filterValue.has(true)) displayValues.add('true');
-                                if (filterValue.has(false)) displayValues.add('false');
-                                if (filterValue.has('abstained')) displayValues.add('abstained');
-                                return displayValues;
-                              })()}
-                              onChange={(values) => {
-                                const filterValues = new Set<boolean | string>();
-                                if (values.has('true')) filterValues.add(true);
-                                if (values.has('false')) filterValues.add(false);
-                                if (values.has('abstained')) filterValues.add('abstained');
-                                header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
-                              }}
-                              placeholder="All statuses"
-                            />
-                          )}
-                          {header.id === 'verify_result' && (
-                            <MultiSelectFilter
-                              options={['Passed', 'Failed', 'N/A']}
-                              selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
-                              onChange={(values) => {
-                                const filterValues = new Set<boolean | string>();
-                                if (values.has('Passed')) filterValues.add(true);
-                                if (values.has('Failed')) filterValues.add(false);
-                                if (values.has('N/A')) filterValues.add('N/A');
-                                header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
-                              }}
-                              placeholder="All results"
-                            />
-                          )}
-                          {header.id === 'verify_granular_result' && (
-                            <MultiSelectFilter
-                              options={['Yes', 'No']}
-                              selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
-                              onChange={(values) => {
-                                const filterValues = new Set<string>();
-                                if (values.has('Yes')) filterValues.add('Yes');
-                                if (values.has('No')) filterValues.add('No');
-                                header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
-                              }}
-                              placeholder="All"
-                            />
-                          )}
-                          {header.id === 'execution_time' && (
-                            <div className="flex gap-1">
-                              <input
-                                type="number"
-                                placeholder="Min"
-                                value={(header.column.getFilterValue() as [number, number])?.[0] ?? ''}
-                                onChange={(e) =>
-                                  header.column.setFilterValue((old: [number, number]) => [
-                                    e.target.value ? Number(e.target.value) : undefined,
-                                    old?.[1],
-                                  ])
-                                }
-                                className="w-12 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                                step="0.1"
-                              />
-                              <input
-                                type="number"
-                                placeholder="Max"
-                                value={(header.column.getFilterValue() as [number, number])?.[1] ?? ''}
-                                onChange={(e) =>
-                                  header.column.setFilterValue((old: [number, number]) => [
-                                    old?.[0],
-                                    e.target.value ? Number(e.target.value) : undefined,
-                                  ])
-                                }
-                                className="w-12 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                                step="0.1"
-                              />
-                            </div>
-                          )}
-                          {header.id === 'timestamp' && (
-                            <div className="space-y-1">
-                              <input
-                                type="date"
-                                value={(header.column.getFilterValue() as [string, string])?.[0] ?? ''}
-                                onChange={(e) =>
-                                  header.column.setFilterValue((old: [string, string]) => [e.target.value, old?.[1]])
-                                }
-                                className="w-full px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                              />
-                              <input
-                                type="date"
-                                value={(header.column.getFilterValue() as [string, string])?.[1] ?? ''}
-                                onChange={(e) =>
-                                  header.column.setFilterValue((old: [string, string]) => [old?.[0], e.target.value])
-                                }
-                                className="w-full px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100 dark:border-slate-700">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="py-2 px-3 text-sm text-slate-600 dark:text-slate-400">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr key={row.id} className="border-b border-slate-100 dark:border-slate-700">
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="py-2 px-3 text-sm text-slate-600 dark:text-slate-400">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       );
     } catch (err) {
