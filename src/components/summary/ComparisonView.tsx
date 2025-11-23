@@ -11,6 +11,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ModelSelectorDropdown } from './ModelSelectorDropdown';
 import { QuestionHeatmap } from './QuestionHeatmap';
+import { QuestionTokenBarChart } from './QuestionTokenBarChart';
 import { VerificationResultDetailModal } from '../benchmark/VerificationResultDetailModal';
 import { fetchModelComparison } from '../../utils/summaryApi';
 import type { VerificationResult, ModelConfig, ModelComparisonResponse, Checkpoint, Rubric } from '../../types';
@@ -173,10 +174,6 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     return `${model.answering_model}|${model.mcp_config}`;
   };
 
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString();
-  };
-
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -302,25 +299,43 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                               <td className={labelClass}>Total Tokens:</td>
                               <td className={valueClass}>
                                 <div>
-                                  {formatNumber(summary.tokens.total_input)} input,{' '}
-                                  {formatNumber(summary.tokens.total_output)} output
+                                  {Math.round(summary.tokens.total_input).toLocaleString()} ±{' '}
+                                  {Math.round(summary.tokens.total_input_std).toLocaleString()} input,{' '}
+                                  {Math.round(summary.tokens.total_output).toLocaleString()} ±{' '}
+                                  {Math.round(summary.tokens.total_output_std).toLocaleString()} output
                                 </div>
                                 <div className="mt-1 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                                   <div>
-                                    └─ Templates: {formatNumber(summary.tokens.template_input)} input,{' '}
-                                    {formatNumber(summary.tokens.template_output)} output
+                                    └─ Templates: {Math.round(summary.tokens.template_input).toLocaleString()} ±{' '}
+                                    {Math.round(summary.tokens.template_input_std).toLocaleString()} input,{' '}
+                                    {Math.round(summary.tokens.template_output).toLocaleString()} ±{' '}
+                                    {Math.round(summary.tokens.template_output_std).toLocaleString()} output
                                   </div>
                                   <div>
-                                    └─ Rubrics: {formatNumber(summary.tokens.rubric_input)} input,{' '}
-                                    {formatNumber(summary.tokens.rubric_output)} output
+                                    └─ Rubrics: {Math.round(summary.tokens.rubric_input).toLocaleString()} ±{' '}
+                                    {Math.round(summary.tokens.rubric_input_std).toLocaleString()} input,{' '}
+                                    {Math.round(summary.tokens.rubric_output).toLocaleString()} ±{' '}
+                                    {Math.round(summary.tokens.rubric_output_std).toLocaleString()} output
                                   </div>
                                   {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
                                     <div>
-                                      └─ Deep Judgment: {formatNumber(summary.tokens.deep_judgment_input)} input,{' '}
-                                      {formatNumber(summary.tokens.deep_judgment_output)} output
+                                      └─ Deep Judgment:{' '}
+                                      {Math.round(summary.tokens.deep_judgment_input).toLocaleString()} ±{' '}
+                                      {Math.round(summary.tokens.deep_judgment_input_std || 0).toLocaleString()} input,{' '}
+                                      {Math.round(summary.tokens.deep_judgment_output).toLocaleString()} ±{' '}
+                                      {Math.round(summary.tokens.deep_judgment_output_std || 0).toLocaleString()} output
                                     </div>
                                   )}
                                 </div>
+                              </td>
+                            </tr>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Median Tokens/Question:</td>
+                              <td className={valueClass}>
+                                {Math.round(summary.tokens.median_per_question_input).toLocaleString()} ±{' '}
+                                {Math.round(summary.tokens.median_per_question_input_std).toLocaleString()} input,{' '}
+                                {Math.round(summary.tokens.median_per_question_output).toLocaleString()} ±{' '}
+                                {Math.round(summary.tokens.median_per_question_output_std).toLocaleString()} output
                               </td>
                             </tr>
                           </tbody>
@@ -537,6 +552,37 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
               modelKeys={selectedModels.map(getModelKey)}
               onCellClick={handleCellClick}
             />
+
+            {/* Token Usage per Question */}
+            {comparisonData.question_token_data && comparisonData.question_token_data.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                  Token Usage per Question
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                  Bar charts show median token usage across all replicates with error bars indicating standard
+                  deviation.
+                </p>
+                <div className="space-y-8">
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Input Tokens</h4>
+                    <QuestionTokenBarChart
+                      data={comparisonData.question_token_data}
+                      selectedModels={selectedModels.map(getModelKey)}
+                      tokenType="input"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Output Tokens</h4>
+                    <QuestionTokenBarChart
+                      data={comparisonData.question_token_data}
+                      selectedModels={selectedModels.map(getModelKey)}
+                      tokenType="output"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

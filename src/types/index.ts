@@ -733,13 +733,26 @@ export interface SearchResultItem {
 // Summary Statistics Types (from VerificationResultSet.get_summary())
 export interface TokenUsage {
   total_input: number;
+  total_input_std: number;
   total_output: number;
+  total_output_std: number;
   template_input: number;
+  template_input_std: number;
   template_output: number;
+  template_output_std: number;
   rubric_input: number;
+  rubric_input_std: number;
   rubric_output: number;
+  rubric_output_std: number;
   deep_judgment_input?: number;
+  deep_judgment_input_std?: number;
   deep_judgment_output?: number;
+  deep_judgment_output_std?: number;
+  // Median tokens per question (aggregated over questions and replicates)
+  median_per_question_input: number;
+  median_per_question_input_std: number;
+  median_per_question_output: number;
+  median_per_question_output_std: number;
 }
 
 export interface PassRateStats {
@@ -861,7 +874,24 @@ export interface ModelComparisonRequest {
   replicate?: number;
 }
 
+// Per-question token data for bar charts
+export interface QuestionTokenModelData {
+  model_key: string;
+  model_display_name: string;
+  input_tokens_median: number;
+  input_tokens_std: number;
+  output_tokens_median: number;
+  output_tokens_std: number;
+}
+
+export interface QuestionTokenData {
+  question_id: string;
+  question_text: string;
+  models: QuestionTokenModelData[];
+}
+
 export interface ModelComparisonResponse {
   model_summaries: Record<string, SummaryStats>;
   heatmap_data: HeatmapQuestion[];
+  question_token_data: QuestionTokenData[];
 }
