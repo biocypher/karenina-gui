@@ -144,7 +144,15 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         if (unifiedCheckpoint.global_rubric) {
           const { setCurrentRubric, saveRubric } = useRubricStore.getState();
           setCurrentRubric(unifiedCheckpoint.global_rubric);
-          console.log('✅ Loaded global rubric with', unifiedCheckpoint.global_rubric.llm_traits.length, 'traits');
+
+          // Calculate total trait count across all trait types
+          const totalTraits =
+            unifiedCheckpoint.global_rubric.llm_traits.length +
+            (unifiedCheckpoint.global_rubric.regex_traits || []).length +
+            (unifiedCheckpoint.global_rubric.callable_traits || []).length +
+            (unifiedCheckpoint.global_rubric.metric_traits || []).length;
+
+          console.log('✅ Loaded global rubric with', totalTraits, 'traits');
 
           // Sync the rubric to the backend so verification can access it
           console.log('🔄 Syncing global rubric to backend...');
@@ -161,8 +169,15 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         }
 
         const itemCount = Object.keys(unifiedCheckpoint.checkpoint).length;
+
+        // Calculate total rubric trait count across all trait types
         const rubricText = unifiedCheckpoint.global_rubric
-          ? ` and global rubric with ${unifiedCheckpoint.global_rubric.llm_traits.length} traits`
+          ? ` and global rubric with ${
+              unifiedCheckpoint.global_rubric.llm_traits.length +
+              (unifiedCheckpoint.global_rubric.regex_traits || []).length +
+              (unifiedCheckpoint.global_rubric.callable_traits || []).length +
+              (unifiedCheckpoint.global_rubric.metric_traits || []).length
+            } traits`
           : '';
 
         alert(
@@ -321,7 +336,15 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
     if (loadedCheckpoint.global_rubric) {
       const { setCurrentRubric, saveRubric } = useRubricStore.getState();
       setCurrentRubric(loadedCheckpoint.global_rubric);
-      console.log('✅ Loaded global rubric with', loadedCheckpoint.global_rubric.llm_traits.length, 'traits');
+
+      // Calculate total trait count across all trait types
+      const totalTraits =
+        loadedCheckpoint.global_rubric.llm_traits.length +
+        (loadedCheckpoint.global_rubric.regex_traits || []).length +
+        (loadedCheckpoint.global_rubric.callable_traits || []).length +
+        (loadedCheckpoint.global_rubric.metric_traits || []).length;
+
+      console.log('✅ Loaded global rubric with', totalTraits, 'traits');
 
       // Sync the rubric to the backend so verification can access it
       console.log('🔄 Syncing global rubric to backend...');
