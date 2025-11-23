@@ -820,6 +820,14 @@ export interface SummaryStats {
 
   // Token usage
   tokens: TokenUsage;
+  tokens_by_combo: Record<
+    string,
+    {
+      input: number;
+      output: number;
+      total: number;
+    }
+  >;
 
   // Completion status
   completion_by_combo: Record<
