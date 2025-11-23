@@ -2,7 +2,7 @@
  * QuestionHeatmap - Interactive heatmap for model comparison
  *
  * Displays question×model matrix with color-coded pass/fail results.
- * Colors: Green (passed), Red (failed), Gray (not tested), Yellow (abstained)
+ * Colors: Green (passed), Red (failed), Gray (not tested), Yellow (abstained), Orange (error)
  * Interactive: Click cell to drill down to specific result
  */
 
@@ -16,36 +16,60 @@ interface QuestionHeatmapProps {
   onCellClick?: (questionId: string, modelKey: string) => void;
 }
 
-export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatmapProps) {
-  // Transform data for Nivo heatmap format
+export function QuestionHeatmap({ data, modelKeys }: QuestionHeatmapProps) {
+  // Safety checks
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="h-[600px] bg-white dark:bg-slate-800 rounded-lg p-4 flex items-center justify-center">
+        <p className="text-slate-600 dark:text-slate-400">No data available for comparison</p>
+      </div>
+    );
+  }
+
+  if (!modelKeys || !Array.isArray(modelKeys) || modelKeys.length === 0) {
+    return (
+      <div className="h-[600px] bg-white dark:bg-slate-800 rounded-lg p-4 flex items-center justify-center">
+        <p className="text-slate-600 dark:text-slate-400">No models selected for comparison</p>
+      </div>
+    );
+  }
+
+  // Transform data to Nivo's expected format:
+  // [{ id: string, data: [{ x: string, y: number }] }]
   const heatmapData = data.map((question) => {
-    const row: Record<string, number> = {
-      id: question.question_text.slice(0, 60) + '...', // Truncate for display
-      question_id: question.question_id,
+    const questionLabel = question.question_text.slice(0, 60) + '...';
+
+    return {
+      id: questionLabel,
+      data: modelKeys.map((modelKey) => {
+        const cell = question.results_by_model?.[modelKey];
+
+        // Encode status as number:
+        // 0 = not tested, 1 = failed, 2 = abstained, 3 = passed, 4 = error
+        let status: number;
+        if (!cell || cell.passed === null) {
+          status = 0;
+        } else if (cell.error) {
+          status = 4;
+        } else if (cell.abstained) {
+          status = 2;
+        } else if (cell.passed) {
+          status = 3;
+        } else {
+          status = 1;
+        }
+
+        return {
+          x: modelKey,
+          y: status,
+        };
+      }),
     };
-
-    modelKeys.forEach((modelKey) => {
-      const cell = question.results_by_model[modelKey];
-      // Encode status as number for heatmap:
-      // 0 = not tested, 1 = failed, 2 = abstained, 3 = passed, 4 = error
-      if (!cell || cell.passed === null) {
-        row[modelKey] = 0; // not tested
-      } else if (cell.error) {
-        row[modelKey] = 4; // error
-      } else if (cell.abstained) {
-        row[modelKey] = 2; // abstained
-      } else if (cell.passed) {
-        row[modelKey] = 3; // passed
-      } else {
-        row[modelKey] = 1; // failed
-      }
-    });
-
-    return row;
   });
 
-  // Custom color scale
-  const getColor = (value: number): string => {
+  // Custom color scale based on status
+  const getColor = (cell: { data?: { y?: number } }): string => {
+    const value = cell.data?.y ?? 0;
     switch (value) {
       case 0:
         return '#94a3b8'; // Gray - not tested
@@ -79,6 +103,25 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
     }
   };
 
+  // Extract model label from key (format: "model|mcp_config")
+  const getModelLabel = (modelKey: string): string => {
+    const parts = modelKey.split('|');
+    const modelName = parts[0] || modelKey;
+    const mcpConfig = parts[1];
+
+    if (mcpConfig && mcpConfig !== '[]') {
+      try {
+        const mcpServers = JSON.parse(mcpConfig);
+        if (Array.isArray(mcpServers) && mcpServers.length > 0) {
+          return `${modelName}\n(${mcpServers.join(', ')})`;
+        }
+      } catch {
+        // If parsing fails, just return model name
+      }
+    }
+    return modelName;
+  };
+
   const isDark = document.documentElement.classList.contains('dark');
   const theme = {
     text: {
@@ -93,22 +136,28 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
       },
     },
+    grid: {
+      line: {
+        stroke: isDark ? '#334155' : '#cbd5e1',
+      },
+    },
   };
 
   return (
     <div className="h-[600px] bg-white dark:bg-slate-800 rounded-lg p-4">
       <ResponsiveHeatMap
         data={heatmapData}
-        keys={modelKeys}
-        indexBy="id"
-        margin={{ top: 60, right: 90, bottom: 60, left: 200 }}
-        forceSquare={false}
+        margin={{ top: 100, right: 90, bottom: 60, left: 240 }}
+        valueFormat=">-.0f"
+        colors={getColor}
+        emptyColor="#555555"
         axisTop={{
-          tickSize: 5,
-          tickPadding: 5,
+          tickSize: 0,
+          tickPadding: 10,
           tickRotation: -45,
           legend: '',
-          legendOffset: 46,
+          legendOffset: 0,
+          format: (value) => getModelLabel(value as string),
         }}
         axisRight={null}
         axisBottom={null}
@@ -116,46 +165,33 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
           tickSize: 5,
           tickPadding: 5,
           tickRotation: 0,
-          legend: 'Questions',
+          legend: '',
           legendPosition: 'middle',
-          legendOffset: -180,
+          legendOffset: -200,
         }}
-        cellOpacity={1}
-        cellBorderColor={{ from: 'color', modifiers: [['darker', 0.4]] }}
-        labelTextColor={{ from: 'color', modifiers: [['darker', 2]] }}
-        colors={(cell) => getColor(cell.value as number)}
-        onClick={(cell) => {
-          if (onCellClick) {
-            const row = heatmapData.find((r) => r.id === cell.indexValue);
-            if (row && row.question_id) {
-              onCellClick(row.question_id as string, cell.serieId);
-            }
-          }
-        }}
+        labelTextColor="white"
+        enableLabels={false}
         tooltip={({ cell }) => {
-          const row = heatmapData.find((r) => r.id === cell.indexValue);
-          const questionId = row?.question_id as string | undefined;
-          const question = data.find((q) => q.question_id === questionId);
-          const cellData = question?.results_by_model[cell.serieId];
-
+          const status = cell.data?.y ?? 0;
           return (
-            <div className="bg-white dark:bg-slate-800 px-3 py-2 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
-              <div className="font-semibold text-sm mb-1">{getStatusLabel(cell.value as number)}</div>
-              <div className="text-xs text-slate-600 dark:text-slate-400">Model: {cell.serieId}</div>
-              <div className="text-xs text-slate-600 dark:text-slate-400">Question: {cell.indexValue}</div>
-              {cellData?.score !== null && cellData?.score !== undefined && (
-                <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                  Rubric Score: {cellData.score.toFixed(2)}
-                </div>
-              )}
+            <div
+              style={{
+                background: isDark ? '#1e293b' : '#ffffff',
+                color: isDark ? '#e2e8f0' : '#1e293b',
+                padding: '9px 12px',
+                borderRadius: '6px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{cell.serieId}</div>
+              <div style={{ fontSize: '11px', marginBottom: '2px' }}>Model: {getModelLabel(cell.data.x as string)}</div>
+              <div style={{ fontSize: '11px', fontWeight: 600 }}>
+                Status: <span style={{ color: getColor(cell) }}>{getStatusLabel(status)}</span>
+              </div>
             </div>
           );
         }}
         theme={theme}
-        animate={true}
-        motionConfig="wobbly"
-        role="application"
-        ariaLabel="Model comparison heatmap"
       />
 
       {/* Legend */}

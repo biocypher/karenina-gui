@@ -98,8 +98,35 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
           parsing_model: parsingModel,
         });
 
+        console.log('📊 Comparison data received:', {
+          hasData: !!data,
+          hasHeatmapData: !!data?.heatmap_data,
+          heatmapLength: data?.heatmap_data?.length,
+          modelSummaries: data?.model_summaries ? Object.keys(data.model_summaries) : [],
+        });
+
+        console.log('🔍 Detailed heatmap data:', {
+          sampleQuestion: data.heatmap_data[0],
+          allModelKeysInData: data.heatmap_data[0]?.results_by_model
+            ? Object.keys(data.heatmap_data[0].results_by_model)
+            : [],
+        });
+
+        console.log('🔍 Selected models:', {
+          selectedModels,
+          generatedModelKeys: selectedModels.map((m) => `${m.answering_model}|${m.mcp_config}`),
+        });
+
+        // Validate the response has required data
+        if (!data || !data.heatmap_data || !Array.isArray(data.heatmap_data)) {
+          console.error('❌ Invalid comparison data:', data);
+          setError('Invalid comparison data received from server');
+          return;
+        }
+
         setComparisonData(data);
       } catch (err) {
+        console.error('❌ Comparison fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch comparison');
       } finally {
         setLoading(false);
@@ -146,7 +173,7 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
       </div>
 
       {/* Only show comparison if at least 2 models selected */}
-      {selectedModels.length >= 2 && comparisonData && (
+      {selectedModels.length >= 2 && comparisonData && comparisonData.heatmap_data && (
         <>
           {/* Side-by-side Metrics Comparison */}
           <div>
