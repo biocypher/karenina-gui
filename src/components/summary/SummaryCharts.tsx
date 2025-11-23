@@ -111,6 +111,22 @@ export function SummaryCharts({ summary }: SummaryChartsProps) {
                 from: 'color',
                 modifiers: [['darker', 1.6]],
               }}
+              label={(d) => d.value.toLocaleString()}
+              tooltip={({ id, value, color }) => (
+                <div
+                  style={{
+                    background: isDark ? '#1e293b' : '#ffffff',
+                    color: isDark ? '#e2e8f0' : '#1e293b',
+                    padding: '9px 12px',
+                    borderRadius: '6px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    border: `2px solid ${color}`,
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{id}</div>
+                  <div style={{ fontSize: '12px' }}>{value.toLocaleString()}</div>
+                </div>
+              )}
               axisTop={{
                 tickSize: 0,
                 tickPadding: 10,
@@ -207,6 +223,22 @@ export function SummaryCharts({ summary }: SummaryChartsProps) {
               from: 'color',
               modifiers: [['darker', 1.6]],
             }}
+            label={(d) => d.value.toLocaleString()}
+            tooltip={({ id, value, color }) => (
+              <div
+                style={{
+                  background: isDark ? '#1e293b' : '#ffffff',
+                  color: isDark ? '#e2e8f0' : '#1e293b',
+                  padding: '9px 12px',
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  border: `2px solid ${color}`,
+                }}
+              >
+                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{id}</div>
+                <div style={{ fontSize: '12px' }}>{value.toLocaleString()}</div>
+              </div>
+            )}
             axisTop={null}
             axisRight={null}
             axisBottom={{

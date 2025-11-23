@@ -42,6 +42,19 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
 
   const passRate = summary.template_pass_overall.pass_pct;
 
+  // Calculate unique answering model configurations (model + MCP)
+  const uniqueAnsweringConfigs = new Set<string>();
+  const uniqueParsingModels = new Set<string>();
+  Object.keys(summary.completion_by_combo).forEach((combo) => {
+    const parsed = parseCombo(combo);
+    // Create a key that includes model + MCP config
+    const answeringKey = `${parsed.answering}|${parsed.mcp}`;
+    uniqueAnsweringConfigs.add(answeringKey);
+    uniqueParsingModels.add(parsed.parsing);
+  });
+  const numAnsweringConfigs = uniqueAnsweringConfigs.size;
+  const numParsingModels = uniqueParsingModels.size;
+
   // Common table row classes
   const rowClass =
     'border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors';
@@ -70,7 +83,7 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
               <tr className={rowClass}>
                 <td className={labelClass}>Models:</td>
                 <td className={valueClass}>
-                  {summary.num_models} answering × {summary.num_parsing_models} parsing
+                  {numAnsweringConfigs} answering × {numParsingModels} parsing
                 </td>
               </tr>
               <tr className={rowClass}>
