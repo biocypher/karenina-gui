@@ -11,7 +11,6 @@
 import React, { useState, useEffect } from 'react';
 import { ModelSelectorDropdown } from './ModelSelectorDropdown';
 import { QuestionHeatmap } from './QuestionHeatmap';
-import { MetricCard } from './MetricCard';
 import { fetchModelComparison } from '../../utils/summaryApi';
 import type { VerificationResult, ModelConfig, ModelComparisonResponse } from '../../types';
 
@@ -140,7 +139,16 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
     return `${model.answering_model}|${model.mcp_config}`;
   };
 
-  const formatPercent = (pct: number): string => `${pct.toFixed(1)}%`;
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+
+  const formatDuration = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (minutes > 0) return `${minutes}m ${secs.toFixed(1)}s`;
+    return `${secs.toFixed(1)}s`;
+  };
 
   if (loading) {
     return (
@@ -175,59 +183,260 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
       {/* Only show comparison if at least 2 models selected */}
       {selectedModels.length >= 2 && comparisonData && comparisonData.heatmap_data && (
         <>
-          {/* Side-by-side Metrics Comparison */}
+          {/* Side-by-side Detailed Metrics Comparison */}
           <div>
             <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3">Metrics Comparison</h3>
 
-            {/* Key metrics in a grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Detailed metrics in a grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {selectedModels.map((model) => {
                 const modelKey = getModelKey(model);
                 const summary = comparisonData.model_summaries[modelKey];
 
                 if (!summary) return null;
 
-                return (
-                  <div key={modelKey} className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 space-y-2">
-                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 truncate">
-                      {model.answering_model}
-                    </h4>
+                const passRate = summary.template_pass_overall.pass_pct;
+                const sectionClass = 'bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4';
+                const headerClass =
+                  'text-sm font-mono font-bold text-blue-600 dark:text-blue-400 mb-3 pb-2 border-b-2 border-blue-200 dark:border-blue-800';
+                const rowClass =
+                  'border-b border-slate-200 dark:border-slate-700 last:border-0 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors';
+                const labelClass = 'py-2 px-3 font-medium text-slate-600 dark:text-slate-400 text-xs';
+                const valueClass = 'py-2 px-3 text-slate-900 dark:text-slate-100 font-mono text-xs';
 
-                    <div className="space-y-2">
-                      <MetricCard value={summary.num_results} label="Total Tests" />
-                      {summary.template_pass_overall && (
-                        <>
-                          <MetricCard
-                            value={formatPercent(summary.template_pass_overall.pass_pct)}
-                            label="Pass Rate"
-                            bgColor={
-                              summary.template_pass_overall.pass_pct >= 90
-                                ? 'bg-green-50 dark:bg-green-900/20'
-                                : summary.template_pass_overall.pass_pct >= 70
-                                  ? 'bg-yellow-50 dark:bg-yellow-900/20'
-                                  : 'bg-red-50 dark:bg-red-900/20'
-                            }
-                            valueColor={
-                              summary.template_pass_overall.pass_pct >= 90
-                                ? 'text-green-700 dark:text-green-300'
-                                : summary.template_pass_overall.pass_pct >= 70
-                                  ? 'text-yellow-700 dark:text-yellow-300'
-                                  : 'text-red-700 dark:text-red-300'
-                            }
-                          />
-                          <MetricCard
-                            value={summary.template_pass_overall.passed}
-                            label="Passed Tests"
-                            subtitle={`of ${summary.template_pass_overall.total}`}
-                          />
-                        </>
+                return (
+                  <div key={modelKey} className="space-y-4">
+                    {/* Model Header */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
+                        {model.answering_model}
+                      </h4>
+                      {model.mcp_config && model.mcp_config !== '[]' && (
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                          MCP: {JSON.parse(model.mcp_config).join(', ')}
+                        </p>
                       )}
-                      <MetricCard
-                        value={summary.num_completed}
-                        label="Completed"
-                        subtitle={`${formatPercent((summary.num_completed / summary.num_results) * 100)}`}
-                      />
                     </div>
+
+                    {/* Overview */}
+                    <div className={sectionClass}>
+                      <h5 className={headerClass}>Overview</h5>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs border-collapse">
+                          <tbody>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Total Results:</td>
+                              <td className={valueClass}>{summary.num_results}</td>
+                            </tr>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Questions:</td>
+                              <td className={valueClass}>{summary.num_questions}</td>
+                            </tr>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Replicates:</td>
+                              <td className={valueClass}>{summary.num_replicates}</td>
+                            </tr>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Execution Time:</td>
+                              <td className={valueClass}>{formatDuration(summary.total_execution_time)}</td>
+                            </tr>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Total Tokens:</td>
+                              <td className={valueClass}>
+                                <div>
+                                  {formatNumber(summary.tokens.total_input)} input,{' '}
+                                  {formatNumber(summary.tokens.total_output)} output
+                                </div>
+                                <div className="mt-1 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                                  <div>
+                                    └─ Templates: {formatNumber(summary.tokens.template_input)} input,{' '}
+                                    {formatNumber(summary.tokens.template_output)} output
+                                  </div>
+                                  <div>
+                                    └─ Rubrics: {formatNumber(summary.tokens.rubric_input)} input,{' '}
+                                    {formatNumber(summary.tokens.rubric_output)} output
+                                  </div>
+                                  {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
+                                    <div>
+                                      └─ Deep Judgment: {formatNumber(summary.tokens.deep_judgment_input)} input,{' '}
+                                      {formatNumber(summary.tokens.deep_judgment_output)} output
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Completion Status */}
+                    <div className={sectionClass}>
+                      <h5 className={headerClass}>Completion Status</h5>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs border-collapse">
+                          <tbody>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Overall:</td>
+                              <td className={valueClass}>
+                                <span className="text-green-600 dark:text-green-400 font-semibold">
+                                  {summary.num_completed}/{summary.num_results} completed (
+                                  {((summary.num_completed / summary.num_results) * 100).toFixed(1)}%)
+                                </span>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Evaluation Types */}
+                    <div className={sectionClass}>
+                      <h5 className={headerClass}>Evaluation Types</h5>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs border-collapse">
+                          <tbody>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Template Verification:</td>
+                              <td className={valueClass}>{summary.num_with_template} results</td>
+                            </tr>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Rubric Evaluation:</td>
+                              <td className={valueClass}>
+                                <div>{summary.num_with_rubric} results</div>
+                                {summary.rubric_traits &&
+                                  (() => {
+                                    const globalLlm = summary.rubric_traits.global_traits?.llm?.count || 0;
+                                    const globalRegex = summary.rubric_traits.global_traits?.regex?.count || 0;
+                                    const globalCallable = summary.rubric_traits.global_traits?.callable?.count || 0;
+                                    const globalMetric = summary.rubric_traits.global_traits?.metric?.count || 0;
+                                    const qsLlm = summary.rubric_traits.question_specific_traits?.llm?.count || 0;
+                                    const qsRegex = summary.rubric_traits.question_specific_traits?.regex?.count || 0;
+                                    const qsCallable =
+                                      summary.rubric_traits.question_specific_traits?.callable?.count || 0;
+                                    const qsMetric = summary.rubric_traits.question_specific_traits?.metric?.count || 0;
+
+                                    const globalTotal = globalLlm + globalRegex + globalCallable + globalMetric;
+                                    const qsTotal = qsLlm + qsRegex + qsCallable + qsMetric;
+                                    const total = globalTotal + qsTotal;
+
+                                    return (
+                                      <div className="mt-1 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                                        <div>
+                                          Total Trait Evaluations:{' '}
+                                          <span className="font-mono text-slate-900 dark:text-slate-100">{total}</span>
+                                        </div>
+                                        <div>
+                                          Global:{' '}
+                                          <span className="font-mono text-slate-900 dark:text-slate-100">
+                                            {globalTotal}
+                                          </span>
+                                        </div>
+                                        <div className="ml-3">
+                                          └─ LLM: <span className="font-mono">{globalLlm}</span>
+                                        </div>
+                                        {globalRegex > 0 && (
+                                          <div className="ml-3">
+                                            └─ Regex: <span className="font-mono">{globalRegex}</span>
+                                          </div>
+                                        )}
+                                        {globalMetric > 0 && (
+                                          <div className="ml-3">
+                                            └─ Metric: <span className="font-mono">{globalMetric}</span>
+                                          </div>
+                                        )}
+                                        <div>
+                                          Question-Specific:{' '}
+                                          <span className="font-mono text-slate-900 dark:text-slate-100">
+                                            {qsTotal}
+                                          </span>
+                                        </div>
+                                        <div className="ml-3">
+                                          └─ LLM: <span className="font-mono">{qsLlm}</span>, Metric:{' '}
+                                          <span className="font-mono">{qsMetric}</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                              </td>
+                            </tr>
+                            {summary.num_with_judgment > 0 && (
+                              <tr className={rowClass}>
+                                <td className={labelClass}>Deep Judgment:</td>
+                                <td className={valueClass}>{summary.num_with_judgment} results</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Template Pass Rates */}
+                    <div className={sectionClass}>
+                      <h5 className={headerClass}>Template Pass Rates</h5>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs border-collapse">
+                          <tbody>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Overall:</td>
+                              <td className={valueClass}>
+                                <span
+                                  className={
+                                    passRate >= 90
+                                      ? 'text-green-600 dark:text-green-400 font-semibold'
+                                      : passRate >= 70
+                                        ? 'text-yellow-600 dark:text-yellow-400 font-semibold'
+                                        : 'text-red-600 dark:text-red-400 font-semibold'
+                                  }
+                                >
+                                  {summary.template_pass_overall.passed}/{summary.template_pass_overall.total} passed (
+                                  {passRate.toFixed(1)}%)
+                                </span>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Replicate Statistics */}
+                    {summary.replicate_stats && summary.num_replicates > 1 && (
+                      <div className={sectionClass}>
+                        <h5 className={headerClass}>Replicate Statistics</h5>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs border-collapse">
+                            <tbody>
+                              {Object.entries(summary.replicate_stats.replicate_pass_rates).map(
+                                ([replicate, stats]) => (
+                                  <tr key={replicate} className={rowClass}>
+                                    <td className={labelClass}>Replicate {replicate}:</td>
+                                    <td className={valueClass}>
+                                      <span
+                                        className={
+                                          stats.pass_pct >= 70
+                                            ? 'text-green-600 dark:text-green-400'
+                                            : 'text-red-600 dark:text-red-400'
+                                        }
+                                      >
+                                        {stats.passed}/{stats.total}
+                                      </span>{' '}
+                                      ({stats.pass_pct.toFixed(1)}%)
+                                    </td>
+                                  </tr>
+                                )
+                              )}
+                              <tr className={rowClass}>
+                                <td className={labelClass}>Summary:</td>
+                                <td className={valueClass}>
+                                  mean={summary.replicate_stats.replicate_summary.mean.toFixed(3)}, std=
+                                  {summary.replicate_stats.replicate_summary.std.toFixed(3)}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
