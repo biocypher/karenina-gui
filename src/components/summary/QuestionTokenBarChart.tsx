@@ -103,10 +103,20 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
     );
   }
 
+  // Adjust bar size based on number of models
+  const barSize = selectedModels.length <= 2 ? 40 : selectedModels.length === 3 ? 30 : 25;
+  // Increase spacing between question groups based on model count
+  const barCategoryGap = selectedModels.length <= 2 ? '20%' : selectedModels.length === 3 ? '30%' : '40%';
+
   return (
     <div className="w-full">
       <ResponsiveContainer width="100%" height={calculatedHeight}>
-        <BarChart data={chartData} layout="vertical" margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+          barCategoryGap={barCategoryGap}
+        >
           <XAxis
             type="number"
             domain={[0, 'auto']}
@@ -142,7 +152,7 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
             }}
           />
           {selectedModels.map((modelKey, idx) => (
-            <Bar key={modelKey} dataKey={modelKey} fill={COLORS[idx % COLORS.length]} name={modelKey} barSize={40}>
+            <Bar key={modelKey} dataKey={modelKey} fill={COLORS[idx % COLORS.length]} name={modelKey} barSize={barSize}>
               <ErrorBar dataKey={`${modelKey}_error`} width={4} strokeWidth={1.5} stroke="#000000" />
             </Bar>
           ))}
