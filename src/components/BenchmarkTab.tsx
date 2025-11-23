@@ -1113,6 +1113,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
           {Object.keys(benchmarkResults).length > 0 && (
             <SummaryStatisticsPanel
               benchmarkResults={benchmarkResults}
+              checkpoint={checkpoint}
+              currentRubric={currentRubric}
               onDrillDown={(filter) => {
                 // Build column filters based on drill-down type
                 const filters: ColumnFiltersState = [];

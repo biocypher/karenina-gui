@@ -878,6 +878,7 @@ export interface ModelComparisonRequest {
   results: Record<string, VerificationResult>;
   models: ModelConfig[];
   parsing_model: string;
+  replicate?: number;
 }
 
 export interface ModelComparisonResponse {

@@ -16,7 +16,7 @@ interface QuestionHeatmapProps {
   onCellClick?: (questionId: string, modelKey: string) => void;
 }
 
-export function QuestionHeatmap({ data, modelKeys }: QuestionHeatmapProps) {
+export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatmapProps) {
   // Safety checks
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
@@ -54,14 +54,16 @@ export function QuestionHeatmap({ data, modelKeys }: QuestionHeatmapProps) {
 
   // Transform data to Nivo's expected format:
   // [{ id: string, data: [{ x: string, y: number }] }]
-  // Store mapping of question IDs to full text for labels
+  // Store mapping of question IDs to full text and actual IDs for labels and click handling
   const questionIdToText = new Map<string, string>();
+  const questionIdToActualId = new Map<string, string>();
 
   // Reverse the data array since Nivo renders from bottom to top
   const heatmapData = [...data].reverse().map((question, index) => {
-    // Use simple numeric ID for Nivo, store full text separately
+    // Use simple numeric ID for Nivo, store full text and actual ID separately
     const questionId = `q${index}`;
     questionIdToText.set(questionId, question.question_text);
+    questionIdToActualId.set(questionId, question.question_id);
 
     return {
       id: questionId,
@@ -174,7 +176,10 @@ export function QuestionHeatmap({ data, modelKeys }: QuestionHeatmapProps) {
   const calculatedHeight = Math.max(minHeight, data.length * cellHeight + 200);
 
   return (
-    <div style={{ height: `${calculatedHeight}px` }} className="bg-white dark:bg-slate-800 rounded-lg p-4">
+    <div
+      style={{ height: `${calculatedHeight}px` }}
+      className={`bg-white dark:bg-slate-800 rounded-lg p-4 ${onCellClick ? 'cursor-pointer' : ''}`}
+    >
       <ResponsiveHeatMap
         data={heatmapData}
         margin={{ top: 160, right: 90, bottom: 60, left: 350 }}
@@ -260,6 +265,17 @@ export function QuestionHeatmap({ data, modelKeys }: QuestionHeatmapProps) {
         }}
         labelTextColor="white"
         enableLabels={false}
+        onClick={(cell) => {
+          if (onCellClick) {
+            const questionNumericId = cell.serieId as string;
+            const actualQuestionId = questionIdToActualId.get(questionNumericId);
+            const modelKey = cell.data.x as string;
+
+            if (actualQuestionId) {
+              onCellClick(actualQuestionId, modelKey);
+            }
+          }
+        }}
         tooltip={({ cell }) => {
           const status = cell.data?.y ?? 0;
           // Get full question text from mapping

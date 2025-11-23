@@ -14,10 +14,12 @@ import { BarChart3, GitCompare } from 'lucide-react';
 import { SummaryView } from './SummaryView';
 import { ComparisonView } from './ComparisonView';
 import { fetchSummary } from '../../utils/summaryApi';
-import type { VerificationResult, SummaryStats } from '../../types';
+import type { VerificationResult, SummaryStats, Checkpoint, Rubric } from '../../types';
 
 interface SummaryStatisticsPanelProps {
   benchmarkResults: Record<string, VerificationResult>;
+  checkpoint: Checkpoint;
+  currentRubric: Rubric | null;
   /** Callback for drill-down to filter main table */
   onDrillDown?: (filter: {
     type?: 'completed' | 'errors' | 'passed' | 'failed' | 'abstained';
@@ -28,7 +30,12 @@ interface SummaryStatisticsPanelProps {
 
 type ViewMode = 'summary' | 'comparison';
 
-export function SummaryStatisticsPanel({ benchmarkResults, onDrillDown }: SummaryStatisticsPanelProps) {
+export function SummaryStatisticsPanel({
+  benchmarkResults,
+  checkpoint,
+  currentRubric,
+  onDrillDown,
+}: SummaryStatisticsPanelProps) {
   const [mode, setMode] = useState<ViewMode>('summary');
   const [selectedRunName, setSelectedRunName] = useState<string | null>(null);
   const [summaryData, setSummaryData] = useState<SummaryStats | null>(null);
@@ -175,7 +182,12 @@ export function SummaryStatisticsPanel({ benchmarkResults, onDrillDown }: Summar
         )}
 
         {!loading && !error && mode === 'comparison' && (
-          <ComparisonView results={benchmarkResults} onDrillDown={handleComparisonDrillDown} />
+          <ComparisonView
+            results={benchmarkResults}
+            checkpoint={checkpoint}
+            currentRubric={currentRubric}
+            onDrillDown={handleComparisonDrillDown}
+          />
         )}
       </div>
     </div>

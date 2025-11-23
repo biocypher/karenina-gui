@@ -8,11 +8,12 @@
  * - Click cells to drill down to specific results
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ModelSelectorDropdown } from './ModelSelectorDropdown';
 import { QuestionHeatmap } from './QuestionHeatmap';
+import { VerificationResultDetailModal } from '../benchmark/VerificationResultDetailModal';
 import { fetchModelComparison } from '../../utils/summaryApi';
-import type { VerificationResult, ModelConfig, ModelComparisonResponse } from '../../types';
+import type { VerificationResult, ModelConfig, ModelComparisonResponse, Checkpoint, Rubric } from '../../types';
 
 interface ModelOption {
   answering_model: string;
@@ -22,11 +23,11 @@ interface ModelOption {
 
 interface ComparisonViewProps {
   results: Record<string, VerificationResult>;
-  /** Callback for drill-down to specific result */
-  onDrillDown?: (questionId: string, modelKey: string) => void;
+  checkpoint: Checkpoint;
+  currentRubric: Rubric | null;
 }
 
-export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
+export function ComparisonView({ results, checkpoint, currentRubric }: ComparisonViewProps) {
   // Extract available models from results
   const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
   const [selectedModels, setSelectedModels] = useState<ModelConfig[]>([]);
@@ -34,6 +35,30 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
   const [comparisonData, setComparisonData] = useState<ModelComparisonResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal state
+  const [selectedResult, setSelectedResult] = useState<VerificationResult | null>(null);
+
+  // Replicate selection state
+  const [selectedReplicate, setSelectedReplicate] = useState<number>(1);
+
+  // Extract unique replicates from results
+  const availableReplicates = useMemo(() => {
+    const replicates = new Set<number>();
+    Object.values(results).forEach((result) => {
+      if (result.metadata.answering_replicate !== undefined) {
+        replicates.add(result.metadata.answering_replicate);
+      }
+    });
+    return Array.from(replicates).sort((a, b) => a - b);
+  }, [results]);
+
+  // Auto-select first replicate if available
+  useEffect(() => {
+    if (availableReplicates.length > 0 && !availableReplicates.includes(selectedReplicate)) {
+      setSelectedReplicate(availableReplicates[0]);
+    }
+  }, [availableReplicates, selectedReplicate]);
 
   // Extract unique models from results on mount
   useEffect(() => {
@@ -79,7 +104,7 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
     }
   }, [results, parsingModel]);
 
-  // Fetch comparison when models change
+  // Fetch comparison when models or replicate changes
   useEffect(() => {
     if (selectedModels.length < 2) {
       setComparisonData(null);
@@ -95,6 +120,7 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
           results,
           models: selectedModels,
           parsing_model: parsingModel,
+          replicate: selectedReplicate,
         });
 
         console.log('📊 Comparison data received:', {
@@ -133,7 +159,7 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
     };
 
     fetchComparison();
-  }, [selectedModels, results, parsingModel]);
+  }, [selectedModels, results, parsingModel, selectedReplicate]);
 
   const getModelKey = (model: ModelConfig): string => {
     return `${model.answering_model}|${model.mcp_config}`;
@@ -148,6 +174,30 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
     const secs = seconds % 60;
     if (minutes > 0) return `${minutes}m ${secs.toFixed(1)}s`;
     return `${secs.toFixed(1)}s`;
+  };
+
+  // Handle heatmap cell click - find and display the result
+  const handleCellClick = (questionId: string, modelKey: string) => {
+    // Find the matching result for the selected replicate
+    const matchingResult = Object.values(results).find((result) => {
+      if (result.metadata.question_id !== questionId) return false;
+      if (result.metadata.parsing_model !== parsingModel) return false;
+      if (result.metadata.answering_replicate !== selectedReplicate) return false;
+
+      // Extract model info from result
+      const resultAnsweringModel = result.metadata.answering_model;
+      const resultMcpServers = result.template?.answering_mcp_servers || [];
+      const resultMcpConfig = JSON.stringify(resultMcpServers.sort());
+      const resultModelKey = `${resultAnsweringModel}|${resultMcpConfig}`;
+
+      return resultModelKey === modelKey;
+    });
+
+    if (matchingResult) {
+      setSelectedResult(matchingResult);
+    } else {
+      console.warn('No matching result found for:', { questionId, modelKey, replicate: selectedReplicate });
+    }
   };
 
   if (loading) {
@@ -448,17 +498,48 @@ export function ComparisonView({ results, onDrillDown }: ComparisonViewProps) {
             <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3">
               Question-by-Question Comparison
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Click on any cell to jump to that result in the main table
-            </p>
+
+            {/* Replicate Selector */}
+            {availableReplicates.length > 1 && (
+              <div className="mb-4">
+                <label
+                  htmlFor="replicate-selector"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                >
+                  Select Replicate:
+                </label>
+                <select
+                  id="replicate-selector"
+                  value={selectedReplicate}
+                  onChange={(e) => setSelectedReplicate(Number(e.target.value))}
+                  className="block w-48 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                >
+                  {availableReplicates.map((rep) => (
+                    <option key={rep} value={rep}>
+                      Replicate {rep}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Click on any cell to view detailed trace</p>
             <QuestionHeatmap
               data={comparisonData.heatmap_data}
               modelKeys={selectedModels.map(getModelKey)}
-              onCellClick={onDrillDown}
+              onCellClick={handleCellClick}
             />
           </div>
         </>
       )}
+
+      {/* Detailed Trace Modal */}
+      <VerificationResultDetailModal
+        result={selectedResult}
+        checkpoint={checkpoint}
+        currentRubric={currentRubric}
+        onClose={() => setSelectedResult(null)}
+      />
     </div>
   );
 }
