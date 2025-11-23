@@ -84,7 +84,8 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
 
             return (
               <div key={index} className="text-xs" style={{ color: entry.color }}>
-                <span className="font-medium">{name}:</span> {value.toLocaleString()} ± {Number(error).toLocaleString()} tokens
+                <span className="font-medium">{name}:</span> {value.toLocaleString()} ± {Number(error).toLocaleString()}{' '}
+                tokens
               </div>
             );
           })}
@@ -122,7 +123,11 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
             type="category"
             dataKey="question"
             width={350}
-            tick={{ fill: isDark ? '#cbd5e1' : '#475569', fontSize: 13, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            tick={{
+              fill: isDark ? '#cbd5e1' : '#475569',
+              fontSize: 13,
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+            }}
             interval={0}
             axisLine={false}
             tickLine={false}
