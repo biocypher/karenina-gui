@@ -16,13 +16,13 @@ interface SummaryChartsProps {
 }
 
 export function SummaryCharts({ summary }: SummaryChartsProps) {
-  // Parse combo into readable format
+  // Parse combo into readable format with labels
   const parseCombo = (combo: string): string => {
     const parts = combo.split(',');
     const answering = parts[0] || 'Unknown';
     const parsing = parts[1] || 'Unknown';
     const mcp = parts[2] === 'None' ? 'None' : parts.slice(2).join(',');
-    return `${answering}\n${parsing}\n${mcp}`;
+    return `Answering: ${answering}\nParsing: ${parsing}\nMCP: ${mcp}`;
   };
 
   // Prepare data for template pass rates bar chart
@@ -129,14 +129,14 @@ export function SummaryCharts({ summary }: SummaryChartsProps) {
               )}
               axisTop={{
                 tickSize: 0,
-                tickPadding: 10,
+                tickPadding: 50,
                 tickRotation: 0,
                 legend: '',
                 legendOffset: 0,
                 renderTick: (tick) => {
                   const lines = tick.value.split('\n');
                   return (
-                    <g transform={`translate(${tick.x},${tick.y})`}>
+                    <g transform={`translate(${tick.x},${tick.y - 50})`}>
                       <text
                         textAnchor="middle"
                         dominantBaseline="middle"
