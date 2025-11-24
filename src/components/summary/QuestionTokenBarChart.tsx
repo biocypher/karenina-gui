@@ -10,6 +10,25 @@ interface Props {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
+// Helper function to format model label (matches heatmap format)
+const formatModelLabel = (modelKey: string): string => {
+  const parts = modelKey.split('|');
+  const modelName = parts[0] || modelKey;
+  const mcpConfig = parts[1];
+
+  if (mcpConfig && mcpConfig !== '[]') {
+    try {
+      const mcpServers = JSON.parse(mcpConfig);
+      if (Array.isArray(mcpServers) && mcpServers.length > 0) {
+        return `${modelName} (${mcpServers.join(', ')})`;
+      }
+    } catch {
+      // If parsing fails, just return model name
+    }
+  }
+  return modelName;
+};
+
 export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, tokenType }) => {
   const isDark = document.documentElement.classList.contains('dark');
 
@@ -77,10 +96,9 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
           {payload.map((entry, index: number) => {
             const modelKey = entry.dataKey;
             const errorKey = `${modelKey}_error`;
-            const nameKey = `${modelKey}_name`;
             const value = entry.value;
             const error = data[errorKey];
-            const name = data[nameKey] || modelKey;
+            const name = formatModelLabel(modelKey);
 
             return (
               <div key={index} className="text-xs" style={{ color: entry.color }}>
@@ -146,8 +164,8 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
           <Legend
             wrapperStyle={{ paddingTop: '10px' }}
             formatter={(value: string) => {
-              // Extract model display name from model_key
-              const displayName = chartData[0]?.[`${value}_name`] || value.split('|')[0];
+              // Use consistent format with heatmap
+              const displayName = formatModelLabel(value);
               return <span className="text-xs">{displayName}</span>;
             }}
           />
