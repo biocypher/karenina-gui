@@ -857,23 +857,27 @@ export interface ModelConfig {
 }
 
 export interface HeatmapCell {
+  replicate?: number;
   passed: boolean | null;
   score: number | null;
   abstained: boolean;
   error: boolean;
 }
 
+export interface HeatmapModelReplicates {
+  replicates: HeatmapCell[];
+}
+
 export interface HeatmapQuestion {
   question_id: string;
   question_text: string;
-  results_by_model: Record<string, HeatmapCell>;
+  results_by_model: Record<string, HeatmapModelReplicates>;
 }
 
 export interface ModelComparisonRequest {
   results: Record<string, VerificationResult>;
   models: ModelConfig[];
   parsing_model: string;
-  replicate?: number;
 }
 
 // Per-question token data for bar charts

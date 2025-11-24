@@ -8,7 +8,7 @@
  * - Click cells to drill down to specific results
  */
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ModelSelectorDropdown } from './ModelSelectorDropdown';
 import { QuestionHeatmap } from './QuestionHeatmap';
 import { QuestionTokenBarChart } from './QuestionTokenBarChart';
@@ -41,34 +41,9 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   // Modal state
   const [selectedResult, setSelectedResult] = useState<VerificationResult | null>(null);
 
-  // Replicate selection state
-  const [selectedReplicate, setSelectedReplicate] = useState<number | null>(null);
-
-  // Ref to store scroll position for replicate changes
-  const scrollPositionRef = useRef<number>(0);
-  const isInitialReplicate = useRef(true);
-
   // Question selection state
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
   const [questionSearchText, setQuestionSearchText] = useState('');
-
-  // Extract unique replicates from results
-  const availableReplicates = useMemo(() => {
-    const replicates = new Set<number>();
-    Object.values(results).forEach((result) => {
-      if (result.metadata.answering_replicate !== undefined) {
-        replicates.add(result.metadata.answering_replicate);
-      }
-    });
-    return Array.from(replicates).sort((a, b) => a - b);
-  }, [results]);
-
-  // Auto-select first replicate when available
-  useEffect(() => {
-    if (availableReplicates.length > 0 && selectedReplicate === null) {
-      setSelectedReplicate(availableReplicates[0]);
-    }
-  }, [availableReplicates, selectedReplicate]);
 
   // Extract unique models from results on mount
   useEffect(() => {
@@ -130,7 +105,6 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
           results,
           models: selectedModels,
           parsing_model: parsingModel,
-          replicate: selectedReplicate,
         });
 
         console.log('📊 Comparison data received:', {
@@ -169,7 +143,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     };
 
     fetchComparison();
-  }, [selectedModels, results, parsingModel, selectedReplicate]);
+  }, [selectedModels, results, parsingModel]);
 
   // Notify parent when comparison data changes
   useEffect(() => {
@@ -216,44 +190,6 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     return `${model.answering_model}|${model.mcp_config}`;
   };
 
-  // Handler for replicate changes that preserves scroll position
-  const handleReplicateChange = (replicate: number) => {
-    // Save current scroll position
-    scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
-
-    // Lock scroll position during transition
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollPositionRef.current}px`;
-    document.body.style.width = '100%';
-
-    setSelectedReplicate(replicate);
-  };
-
-  // Restore scroll position after replicate changes
-  useEffect(() => {
-    // Skip on initial set
-    if (isInitialReplicate.current) {
-      isInitialReplicate.current = false;
-      return;
-    }
-
-    // Use requestAnimationFrame to wait for React to render
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        // Unlock scroll
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-
-        // Restore scroll position
-        const scrollY = scrollPositionRef.current;
-        window.scrollTo(0, scrollY);
-      });
-    });
-  }, [selectedReplicate]);
-
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -283,12 +219,12 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   };
 
   // Handle heatmap cell click - find and display the result
-  const handleCellClick = (questionId: string, modelKey: string) => {
-    // Find the matching result for the selected replicate
+  const handleCellClick = (questionId: string, modelKey: string, replicate?: number) => {
+    // Find the matching result for the specified replicate
     const matchingResult = Object.values(results).find((result) => {
       if (result.metadata.question_id !== questionId) return false;
       if (result.metadata.parsing_model !== parsingModel) return false;
-      if (result.metadata.answering_replicate !== selectedReplicate) return false;
+      if (replicate !== undefined && result.metadata.answering_replicate !== replicate) return false;
 
       // Extract model info from result
       const resultAnsweringModel = result.metadata.answering_model;
@@ -302,7 +238,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     if (matchingResult) {
       setSelectedResult(matchingResult);
     } else {
-      console.warn('No matching result found for:', { questionId, modelKey, replicate: selectedReplicate });
+      console.warn('No matching result found for:', { questionId, modelKey, replicate });
     }
   };
 
@@ -631,34 +567,9 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
               Question-by-Question Comparison
             </h3>
 
-            {/* Replicate and Question Selectors */}
-            <div className="flex gap-6 mb-4">
-              {/* Replicate Selector */}
-              {availableReplicates.length > 1 && (
-                <div>
-                  <label
-                    htmlFor="replicate-selector"
-                    className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                  >
-                    Select Replicate:
-                  </label>
-                  <select
-                    id="replicate-selector"
-                    value={selectedReplicate ?? ''}
-                    onChange={(e) => handleReplicateChange(Number(e.target.value))}
-                    className="block w-48 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                  >
-                    {availableReplicates.map((rep) => (
-                      <option key={rep} value={rep}>
-                        Replicate {rep}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Question Selector */}
-              <div className="flex-1">
+            {/* Question Selector */}
+            <div className="mb-4">
+              <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Filter Questions ({selectedQuestions.size}/{availableQuestions.length} selected):
                 </label>
