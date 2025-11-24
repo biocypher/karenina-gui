@@ -19,6 +19,8 @@ interface ModelConfiguration {
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
   mcp_validated_servers?: Record<string, string>;
+  use_full_trace_for_template?: boolean;
+  use_full_trace_for_rubric?: boolean;
   // Extra keyword arguments
   extra_kwargs?: Record<string, unknown>;
 }
@@ -129,6 +131,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     mcp_urls_dict: Record<string, string>;
     mcp_tool_filter: string[];
     mcp_validated_servers?: Record<string, string>;
+    use_full_trace_for_template?: boolean;
+    use_full_trace_for_rubric?: boolean;
   }) => {
     if (mcpModalState.modelId) {
       const answeringModel = answeringModels.find((m) => m.id === mcpModalState.modelId);
@@ -149,6 +153,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         mcp_urls_dict: answeringModel.mcp_urls_dict,
         mcp_tool_filter: answeringModel.mcp_tool_filter,
         mcp_validated_servers: answeringModel.mcp_validated_servers,
+        use_full_trace_for_template: answeringModel.use_full_trace_for_template,
+        use_full_trace_for_rubric: answeringModel.use_full_trace_for_rubric,
       };
     }
 
