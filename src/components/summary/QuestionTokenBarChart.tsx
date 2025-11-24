@@ -84,8 +84,8 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
 
             return (
               <div key={index} className="text-xs" style={{ color: entry.color }}>
-                <span className="font-medium">{name}:</span> {value.toLocaleString()} ± {Number(error).toLocaleString()}{' '}
-                tokens
+                <span className="font-medium">{name}:</span> {Math.round(value).toLocaleString()} ±{' '}
+                {Math.round(Number(error)).toLocaleString()} tokens
               </div>
             );
           })}
