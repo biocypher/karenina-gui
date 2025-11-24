@@ -486,6 +486,39 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] bg-gradient-to-b from-transparent to-slate-50/30 dark:to-slate-900/30">
+          {/* Agent Trace Evaluation Options */}
+          <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="flex items-start space-x-2 mb-3">
+              <AlertCircle className="w-4 h-4 text-slate-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-slate-600 dark:text-slate-300">
+                When using MCP servers, an agent performs multi-step reasoning with tool calls to answer questions.
+                Toggle whether the full trace of actions is exposed to validation or just the final answer.
+              </div>
+            </div>
+
+            <div className="space-y-2 ml-6">
+              <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useFullTraceForTemplate}
+                  onChange={(e) => setUseFullTraceForTemplate(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="text-slate-700 dark:text-slate-300">Use full trace for template evaluation</span>
+              </label>
+
+              <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useFullTraceForRubric}
+                  onChange={(e) => setUseFullTraceForRubric(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="text-slate-700 dark:text-slate-300">Use full trace for rubric evaluation</span>
+              </label>
+            </div>
+          </div>
+
           {/* Quick Configuration Section */}
           {Object.keys(presetConfigs).length > 0 && (
             <div className="mb-8">
@@ -737,39 +770,6 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
               </div>
             </div>
           )}
-
-          {/* Agent Trace Evaluation Options */}
-          <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-600">
-            <div className="flex items-start space-x-2 mb-3">
-              <AlertCircle className="w-4 h-4 text-slate-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-slate-600 dark:text-slate-300">
-                When using MCP servers, an agent performs multi-step reasoning with tool calls to answer questions.
-                Toggle whether the full trace of actions is exposed to validation or just the final answer.
-              </div>
-            </div>
-
-            <div className="space-y-2 ml-6">
-              <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useFullTraceForTemplate}
-                  onChange={(e) => setUseFullTraceForTemplate(e.target.checked)}
-                  className="rounded border-slate-300 text-blue-500 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 dark:text-slate-300">Use full trace for template evaluation</span>
-              </label>
-
-              <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useFullTraceForRubric}
-                  onChange={(e) => setUseFullTraceForRubric(e.target.checked)}
-                  className="rounded border-slate-300 text-blue-500 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 dark:text-slate-300">Use full trace for rubric evaluation</span>
-              </label>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
