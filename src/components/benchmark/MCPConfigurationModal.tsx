@@ -65,7 +65,16 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
   const [useFullTraceForTemplate, setUseFullTraceForTemplate] = useState<boolean>(true);
   const [useFullTraceForRubric, setUseFullTraceForRubric] = useState<boolean>(true);
 
-  // Fetch preset configurations
+  // Save preset state (per server)
+  const [savingPresetForServer, setSavingPresetForServer] = useState<number | null>(null);
+
+  // Track original preset info for each server (to detect changes)
+  const [serverPresetOrigins, setServerPresetOrigins] = useState<
+    Map<number, { presetName: string; originalTools: string[] }>
+  >(new Map());
+
+  // Fetch preset configurations from mcp_presets/ directory
+  // Directory location can be configured via MCP_PRESETS_DIR environment variable
   const fetchPresetConfigs = async () => {
     try {
       setPresetError(null); // Clear previous errors
@@ -79,7 +88,7 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
       setPresetConfigs(data.presets || {});
       if (data.error) {
-        setPresetError(`MCP_CONFIG parsing error: ${data.error}`);
+        setPresetError(`Preset loading error: ${data.error}`);
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -194,8 +203,20 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
     setConfiguration((prev) => {
       const newServers = [...prev.servers, newServer];
+      const serverIndex = newServers.length - 1;
+
+      // Track this server's preset origin
+      setServerPresetOrigins((prevOrigins) => {
+        const newOrigins = new Map(prevOrigins);
+        newOrigins.set(serverIndex, {
+          presetName: presetConfig.name,
+          originalTools: presetConfig.tools || [],
+        });
+        return newOrigins;
+      });
+
       // Trigger auto-validation for the new server
-      setServerToValidate(newServers.length - 1);
+      setServerToValidate(serverIndex);
       return {
         ...prev,
         servers: newServers,
@@ -213,6 +234,123 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
       ...prev,
       servers: [...prev.servers, newServer],
     }));
+  };
+
+  const getPresetButtonLabel = (serverIndex: number): string => {
+    const server = configuration.servers[serverIndex];
+    const presetOrigin = serverPresetOrigins.get(serverIndex);
+
+    if (!presetOrigin) {
+      return 'Save as Preset';
+    }
+
+    // Check if there are changes
+    const currentTools = Array.from(configuration.selectedTools);
+    const originalTools = presetOrigin.originalTools;
+
+    const nameChanged = server.name !== presetOrigin.presetName;
+    const toolsChanged =
+      currentTools.length !== originalTools.length || currentTools.some((tool) => !originalTools.includes(tool));
+
+    if (nameChanged || toolsChanged) {
+      return 'Update Preset';
+    }
+
+    return 'Update Preset';
+  };
+
+  const saveServerAsPreset = async (serverIndex: number) => {
+    const server = configuration.servers[serverIndex];
+
+    if (!server || server.status !== 'valid') {
+      alert('Server must be validated before saving as a preset.');
+      return;
+    }
+
+    // Check if this server came from a preset
+    const presetOrigin = serverPresetOrigins.get(serverIndex);
+    const isUpdate = presetOrigin !== null && presetOrigin !== undefined;
+
+    // Detect changes
+    let hasChanges = false;
+    if (isUpdate) {
+      // Check if name changed or tool selection changed
+      const currentTools = Array.from(configuration.selectedTools);
+      const originalTools = presetOrigin.originalTools;
+
+      const nameChanged = server.name !== presetOrigin.presetName;
+      const toolsChanged =
+        currentTools.length !== originalTools.length || currentTools.some((tool) => !originalTools.includes(tool));
+
+      hasChanges = nameChanged || toolsChanged;
+    }
+
+    // Determine preset name
+    let presetName: string | null;
+    if (isUpdate && !hasChanges) {
+      // No changes detected, just update the existing preset
+      presetName = presetOrigin.presetName;
+    } else if (isUpdate && hasChanges) {
+      // Changes detected, ask if they want to update
+      presetName = prompt(
+        `Update preset "${presetOrigin.presetName}"?\n\nChanges detected. Enter preset name:`,
+        presetOrigin.presetName
+      );
+    } else {
+      // New preset
+      presetName = prompt(`Save "${server.name}" as a Quick Configuration preset.\n\nEnter preset name:`, server.name);
+    }
+
+    if (!presetName) {
+      return; // User cancelled
+    }
+
+    setSavingPresetForServer(serverIndex);
+
+    try {
+      // Get selected tools
+      const selectedTools = Array.from(configuration.selectedTools);
+
+      const response = await fetch('/api/save-mcp-preset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: presetName,
+          url: server.url,
+          tools: selectedTools.length > 0 ? selectedTools : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Update the preset origin for this server
+      setServerPresetOrigins((prevOrigins) => {
+        const newOrigins = new Map(prevOrigins);
+        newOrigins.set(serverIndex, {
+          presetName: presetName!,
+          originalTools: selectedTools,
+        });
+        return newOrigins;
+      });
+
+      // Refresh preset configs to show the updated preset
+      await fetchPresetConfigs();
+
+      alert(`Successfully ${isUpdate ? 'updated' : 'saved'} preset "${presetName}"!`);
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(`Failed to save preset: ${error.message}`);
+      } else {
+        alert('Failed to save preset: Unknown error occurred');
+      }
+    } finally {
+      setSavingPresetForServer(null);
+    }
   };
 
   const removeServer = (index: number) => {
@@ -647,6 +785,22 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
                             <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
                             <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Validating...</span>
                           </div>
+                        )}
+
+                        {/* Save as Preset button - only show when validated */}
+                        {server.status === 'valid' && (
+                          <button
+                            onClick={() => saveServerAsPreset(index)}
+                            disabled={savingPresetForServer === index}
+                            className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed text-sm flex items-center space-x-2 transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100"
+                          >
+                            {savingPresetForServer === index ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Zap className="w-4 h-4" />
+                            )}
+                            <span className="font-medium">{getPresetButtonLabel(index)}</span>
+                          </button>
                         )}
                       </div>
 
