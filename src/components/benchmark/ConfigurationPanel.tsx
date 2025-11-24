@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Plus, Trash2, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { BarChart3, Plus, Trash2, ChevronDown, ChevronUp, Settings, X } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { ManualTraceUpload } from '../ManualTraceUpload';
 import { MCPConfigurationModal } from './MCPConfigurationModal';
@@ -19,6 +19,8 @@ interface ModelConfiguration {
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
   mcp_validated_servers?: Record<string, string>;
+  use_full_trace_for_template?: boolean;
+  use_full_trace_for_rubric?: boolean;
   // Extra keyword arguments
   extra_kwargs?: Record<string, unknown>;
 }
@@ -129,6 +131,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     mcp_urls_dict: Record<string, string>;
     mcp_tool_filter: string[];
     mcp_validated_servers?: Record<string, string>;
+    use_full_trace_for_template?: boolean;
+    use_full_trace_for_rubric?: boolean;
   }) => {
     if (mcpModalState.modelId) {
       const answeringModel = answeringModels.find((m) => m.id === mcpModalState.modelId);
@@ -149,6 +153,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         mcp_urls_dict: answeringModel.mcp_urls_dict,
         mcp_tool_filter: answeringModel.mcp_tool_filter,
         mcp_validated_servers: answeringModel.mcp_validated_servers,
+        use_full_trace_for_template: answeringModel.use_full_trace_for_template,
+        use_full_trace_for_rubric: answeringModel.use_full_trace_for_rubric,
       };
     }
 
@@ -174,6 +180,16 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       : parsingModels.find((m) => m.id === extraKwargsModalState.modelId);
 
     return model?.extra_kwargs;
+  };
+
+  const handleRemoveMCP = (modelId: string) => {
+    onUpdateAnsweringModel(modelId, {
+      mcp_urls_dict: undefined,
+      mcp_tool_filter: undefined,
+      mcp_validated_servers: undefined,
+      use_full_trace_for_template: undefined,
+      use_full_trace_for_rubric: undefined,
+    });
   };
 
   const renderModelConfiguration = (model: ModelConfiguration, index: number, isAnswering: boolean) => (
@@ -483,7 +499,17 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               <Settings className="w-4 h-4" />
               <span>Configure MCP</span>
               {model.mcp_tool_filter && model.mcp_tool_filter.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
+                <span className="ml-2 pl-1 pr-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs flex items-center gap-1">
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isRunning) handleRemoveMCP(model.id);
+                    }}
+                    className="p-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-800 hover:text-red-600 dark:hover:text-red-400 cursor-pointer transition-colors"
+                    title="Remove MCP configuration"
+                  >
+                    <X className="w-3 h-3" />
+                  </span>
                   {model.mcp_tool_filter.length} tools
                 </span>
               )}
