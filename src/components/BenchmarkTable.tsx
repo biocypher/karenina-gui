@@ -217,9 +217,27 @@ const MultiSelectFilter: React.FC<{
   placeholder: string;
 }> = ({ options, selectedValues, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-left truncate"
@@ -538,24 +556,30 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
             </span>
           );
         },
-        filterFn: 'equals',
+        filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor((row) => row.template?.verify_granular_result, {
-        id: 'verify_granular_result',
-        header: 'Granular',
-        cell: (info) => (
-          <span
-            className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-              info.getValue() !== undefined && info.getValue() !== null
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-            }`}
-          >
-            {info.getValue() !== undefined && info.getValue() !== null ? 'Yes' : 'No'}
-          </span>
-        ),
-        filterFn: 'equals',
-      }),
+      columnHelper.accessor(
+        (row) => {
+          const granularResult = row.template?.verify_granular_result;
+          return granularResult !== undefined && granularResult !== null ? 'Yes' : 'No';
+        },
+        {
+          id: 'verify_granular_result',
+          header: 'Granular',
+          cell: (info) => (
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+                info.getValue() === 'Yes'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {info.getValue()}
+            </span>
+          ),
+          filterFn: 'arrIncludesSome',
+        }
+      ),
       columnHelper.display({
         id: 'rubric',
         header: 'Rubric',
@@ -778,11 +802,23 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
 
       return (
         <div className="space-y-2">
-          {/* Results count */}
-          <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+          {/* Results count and filter controls */}
+          <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex items-center justify-between">
             <span className="text-sm text-slate-600 dark:text-slate-400">
               Showing {totalRows} {totalRows === 1 ? 'result' : 'results'}
             </span>
+            {(table.getState().columnFilters.length > 0 || questionSearchText || rawAnswerSearchText) && (
+              <button
+                onClick={() => {
+                  table.resetColumnFilters();
+                  setQuestionSearchText('');
+                  setRawAnswerSearchText('');
+                }}
+                className="text-xs px-3 py-1 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors"
+              >
+                Clear All Filters
+              </button>
+            )}
           </div>
 
           {/* Scrollable Table */}
@@ -873,7 +909,17 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
                             {header.id === 'verify_result' && (
                               <MultiSelectFilter
                                 options={['Passed', 'Failed', 'N/A']}
-                                selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                                selectedValues={(() => {
+                                  const filterValue = header.column.getFilterValue() as
+                                    | Set<boolean | string>
+                                    | undefined;
+                                  if (!filterValue) return new Set();
+                                  const displayValues = new Set<string>();
+                                  if (filterValue.has(true)) displayValues.add('Passed');
+                                  if (filterValue.has(false)) displayValues.add('Failed');
+                                  if (filterValue.has('N/A')) displayValues.add('N/A');
+                                  return displayValues;
+                                })()}
                                 onChange={(values) => {
                                   const filterValues = new Set<boolean | string>();
                                   if (values.has('Passed')) filterValues.add(true);
