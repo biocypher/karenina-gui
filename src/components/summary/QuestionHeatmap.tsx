@@ -24,11 +24,10 @@ interface FlattenedColumn {
 }
 
 interface TooltipData {
-  questionText: string;
-  modelLabel: string;
-  replicateLabel: string;
-  status: string;
-  color: string;
+  executionType: string;
+  inputTokens: number;
+  outputTokens: number;
+  iterations: number;
   x: number;
   y: number;
 }
@@ -89,21 +88,6 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
     }
   };
 
-  // Get status label
-  const getStatusLabel = (cell: HeatmapCell | undefined): string => {
-    if (!cell || cell.passed === null) {
-      return 'Not Tested';
-    } else if (cell.error) {
-      return 'Error';
-    } else if (cell.abstained) {
-      return 'Abstained';
-    } else if (cell.passed) {
-      return 'Passed';
-    } else {
-      return 'Failed';
-    }
-  };
-
   // Flatten replicates into columns grouped by model
   const flattenedColumns: FlattenedColumn[] = [];
   const modelReplicateCounts = new Map<string, number>();
@@ -150,20 +134,13 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
   };
 
   // Handle mouse enter for tooltip
-  const handleMouseEnter = (
-    e: React.MouseEvent,
-    questionText: string,
-    modelLabel: string,
-    replicateLabel: string,
-    cell: HeatmapCell | undefined
-  ) => {
+  const handleMouseEnter = (e: React.MouseEvent, cell: HeatmapCell | undefined) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setTooltip({
-      questionText,
-      modelLabel,
-      replicateLabel,
-      status: getStatusLabel(cell),
-      color: getCellColor(cell),
+      executionType: cell?.execution_type || 'Unknown',
+      inputTokens: cell?.input_tokens || 0,
+      outputTokens: cell?.output_tokens || 0,
+      iterations: cell?.iterations || 0,
       x: rect.left + rect.width / 2,
       y: rect.top,
     });
@@ -225,28 +202,41 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
               <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-4 py-2 text-left font-semibold text-sm text-slate-900 dark:text-slate-100">
                 Question
               </th>
-              {modelGroups.map((group) => (
-                <th
-                  key={group.modelKey}
-                  colSpan={group.columns.length}
-                  className="border border-slate-300 dark:border-slate-600 px-4 py-2 text-center font-semibold text-sm text-slate-900 dark:text-slate-100"
-                >
-                  {group.modelLabel}
-                </th>
+              {modelGroups.map((group, groupIdx) => (
+                <React.Fragment key={group.modelKey}>
+                  <th
+                    colSpan={group.columns.length}
+                    className="border border-slate-300 dark:border-slate-600 px-4 py-2 text-center font-semibold text-sm text-slate-900 dark:text-slate-100"
+                  >
+                    {group.modelLabel}
+                  </th>
+                  {/* Spacer column between model groups */}
+                  {groupIdx < modelGroups.length - 1 && (
+                    <th className="bg-slate-100 dark:bg-slate-700 w-2 border-0 p-0" />
+                  )}
+                </React.Fragment>
               ))}
             </tr>
 
             {/* Bottom header: Replicate labels */}
             <tr>
               <th className="sticky left-0 z-20 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-4 py-1 text-left font-medium text-xs text-slate-700 dark:text-slate-300"></th>
-              {flattenedColumns.map((col, idx) => (
-                <th
-                  key={`${col.modelKey}-${col.replicate}-${idx}`}
-                  className="border border-slate-300 dark:border-slate-600 px-2 py-1 text-center font-medium text-xs text-slate-700 dark:text-slate-300 min-w-[60px]"
-                >
-                  {col.replicateLabel}
-                </th>
-              ))}
+              {flattenedColumns.map((col, idx) => {
+                const isLastInGroup =
+                  idx === flattenedColumns.length - 1 || flattenedColumns[idx + 1]?.modelKey !== col.modelKey;
+
+                return (
+                  <React.Fragment key={`${col.modelKey}-${col.replicate}-${idx}`}>
+                    <th className="border border-slate-300 dark:border-slate-600 px-2 py-1 text-center font-medium text-xs text-slate-700 dark:text-slate-300 min-w-[60px]">
+                      {col.replicateLabel}
+                    </th>
+                    {/* Spacer column between model groups */}
+                    {isLastInGroup && idx < flattenedColumns.length - 1 && (
+                      <th className="bg-slate-100 dark:bg-slate-700 w-2 border-0 p-0" />
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tr>
           </thead>
 
@@ -266,21 +256,28 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
                   const cell = getCell(question, col.modelKey, col.replicate);
                   const color = getCellColor(cell);
 
+                  // Determine if this is the last column of a model group (for spacing)
+                  const isLastInGroup =
+                    colIdx === flattenedColumns.length - 1 || flattenedColumns[colIdx + 1]?.modelKey !== col.modelKey;
+
                   return (
-                    <td
-                      key={`${question.question_id}-${col.modelKey}-${col.replicate}-${colIdx}`}
-                      className={`border border-slate-300 dark:border-slate-600 p-0 ${onCellClick ? 'cursor-pointer' : ''}`}
-                      onClick={() => handleCellClick(question.question_id, col.modelKey, col.replicate)}
-                      onMouseEnter={(e) =>
-                        handleMouseEnter(e, question.question_text, col.modelLabel, col.replicateLabel, cell)
-                      }
-                      onMouseLeave={handleMouseLeave}
-                    >
-                      <div
-                        className="w-full h-full min-h-[50px] transition-opacity hover:opacity-80"
-                        style={{ backgroundColor: color }}
-                      />
-                    </td>
+                    <React.Fragment key={`${question.question_id}-${col.modelKey}-${col.replicate}-${colIdx}`}>
+                      <td
+                        className={`border border-slate-300 dark:border-slate-600 p-0 ${onCellClick ? 'cursor-pointer' : ''}`}
+                        onClick={() => handleCellClick(question.question_id, col.modelKey, col.replicate)}
+                        onMouseEnter={(e) => handleMouseEnter(e, cell)}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <div
+                          className="w-full h-full min-h-[50px] transition-opacity hover:opacity-80"
+                          style={{ backgroundColor: color }}
+                        />
+                      </td>
+                      {/* Spacer column between model groups */}
+                      {isLastInGroup && colIdx < flattenedColumns.length - 1 && (
+                        <td className="bg-white dark:bg-slate-800 w-2 border-0 p-0" />
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tr>
@@ -324,11 +321,26 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
           }}
         >
           <div className="bg-slate-900 dark:bg-slate-800 text-white dark:text-slate-100 px-3 py-2 rounded-lg shadow-lg text-xs max-w-md">
-            <div className="font-bold mb-1">{truncateText(tooltip.questionText, 60)}</div>
-            <div className="text-slate-300 dark:text-slate-400 mb-1">Model: {tooltip.modelLabel}</div>
-            <div className="text-slate-300 dark:text-slate-400 mb-1">Replicate: {tooltip.replicateLabel}</div>
-            <div className="font-semibold">
-              Status: <span style={{ color: tooltip.color }}>{tooltip.status}</span>
+            <div className="font-semibold mb-2 text-slate-100">Execution Details</div>
+            <div className="space-y-1">
+              <div className="flex justify-between gap-4">
+                <span className="text-slate-400">Type:</span>
+                <span className="font-medium">{tooltip.executionType}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-slate-400">Input Tokens:</span>
+                <span className="font-medium">{tooltip.inputTokens.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-slate-400">Output Tokens:</span>
+                <span className="font-medium">{tooltip.outputTokens.toLocaleString()}</span>
+              </div>
+              {tooltip.iterations > 0 && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-400">Iterations:</span>
+                  <span className="font-medium">{tooltip.iterations}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

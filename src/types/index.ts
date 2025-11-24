@@ -862,6 +862,10 @@ export interface HeatmapCell {
   score: number | null;
   abstained: boolean;
   error: boolean;
+  execution_type?: string;
+  input_tokens?: number;
+  output_tokens?: number;
+  iterations?: number;
 }
 
 export interface HeatmapModelReplicates {
