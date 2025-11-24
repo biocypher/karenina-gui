@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Play,
   Square,
@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ChevronDown,
   BookmarkPlus,
+  Upload,
 } from 'lucide-react';
 import { ColumnFiltersState } from '@tanstack/react-table';
 import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
@@ -31,6 +32,15 @@ import { CustomExportDialog } from './CustomExportDialog';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { SummaryStatisticsPanel } from './summary/SummaryStatisticsPanel';
 import { formatDuration } from '../utils/time';
+import { MergeResultsDialog, MergeAction } from './dialogs/MergeResultsDialog';
+import {
+  parseVerificationResultsJSON,
+  mergeVerificationResults,
+  calculateMergeStats,
+  ImportValidationError,
+  ParsedImportResult,
+} from '../utils/import';
+import { JobSummaryMetadata } from '../utils/export';
 
 // Interfaces now imported from types
 
@@ -118,6 +128,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   // Preset modal state
   const [showPresetModal, setShowPresetModal] = useState(false);
 
+  // Upload state
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [parsedUpload, setParsedUpload] = useState<ParsedImportResult | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Get finished templates from checkpoint
   const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
 
@@ -138,13 +155,27 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       raw_answer: checkpoint[result.metadata.question_id]?.raw_answer,
     })) as ExportableResult[];
 
+    // Build job summary from current results
+    const jobSummary: JobSummaryMetadata = {
+      total_questions: new Set(filteredResults.map((r) => r.metadata.question_id)).size,
+      successful_count: filteredResults.filter((r) => r.metadata.completed_without_errors).length,
+      failed_count: filteredResults.filter((r) => !r.metadata.completed_without_errors).length,
+      start_time: progress?.start_time,
+      end_time: progress?.end_time,
+      total_duration: progress?.duration_seconds,
+    };
+
     exportFilteredResults(
       filteredResults,
       format,
       (error) => {
         setError(error);
       },
-      currentRubric
+      currentRubric,
+      undefined, // selectedFields
+      jobId || undefined,
+      getVerificationConfig(),
+      jobSummary
     );
   };
 
@@ -154,6 +185,17 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       ...result,
       raw_answer: checkpoint[result.metadata.question_id]?.raw_answer,
     })) as ExportableResult[];
+
+    // Build job summary from current results
+    const jobSummary: JobSummaryMetadata = {
+      total_questions: new Set(filteredResults.map((r) => r.metadata.question_id)).size,
+      successful_count: filteredResults.filter((r) => r.metadata.completed_without_errors).length,
+      failed_count: filteredResults.filter((r) => !r.metadata.completed_without_errors).length,
+      start_time: progress?.start_time,
+      end_time: progress?.end_time,
+      total_duration: progress?.duration_seconds,
+    };
+
     exportFilteredResults(
       filteredResults,
       format,
@@ -161,7 +203,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         setError(error);
       },
       currentRubric,
-      selectedFields
+      selectedFields,
+      jobId || undefined,
+      getVerificationConfig(),
+      jobSummary
     );
   };
 
@@ -464,6 +509,87 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     } catch (err) {
       console.error('Error exporting results:', err);
       setError('Failed to export results. Please try again.');
+    }
+  };
+
+  // Upload handlers
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setError(null);
+    setUploadSuccess(null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsed = parseVerificationResultsJSON(content);
+
+        setParsedUpload(parsed);
+        setIsUploadDialogOpen(true);
+        setIsUploading(false);
+      } catch (err) {
+        console.error('Error parsing upload:', err);
+        if (err instanceof ImportValidationError) {
+          setError(`Upload validation failed: ${err.message}`);
+        } else {
+          setError('Failed to parse uploaded file. Please ensure it is a valid verification results JSON file.');
+        }
+        setIsUploading(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setError('Failed to read file. Please try again.');
+      setIsUploading(false);
+    };
+
+    reader.readAsText(file);
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUploadConfirm = (action: MergeAction) => {
+    if (action === 'cancel' || !parsedUpload) {
+      setIsUploadDialogOpen(false);
+      setParsedUpload(null);
+      return;
+    }
+
+    try {
+      if (action === 'replace') {
+        // Replace existing results
+        setBenchmarkResults(parsedUpload.results);
+        setUploadSuccess(
+          `Successfully loaded ${parsedUpload.stats.totalResults} results from ${parsedUpload.stats.questions.size} questions. Previous results were replaced.`
+        );
+      } else if (action === 'merge') {
+        // Merge with existing results
+        const merged = mergeVerificationResults(benchmarkResults, parsedUpload.results, 'replace');
+        setBenchmarkResults(merged);
+        setUploadSuccess(
+          `Successfully merged ${parsedUpload.stats.totalResults} results. Total results: ${Object.keys(merged).length}`
+        );
+      }
+
+      setIsUploadDialogOpen(false);
+      setParsedUpload(null);
+      setError(null);
+
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setUploadSuccess(null);
+      }, 5000);
+    } catch (err) {
+      console.error('Error applying upload:', err);
+      setError(`Failed to load results: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setIsUploadDialogOpen(false);
+      setParsedUpload(null);
     }
   };
 
@@ -898,6 +1024,29 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               </h3>
 
               <div className="flex gap-3">
+                {/* Upload Results Button - Always visible */}
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="results-upload"
+                  />
+                  <label htmlFor="results-upload">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isRunning || isUploading}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                      type="button"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {isUploading ? 'Loading...' : 'Upload Results'}
+                    </button>
+                  </label>
+                </div>
+
                 {isRunning && (
                   <button
                     onClick={handleCancelVerification}
@@ -1000,6 +1149,17 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                   <span className="text-red-800 dark:text-red-200 font-medium">Error</span>
                 </div>
                 <p className="text-red-700 dark:text-red-300 mt-1">{error}</p>
+              </div>
+            )}
+
+            {/* Success Display */}
+            {uploadSuccess && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <span className="text-green-800 dark:text-green-200 font-medium">Upload Successful</span>
+                </div>
+                <p className="text-green-700 dark:text-green-300 mt-1">{uploadSuccess}</p>
               </div>
             )}
           </Card>
@@ -1189,6 +1349,15 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         onExport={handleCustomExport}
       />
       <PresetManager isOpen={showPresetModal} onClose={() => setShowPresetModal(false)} />
+      <MergeResultsDialog
+        isOpen={isUploadDialogOpen}
+        onClose={() => setIsUploadDialogOpen(false)}
+        onConfirm={handleUploadConfirm}
+        uploadedCount={parsedUpload?.stats.totalResults || 0}
+        existingCount={Object.keys(benchmarkResults).length}
+        conflictCount={parsedUpload ? calculateMergeStats(benchmarkResults, parsedUpload.results).conflictCount : 0}
+        totalAfterMerge={parsedUpload ? calculateMergeStats(benchmarkResults, parsedUpload.results).totalAfterMerge : 0}
+      />
     </ErrorBoundary>
   );
 };
