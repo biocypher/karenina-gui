@@ -246,8 +246,15 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
               <tr key={question.question_id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 {/* Question text (sticky left column) */}
                 <td className="sticky left-0 z-10 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 max-w-[300px]">
-                  <div className="truncate" title={question.question_text}>
-                    {truncateText(question.question_text, 80)}
+                  <div>
+                    <div className="truncate" title={question.question_text}>
+                      {truncateText(question.question_text, 80)}
+                    </div>
+                    {question.keywords && question.keywords.length > 0 && (
+                      <div className="text-xs italic text-slate-500 dark:text-slate-400 mt-1">
+                        {question.keywords.join(', ')}
+                      </div>
+                    )}
                   </div>
                 </td>
 
