@@ -8,7 +8,7 @@
  * - Click cells to drill down to specific results
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ModelSelectorDropdown } from './ModelSelectorDropdown';
 import { QuestionHeatmap } from './QuestionHeatmap';
 import { QuestionTokenBarChart } from './QuestionTokenBarChart';
@@ -43,6 +43,10 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
 
   // Replicate selection state
   const [selectedReplicate, setSelectedReplicate] = useState<number | null>(null);
+
+  // Ref to store scroll position for replicate changes
+  const scrollPositionRef = useRef<number>(0);
+  const isInitialReplicate = useRef(true);
 
   // Question selection state
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
@@ -211,6 +215,44 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   const getModelKey = (model: ModelConfig): string => {
     return `${model.answering_model}|${model.mcp_config}`;
   };
+
+  // Handler for replicate changes that preserves scroll position
+  const handleReplicateChange = (replicate: number) => {
+    // Save current scroll position
+    scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+
+    // Lock scroll position during transition
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollPositionRef.current}px`;
+    document.body.style.width = '100%';
+
+    setSelectedReplicate(replicate);
+  };
+
+  // Restore scroll position after replicate changes
+  useEffect(() => {
+    // Skip on initial set
+    if (isInitialReplicate.current) {
+      isInitialReplicate.current = false;
+      return;
+    }
+
+    // Use requestAnimationFrame to wait for React to render
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // Unlock scroll
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+
+        // Restore scroll position
+        const scrollY = scrollPositionRef.current;
+        window.scrollTo(0, scrollY);
+      });
+    });
+  }, [selectedReplicate]);
 
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -603,7 +645,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                   <select
                     id="replicate-selector"
                     value={selectedReplicate ?? ''}
-                    onChange={(e) => setSelectedReplicate(Number(e.target.value))}
+                    onChange={(e) => handleReplicateChange(Number(e.target.value))}
                     className="block w-48 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                   >
                     {availableReplicates.map((rep) => (
