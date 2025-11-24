@@ -875,6 +875,7 @@ export interface HeatmapModelReplicates {
 export interface HeatmapQuestion {
   question_id: string;
   question_text: string;
+  keywords?: string[];
   results_by_model: Record<string, HeatmapModelReplicates>;
 }
 

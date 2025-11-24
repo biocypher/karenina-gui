@@ -44,6 +44,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   // Question selection state
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
   const [questionSearchText, setQuestionSearchText] = useState('');
+  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
 
   // Extract unique models from results on mount
   useEffect(() => {
@@ -158,8 +159,18 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     return comparisonData.heatmap_data.map((q) => ({
       id: q.question_id,
       text: q.question_text,
+      keywords: q.keywords || [],
     }));
   }, [comparisonData]);
+
+  // Extract all unique keywords from questions
+  const availableKeywords = useMemo(() => {
+    const keywordSet = new Set<string>();
+    availableQuestions.forEach((q) => {
+      q.keywords.forEach((keyword) => keywordSet.add(keyword));
+    });
+    return Array.from(keywordSet).sort();
+  }, [availableQuestions]);
 
   // Auto-select all questions when available questions change
   useEffect(() => {
@@ -168,12 +179,23 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     }
   }, [availableQuestions]);
 
-  // Filter questions based on search text
+  // Filter questions based on search text and selected keywords
   const filteredQuestions = useMemo(() => {
-    if (!questionSearchText) return availableQuestions;
-    const searchLower = questionSearchText.toLowerCase();
-    return availableQuestions.filter((q) => q.text.toLowerCase().includes(searchLower));
-  }, [availableQuestions, questionSearchText]);
+    let filtered = availableQuestions;
+
+    // Filter by search text
+    if (questionSearchText) {
+      const searchLower = questionSearchText.toLowerCase();
+      filtered = filtered.filter((q) => q.text.toLowerCase().includes(searchLower));
+    }
+
+    // Filter by selected keywords (question must have at least one of the selected keywords)
+    if (selectedKeywords.size > 0) {
+      filtered = filtered.filter((q) => q.keywords.some((keyword) => selectedKeywords.has(keyword)));
+    }
+
+    return filtered;
+  }, [availableQuestions, questionSearchText, selectedKeywords]);
 
   // Filter heatmap and token data based on selected questions
   const filteredHeatmapData = useMemo(() => {
@@ -216,6 +238,23 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
       }
       return newSet;
     });
+  };
+
+  // Keyword selection handlers
+  const handleToggleKeyword = (keyword: string) => {
+    setSelectedKeywords((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(keyword)) {
+        newSet.delete(keyword);
+      } else {
+        newSet.add(keyword);
+      }
+      return newSet;
+    });
+  };
+
+  const handleClearKeywords = () => {
+    setSelectedKeywords(new Set());
   };
 
   // Handle heatmap cell click - find and display the result
@@ -567,13 +606,14 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
               Question-by-Question Comparison
             </h3>
 
-            {/* Question Selector */}
+            {/* Question and Keyword Filters */}
             <div className="mb-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Filter Questions ({selectedQuestions.size}/{availableQuestions.length} selected):
-                </label>
-                <div className="border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 p-3">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Filter Questions ({selectedQuestions.size}/{availableQuestions.length} selected):
+              </label>
+              <div className="flex gap-4">
+                {/* Question Selector */}
+                <div className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 p-3">
                   {/* Search and Action Buttons */}
                   <div className="flex gap-2 mb-3">
                     <input
@@ -600,7 +640,9 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                   {/* Question Checkboxes */}
                   <div className="max-h-48 overflow-y-auto space-y-2">
                     {filteredQuestions.length === 0 ? (
-                      <div className="text-sm text-slate-500 dark:text-slate-400 italic">No questions match search</div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400 italic">
+                        No questions match filters
+                      </div>
                     ) : (
                       filteredQuestions.map((question) => (
                         <label
@@ -621,6 +663,44 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                     )}
                   </div>
                 </div>
+
+                {/* Keyword Filter */}
+                {availableKeywords.length > 0 && (
+                  <div className="w-64 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 p-3">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Keywords ({selectedKeywords.size}/{availableKeywords.length})
+                      </h4>
+                      {selectedKeywords.size > 0 && (
+                        <button
+                          onClick={handleClearKeywords}
+                          className="px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Keyword Pills */}
+                    <div className="max-h-48 overflow-y-auto">
+                      <div className="flex flex-wrap gap-2">
+                        {availableKeywords.map((keyword) => (
+                          <button
+                            key={keyword}
+                            onClick={() => handleToggleKeyword(keyword)}
+                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                              selectedKeywords.has(keyword)
+                                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            }`}
+                          >
+                            {keyword}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
