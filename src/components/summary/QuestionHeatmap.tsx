@@ -75,12 +75,14 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
 
   // Get color for cell status
   const getCellColor = (cell: HeatmapCell | undefined): string => {
-    if (!cell || cell.passed === null) {
-      return '#94a3b8'; // Gray - not tested
+    if (!cell) {
+      return '#94a3b8'; // Gray - not tested (no data)
     } else if (cell.error) {
-      return '#f97316'; // Orange - error
+      return '#f97316'; // Orange - error (check this before passed===null)
     } else if (cell.abstained) {
       return '#eab308'; // Yellow - abstained
+    } else if (cell.passed === null) {
+      return '#94a3b8'; // Gray - not tested (no result yet)
     } else if (cell.passed) {
       return '#22c55e'; // Green - passed
     } else {
