@@ -217,9 +217,27 @@ const MultiSelectFilter: React.FC<{
   placeholder: string;
 }> = ({ options, selectedValues, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-left truncate"
@@ -310,8 +328,9 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       }),
       columnHelper.accessor(
         (row) => {
-          // Access the expected raw answer from checkpoint using question_id
-          return checkpoint?.[row.metadata.question_id]?.raw_answer || '';
+          // First check if raw_answer is on the result itself (from uploaded JSON)
+          // Then fall back to checkpoint (for live results)
+          return row.raw_answer || checkpoint?.[row.metadata.question_id]?.raw_answer || '';
         },
         {
           id: 'raw_answer',
@@ -329,6 +348,101 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           filterFn: 'includesString',
         }
       ),
+      columnHelper.accessor((row) => row.metadata.completed_without_errors, {
+        id: 'completed_without_errors',
+        header: 'Completed Without Errors',
+        cell: (info) => {
+          const row = info.row.original;
+
+          // Check for abstention first
+          if (row.template?.abstention_detected && row.template?.abstention_check_performed) {
+            return (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
+                Abstained
+              </span>
+            );
+          }
+
+          // Regular true/false display
+          return (
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+                info.getValue()
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+              }`}
+            >
+              {info.getValue() ? 'true' : 'false'}
+            </span>
+          );
+        },
+        filterFn: (row, columnId, value) => {
+          const rowValue = row.getValue(columnId);
+          const original = row.original as VerificationResult;
+
+          // If no filter is set, show all
+          if (!value || value.size === 0) return true;
+
+          // Check for abstention
+          if (value.has('abstained')) {
+            if (original.template?.abstention_detected && original.template?.abstention_check_performed) {
+              return true;
+            }
+          }
+
+          // Check for regular success/failed states
+          if (
+            value.has(true) &&
+            rowValue === true &&
+            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
+          ) {
+            return true;
+          }
+          if (
+            value.has(false) &&
+            rowValue === false &&
+            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
+          ) {
+            return true;
+          }
+
+          return false;
+        },
+      }),
+      columnHelper.accessor((row) => row.template?.verify_result, {
+        id: 'verify_result',
+        header: 'Verification',
+        cell: (info) => {
+          const value = info.getValue();
+          const row = info.row.original;
+          const templatePerformed = row.template?.template_verification_performed;
+
+          // If template verification was not performed (rubric_only mode), show "Not evaluated"
+          if (templatePerformed === false) {
+            return (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                Not evaluated
+              </span>
+            );
+          }
+
+          // Template verification was performed, show result
+          return (
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+                value === true
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                  : value === false
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {value === true ? 'Passed' : value === false ? 'Failed' : 'N/A'}
+            </span>
+          );
+        },
+        filterFn: 'arrIncludesSome',
+      }),
       columnHelper.accessor((row) => row.template?.parsed_gt_response, {
         id: 'parsed_gt_response',
         header: 'Ground Truth',
@@ -444,117 +558,28 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor((row) => row.metadata.completed_without_errors, {
-        id: 'completed_without_errors',
-        header: 'Completed Without Errors',
-        cell: (info) => {
-          const row = info.row.original;
-
-          // Check for abstention first
-          if (row.template?.abstention_detected && row.template?.abstention_check_performed) {
-            return (
-              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
-                Abstained
-              </span>
-            );
-          }
-
-          // Regular true/false display
-          return (
+      columnHelper.accessor(
+        (row) => {
+          const granularResult = row.template?.verify_granular_result;
+          return granularResult !== undefined && granularResult !== null ? 'Yes' : 'No';
+        },
+        {
+          id: 'verify_granular_result',
+          header: 'Granular',
+          cell: (info) => (
             <span
               className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                info.getValue()
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                info.getValue() === 'Yes'
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
               }`}
             >
-              {info.getValue() ? 'true' : 'false'}
+              {info.getValue()}
             </span>
-          );
-        },
-        filterFn: (row, columnId, value) => {
-          const rowValue = row.getValue(columnId);
-          const original = row.original as VerificationResult;
-
-          // If no filter is set, show all
-          if (!value || value.size === 0) return true;
-
-          // Check for abstention
-          if (value.has('abstained')) {
-            if (original.template?.abstention_detected && original.template?.abstention_check_performed) {
-              return true;
-            }
-          }
-
-          // Check for regular success/failed states
-          if (
-            value.has(true) &&
-            rowValue === true &&
-            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
-          ) {
-            return true;
-          }
-          if (
-            value.has(false) &&
-            rowValue === false &&
-            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
-          ) {
-            return true;
-          }
-
-          return false;
-        },
-      }),
-      columnHelper.accessor((row) => row.template?.verify_result, {
-        id: 'verify_result',
-        header: 'Verification',
-        cell: (info) => {
-          const value = info.getValue();
-          const row = info.row.original;
-          const templatePerformed = row.template?.template_verification_performed;
-
-          // If template verification was not performed (rubric_only mode), show "Not evaluated"
-          if (templatePerformed === false) {
-            return (
-              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                Not evaluated
-              </span>
-            );
-          }
-
-          // Template verification was performed, show result
-          return (
-            <span
-              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                value === true
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                  : value === false
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-              }`}
-            >
-              {value === true ? 'Passed' : value === false ? 'Failed' : 'N/A'}
-            </span>
-          );
-        },
-        filterFn: 'equals',
-      }),
-      columnHelper.accessor((row) => row.template?.verify_granular_result, {
-        id: 'verify_granular_result',
-        header: 'Granular',
-        cell: (info) => (
-          <span
-            className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-              info.getValue() !== undefined && info.getValue() !== null
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-            }`}
-          >
-            {info.getValue() !== undefined && info.getValue() !== null ? 'Yes' : 'No'}
-          </span>
-        ),
-        filterFn: 'equals',
-      }),
+          ),
+          filterFn: 'arrIncludesSome',
+        }
+      ),
       columnHelper.display({
         id: 'rubric',
         header: 'Rubric',
@@ -583,7 +608,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
             <RubricCell rubricResult={combinedRubricResult} metricTraitMetrics={row.rubric?.metric_trait_scores} />
           );
         },
-        filterFn: (row, columnId, value) => {
+        filterFn: (row, _columnId, value) => {
           // Combine split trait scores for filtering (use new fields, fallback to legacy)
           const rubricResult = row.original.rubric?.verify_rubric || {
             ...row.original.rubric?.llm_trait_scores,
@@ -679,6 +704,11 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       arrIncludesSome: (row, columnId, value) => {
         if (value.size === 0) return true;
         const rowValue = row.getValue(columnId);
+        // Handle array values (e.g., MCP servers, granular checks)
+        if (Array.isArray(rowValue)) {
+          return rowValue.some((item) => value.has(item));
+        }
+        // Handle single values (e.g., other filterable columns)
         return value.has(rowValue);
       },
     },
@@ -715,37 +745,48 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
   const getUniqueModels = () => {
     try {
       if (!benchmarkResults) {
-        return { answeringModels: [], parsingModels: [], runNames: [], replicates: [] };
+        return { answeringModels: [], parsingModels: [], runNames: [], replicates: [], mcpServers: [] };
       }
       const allResults = Object.values(benchmarkResults);
       const answeringModels = new Set(
-        allResults.map((r) => r.answering_model).filter((model): model is string => Boolean(model))
+        allResults.map((r) => r.metadata.answering_model).filter((model): model is string => Boolean(model))
       );
       const parsingModels = new Set(
-        allResults.map((r) => r.parsing_model).filter((model): model is string => Boolean(model))
+        allResults.map((r) => r.metadata.parsing_model).filter((model): model is string => Boolean(model))
       );
-      const runNames = new Set(allResults.map((r) => r.run_name).filter((name): name is string => Boolean(name)));
+      const runNames = new Set(
+        allResults.map((r) => r.metadata.run_name).filter((name): name is string => Boolean(name))
+      );
       const replicates = new Set(
         allResults.map((r) => {
-          const replicateValue = r.answering_replicate || r.parsing_replicate;
+          const replicateValue = r.metadata.answering_replicate || r.metadata.parsing_replicate;
           return replicateValue ? replicateValue.toString() : 'Single';
         })
       );
+      // Extract unique MCP servers
+      const mcpServersSet = new Set<string>();
+      allResults.forEach((r) => {
+        const servers = r.template?.answering_mcp_servers;
+        if (servers && Array.isArray(servers)) {
+          servers.forEach((server) => mcpServersSet.add(server));
+        }
+      });
       return {
         answeringModels: Array.from(answeringModels),
         parsingModels: Array.from(parsingModels),
         runNames: Array.from(runNames),
         replicates: Array.from(replicates),
+        mcpServers: Array.from(mcpServersSet).sort(),
       };
     } catch (e) {
       console.error('Error in getUniqueModels:', e);
-      return { answeringModels: [], parsingModels: [], runNames: [], replicates: [] };
+      return { answeringModels: [], parsingModels: [], runNames: [], replicates: [], mcpServers: [] };
     }
   };
 
   const renderTable = () => {
     try {
-      const { answeringModels, parsingModels, runNames, replicates } = getUniqueModels();
+      const { answeringModels, parsingModels, runNames, replicates, mcpServers } = getUniqueModels();
 
       if (table.getRowModel().rows.length === 0) {
         return (
@@ -757,183 +798,231 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         );
       }
 
+      const totalRows = table.getFilteredRowModel().rows.length;
+
       return (
-        <div className="overflow-x-auto">
-          <table className="w-full" data-testid="benchmark-results-table">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="border-b border-slate-200 dark:border-slate-600">
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className={`py-2 px-3 text-sm font-medium text-slate-700 dark:text-slate-300 ${header.id === 'index' ? 'w-16 text-center' : 'text-left'}`}
-                    >
-                      {header.isPlaceholder ? null : (
-                        <div className="space-y-2">
-                          <div
-                            {...{
-                              className: header.column.getCanSort()
-                                ? 'cursor-pointer select-none flex items-center'
-                                : '',
-                              onClick: header.column.getToggleSortingHandler(),
-                            }}
-                          >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {header.column.getCanSort() && <SortIndicator column={header.column} />}
+        <div className="space-y-2">
+          {/* Results count and filter controls */}
+          <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex items-center justify-between">
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Showing {totalRows} {totalRows === 1 ? 'result' : 'results'}
+            </span>
+            {(table.getState().columnFilters.length > 0 || questionSearchText || rawAnswerSearchText) && (
+              <button
+                onClick={() => {
+                  table.resetColumnFilters();
+                  setQuestionSearchText('');
+                  setRawAnswerSearchText('');
+                }}
+                className="text-xs px-3 py-1 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors"
+              >
+                Clear All Filters
+              </button>
+            )}
+          </div>
+
+          {/* Scrollable Table */}
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+            <table className="w-full" data-testid="benchmark-results-table">
+              <thead className="sticky top-0 bg-white dark:bg-slate-800 z-10">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id} className="border-b-2 border-slate-300 dark:border-slate-600">
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        className={`py-2 px-3 text-sm font-medium text-slate-700 dark:text-slate-300 ${header.id === 'index' ? 'w-16 text-center' : 'text-left'}`}
+                      >
+                        {header.isPlaceholder ? null : (
+                          <div className="space-y-2">
+                            <div
+                              {...{
+                                className: header.column.getCanSort()
+                                  ? 'cursor-pointer select-none flex items-center'
+                                  : '',
+                                onClick: header.column.getToggleSortingHandler(),
+                              }}
+                            >
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+                              {header.column.getCanSort() && <SortIndicator column={header.column} />}
+                            </div>
+                            {header.id === 'question_text' && (
+                              <input
+                                type="text"
+                                placeholder="Search questions..."
+                                value={questionSearchText}
+                                onChange={(e) => setQuestionSearchText(e.target.value)}
+                                className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                              />
+                            )}
+                            {header.id === 'raw_answer' && (
+                              <input
+                                type="text"
+                                placeholder="Search answers..."
+                                value={rawAnswerSearchText}
+                                onChange={(e) => setRawAnswerSearchText(e.target.value)}
+                                className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                              />
+                            )}
+                            {['answering_model', 'parsing_model', 'run_name', 'replicate'].includes(header.id) && (
+                              <MultiSelectFilter
+                                options={
+                                  header.id === 'answering_model'
+                                    ? answeringModels
+                                    : header.id === 'parsing_model'
+                                      ? parsingModels
+                                      : header.id === 'run_name'
+                                        ? runNames
+                                        : replicates
+                                }
+                                selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                                onChange={(values) =>
+                                  header.column.setFilterValue(values.size > 0 ? values : undefined)
+                                }
+                                placeholder={`All ${header.id.includes('model') ? 'models' : header.id === 'run_name' ? 'runs' : ''}`}
+                              />
+                            )}
+                            {header.id === 'completed_without_errors' && (
+                              <MultiSelectFilter
+                                options={['true', 'false', 'abstained']}
+                                selectedValues={(() => {
+                                  const filterValue = header.column.getFilterValue() as
+                                    | Set<boolean | string>
+                                    | undefined;
+                                  if (!filterValue) return new Set();
+                                  const displayValues = new Set<string>();
+                                  if (filterValue.has(true)) displayValues.add('true');
+                                  if (filterValue.has(false)) displayValues.add('false');
+                                  if (filterValue.has('abstained')) displayValues.add('abstained');
+                                  return displayValues;
+                                })()}
+                                onChange={(values) => {
+                                  const filterValues = new Set<boolean | string>();
+                                  if (values.has('true')) filterValues.add(true);
+                                  if (values.has('false')) filterValues.add(false);
+                                  if (values.has('abstained')) filterValues.add('abstained');
+                                  header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
+                                }}
+                                placeholder="All statuses"
+                              />
+                            )}
+                            {header.id === 'verify_result' && (
+                              <MultiSelectFilter
+                                options={['Passed', 'Failed', 'N/A']}
+                                selectedValues={(() => {
+                                  const filterValue = header.column.getFilterValue() as
+                                    | Set<boolean | string>
+                                    | undefined;
+                                  if (!filterValue) return new Set();
+                                  const displayValues = new Set<string>();
+                                  if (filterValue.has(true)) displayValues.add('Passed');
+                                  if (filterValue.has(false)) displayValues.add('Failed');
+                                  if (filterValue.has('N/A')) displayValues.add('N/A');
+                                  return displayValues;
+                                })()}
+                                onChange={(values) => {
+                                  const filterValues = new Set<boolean | string>();
+                                  if (values.has('Passed')) filterValues.add(true);
+                                  if (values.has('Failed')) filterValues.add(false);
+                                  if (values.has('N/A')) filterValues.add('N/A');
+                                  header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
+                                }}
+                                placeholder="All results"
+                              />
+                            )}
+                            {header.id === 'verify_granular_result' && (
+                              <MultiSelectFilter
+                                options={['Yes', 'No']}
+                                selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                                onChange={(values) => {
+                                  const filterValues = new Set<string>();
+                                  if (values.has('Yes')) filterValues.add('Yes');
+                                  if (values.has('No')) filterValues.add('No');
+                                  header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
+                                }}
+                                placeholder="All"
+                              />
+                            )}
+                            {header.id === 'answering_mcp_servers' && (
+                              <MultiSelectFilter
+                                options={mcpServers}
+                                selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
+                                onChange={(values) =>
+                                  header.column.setFilterValue(values.size > 0 ? values : undefined)
+                                }
+                                placeholder="All MCP"
+                              />
+                            )}
+                            {header.id === 'execution_time' && (
+                              <div className="flex gap-1">
+                                <input
+                                  type="number"
+                                  placeholder="Min"
+                                  value={(header.column.getFilterValue() as [number, number])?.[0] ?? ''}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue((old: [number, number]) => [
+                                      e.target.value ? Number(e.target.value) : undefined,
+                                      old?.[1],
+                                    ])
+                                  }
+                                  className="w-12 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                  step="0.1"
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="Max"
+                                  value={(header.column.getFilterValue() as [number, number])?.[1] ?? ''}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue((old: [number, number]) => [
+                                      old?.[0],
+                                      e.target.value ? Number(e.target.value) : undefined,
+                                    ])
+                                  }
+                                  className="w-12 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                  step="0.1"
+                                />
+                              </div>
+                            )}
+                            {header.id === 'timestamp' && (
+                              <div className="space-y-1">
+                                <input
+                                  type="date"
+                                  value={(header.column.getFilterValue() as [string, string])?.[0] ?? ''}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue((old: [string, string]) => [e.target.value, old?.[1]])
+                                  }
+                                  className="w-full px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                />
+                                <input
+                                  type="date"
+                                  value={(header.column.getFilterValue() as [string, string])?.[1] ?? ''}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue((old: [string, string]) => [old?.[0], e.target.value])
+                                  }
+                                  className="w-full px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                                />
+                              </div>
+                            )}
                           </div>
-                          {header.id === 'question_text' && (
-                            <input
-                              type="text"
-                              placeholder="Search questions..."
-                              value={questionSearchText}
-                              onChange={(e) => setQuestionSearchText(e.target.value)}
-                              className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                            />
-                          )}
-                          {header.id === 'raw_answer' && (
-                            <input
-                              type="text"
-                              placeholder="Search answers..."
-                              value={rawAnswerSearchText}
-                              onChange={(e) => setRawAnswerSearchText(e.target.value)}
-                              className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                            />
-                          )}
-                          {['answering_model', 'parsing_model', 'run_name', 'replicate'].includes(header.id) && (
-                            <MultiSelectFilter
-                              options={
-                                header.id === 'answering_model'
-                                  ? answeringModels
-                                  : header.id === 'parsing_model'
-                                    ? parsingModels
-                                    : header.id === 'run_name'
-                                      ? runNames
-                                      : replicates
-                              }
-                              selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
-                              onChange={(values) => header.column.setFilterValue(values.size > 0 ? values : undefined)}
-                              placeholder={`All ${header.id.includes('model') ? 'models' : header.id === 'run_name' ? 'runs' : ''}`}
-                            />
-                          )}
-                          {header.id === 'completed_without_errors' && (
-                            <MultiSelectFilter
-                              options={['true', 'false', 'abstained']}
-                              selectedValues={(() => {
-                                const filterValue = header.column.getFilterValue() as Set<boolean | string> | undefined;
-                                if (!filterValue) return new Set();
-                                const displayValues = new Set<string>();
-                                if (filterValue.has(true)) displayValues.add('true');
-                                if (filterValue.has(false)) displayValues.add('false');
-                                if (filterValue.has('abstained')) displayValues.add('abstained');
-                                return displayValues;
-                              })()}
-                              onChange={(values) => {
-                                const filterValues = new Set<boolean | string>();
-                                if (values.has('true')) filterValues.add(true);
-                                if (values.has('false')) filterValues.add(false);
-                                if (values.has('abstained')) filterValues.add('abstained');
-                                header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
-                              }}
-                              placeholder="All statuses"
-                            />
-                          )}
-                          {header.id === 'verify_result' && (
-                            <MultiSelectFilter
-                              options={['Passed', 'Failed', 'N/A']}
-                              selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
-                              onChange={(values) => {
-                                const filterValues = new Set<boolean | string>();
-                                if (values.has('Passed')) filterValues.add(true);
-                                if (values.has('Failed')) filterValues.add(false);
-                                if (values.has('N/A')) filterValues.add('N/A');
-                                header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
-                              }}
-                              placeholder="All results"
-                            />
-                          )}
-                          {header.id === 'verify_granular_result' && (
-                            <MultiSelectFilter
-                              options={['Yes', 'No']}
-                              selectedValues={(header.column.getFilterValue() as Set<string>) ?? new Set()}
-                              onChange={(values) => {
-                                const filterValues = new Set<string>();
-                                if (values.has('Yes')) filterValues.add('Yes');
-                                if (values.has('No')) filterValues.add('No');
-                                header.column.setFilterValue(filterValues.size > 0 ? filterValues : undefined);
-                              }}
-                              placeholder="All"
-                            />
-                          )}
-                          {header.id === 'execution_time' && (
-                            <div className="flex gap-1">
-                              <input
-                                type="number"
-                                placeholder="Min"
-                                value={(header.column.getFilterValue() as [number, number])?.[0] ?? ''}
-                                onChange={(e) =>
-                                  header.column.setFilterValue((old: [number, number]) => [
-                                    e.target.value ? Number(e.target.value) : undefined,
-                                    old?.[1],
-                                  ])
-                                }
-                                className="w-12 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                                step="0.1"
-                              />
-                              <input
-                                type="number"
-                                placeholder="Max"
-                                value={(header.column.getFilterValue() as [number, number])?.[1] ?? ''}
-                                onChange={(e) =>
-                                  header.column.setFilterValue((old: [number, number]) => [
-                                    old?.[0],
-                                    e.target.value ? Number(e.target.value) : undefined,
-                                  ])
-                                }
-                                className="w-12 px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                                step="0.1"
-                              />
-                            </div>
-                          )}
-                          {header.id === 'timestamp' && (
-                            <div className="space-y-1">
-                              <input
-                                type="date"
-                                value={(header.column.getFilterValue() as [string, string])?.[0] ?? ''}
-                                onChange={(e) =>
-                                  header.column.setFilterValue((old: [string, string]) => [e.target.value, old?.[1]])
-                                }
-                                className="w-full px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                              />
-                              <input
-                                type="date"
-                                value={(header.column.getFilterValue() as [string, string])?.[1] ?? ''}
-                                onChange={(e) =>
-                                  header.column.setFilterValue((old: [string, string]) => [old?.[0], e.target.value])
-                                }
-                                className="w-full px-1 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100 dark:border-slate-700">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="py-2 px-3 text-sm text-slate-600 dark:text-slate-400">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => (
+                  <tr key={row.id} className="border-b border-slate-100 dark:border-slate-700">
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="py-2 px-3 text-sm text-slate-600 dark:text-slate-400">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       );
     } catch (err) {

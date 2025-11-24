@@ -9,7 +9,7 @@
  * - Supports drill-down interactions to filter main table
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BarChart3, GitCompare, Download } from 'lucide-react';
 import { SummaryView } from './SummaryView';
 import { ComparisonView } from './ComparisonView';
@@ -42,6 +42,10 @@ export function SummaryStatisticsPanel({
   const [comparisonData, setComparisonData] = useState<ModelComparisonResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ref to store scroll position
+  const scrollPositionRef = useRef<number>(0);
+  const isInitialMount = useRef(true);
 
   // Extract unique run names from results
   const runNames = useMemo(() => {
@@ -85,8 +89,53 @@ export function SummaryStatisticsPanel({
   }, [benchmarkResults, selectedRunName, mode]);
 
   const handleModeToggle = (newMode: ViewMode) => {
+    // Save current scroll position
+    scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+
+    // Lock scroll position during transition
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollPositionRef.current}px`;
+    document.body.style.width = '100%';
+
     setMode(newMode);
   };
+
+  // Restore scroll position after mode changes
+  useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // ComparisonView has multiple effects that run after mount, so we need to wait longer
+    // for it to fully initialize before restoring scroll
+    const delay = mode === 'comparison' ? 150 : 0;
+
+    const unlockScroll = () => {
+      // Unlock scroll
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+
+      // Restore scroll position
+      const scrollY = scrollPositionRef.current;
+      window.scrollTo(0, scrollY);
+    };
+
+    if (delay > 0) {
+      // Use setTimeout for ComparisonView to let all effects settle
+      const timeoutId = setTimeout(unlockScroll, delay);
+      return () => clearTimeout(timeoutId);
+    } else {
+      // Use requestAnimationFrame for SummaryView (faster)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(unlockScroll);
+      });
+    }
+  }, [mode]);
 
   const handleSummaryDrillDown = (filter: { type: 'completed' | 'errors' | 'passed' | 'failed' | 'abstained' }) => {
     if (onDrillDown) {

@@ -519,6 +519,8 @@ export interface VerificationResult {
   rubric?: VerificationResultRubric;
   deep_judgment?: VerificationResultDeepJudgment;
   deep_judgment_rubric?: VerificationResultDeepJudgmentRubric;
+  // Question data (may be added from checkpoint for display purposes)
+  raw_answer?: string;
 }
 
 // Helper interface for LLM usage metadata
@@ -733,13 +735,26 @@ export interface SearchResultItem {
 // Summary Statistics Types (from VerificationResultSet.get_summary())
 export interface TokenUsage {
   total_input: number;
+  total_input_std: number;
   total_output: number;
+  total_output_std: number;
   template_input: number;
+  template_input_std: number;
   template_output: number;
+  template_output_std: number;
   rubric_input: number;
+  rubric_input_std: number;
   rubric_output: number;
+  rubric_output_std: number;
   deep_judgment_input?: number;
+  deep_judgment_input_std?: number;
   deep_judgment_output?: number;
+  deep_judgment_output_std?: number;
+  // Median tokens per question (aggregated over questions and replicates)
+  median_per_question_input: number;
+  median_per_question_input_std: number;
+  median_per_question_output: number;
+  median_per_question_output_std: number;
 }
 
 export interface PassRateStats {
@@ -842,26 +857,52 @@ export interface ModelConfig {
 }
 
 export interface HeatmapCell {
+  replicate?: number;
   passed: boolean | null;
   score: number | null;
   abstained: boolean;
   error: boolean;
+  execution_type?: string;
+  input_tokens?: number;
+  output_tokens?: number;
+  iterations?: number;
+}
+
+export interface HeatmapModelReplicates {
+  replicates: HeatmapCell[];
 }
 
 export interface HeatmapQuestion {
   question_id: string;
   question_text: string;
-  results_by_model: Record<string, HeatmapCell>;
+  keywords?: string[];
+  results_by_model: Record<string, HeatmapModelReplicates>;
 }
 
 export interface ModelComparisonRequest {
   results: Record<string, VerificationResult>;
   models: ModelConfig[];
   parsing_model: string;
-  replicate?: number;
+}
+
+// Per-question token data for bar charts
+export interface QuestionTokenModelData {
+  model_key: string;
+  model_display_name: string;
+  input_tokens_median: number;
+  input_tokens_std: number;
+  output_tokens_median: number;
+  output_tokens_std: number;
+}
+
+export interface QuestionTokenData {
+  question_id: string;
+  question_text: string;
+  models: QuestionTokenModelData[];
 }
 
 export interface ModelComparisonResponse {
   model_summaries: Record<string, SummaryStats>;
   heatmap_data: HeatmapQuestion[];
+  question_token_data: QuestionTokenData[];
 }

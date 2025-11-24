@@ -221,6 +221,8 @@ export interface ExportableResult {
   rubric?: ExportableResultRubric;
   deep_judgment?: ExportableResultDeepJudgment;
   deep_judgment_rubric?: ExportableResultDeepJudgmentRubric;
+  // Question data (added during export from checkpoint)
+  raw_answer?: string;
 }
 
 /**
@@ -552,7 +554,7 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       // Metadata fields
       question_id: escapeCSVField(result.metadata.question_id),
       question_text: escapeCSVField(result.metadata.question_text),
-      raw_answer: '', // No longer in structure, legacy field
+      raw_answer: escapeCSVField(result.raw_answer || ''), // Added from checkpoint during export
       answering_model: escapeCSVField(result.metadata.answering_model),
       parsing_model: escapeCSVField(result.metadata.parsing_model),
       answering_replicate: escapeCSVField(result.metadata.answering_replicate || ''),

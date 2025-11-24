@@ -11,6 +11,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ModelSelectorDropdown } from './ModelSelectorDropdown';
 import { QuestionHeatmap } from './QuestionHeatmap';
+import { QuestionTokenBarChart } from './QuestionTokenBarChart';
 import { VerificationResultDetailModal } from '../benchmark/VerificationResultDetailModal';
 import { fetchModelComparison } from '../../utils/summaryApi';
 import type { VerificationResult, ModelConfig, ModelComparisonResponse, Checkpoint, Rubric } from '../../types';
@@ -40,26 +41,10 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   // Modal state
   const [selectedResult, setSelectedResult] = useState<VerificationResult | null>(null);
 
-  // Replicate selection state
-  const [selectedReplicate, setSelectedReplicate] = useState<number | null>(null);
-
-  // Extract unique replicates from results
-  const availableReplicates = useMemo(() => {
-    const replicates = new Set<number>();
-    Object.values(results).forEach((result) => {
-      if (result.metadata.answering_replicate !== undefined) {
-        replicates.add(result.metadata.answering_replicate);
-      }
-    });
-    return Array.from(replicates).sort((a, b) => a - b);
-  }, [results]);
-
-  // Auto-select first replicate when available
-  useEffect(() => {
-    if (availableReplicates.length > 0 && selectedReplicate === null) {
-      setSelectedReplicate(availableReplicates[0]);
-    }
-  }, [availableReplicates, selectedReplicate]);
+  // Question selection state
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
+  const [questionSearchText, setQuestionSearchText] = useState('');
+  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
 
   // Extract unique models from results on mount
   useEffect(() => {
@@ -121,7 +106,6 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
           results,
           models: selectedModels,
           parsing_model: parsingModel,
-          replicate: selectedReplicate,
         });
 
         console.log('📊 Comparison data received:', {
@@ -160,7 +144,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     };
 
     fetchComparison();
-  }, [selectedModels, results, parsingModel, selectedReplicate]);
+  }, [selectedModels, results, parsingModel]);
 
   // Notify parent when comparison data changes
   useEffect(() => {
@@ -169,12 +153,63 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     }
   }, [comparisonData, onComparisonDataChange]);
 
+  // Extract available questions and auto-select all when data changes
+  const availableQuestions = useMemo(() => {
+    if (!comparisonData?.heatmap_data) return [];
+    return comparisonData.heatmap_data.map((q) => ({
+      id: q.question_id,
+      text: q.question_text,
+      keywords: q.keywords || [],
+    }));
+  }, [comparisonData]);
+
+  // Extract all unique keywords from questions
+  const availableKeywords = useMemo(() => {
+    const keywordSet = new Set<string>();
+    availableQuestions.forEach((q) => {
+      q.keywords.forEach((keyword) => keywordSet.add(keyword));
+    });
+    return Array.from(keywordSet).sort();
+  }, [availableQuestions]);
+
+  // Auto-select all questions when available questions change
+  useEffect(() => {
+    if (availableQuestions.length > 0) {
+      setSelectedQuestions(new Set(availableQuestions.map((q) => q.id)));
+    }
+  }, [availableQuestions]);
+
+  // Filter questions based on search text and selected keywords
+  const filteredQuestions = useMemo(() => {
+    let filtered = availableQuestions;
+
+    // Filter by search text
+    if (questionSearchText) {
+      const searchLower = questionSearchText.toLowerCase();
+      filtered = filtered.filter((q) => q.text.toLowerCase().includes(searchLower));
+    }
+
+    // Filter by selected keywords (question must have at least one of the selected keywords)
+    if (selectedKeywords.size > 0) {
+      filtered = filtered.filter((q) => q.keywords.some((keyword) => selectedKeywords.has(keyword)));
+    }
+
+    return filtered;
+  }, [availableQuestions, questionSearchText, selectedKeywords]);
+
+  // Filter heatmap and token data based on selected questions
+  const filteredHeatmapData = useMemo(() => {
+    if (!comparisonData?.heatmap_data) return [];
+    return comparisonData.heatmap_data.filter((q) => selectedQuestions.has(q.question_id));
+  }, [comparisonData, selectedQuestions]);
+
+  const filteredTokenData = useMemo(() => {
+    if (!comparisonData?.question_token_data) return [];
+    return comparisonData.question_token_data.filter((q) => selectedQuestions.has(q.question_id));
+  }, [comparisonData, selectedQuestions]);
+
   const getModelKey = (model: ModelConfig): string => {
     return `${model.answering_model}|${model.mcp_config}`;
-  };
-
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString();
   };
 
   const formatDuration = (seconds: number): string => {
@@ -184,13 +219,51 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     return `${secs.toFixed(1)}s`;
   };
 
+  // Question selection handlers
+  const handleSelectAllQuestions = () => {
+    setSelectedQuestions(new Set(availableQuestions.map((q) => q.id)));
+  };
+
+  const handleSelectNoneQuestions = () => {
+    setSelectedQuestions(new Set());
+  };
+
+  const handleToggleQuestion = (questionId: string) => {
+    setSelectedQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(questionId)) {
+        newSet.delete(questionId);
+      } else {
+        newSet.add(questionId);
+      }
+      return newSet;
+    });
+  };
+
+  // Keyword selection handlers
+  const handleToggleKeyword = (keyword: string) => {
+    setSelectedKeywords((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(keyword)) {
+        newSet.delete(keyword);
+      } else {
+        newSet.add(keyword);
+      }
+      return newSet;
+    });
+  };
+
+  const handleClearKeywords = () => {
+    setSelectedKeywords(new Set());
+  };
+
   // Handle heatmap cell click - find and display the result
-  const handleCellClick = (questionId: string, modelKey: string) => {
-    // Find the matching result for the selected replicate
+  const handleCellClick = (questionId: string, modelKey: string, replicate?: number) => {
+    // Find the matching result for the specified replicate
     const matchingResult = Object.values(results).find((result) => {
       if (result.metadata.question_id !== questionId) return false;
       if (result.metadata.parsing_model !== parsingModel) return false;
-      if (result.metadata.answering_replicate !== selectedReplicate) return false;
+      if (replicate !== undefined && result.metadata.answering_replicate !== replicate) return false;
 
       // Extract model info from result
       const resultAnsweringModel = result.metadata.answering_model;
@@ -204,7 +277,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     if (matchingResult) {
       setSelectedResult(matchingResult);
     } else {
-      console.warn('No matching result found for:', { questionId, modelKey, replicate: selectedReplicate });
+      console.warn('No matching result found for:', { questionId, modelKey, replicate });
     }
   };
 
@@ -245,8 +318,16 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
           <div>
             <h3 className="text-md font-semibold text-slate-800 dark:text-slate-200 mb-3">Metrics Comparison</h3>
 
-            {/* Detailed metrics in a grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Detailed metrics in a grid - dynamic layout based on model count */}
+            <div
+              className={`grid gap-6 ${
+                selectedModels.length === 2
+                  ? 'grid-cols-1 md:grid-cols-2'
+                  : selectedModels.length === 3
+                    ? 'grid-cols-1 md:grid-cols-3'
+                    : 'grid-cols-1 md:grid-cols-2'
+              }`}
+            >
               {selectedModels.map((model) => {
                 const modelKey = getModelKey(model);
                 const summary = comparisonData.model_summaries[modelKey];
@@ -302,25 +383,43 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                               <td className={labelClass}>Total Tokens:</td>
                               <td className={valueClass}>
                                 <div>
-                                  {formatNumber(summary.tokens.total_input)} input,{' '}
-                                  {formatNumber(summary.tokens.total_output)} output
+                                  {Math.round(summary.tokens.total_input).toLocaleString()} ±{' '}
+                                  {Math.round(summary.tokens.total_input_std).toLocaleString()} input,{' '}
+                                  {Math.round(summary.tokens.total_output).toLocaleString()} ±{' '}
+                                  {Math.round(summary.tokens.total_output_std).toLocaleString()} output
                                 </div>
                                 <div className="mt-1 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                                   <div>
-                                    └─ Templates: {formatNumber(summary.tokens.template_input)} input,{' '}
-                                    {formatNumber(summary.tokens.template_output)} output
+                                    └─ Templates: {Math.round(summary.tokens.template_input).toLocaleString()} ±{' '}
+                                    {Math.round(summary.tokens.template_input_std).toLocaleString()} input,{' '}
+                                    {Math.round(summary.tokens.template_output).toLocaleString()} ±{' '}
+                                    {Math.round(summary.tokens.template_output_std).toLocaleString()} output
                                   </div>
                                   <div>
-                                    └─ Rubrics: {formatNumber(summary.tokens.rubric_input)} input,{' '}
-                                    {formatNumber(summary.tokens.rubric_output)} output
+                                    └─ Rubrics: {Math.round(summary.tokens.rubric_input).toLocaleString()} ±{' '}
+                                    {Math.round(summary.tokens.rubric_input_std).toLocaleString()} input,{' '}
+                                    {Math.round(summary.tokens.rubric_output).toLocaleString()} ±{' '}
+                                    {Math.round(summary.tokens.rubric_output_std).toLocaleString()} output
                                   </div>
                                   {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
                                     <div>
-                                      └─ Deep Judgment: {formatNumber(summary.tokens.deep_judgment_input)} input,{' '}
-                                      {formatNumber(summary.tokens.deep_judgment_output)} output
+                                      └─ Deep Judgment:{' '}
+                                      {Math.round(summary.tokens.deep_judgment_input).toLocaleString()} ±{' '}
+                                      {Math.round(summary.tokens.deep_judgment_input_std || 0).toLocaleString()} input,{' '}
+                                      {Math.round(summary.tokens.deep_judgment_output).toLocaleString()} ±{' '}
+                                      {Math.round(summary.tokens.deep_judgment_output_std || 0).toLocaleString()} output
                                     </div>
                                   )}
                                 </div>
+                              </td>
+                            </tr>
+                            <tr className={rowClass}>
+                              <td className={labelClass}>Median Tokens/Question:</td>
+                              <td className={valueClass}>
+                                {Math.round(summary.tokens.median_per_question_input).toLocaleString()} ±{' '}
+                                {Math.round(summary.tokens.median_per_question_input_std).toLocaleString()} input,{' '}
+                                {Math.round(summary.tokens.median_per_question_output).toLocaleString()} ±{' '}
+                                {Math.round(summary.tokens.median_per_question_output_std).toLocaleString()} output
                               </td>
                             </tr>
                           </tbody>
@@ -507,36 +606,141 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
               Question-by-Question Comparison
             </h3>
 
-            {/* Replicate Selector */}
-            {availableReplicates.length > 1 && (
-              <div className="mb-4">
-                <label
-                  htmlFor="replicate-selector"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                >
-                  Select Replicate:
-                </label>
-                <select
-                  id="replicate-selector"
-                  value={selectedReplicate ?? ''}
-                  onChange={(e) => setSelectedReplicate(Number(e.target.value))}
-                  className="block w-48 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                >
-                  {availableReplicates.map((rep) => (
-                    <option key={rep} value={rep}>
-                      Replicate {rep}
-                    </option>
-                  ))}
-                </select>
+            {/* Question and Keyword Filters */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Filter Questions ({selectedQuestions.size}/{availableQuestions.length} selected):
+              </label>
+              <div className="flex gap-4">
+                {/* Question Selector */}
+                <div className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 p-3">
+                  {/* Search and Action Buttons */}
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      placeholder="Search questions..."
+                      value={questionSearchText}
+                      onChange={(e) => setQuestionSearchText(e.target.value)}
+                      className="flex-1 px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    />
+                    <button
+                      onClick={handleSelectAllQuestions}
+                      className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded border border-blue-200 dark:border-blue-800 transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={handleSelectNoneQuestions}
+                      className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 transition-colors"
+                    >
+                      Select None
+                    </button>
+                  </div>
+
+                  {/* Question Checkboxes */}
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {filteredQuestions.length === 0 ? (
+                      <div className="text-sm text-slate-500 dark:text-slate-400 italic">
+                        No questions match filters
+                      </div>
+                    ) : (
+                      filteredQuestions.map((question) => (
+                        <label
+                          key={question.id}
+                          className="flex items-start gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded cursor-pointer group"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedQuestions.has(question.id)}
+                            onChange={() => handleToggleQuestion(question.id)}
+                            className="mt-0.5 w-4 h-4 text-blue-600 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                          />
+                          <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100">
+                            {question.text}
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Keyword Filter */}
+                {availableKeywords.length > 0 && (
+                  <div className="w-64 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 p-3">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Keywords ({selectedKeywords.size}/{availableKeywords.length})
+                      </h4>
+                      {selectedKeywords.size > 0 && (
+                        <button
+                          onClick={handleClearKeywords}
+                          className="px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Keyword Pills */}
+                    <div className="max-h-48 overflow-y-auto">
+                      <div className="flex flex-wrap gap-2">
+                        {availableKeywords.map((keyword) => (
+                          <button
+                            key={keyword}
+                            onClick={() => handleToggleKeyword(keyword)}
+                            className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                              selectedKeywords.has(keyword)
+                                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            }`}
+                          >
+                            {keyword}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Click on any cell to view detailed trace</p>
             <QuestionHeatmap
-              data={comparisonData.heatmap_data}
+              data={filteredHeatmapData}
               modelKeys={selectedModels.map(getModelKey)}
               onCellClick={handleCellClick}
             />
+
+            {/* Token Usage per Question */}
+            {filteredTokenData.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                  Token Usage per Question
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                  Bar charts show median token usage across all replicates with error bars indicating standard
+                  deviation.
+                </p>
+                <div className="space-y-8">
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Input Tokens</h4>
+                    <QuestionTokenBarChart
+                      data={filteredTokenData}
+                      selectedModels={selectedModels.map(getModelKey)}
+                      tokenType="input"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Output Tokens</h4>
+                    <QuestionTokenBarChart
+                      data={filteredTokenData}
+                      selectedModels={selectedModels.map(getModelKey)}
+                      tokenType="output"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
