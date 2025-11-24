@@ -29,11 +29,15 @@ interface MCPConfigurationModalProps {
     mcp_urls_dict: Record<string, string>;
     mcp_tool_filter: string[];
     mcp_validated_servers?: Record<string, string>;
+    use_full_trace_for_template?: boolean;
+    use_full_trace_for_rubric?: boolean;
   }) => void;
   initialConfig?: {
     mcp_urls_dict?: Record<string, string>;
     mcp_tool_filter?: string[];
     mcp_validated_servers?: Record<string, string>;
+    use_full_trace_for_template?: boolean;
+    use_full_trace_for_rubric?: boolean;
   };
 }
 
@@ -56,6 +60,10 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
   const [presetConfigs, setPresetConfigs] = useState<Record<string, MCPPresetConfig>>({});
   const [presetError, setPresetError] = useState<string | null>(null);
   const [serverToValidate, setServerToValidate] = useState<number | null>(null);
+
+  // Trace filtering settings (for MCP agents)
+  const [useFullTraceForTemplate, setUseFullTraceForTemplate] = useState<boolean>(true);
+  const [useFullTraceForRubric, setUseFullTraceForRubric] = useState<boolean>(true);
 
   // Fetch preset configurations
   const fetchPresetConfigs = async () => {
@@ -107,6 +115,10 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
       const newConfiguration = { servers, selectedTools };
       setConfiguration(newConfiguration);
       setInitialConfiguration({ servers: [...servers], selectedTools: new Set(selectedTools) });
+
+      // Initialize trace filtering settings (default to true if not specified)
+      setUseFullTraceForTemplate(initialConfig.use_full_trace_for_template ?? true);
+      setUseFullTraceForRubric(initialConfig.use_full_trace_for_rubric ?? true);
 
       // Auto-validate servers that were previously validated
       if (validatedServers.size > 0) {
@@ -425,7 +437,13 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
 
     const mcp_tool_filter = Array.from(configuration.selectedTools);
 
-    onSave({ mcp_urls_dict, mcp_tool_filter, mcp_validated_servers });
+    onSave({
+      mcp_urls_dict,
+      mcp_tool_filter,
+      mcp_validated_servers,
+      use_full_trace_for_template: useFullTraceForTemplate,
+      use_full_trace_for_rubric: useFullTraceForRubric,
+    });
   };
 
   // Allow saving if configuration has changed from initial state
@@ -719,6 +737,39 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Agent Trace Evaluation Options */}
+          <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="flex items-start space-x-2 mb-3">
+              <AlertCircle className="w-4 h-4 text-slate-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-slate-600 dark:text-slate-300">
+                When using MCP servers, an agent performs multi-step reasoning with tool calls to answer questions.
+                Toggle whether the full trace of actions is exposed to validation or just the final answer.
+              </div>
+            </div>
+
+            <div className="space-y-2 ml-6">
+              <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useFullTraceForTemplate}
+                  onChange={(e) => setUseFullTraceForTemplate(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="text-slate-700 dark:text-slate-300">Use full trace for template evaluation</span>
+              </label>
+
+              <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useFullTraceForRubric}
+                  onChange={(e) => setUseFullTraceForRubric(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="text-slate-700 dark:text-slate-300">Use full trace for rubric evaluation</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
