@@ -348,6 +348,101 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           filterFn: 'includesString',
         }
       ),
+      columnHelper.accessor((row) => row.metadata.completed_without_errors, {
+        id: 'completed_without_errors',
+        header: 'Completed Without Errors',
+        cell: (info) => {
+          const row = info.row.original;
+
+          // Check for abstention first
+          if (row.template?.abstention_detected && row.template?.abstention_check_performed) {
+            return (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
+                Abstained
+              </span>
+            );
+          }
+
+          // Regular true/false display
+          return (
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+                info.getValue()
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+              }`}
+            >
+              {info.getValue() ? 'true' : 'false'}
+            </span>
+          );
+        },
+        filterFn: (row, columnId, value) => {
+          const rowValue = row.getValue(columnId);
+          const original = row.original as VerificationResult;
+
+          // If no filter is set, show all
+          if (!value || value.size === 0) return true;
+
+          // Check for abstention
+          if (value.has('abstained')) {
+            if (original.template?.abstention_detected && original.template?.abstention_check_performed) {
+              return true;
+            }
+          }
+
+          // Check for regular success/failed states
+          if (
+            value.has(true) &&
+            rowValue === true &&
+            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
+          ) {
+            return true;
+          }
+          if (
+            value.has(false) &&
+            rowValue === false &&
+            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
+          ) {
+            return true;
+          }
+
+          return false;
+        },
+      }),
+      columnHelper.accessor((row) => row.template?.verify_result, {
+        id: 'verify_result',
+        header: 'Verification',
+        cell: (info) => {
+          const value = info.getValue();
+          const row = info.row.original;
+          const templatePerformed = row.template?.template_verification_performed;
+
+          // If template verification was not performed (rubric_only mode), show "Not evaluated"
+          if (templatePerformed === false) {
+            return (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                Not evaluated
+              </span>
+            );
+          }
+
+          // Template verification was performed, show result
+          return (
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
+                value === true
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                  : value === false
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {value === true ? 'Passed' : value === false ? 'Failed' : 'N/A'}
+            </span>
+          );
+        },
+        filterFn: 'arrIncludesSome',
+      }),
       columnHelper.accessor((row) => row.template?.parsed_gt_response, {
         id: 'parsed_gt_response',
         header: 'Ground Truth',
@@ -463,101 +558,6 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor((row) => row.metadata.completed_without_errors, {
-        id: 'completed_without_errors',
-        header: 'Completed Without Errors',
-        cell: (info) => {
-          const row = info.row.original;
-
-          // Check for abstention first
-          if (row.template?.abstention_detected && row.template?.abstention_check_performed) {
-            return (
-              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
-                Abstained
-              </span>
-            );
-          }
-
-          // Regular true/false display
-          return (
-            <span
-              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                info.getValue()
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-              }`}
-            >
-              {info.getValue() ? 'true' : 'false'}
-            </span>
-          );
-        },
-        filterFn: (row, columnId, value) => {
-          const rowValue = row.getValue(columnId);
-          const original = row.original as VerificationResult;
-
-          // If no filter is set, show all
-          if (!value || value.size === 0) return true;
-
-          // Check for abstention
-          if (value.has('abstained')) {
-            if (original.template?.abstention_detected && original.template?.abstention_check_performed) {
-              return true;
-            }
-          }
-
-          // Check for regular success/failed states
-          if (
-            value.has(true) &&
-            rowValue === true &&
-            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
-          ) {
-            return true;
-          }
-          if (
-            value.has(false) &&
-            rowValue === false &&
-            !(original.template?.abstention_detected && original.template?.abstention_check_performed)
-          ) {
-            return true;
-          }
-
-          return false;
-        },
-      }),
-      columnHelper.accessor((row) => row.template?.verify_result, {
-        id: 'verify_result',
-        header: 'Verification',
-        cell: (info) => {
-          const value = info.getValue();
-          const row = info.row.original;
-          const templatePerformed = row.template?.template_verification_performed;
-
-          // If template verification was not performed (rubric_only mode), show "Not evaluated"
-          if (templatePerformed === false) {
-            return (
-              <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                Not evaluated
-              </span>
-            );
-          }
-
-          // Template verification was performed, show result
-          return (
-            <span
-              className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                value === true
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                  : value === false
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-              }`}
-            >
-              {value === true ? 'Passed' : value === false ? 'Failed' : 'N/A'}
-            </span>
-          );
-        },
-        filterFn: 'arrIncludesSome',
-      }),
       columnHelper.accessor(
         (row) => {
           const granularResult = row.template?.verify_granular_result;
@@ -608,7 +608,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
             <RubricCell rubricResult={combinedRubricResult} metricTraitMetrics={row.rubric?.metric_trait_scores} />
           );
         },
-        filterFn: (row, columnId, value) => {
+        filterFn: (row, _columnId, value) => {
           // Combine split trait scores for filtering (use new fields, fallback to legacy)
           const rubricResult = row.original.rubric?.verify_rubric || {
             ...row.original.rubric?.llm_trait_scores,
@@ -745,7 +745,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
   const getUniqueModels = () => {
     try {
       if (!benchmarkResults) {
-        return { answeringModels: [], parsingModels: [], runNames: [], replicates: [] };
+        return { answeringModels: [], parsingModels: [], runNames: [], replicates: [], mcpServers: [] };
       }
       const allResults = Object.values(benchmarkResults);
       const answeringModels = new Set(
