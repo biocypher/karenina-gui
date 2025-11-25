@@ -150,10 +150,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Handle export filtered results - Fix the function to work with simple client-side export
   const handleExportFilteredResults = async (format: 'json' | 'csv') => {
-    const filteredResults = Object.values(benchmarkResults).map((result) => ({
-      ...result,
-      raw_answer: checkpoint[result.metadata.question_id]?.raw_answer,
-    })) as ExportableResult[];
+    // No transformation needed - raw_answer is already in metadata
+    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
 
     // Build job summary from current results
     const jobSummary: JobSummaryMetadata = {
@@ -181,10 +179,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Handle custom export with field selection
   const handleCustomExport = (selectedFields: string[], format: 'json' | 'csv') => {
-    const filteredResults = Object.values(benchmarkResults).map((result) => ({
-      ...result,
-      raw_answer: checkpoint[result.metadata.question_id]?.raw_answer,
-    })) as ExportableResult[];
+    // No transformation needed - raw_answer is already in metadata
+    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
 
     // Build job summary from current results
     const jobSummary: JobSummaryMetadata = {

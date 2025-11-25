@@ -225,7 +225,7 @@ export interface TemplateGenerationConfig {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'native_sdk';
   endpoint_base_url?: string;
   endpoint_api_key?: string;
 }
@@ -283,11 +283,14 @@ export interface ModelConfiguration {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'native_sdk';
   system_prompt: string;
   // MCP (Model Context Protocol) configuration
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
+  // OpenAI Endpoint configuration
+  endpoint_base_url?: string;
+  endpoint_api_key?: string;
   // Extra keyword arguments
   extra_kwargs?: Record<string, unknown>;
 }
@@ -315,6 +318,7 @@ export interface VerificationResultMetadata {
   completed_without_errors: boolean;
   error?: string;
   question_text: string;
+  raw_answer?: string;
   keywords?: string[];
   answering_model: string;
   parsing_model: string;

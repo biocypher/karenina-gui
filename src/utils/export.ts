@@ -59,6 +59,7 @@ export interface ExportableResultMetadata {
   completed_without_errors: boolean;
   error?: string;
   question_text: string;
+  raw_answer?: string;
   keywords?: string[];
   answering_model: string;
   parsing_model: string;

@@ -21,6 +21,8 @@ export interface VerificationConfig {
   deep_judgment_excerpt_retry_attempts?: number;
   deep_judgment_search_enabled?: boolean;
   deep_judgment_search_tool?: string;
+  deep_judgment_rubric_mode?: 'disabled' | 'enable_all' | 'use_checkpoint';
+  deep_judgment_rubric_global_excerpts?: boolean;
   few_shot_config?: FewShotConfig | null;
   db_config?: Record<string, unknown> | null;
 }
@@ -33,7 +35,7 @@ export interface ModelConfig {
   model_provider: string;
   model_name: string;
   temperature?: number;
-  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'native_sdk';
   system_prompt: string;
   max_retries?: number;
   mcp_urls_dict?: Record<string, string> | null;
