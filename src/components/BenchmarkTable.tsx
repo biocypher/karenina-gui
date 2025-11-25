@@ -328,9 +328,9 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       }),
       columnHelper.accessor(
         (row) => {
-          // First check if raw_answer is on the result itself (from uploaded JSON)
-          // Then fall back to checkpoint (for live results)
-          return row.raw_answer || checkpoint?.[row.metadata.question_id]?.raw_answer || '';
+          // First check if raw_answer is in metadata (from CLI export or backend)
+          // Then fall back to checkpoint (for live results without raw_answer in metadata)
+          return row.metadata.raw_answer || checkpoint?.[row.metadata.question_id]?.raw_answer || '';
         },
         {
           id: 'raw_answer',

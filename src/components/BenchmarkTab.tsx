@@ -1336,10 +1336,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         isOpen={isCustomExportDialogOpen}
         onClose={() => setIsCustomExportDialogOpen(false)}
         results={
-          Object.values(benchmarkResults).map((result) => ({
-            ...result,
-            raw_answer: checkpoint[result.metadata.question_id]?.raw_answer,
-          })) as ExportableResult[]
+          // No transformation needed - raw_answer is already in metadata
+          Object.values(benchmarkResults) as ExportableResult[]
         }
         globalRubric={currentRubric}
         onExport={handleCustomExport}
