@@ -10,7 +10,7 @@ interface ModelConfiguration {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'native_sdk';
   system_prompt: string;
   // OpenAI Endpoint configuration
   endpoint_base_url?: string;
@@ -219,7 +219,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               checked={model.interface === 'langchain'}
               onChange={(e) => {
                 const update = {
-                  interface: e.target.value as 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint',
+                  interface: e.target.value as ModelConfiguration['interface'],
                 };
                 if (isAnswering) {
                   onUpdateAnsweringModel(model.id, update);
@@ -240,7 +240,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               checked={model.interface === 'openrouter'}
               onChange={(e) => {
                 const update = {
-                  interface: e.target.value as 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint',
+                  interface: e.target.value as ModelConfiguration['interface'],
                 };
                 if (isAnswering) {
                   onUpdateAnsweringModel(model.id, update);
@@ -261,7 +261,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
               checked={model.interface === 'openai_endpoint'}
               onChange={(e) => {
                 const update = {
-                  interface: e.target.value as 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint',
+                  interface: e.target.value as ModelConfiguration['interface'],
                 };
                 if (isAnswering) {
                   onUpdateAnsweringModel(model.id, update);
@@ -274,6 +274,32 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             />
             OpenAI Endpoint
           </label>
+          <label className="flex items-center text-slate-900 dark:text-white">
+            <input
+              type="radio"
+              name={`${model.id}-interface`}
+              value="native_sdk"
+              checked={model.interface === 'native_sdk'}
+              onChange={(e) => {
+                // When switching to native_sdk, force provider to be openai or anthropic
+                const currentProvider = model.model_provider;
+                const validNativeSdkProvider =
+                  currentProvider === 'openai' || currentProvider === 'anthropic' ? currentProvider : 'openai';
+                const update = {
+                  interface: e.target.value as ModelConfiguration['interface'],
+                  model_provider: validNativeSdkProvider,
+                };
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
+              }}
+              disabled={isRunning}
+              className="mr-2"
+            />
+            Native SDK
+          </label>
           {isAnswering && (
             <label className="flex items-center text-slate-900 dark:text-white">
               <input
@@ -283,7 +309,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 checked={model.interface === 'manual'}
                 onChange={(e) => {
                   const update = {
-                    interface: e.target.value as 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint',
+                    interface: e.target.value as ModelConfiguration['interface'],
                   };
                   if (isAnswering) {
                     onUpdateAnsweringModel(model.id, update);
@@ -394,6 +420,58 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
+      {/* Native SDK Configuration - Show only for native_sdk interface */}
+      {model.interface === 'native_sdk' && (
+        <div className="space-y-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Provider <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={model.model_provider}
+              onChange={(e) => {
+                const update = { model_provider: e.target.value };
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
+              }}
+              disabled={isRunning}
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            >
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+            </select>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Direct SDK calls without LangChain abstraction
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Model Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={model.model_name}
+              onChange={(e) => {
+                const update = { model_name: e.target.value };
+                if (isAnswering) {
+                  onUpdateAnsweringModel(model.id, update);
+                } else {
+                  onUpdateParsingModel(model.id, update);
+                }
+              }}
+              disabled={isRunning}
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              placeholder={
+                model.model_provider === 'openai' ? 'e.g., gpt-4.1-mini, gpt-4o' : 'e.g., claude-sonnet-4-20250514'
+              }
+            />
+          </div>
+        </div>
+      )}
+
       {/* Model Name - Show for LangChain and OpenRouter interfaces */}
       {(model.interface === 'langchain' || model.interface === 'openrouter') && (
         <div className="mb-4">
@@ -416,10 +494,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* Temperature - Show for LangChain, OpenRouter, and OpenAI Endpoint interfaces */}
+      {/* Temperature - Show for LangChain, OpenRouter, OpenAI Endpoint, and Native SDK interfaces */}
       {(model.interface === 'langchain' ||
         model.interface === 'openrouter' ||
-        model.interface === 'openai_endpoint') && (
+        model.interface === 'openai_endpoint' ||
+        model.interface === 'native_sdk') && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Temperature: {model.temperature}
@@ -444,10 +523,11 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
 
-      {/* System Prompt - Show for LangChain, OpenRouter, and OpenAI Endpoint interfaces */}
+      {/* System Prompt - Show for LangChain, OpenRouter, OpenAI Endpoint, and Native SDK interfaces */}
       {(model.interface === 'langchain' ||
         model.interface === 'openrouter' ||
-        model.interface === 'openai_endpoint') && (
+        model.interface === 'openai_endpoint' ||
+        model.interface === 'native_sdk') && (
         <div className="mb-2">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">System Prompt</label>
