@@ -377,9 +377,13 @@ export interface VerificationResultTemplate {
 
 /**
  * Rubric subclass - rubric evaluation with split trait types
+ *
+ * Note: evaluation_rubric is no longer stored per-result in v2.0 format.
+ * It's now in shared_data.rubric_definition (stored once for entire export).
  */
 export interface VerificationResultRubric {
   rubric_evaluation_performed?: boolean;
+  rubric_evaluation_strategy?: string;
   // Legacy flat rubric scores (deprecated, use split trait scores below)
   verify_rubric?: Record<string, number | boolean>;
   // Split trait scores by type
@@ -387,7 +391,7 @@ export interface VerificationResultRubric {
   regex_trait_scores?: Record<string, boolean>; // regex-based
   callable_trait_scores?: Record<string, boolean | number>; // boolean or score (1-5)
   metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
-  evaluation_rubric?: Rubric;
+  // Note: evaluation_rubric removed in v2.0 - now stored in shared_data.rubric_definition
   // Metric trait confusion matrices
   metric_trait_confusion_lists?: Record<
     string,
@@ -516,6 +520,11 @@ export interface VerificationResultDeepJudgmentRubric {
  * BREAKING CHANGE: Now uses nested composition instead of flat structure.
  * When adding fields: Update the appropriate subinterface.
  * See docs: .agents/dev/recurring-issues.md#issue-1-gui-export-sync-when-adding-verificationresult-fields
+ *
+ * v2.0 changes:
+ * - evaluation_input, used_full_trace, trace_extraction_error moved to root level
+ *   (shared by template and rubric evaluation, not stored separately)
+ * - evaluation_rubric removed from per-result rubric (now in shared_data)
  */
 export interface VerificationResult {
   metadata: VerificationResultMetadata;
@@ -523,6 +532,10 @@ export interface VerificationResult {
   rubric?: VerificationResultRubric;
   deep_judgment?: VerificationResultDeepJudgment;
   deep_judgment_rubric?: VerificationResultDeepJudgmentRubric;
+  // Root-level trace filtering fields (v2.0 - shared by template and rubric)
+  evaluation_input?: string;
+  used_full_trace?: boolean;
+  trace_extraction_error?: string;
   // Question data (may be added from checkpoint for display purposes)
   raw_answer?: string;
 }

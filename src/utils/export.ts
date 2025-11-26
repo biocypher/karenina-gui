@@ -43,10 +43,24 @@ export interface ExportMetadata {
 }
 
 /**
- * Unified export format (matches backend exporter.py)
+ * Shared data section for v2.0 format (stores once, not per-result)
+ */
+export interface SharedDataExport {
+  rubric_definition?: Record<string, unknown>;
+}
+
+/**
+ * Unified export format v2.0 (matches backend exporter.py)
+ *
+ * Optimizations in v2.0:
+ * - format_version: "2.0" marker
+ * - shared_data.rubric_definition: Stored once (not per-result, saves ~6KB per result)
+ * - evaluation_input at result root level (shared by template/rubric, not duplicated)
  */
 export interface UnifiedExportFormat {
+  format_version: string;
   metadata: ExportMetadata;
+  shared_data: SharedDataExport;
   results: ExportableResult[];
 }
 
@@ -116,15 +130,18 @@ export interface ExportableResultTemplate {
 
 /**
  * Rubric subclass - rubric evaluation with split trait types
+ *
+ * Note: evaluation_rubric is no longer stored per-result in v2.0 format.
+ * It's now in shared_data.rubric_definition (stored once for entire export).
  */
 export interface ExportableResultRubric {
   rubric_evaluation_performed?: boolean;
+  rubric_evaluation_strategy?: string;
   // Split trait scores by type (replaces old verify_rubric)
   llm_trait_scores?: Record<string, number>; // 1-5 scale
   regex_trait_scores?: Record<string, boolean>; // regex-based
   callable_trait_scores?: Record<string, boolean | number>; // boolean or score (1-5)
   metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
-  evaluation_rubric?: Record<string, unknown>;
   // Metric trait confusion matrices
   metric_trait_confusion_lists?: Record<
     string,
@@ -215,6 +232,11 @@ export interface ExportableResultDeepJudgmentRubric {
  * BREAKING CHANGE: Now uses nested composition instead of flat structure.
  * When adding fields: Update the appropriate subinterface, allHeaders array, and allRowData object.
  * See docs: .agents/dev/recurring-issues.md#issue-1-gui-export-sync-when-adding-verificationresult-fields
+ *
+ * v2.0 changes:
+ * - evaluation_input, used_full_trace, trace_extraction_error moved to root level
+ *   (shared by template and rubric evaluation, not stored separately)
+ * - evaluation_rubric removed from per-result (now in shared_data)
  */
 export interface ExportableResult {
   metadata: ExportableResultMetadata;
@@ -222,6 +244,10 @@ export interface ExportableResult {
   rubric?: ExportableResultRubric;
   deep_judgment?: ExportableResultDeepJudgment;
   deep_judgment_rubric?: ExportableResultDeepJudgmentRubric;
+  // Root-level trace filtering fields (v2.0 - shared by template and rubric)
+  evaluation_input?: string;
+  used_full_trace?: boolean;
+  trace_extraction_error?: string;
   // Question data (added during export from checkpoint)
   raw_answer?: string;
 }
@@ -267,14 +293,20 @@ export async function exportFromServer(jobId: string, format: 'json' | 'csv'): P
 }
 
 /**
- * Converts results to JSON format with unified export structure (matches backend format)
+ * Converts results to JSON format with v2.0 unified export structure (matches backend format)
+ *
+ * v2.0 format optimizations:
+ * - format_version: "2.0" marker for version detection
+ * - shared_data.rubric_definition: Rubric stored once (not per-result)
+ * - evaluation_input at result root level (shared by template/rubric)
  */
 export function exportToJSON(
   results: ExportableResult[],
   selectedFields?: string[],
   jobId?: string,
   verificationConfig?: VerificationConfig,
-  jobSummary?: JobSummaryMetadata
+  jobSummary?: JobSummaryMetadata,
+  globalRubric?: Rubric
 ): string {
   // Process results (handle abstention display)
   const processedResults = results.map((result) => {
@@ -328,8 +360,21 @@ export function exportToJSON(
     };
   }
 
-  // Build unified export structure
+  // Build rubric definition for shared_data (v2.0 optimization)
+  // Store rubric once instead of per-result
+  let rubricDefinition: Record<string, unknown> | undefined;
+  if (globalRubric) {
+    rubricDefinition = {
+      llm_traits: globalRubric.llm_traits || globalRubric.traits,
+      regex_traits: globalRubric.regex_traits,
+      callable_traits: globalRubric.callable_traits,
+      metric_traits: globalRubric.metric_traits,
+    };
+  }
+
+  // Build unified export structure (v2.0 format)
   const unifiedExport: UnifiedExportFormat = {
+    format_version: '2.0',
     metadata: {
       export_timestamp: new Date()
         .toISOString()
@@ -339,6 +384,9 @@ export function exportToJSON(
       job_id: jobId,
       verification_config: exportVerificationConfig,
       job_summary: jobSummary,
+    },
+    shared_data: {
+      rubric_definition: rubricDefinition,
     },
     results: processedResults,
   };
@@ -744,7 +792,7 @@ export function exportFilteredResults(
     let fileName: string;
 
     if (format === 'json') {
-      content = exportToJSON(results, selectedFields, jobId, verificationConfig, jobSummary);
+      content = exportToJSON(results, selectedFields, jobId, verificationConfig, jobSummary, globalRubric);
       mimeType = 'application/json';
       fileName = `filtered_results_${new Date().toISOString().split('T')[0]}.json`;
     } else {

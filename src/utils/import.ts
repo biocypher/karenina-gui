@@ -7,6 +7,8 @@ import type { ExportableResult, UnifiedExportFormat, ExportMetadata } from './ex
 export interface ParsedImportResult {
   results: Record<string, VerificationResult>;
   metadata?: ExportMetadata;
+  /** Shared rubric definition from v2.0 format (stored once, not per-result) */
+  sharedRubricDefinition?: Record<string, unknown>;
   stats: {
     totalResults: number;
     questions: Set<string>;
@@ -90,7 +92,21 @@ function generateResultId(result: ExportableResult, index: number): string {
 }
 
 /**
+ * Shared data structure in v2.0 format (rubric stored once, not per-result)
+ */
+interface SharedData {
+  rubric_definition?: Record<string, unknown>;
+}
+
+/**
  * Parses and validates uploaded verification results JSON
+ *
+ * Supports multiple formats:
+ * - v2.0 format: {format_version: "2.0", metadata, shared_data, results}
+ *   - Optimized format with rubric definition stored once in shared_data
+ *   - Trace filtering fields at result root level (not duplicated per template/rubric)
+ * - Unified format: {metadata, results} without version marker (legacy v1.x)
+ * - Legacy array format: [result1, result2, ...]
  *
  * @param jsonString - Raw JSON string from uploaded file
  * @returns Parsed results with metadata and statistics
@@ -112,12 +128,27 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
 
   let resultsArray: unknown[];
   let metadata: ExportMetadata | undefined;
+  let sharedData: SharedData | undefined;
 
-  // Detect format: Unified (with metadata wrapper) vs legacy array
+  // Detect format: v2.0, Unified (legacy), or legacy array
   const parsedObj = parsed as Record<string, unknown>;
 
-  if ('metadata' in parsedObj && 'results' in parsedObj) {
-    // Unified format with metadata wrapper
+  if (parsedObj.format_version === '2.0') {
+    // v2.0 format - optimized with shared_data for rubric definition
+    if (!Array.isArray(parsedObj.results)) {
+      throw new ImportValidationError('Expected "results" to be an array in v2.0 format');
+    }
+
+    resultsArray = parsedObj.results;
+    metadata = parsedObj.metadata as ExportMetadata;
+    sharedData = parsedObj.shared_data as SharedData | undefined;
+
+    console.log('Detected v2.0 export format with shared_data optimization');
+    if (sharedData?.rubric_definition) {
+      console.log('Found shared rubric_definition in shared_data');
+    }
+  } else if ('metadata' in parsedObj && 'results' in parsedObj) {
+    // Legacy unified format with metadata wrapper (v1.x)
     const unified = parsedObj as Partial<UnifiedExportFormat>;
 
     if (!Array.isArray(unified.results)) {
@@ -127,14 +158,14 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
     resultsArray = unified.results;
     metadata = unified.metadata as ExportMetadata;
 
-    console.log('Detected unified export format with metadata wrapper');
+    console.log('Detected legacy unified export format with metadata wrapper');
   } else if (Array.isArray(parsed)) {
     // Legacy array format (old frontend exports)
     resultsArray = parsed;
     console.log('Detected legacy array export format');
   } else {
     throw new ImportValidationError(
-      'Unrecognized format. Expected either unified format {metadata, results} or legacy array format'
+      'Unrecognized format. Expected v2.0 format {format_version: "2.0", ...}, unified format {metadata, results}, or legacy array format'
     );
   }
 
@@ -171,6 +202,8 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
   return {
     results: transformedResults,
     metadata,
+    // Include shared rubric definition from v2.0 format if available
+    sharedRubricDefinition: sharedData?.rubric_definition,
     stats: {
       totalResults: resultsArray.length,
       questions,
