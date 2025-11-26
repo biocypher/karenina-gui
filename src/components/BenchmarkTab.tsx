@@ -15,7 +15,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { ColumnFiltersState } from '@tanstack/react-table';
-import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
+import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig, Rubric } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
 import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
@@ -97,7 +97,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   } = useBenchmarkConfiguration();
 
   // Rubric store
-  const { currentRubric } = useRubricStore();
+  const { currentRubric, setCurrentRubric } = useRubricStore();
   const { storageUrl, metadata } = useDatasetStore();
 
   // Verification state
@@ -590,6 +590,25 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         );
       }
 
+      // Update rubric from uploaded file if available (v2.0 format)
+      if (parsedUpload.sharedRubricDefinition) {
+        const rubricDef = parsedUpload.sharedRubricDefinition as Record<string, unknown>;
+        // Construct a proper Rubric object
+        const rubric: Rubric = {
+          llm_traits: (rubricDef.llm_traits as Rubric['llm_traits']) || [],
+          regex_traits: rubricDef.regex_traits as Rubric['regex_traits'],
+          callable_traits: rubricDef.callable_traits as Rubric['callable_traits'],
+          metric_traits: rubricDef.metric_traits as Rubric['metric_traits'],
+        };
+        console.log('📋 Applying shared rubric definition from uploaded file:', {
+          llm_traits: rubric.llm_traits?.length,
+          regex_traits: rubric.regex_traits?.length,
+          callable_traits: rubric.callable_traits?.length,
+          metric_traits: rubric.metric_traits?.length,
+        });
+        setCurrentRubric(rubric);
+      }
+
       setIsUploadDialogOpen(false);
       setParsedUpload(null);
       setError(null);
@@ -911,9 +930,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 No finished templates available. Complete some templates in the curator first.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 bg-white dark:bg-slate-800 z-10">
                     <tr className="border-b border-slate-200 dark:border-slate-600">
                       <th className="text-left py-3 px-4 font-medium text-slate-700 dark:text-slate-300 w-12">
                         <input

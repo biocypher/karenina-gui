@@ -8,13 +8,22 @@
  * - Click cells to drill down to specific results
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ModelSelectorDropdown } from './ModelSelectorDropdown';
 import { QuestionHeatmap } from './QuestionHeatmap';
 import { QuestionTokenBarChart } from './QuestionTokenBarChart';
+import { RubricTraitMenu } from './RubricTraitMenu';
 import { VerificationResultDetailModal } from '../benchmark/VerificationResultDetailModal';
 import { fetchModelComparison } from '../../utils/summaryApi';
-import type { VerificationResult, ModelConfig, ModelComparisonResponse, Checkpoint, Rubric } from '../../types';
+import type {
+  VerificationResult,
+  ModelConfig,
+  ModelComparisonResponse,
+  Checkpoint,
+  Rubric,
+  TraitLetterMap,
+  BadgeVisibilityFilter,
+} from '../../types';
 
 interface ModelOption {
   answering_model: string;
@@ -45,6 +54,39 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
   const [questionSearchText, setQuestionSearchText] = useState('');
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
+
+  // Rubric badge overlay state
+  const [traitLetterAssignments, setTraitLetterAssignments] = useState<TraitLetterMap>({});
+  const [badgeVisibilityFilter, setBadgeVisibilityFilter] = useState<BadgeVisibilityFilter>('all');
+
+  // Extract rubric from results if not provided via checkpoint
+  // This is needed when loading results from a file (the rubric is embedded in VerificationResult)
+  const effectiveRubric = useMemo(() => {
+    // Use checkpoint rubric if available
+    if (currentRubric) {
+      console.log('🎯 Using currentRubric from checkpoint:', {
+        llm_traits: currentRubric.llm_traits?.length,
+        regex_traits: currentRubric.regex_traits?.length,
+        callable_traits: currentRubric.callable_traits?.length,
+      });
+      return currentRubric;
+    }
+
+    // Otherwise, extract from first result that has an evaluation_rubric
+    const resultWithRubric = Object.values(results).find((result) => result.rubric?.evaluation_rubric);
+
+    const extractedRubric = resultWithRubric?.rubric?.evaluation_rubric ?? null;
+    console.log('🔍 Extracting rubric from results:', {
+      hasResultWithRubric: !!resultWithRubric,
+      rubricComponent: resultWithRubric?.rubric,
+      extractedRubric,
+      llm_traits: extractedRubric?.llm_traits?.length,
+      regex_traits: extractedRubric?.regex_traits?.length,
+      callable_traits: extractedRubric?.callable_traits?.length,
+    });
+
+    return extractedRubric;
+  }, [currentRubric, results]);
 
   // Extract unique models from results on mount
   useEffect(() => {
@@ -280,6 +322,30 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
       console.warn('No matching result found for:', { questionId, modelKey, replicate });
     }
   };
+
+  // Handler for rubric trait letter assignment
+  const handleAssignLetter = useCallback(
+    (traitName: string, traitType: 'llm' | 'regex' | 'callable', kind: 'boolean' | 'score', letters: string | null) => {
+      setTraitLetterAssignments((prev) => {
+        if (letters === null) {
+          // Remove assignment - create new object without the trait
+          const newAssignments = { ...prev };
+          delete newAssignments[traitName];
+          return newAssignments;
+        }
+        return {
+          ...prev,
+          [traitName]: { traitName, traitType, kind, letters },
+        };
+      });
+    },
+    []
+  );
+
+  // Handler for badge visibility change
+  const handleVisibilityChange = useCallback((filter: BadgeVisibilityFilter) => {
+    setBadgeVisibilityFilter(filter);
+  }, []);
 
   if (loading) {
     return (
@@ -704,11 +770,22 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
               </div>
             </div>
 
+            {/* Rubric Trait Badge Menu */}
+            <RubricTraitMenu
+              rubric={effectiveRubric}
+              letterAssignments={traitLetterAssignments}
+              visibilityFilter={badgeVisibilityFilter}
+              onAssignLetter={handleAssignLetter}
+              onVisibilityChange={handleVisibilityChange}
+            />
+
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Click on any cell to view detailed trace</p>
             <QuestionHeatmap
               data={filteredHeatmapData}
               modelKeys={selectedModels.map(getModelKey)}
               onCellClick={handleCellClick}
+              letterAssignments={traitLetterAssignments}
+              visibilityFilter={badgeVisibilityFilter}
             />
 
             {/* Token Usage per Question */}

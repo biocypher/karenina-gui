@@ -147,6 +147,8 @@ export interface SchemaOrgRating {
   deep_judgment_fuzzy_match_threshold?: number;
   deep_judgment_excerpt_retry_attempts?: number;
   deep_judgment_search_enabled?: boolean;
+  // Additional properties for storing trait-specific fields (regex, callable, metric)
+  additionalProperty?: SchemaOrgPropertyValue[];
 }
 
 export interface SchemaOrgPropertyValue {
@@ -377,9 +379,13 @@ export interface VerificationResultTemplate {
 
 /**
  * Rubric subclass - rubric evaluation with split trait types
+ *
+ * Note: evaluation_rubric is no longer stored per-result in v2.0 format.
+ * It's now in shared_data.rubric_definition (stored once for entire export).
  */
 export interface VerificationResultRubric {
   rubric_evaluation_performed?: boolean;
+  rubric_evaluation_strategy?: string;
   // Legacy flat rubric scores (deprecated, use split trait scores below)
   verify_rubric?: Record<string, number | boolean>;
   // Split trait scores by type
@@ -387,7 +393,7 @@ export interface VerificationResultRubric {
   regex_trait_scores?: Record<string, boolean>; // regex-based
   callable_trait_scores?: Record<string, boolean | number>; // boolean or score (1-5)
   metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
-  evaluation_rubric?: Rubric;
+  // Note: evaluation_rubric removed in v2.0 - now stored in shared_data.rubric_definition
   // Metric trait confusion matrices
   metric_trait_confusion_lists?: Record<
     string,
@@ -516,6 +522,11 @@ export interface VerificationResultDeepJudgmentRubric {
  * BREAKING CHANGE: Now uses nested composition instead of flat structure.
  * When adding fields: Update the appropriate subinterface.
  * See docs: .agents/dev/recurring-issues.md#issue-1-gui-export-sync-when-adding-verificationresult-fields
+ *
+ * v2.0 changes:
+ * - evaluation_input, used_full_trace, trace_extraction_error moved to root level
+ *   (shared by template and rubric evaluation, not stored separately)
+ * - evaluation_rubric removed from per-result rubric (now in shared_data)
  */
 export interface VerificationResult {
   metadata: VerificationResultMetadata;
@@ -523,6 +534,10 @@ export interface VerificationResult {
   rubric?: VerificationResultRubric;
   deep_judgment?: VerificationResultDeepJudgment;
   deep_judgment_rubric?: VerificationResultDeepJudgmentRubric;
+  // Root-level trace filtering fields (v2.0 - shared by template and rubric)
+  evaluation_input?: string;
+  used_full_trace?: boolean;
+  trace_extraction_error?: string;
   // Question data (may be added from checkpoint for display purposes)
   raw_answer?: string;
 }
@@ -870,6 +885,12 @@ export interface HeatmapCell {
   input_tokens?: number;
   output_tokens?: number;
   iterations?: number;
+  // Rubric trait scores for badge overlays
+  rubric_scores?: {
+    llm?: Record<string, number | boolean>; // LLM traits can be score (1-5) OR boolean
+    regex?: Record<string, boolean>; // Regex traits are always boolean
+    callable?: Record<string, boolean | number>; // Callable traits can be boolean or score
+  };
 }
 
 export interface HeatmapModelReplicates {
@@ -910,3 +931,16 @@ export interface ModelComparisonResponse {
   heatmap_data: HeatmapQuestion[];
   question_token_data: QuestionTokenData[];
 }
+
+// Rubric Badge Overlay Types
+export interface TraitLetterAssignment {
+  traitName: string;
+  traitType: 'llm' | 'regex' | 'callable';
+  kind: 'boolean' | 'score';
+  letters: string; // 1-2 characters, e.g., "A" or "AB"
+}
+
+export type TraitLetterMap = Record<string, TraitLetterAssignment>;
+
+// Visibility filter for rubric badges on heatmap
+export type BadgeVisibilityFilter = 'all' | 'passed' | 'failed' | 'hidden';
