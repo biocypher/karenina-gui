@@ -353,7 +353,7 @@ export function RubricTraitMenu({
         isOpen={inspectedTrait !== null}
         onClose={() => setInspectedTrait(null)}
         title={inspectedTrait?.name || 'Trait Details'}
-        size="sm"
+        size="lg"
       >
         {inspectedTrait && <TraitDetailsContent trait={inspectedTrait} />}
       </Modal>

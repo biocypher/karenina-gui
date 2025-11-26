@@ -458,19 +458,19 @@ export default function RubricTraitEditor() {
                   htmlFor={`trait-description-${index}`}
                   className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                 >
-                  Trait Description
+                  Trait Description <span className="text-slate-400 font-normal">(supports Markdown)</span>
                 </label>
-                <input
+                <textarea
                   id={`trait-description-${index}`}
-                  type="text"
                   value={trait.description || ''}
                   onChange={(e) => handleTraitChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
                              bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
                              focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
-                             hover:border-slate-400 dark:hover:border-slate-500"
-                  placeholder="What should be evaluated for this trait?"
+                             hover:border-slate-400 dark:hover:border-slate-500 resize-y font-mono"
+                  placeholder="What should be evaluated for this trait?&#10;&#10;Supports Markdown:&#10;## Headers&#10;**bold** and *italic*&#10;- bullet lists&#10;1. numbered lists&#10;| tables |"
                   aria-label="Trait description"
+                  rows={6}
                 />
               </div>
 
