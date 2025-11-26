@@ -911,9 +911,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 No finished templates available. Complete some templates in the curator first.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 bg-white dark:bg-slate-800 z-10">
                     <tr className="border-b border-slate-200 dark:border-slate-600">
                       <th className="text-left py-3 px-4 font-medium text-slate-700 dark:text-slate-300 w-12">
                         <input
