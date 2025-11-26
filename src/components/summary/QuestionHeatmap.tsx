@@ -8,12 +8,16 @@
  */
 
 import React, { useState } from 'react';
-import type { HeatmapQuestion, HeatmapCell } from '../../types';
+import type { HeatmapQuestion, HeatmapCell, TraitLetterMap, BadgeVisibilityFilter } from '../../types';
+import { RubricBadgeOverlay } from './RubricBadgeOverlay';
 
 interface QuestionHeatmapProps {
   data: HeatmapQuestion[];
   modelKeys: string[];
   onCellClick?: (questionId: string, modelKey: string, replicate?: number) => void;
+  // Rubric badge overlay props
+  letterAssignments?: TraitLetterMap;
+  visibilityFilter?: BadgeVisibilityFilter;
 }
 
 interface FlattenedColumn {
@@ -30,9 +34,17 @@ interface TooltipData {
   iterations: number;
   x: number;
   y: number;
+  // Rubric scores for tooltip display
+  rubricScores?: HeatmapCell['rubric_scores'];
 }
 
-export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatmapProps) {
+export function QuestionHeatmap({
+  data,
+  modelKeys,
+  onCellClick,
+  letterAssignments,
+  visibilityFilter = 'all',
+}: QuestionHeatmapProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
 
   // Safety checks
@@ -145,6 +157,7 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
       iterations: cell?.iterations || 0,
       x: rect.left + rect.width / 2,
       y: rect.top,
+      rubricScores: cell?.rubric_scores,
     });
   };
 
@@ -278,9 +291,19 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
                         onMouseLeave={handleMouseLeave}
                       >
                         <div
-                          className="w-full h-full min-h-[50px] transition-opacity hover:opacity-80"
+                          className="w-full h-full min-h-[50px] transition-opacity hover:opacity-80 relative overflow-hidden"
                           style={{ backgroundColor: color }}
-                        />
+                        >
+                          {/* Rubric badge overlay */}
+                          {letterAssignments && Object.keys(letterAssignments).length > 0 && (
+                            <RubricBadgeOverlay
+                              rubricScores={cell?.rubric_scores}
+                              letterAssignments={letterAssignments}
+                              visibilityFilter={visibilityFilter}
+                              cellPassed={cell?.passed ?? null}
+                            />
+                          )}
+                        </div>
                       </td>
                       {/* Spacer column between model groups */}
                       {isLastInGroup && colIdx < flattenedColumns.length - 1 && (
@@ -351,6 +374,63 @@ export function QuestionHeatmap({ data, modelKeys, onCellClick }: QuestionHeatma
                 </div>
               )}
             </div>
+
+            {/* Rubric Results Section */}
+            {tooltip.rubricScores && (
+              <div className="mt-3 pt-2 border-t border-slate-700">
+                <div className="font-semibold mb-2 text-slate-100">Rubric Results</div>
+                <div className="space-y-2">
+                  {/* LLM Traits */}
+                  {tooltip.rubricScores.llm && Object.keys(tooltip.rubricScores.llm).length > 0 && (
+                    <div>
+                      <div className="text-blue-400 text-[10px] font-medium mb-1">LLM Traits</div>
+                      {Object.entries(tooltip.rubricScores.llm).map(([name, value]) => (
+                        <div key={name} className="flex justify-between gap-4 text-[11px]">
+                          <span className="text-slate-400 truncate max-w-[120px]">{name}:</span>
+                          <span
+                            className={`font-medium ${typeof value === 'boolean' ? (value ? 'text-green-400' : 'text-red-400') : ''}`}
+                          >
+                            {typeof value === 'boolean' ? (value ? 'Pass' : 'Fail') : `${value}/5`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Regex Traits */}
+                  {tooltip.rubricScores.regex && Object.keys(tooltip.rubricScores.regex).length > 0 && (
+                    <div>
+                      <div className="text-purple-400 text-[10px] font-medium mb-1">Regex Traits</div>
+                      {Object.entries(tooltip.rubricScores.regex).map(([name, value]) => (
+                        <div key={name} className="flex justify-between gap-4 text-[11px]">
+                          <span className="text-slate-400 truncate max-w-[120px]">{name}:</span>
+                          <span className={`font-medium ${value ? 'text-green-400' : 'text-red-400'}`}>
+                            {value ? 'Pass' : 'Fail'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Callable Traits */}
+                  {tooltip.rubricScores.callable && Object.keys(tooltip.rubricScores.callable).length > 0 && (
+                    <div>
+                      <div className="text-amber-400 text-[10px] font-medium mb-1">Callable Traits</div>
+                      {Object.entries(tooltip.rubricScores.callable).map(([name, value]) => (
+                        <div key={name} className="flex justify-between gap-4 text-[11px]">
+                          <span className="text-slate-400 truncate max-w-[120px]">{name}:</span>
+                          <span
+                            className={`font-medium ${typeof value === 'boolean' ? (value ? 'text-green-400' : 'text-red-400') : ''}`}
+                          >
+                            {typeof value === 'boolean' ? (value ? 'Pass' : 'Fail') : `${value}/5`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

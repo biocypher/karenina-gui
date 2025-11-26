@@ -870,6 +870,12 @@ export interface HeatmapCell {
   input_tokens?: number;
   output_tokens?: number;
   iterations?: number;
+  // Rubric trait scores for badge overlays
+  rubric_scores?: {
+    llm?: Record<string, number | boolean>; // LLM traits can be score (1-5) OR boolean
+    regex?: Record<string, boolean>; // Regex traits are always boolean
+    callable?: Record<string, boolean | number>; // Callable traits can be boolean or score
+  };
 }
 
 export interface HeatmapModelReplicates {
@@ -910,3 +916,16 @@ export interface ModelComparisonResponse {
   heatmap_data: HeatmapQuestion[];
   question_token_data: QuestionTokenData[];
 }
+
+// Rubric Badge Overlay Types
+export interface TraitLetterAssignment {
+  traitName: string;
+  traitType: 'llm' | 'regex' | 'callable';
+  kind: 'boolean' | 'score';
+  letters: string; // 1-2 characters, e.g., "A" or "AB"
+}
+
+export type TraitLetterMap = Record<string, TraitLetterAssignment>;
+
+// Visibility filter for rubric badges on heatmap
+export type BadgeVisibilityFilter = 'all' | 'passed' | 'failed' | 'hidden';
