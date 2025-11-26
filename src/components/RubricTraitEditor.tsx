@@ -48,7 +48,7 @@ export default function RubricTraitEditor() {
   useEffect(() => {
     if (!currentRubric) {
       setCurrentRubric({
-        traits: [],
+        llm_traits: [],
         regex_traits: [],
         metric_traits: [],
       });
@@ -78,7 +78,7 @@ export default function RubricTraitEditor() {
       const regexTrait = currentRubric.regex_traits?.[index];
       if (!regexTrait) return;
 
-      if (newType === 'regex') return; // Already manual
+      if (newType === 'manual') return; // Already manual
 
       // Remove from regex_traits
       const updatedRegexTraits = currentRubric.regex_traits.filter((_, i) => i !== index);
@@ -111,7 +111,7 @@ export default function RubricTraitEditor() {
 
         setCurrentRubric({
           ...currentRubric,
-          traits: [...currentRubric.traits, convertedTrait],
+          llm_traits: [...currentRubric.llm_traits, convertedTrait],
           regex_traits: updatedRegexTraits,
         });
       }
@@ -125,7 +125,7 @@ export default function RubricTraitEditor() {
       // Remove from metric_traits
       const updatedMetricTraits = currentRubric.metric_traits.filter((_, i) => i !== index);
 
-      if (newType === 'regex') {
+      if (newType === 'manual') {
         // Convert to manual trait
         const convertedTrait: RegexTrait = {
           name: metricTrait.name,
@@ -151,7 +151,7 @@ export default function RubricTraitEditor() {
 
         setCurrentRubric({
           ...currentRubric,
-          traits: [...currentRubric.traits, convertedTrait],
+          llm_traits: [...currentRubric.llm_traits, convertedTrait],
           metric_traits: updatedMetricTraits,
         });
       }
@@ -160,7 +160,7 @@ export default function RubricTraitEditor() {
       const llmTrait = currentRubric.llm_traits[index];
       if (!llmTrait) return;
 
-      if (newType === 'regex') {
+      if (newType === 'manual') {
         // Convert to manual trait
         const convertedTrait: RegexTrait = {
           name: llmTrait.name,
@@ -174,7 +174,7 @@ export default function RubricTraitEditor() {
 
         setCurrentRubric({
           ...currentRubric,
-          traits: updatedTraits,
+          llm_traits: updatedTraits,
           regex_traits: [...(currentRubric.regex_traits || []), convertedTrait],
         });
       } else if (newType === 'metric') {
@@ -193,7 +193,7 @@ export default function RubricTraitEditor() {
 
         setCurrentRubric({
           ...currentRubric,
-          traits: updatedTraits,
+          llm_traits: updatedTraits,
           metric_traits: [...(currentRubric.metric_traits || []), convertedTrait],
         });
       } else {
@@ -354,7 +354,7 @@ export default function RubricTraitEditor() {
         {/* LLM-based Traits */}
         {(currentRubric.llm_traits || []).map((trait, index) => (
           <div
-            key={index}
+            key={`llm-${trait.name}-${index}`}
             className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
@@ -641,7 +641,7 @@ export default function RubricTraitEditor() {
         {/* Regex Traits */}
         {(currentRubric.regex_traits || []).map((trait, index) => (
           <div
-            key={`regex-${index}`}
+            key={`regex-${trait.name}-${index}`}
             className="bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
@@ -891,7 +891,7 @@ export default function RubricTraitEditor() {
         {/* Metric (Confusion Matrix) Traits */}
         {(currentRubric.metric_traits || []).map((trait, index) => (
           <div
-            key={`metric-${index}`}
+            key={`metric-${trait.name}-${index}`}
             className="bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
@@ -1121,7 +1121,7 @@ export default function RubricTraitEditor() {
         {/* Callable Traits (Read-Only) */}
         {(currentRubric.callable_traits || []).map((trait, index) => (
           <div
-            key={`callable-${index}`}
+            key={`callable-${trait.name}-${index}`}
             className="bg-teal-50 dark:bg-teal-900/10 rounded-lg border border-teal-200 dark:border-teal-800 p-6 shadow-sm"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
@@ -1229,7 +1229,12 @@ export default function RubricTraitEditor() {
       <div className="flex justify-end space-x-3">
         <button
           onClick={handleSaveRubric}
-          disabled={isSavingRubric || !currentRubric.llm_traits || currentRubric.llm_traits.length === 0}
+          disabled={
+            isSavingRubric ||
+            ((!currentRubric.llm_traits || currentRubric.llm_traits.length === 0) &&
+              (!currentRubric.regex_traits || currentRubric.regex_traits.length === 0) &&
+              (!currentRubric.metric_traits || currentRubric.metric_traits.length === 0))
+          }
           className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-md hover:bg-slate-900 dark:hover:bg-slate-600
                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >

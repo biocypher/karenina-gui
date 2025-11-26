@@ -463,7 +463,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       <div className="space-y-3 mb-4">
         {(questionRubric.llm_traits || []).map((trait, index) => (
           <div
-            key={index}
+            key={`q-llm-${trait.name}-${index}`}
             className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
@@ -740,7 +740,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
         {/* Callable Traits (Read-Only) */}
         {(questionRubric.callable_traits || []).map((trait, index) => (
           <div
-            key={`callable-${index}`}
+            key={`q-callable-${trait.name}-${index}`}
             className="bg-teal-50 dark:bg-teal-900/10 rounded-lg border border-teal-200 dark:border-teal-800 p-6 shadow-sm"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
@@ -818,7 +818,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
         {/* Regex Traits */}
         {(questionRubric.regex_traits || []).map((trait, index) => (
           <div
-            key={`regex-${index}`}
+            key={`q-regex-${trait.name}-${index}`}
             className="bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
@@ -1055,7 +1055,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
         {/* Metric (Confusion Matrix) Traits */}
         {(questionRubric.metric_traits || []).map((trait, index) => (
           <div
-            key={`metric-${index}`}
+            key={`q-metric-${trait.name}-${index}`}
             className="bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
           >
             <div className="grid grid-cols-12 gap-4 items-start">
