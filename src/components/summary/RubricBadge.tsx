@@ -22,12 +22,10 @@ const getScoreColor = (score: number): string => {
 };
 
 /**
- * Get background color for boolean badges (lower opacity)
+ * Get background color for boolean badges (gray background for visibility)
  */
-const getBooleanBackgroundColor = (value: boolean): string => {
-  return value
-    ? 'rgba(34, 197, 94, 0.4)' // green 40%
-    : 'rgba(239, 68, 68, 0.4)'; // red 40%
+const getBooleanBackgroundColor = (): string => {
+  return 'rgb(156, 163, 175)'; // gray-400 solid
 };
 
 /**
@@ -73,7 +71,7 @@ export function RubricBadge({ letters, value, kind }: RubricBadgeProps) {
     <div
       className="flex items-center justify-center rounded text-[10px] font-bold shadow-sm"
       style={{
-        backgroundColor: getBooleanBackgroundColor(boolValue),
+        backgroundColor: getBooleanBackgroundColor(),
         minWidth: letters.length === 1 ? '18px' : '24px',
         height: '14px',
         padding: '0 3px',
