@@ -147,6 +147,8 @@ export interface SchemaOrgRating {
   deep_judgment_fuzzy_match_threshold?: number;
   deep_judgment_excerpt_retry_attempts?: number;
   deep_judgment_search_enabled?: boolean;
+  // Additional properties for storing trait-specific fields (regex, callable, metric)
+  additionalProperty?: SchemaOrgPropertyValue[];
 }
 
 export interface SchemaOrgPropertyValue {

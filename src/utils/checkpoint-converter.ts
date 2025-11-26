@@ -187,6 +187,137 @@ export function convertRubricTraitToRating(
   }
 }
 
+export function convertRegexTraitToRating(
+  trait: RegexTrait,
+  rubricType: 'global' | 'question-specific'
+): SchemaOrgRating {
+  const additionalType = rubricType === 'global' ? 'GlobalRegexTrait' : 'QuestionSpecificRegexTrait';
+
+  return {
+    '@type': 'Rating' as const,
+    '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
+    name: trait.name,
+    description: trait.description,
+    additionalType,
+    bestRating: 1,
+    worstRating: 0,
+    additionalProperty: [
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'pattern',
+        value: trait.pattern,
+      },
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'case_sensitive',
+        value: trait.case_sensitive ?? true,
+      },
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'invert_result',
+        value: trait.invert_result ?? false,
+      },
+    ],
+  };
+}
+
+export function convertCallableTraitToRating(
+  trait: CallableTrait,
+  rubricType: 'global' | 'question-specific'
+): SchemaOrgRating {
+  const additionalType = rubricType === 'global' ? 'GlobalCallableTrait' : 'QuestionSpecificCallableTrait';
+
+  const additionalProperties: SchemaOrgPropertyValue[] = [
+    {
+      '@type': 'PropertyValue' as const,
+      name: 'callable_code',
+      value: trait.callable_code,
+    },
+    {
+      '@type': 'PropertyValue' as const,
+      name: 'kind',
+      value: trait.kind,
+    },
+    {
+      '@type': 'PropertyValue' as const,
+      name: 'invert_result',
+      value: trait.invert_result ?? false,
+    },
+  ];
+
+  // Add min_score and max_score for score-based callables
+  if (trait.min_score !== undefined) {
+    additionalProperties.push({
+      '@type': 'PropertyValue' as const,
+      name: 'min_score',
+      value: trait.min_score,
+    });
+  }
+
+  if (trait.max_score !== undefined) {
+    additionalProperties.push({
+      '@type': 'PropertyValue' as const,
+      name: 'max_score',
+      value: trait.max_score,
+    });
+  }
+
+  return {
+    '@type': 'Rating' as const,
+    '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
+    name: trait.name,
+    description: trait.description,
+    additionalType,
+    bestRating: trait.kind === 'boolean' ? 1 : (trait.max_score ?? 5),
+    worstRating: trait.kind === 'boolean' ? 0 : (trait.min_score ?? 1),
+    additionalProperty: additionalProperties,
+  };
+}
+
+export function convertMetricTraitToRating(
+  trait: MetricRubricTrait,
+  rubricType: 'global' | 'question-specific'
+): SchemaOrgRating {
+  const additionalType = rubricType === 'global' ? 'GlobalMetricRubricTrait' : 'QuestionSpecificMetricRubricTrait';
+
+  return {
+    '@type': 'Rating' as const,
+    '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
+    name: trait.name,
+    description: trait.description,
+    additionalType,
+    bestRating: 1, // Metric traits produce metric dictionaries, not simple scores
+    worstRating: 0,
+    additionalProperty: [
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'evaluation_mode',
+        value: trait.evaluation_mode,
+      },
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'metrics',
+        value: trait.metrics,
+      },
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'tp_instructions',
+        value: trait.tp_instructions,
+      },
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'tn_instructions',
+        value: trait.tn_instructions ?? [],
+      },
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'repeated_extraction',
+        value: trait.repeated_extraction ?? false,
+      },
+    ],
+  };
+}
+
 export function convertRatingToRubricTrait(rating: SchemaOrgRating): RubricTrait {
   // Validate rating object
   if (!rating || typeof rating !== 'object') {
@@ -444,35 +575,35 @@ export function v2ToJsonLd(
 
       // Add only question-specific rubric traits (global traits will be stored at Dataset level)
       if (item.question_rubric) {
-        item.question_rubric.llm_traits.forEach((trait) => {
-          const rating = convertRubricTraitToRating(trait, 'question-specific');
-          ratings.push(rating);
-        });
+        // Convert LLM traits
+        if (item.question_rubric.llm_traits && item.question_rubric.llm_traits.length > 0) {
+          item.question_rubric.llm_traits.forEach((trait) => {
+            const rating = convertRubricTraitToRating(trait, 'question-specific');
+            ratings.push(rating);
+          });
+        }
 
-        // Add question-specific regex_traits to additionalProperty if present
+        // Convert regex traits to Rating objects
         if (item.question_rubric.regex_traits && item.question_rubric.regex_traits.length > 0) {
-          question.additionalProperty.push({
-            '@type': 'PropertyValue' as const,
-            name: 'question_regex_rubric_traits',
-            value: JSON.stringify(item.question_rubric.regex_traits),
+          item.question_rubric.regex_traits.forEach((trait) => {
+            const rating = convertRegexTraitToRating(trait, 'question-specific');
+            ratings.push(rating);
           });
         }
 
-        // Add question-specific callable_traits to additionalProperty if present
+        // Convert callable traits to Rating objects
         if (item.question_rubric.callable_traits && item.question_rubric.callable_traits.length > 0) {
-          question.additionalProperty.push({
-            '@type': 'PropertyValue' as const,
-            name: 'question_callable_rubric_traits',
-            value: JSON.stringify(item.question_rubric.callable_traits),
+          item.question_rubric.callable_traits.forEach((trait) => {
+            const rating = convertCallableTraitToRating(trait, 'question-specific');
+            ratings.push(rating);
           });
         }
 
-        // Add question-specific metric_traits to additionalProperty if present
+        // Convert metric traits to Rating objects
         if (item.question_rubric.metric_traits && item.question_rubric.metric_traits.length > 0) {
-          question.additionalProperty.push({
-            '@type': 'PropertyValue' as const,
-            name: 'question_metric_rubric_traits',
-            value: JSON.stringify(item.question_rubric.metric_traits),
+          item.question_rubric.metric_traits.forEach((trait) => {
+            const rating = convertMetricTraitToRating(trait, 'question-specific');
+            ratings.push(rating);
           });
         }
       }
@@ -529,41 +660,43 @@ export function v2ToJsonLd(
     }
 
     // Convert global rubric traits to Rating objects for Dataset level
-    let globalRatings: SchemaOrgRating[] | undefined;
-    if (checkpoint.global_rubric && checkpoint.global_rubric.llm_traits) {
-      globalRatings = checkpoint.global_rubric.llm_traits.map((trait) => convertRubricTraitToRating(trait, 'global'));
+    const globalRatings: SchemaOrgRating[] = [];
+
+    // Convert LLM traits
+    if (checkpoint.global_rubric?.llm_traits && checkpoint.global_rubric.llm_traits.length > 0) {
+      const llmRatings = checkpoint.global_rubric.llm_traits.map((trait) =>
+        convertRubricTraitToRating(trait, 'global')
+      );
+      globalRatings.push(...llmRatings);
     }
 
-    // Add global regex_traits to additionalProperties if present
+    // Convert regex traits to Rating objects
     if (checkpoint.global_rubric?.regex_traits && checkpoint.global_rubric.regex_traits.length > 0) {
-      additionalProperties.push({
-        '@type': 'PropertyValue',
-        name: 'global_regex_rubric_traits',
-        value: JSON.stringify(checkpoint.global_rubric.regex_traits),
-      });
+      const regexRatings = checkpoint.global_rubric.regex_traits.map((trait) =>
+        convertRegexTraitToRating(trait, 'global')
+      );
+      globalRatings.push(...regexRatings);
     }
 
-    // Add global callable_traits to additionalProperties if present
+    // Convert callable traits to Rating objects
     if (checkpoint.global_rubric?.callable_traits && checkpoint.global_rubric.callable_traits.length > 0) {
-      additionalProperties.push({
-        '@type': 'PropertyValue',
-        name: 'global_callable_rubric_traits',
-        value: JSON.stringify(checkpoint.global_rubric.callable_traits),
-      });
+      const callableRatings = checkpoint.global_rubric.callable_traits.map((trait) =>
+        convertCallableTraitToRating(trait, 'global')
+      );
+      globalRatings.push(...callableRatings);
     }
 
-    // Add global metric_traits to additionalProperties if present
+    // Convert metric traits to Rating objects
     if (checkpoint.global_rubric?.metric_traits && checkpoint.global_rubric.metric_traits.length > 0) {
-      additionalProperties.push({
-        '@type': 'PropertyValue',
-        name: 'global_metric_rubric_traits',
-        value: JSON.stringify(checkpoint.global_rubric.metric_traits),
-      });
+      const metricRatings = checkpoint.global_rubric.metric_traits.map((trait) =>
+        convertMetricTraitToRating(trait, 'global')
+      );
+      globalRatings.push(...metricRatings);
     }
 
     // Add conversion metadata if requested (after globalRatings is defined)
     if (options.includeMetadata) {
-      const globalRatingCount = globalRatings ? globalRatings.length : 0;
+      const globalRatingCount = globalRatings.length;
       const questionRatingCount = dataFeedItems.reduce((sum, item) => sum + (item.item.rating?.length || 0), 0);
 
       const metadata: CheckpointConversionMetadata = {
@@ -591,7 +724,7 @@ export function v2ToJsonLd(
       creator: datasetMeta?.creator?.name || defaultCreator,
       dateCreated: dateCreated,
       dateModified: dateModified,
-      rating: globalRatings, // Global rubric traits as Rating objects
+      rating: globalRatings.length > 0 ? globalRatings : undefined, // Global rubric traits as Rating objects
       dataFeedElement: dataFeedItems,
       additionalProperty: additionalProperties,
     };
