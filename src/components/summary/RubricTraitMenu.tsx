@@ -1,5 +1,14 @@
 import React, { useState, useCallback } from 'react';
-import type { Rubric, TraitLetterMap, BadgeVisibilityFilter } from '../../types';
+import { Eye } from 'lucide-react';
+import type {
+  Rubric,
+  TraitLetterMap,
+  BadgeVisibilityFilter,
+  RegexTrait,
+  LLMRubricTrait,
+  CallableTrait,
+} from '../../types';
+import { Modal } from '../ui/Modal';
 
 interface RubricTraitMenuProps {
   rubric: Rubric | null;
@@ -19,6 +28,8 @@ interface TraitItem {
   type: 'llm' | 'regex' | 'callable';
   description?: string;
   kind: 'boolean' | 'score';
+  // Original trait data for details popover
+  originalTrait: LLMRubricTrait | RegexTrait | CallableTrait;
 }
 
 /**
@@ -33,6 +44,82 @@ const getTypeColor = (type: 'llm' | 'regex' | 'callable') => {
     case 'callable':
       return 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200';
   }
+};
+
+/**
+ * Render trait details content for the popover
+ */
+const TraitDetailsContent = ({ trait }: { trait: TraitItem }) => {
+  if (trait.type === 'llm') {
+    const llmTrait = trait.originalTrait as LLMRubricTrait;
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getTypeColor('llm')}`}>LLM</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {llmTrait.kind === 'score' ? `Score (${llmTrait.min_score ?? 1}-${llmTrait.max_score ?? 5})` : 'Boolean'}
+          </span>
+        </div>
+        {llmTrait.description ? (
+          <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{llmTrait.description}</div>
+        ) : (
+          <div className="text-sm text-slate-400 dark:text-slate-500 italic">No description provided</div>
+        )}
+        {llmTrait.deep_judgment_enabled && (
+          <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">✓ Deep Judgment enabled</div>
+        )}
+      </div>
+    );
+  }
+
+  if (trait.type === 'regex') {
+    const regexTrait = trait.originalTrait as RegexTrait;
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getTypeColor('regex')}`}>Regex</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Boolean</span>
+        </div>
+        {regexTrait.description && (
+          <div className="text-sm text-slate-700 dark:text-slate-300 mb-2">{regexTrait.description}</div>
+        )}
+        <div className="bg-slate-100 dark:bg-slate-800 rounded p-2 font-mono text-xs overflow-x-auto">
+          <span className="text-purple-600 dark:text-purple-400">{regexTrait.pattern}</span>
+        </div>
+        <div className="flex gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <span>Case sensitive: {regexTrait.case_sensitive !== false ? 'Yes' : 'No'}</span>
+          {regexTrait.invert_result && <span className="text-amber-600 dark:text-amber-400">Result inverted</span>}
+        </div>
+      </div>
+    );
+  }
+
+  if (trait.type === 'callable') {
+    const callableTrait = trait.originalTrait as CallableTrait;
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getTypeColor('callable')}`}>Callable</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {callableTrait.kind === 'score'
+              ? `Score (${callableTrait.min_score ?? 1}-${callableTrait.max_score ?? 5})`
+              : 'Boolean'}
+          </span>
+        </div>
+        {callableTrait.description ? (
+          <div className="text-sm text-slate-700 dark:text-slate-300">{callableTrait.description}</div>
+        ) : (
+          <div className="text-sm text-slate-400 dark:text-slate-500 italic">No description provided</div>
+        )}
+        <div className="text-xs text-slate-500 dark:text-slate-400">Custom Python function (code not shown)</div>
+        {callableTrait.invert_result && (
+          <div className="text-xs text-amber-600 dark:text-amber-400">Result inverted</div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 };
 
 /**
@@ -53,6 +140,7 @@ export function RubricTraitMenu({
 }: RubricTraitMenuProps) {
   const [editingTrait, setEditingTrait] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [inspectedTrait, setInspectedTrait] = useState<TraitItem | null>(null);
 
   // Collect all non-metric traits
   const traits: TraitItem[] = [];
@@ -65,6 +153,7 @@ export function RubricTraitMenu({
         type: 'llm',
         description: trait.description,
         kind: trait.kind,
+        originalTrait: trait,
       });
     });
 
@@ -75,6 +164,7 @@ export function RubricTraitMenu({
         type: 'regex',
         description: trait.description,
         kind: 'boolean',
+        originalTrait: trait,
       });
     });
 
@@ -85,6 +175,7 @@ export function RubricTraitMenu({
         type: 'callable',
         description: trait.description,
         kind: trait.kind,
+        originalTrait: trait,
       });
     });
   }
@@ -200,7 +291,7 @@ export function RubricTraitMenu({
           const isEditing = editingTrait === trait.name;
 
           return (
-            <div key={trait.name} className="relative">
+            <div key={trait.name}>
               {isEditing ? (
                 <div className="flex items-center gap-1">
                   <input
@@ -238,12 +329,34 @@ export function RubricTraitMenu({
                   )}
                   <span className="max-w-[120px] truncate">{trait.name}</span>
                   <span className={`px-1 py-0.5 rounded text-[10px] ${getTypeColor(trait.type)}`}>{trait.type}</span>
+                  <Eye
+                    size={12}
+                    className={`ml-0.5 cursor-pointer transition-colors ${
+                      assignment
+                        ? 'text-green-600 hover:text-green-800 dark:text-green-300 dark:hover:text-green-100'
+                        : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInspectedTrait(trait);
+                    }}
+                  />
                 </button>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* Trait details modal */}
+      <Modal
+        isOpen={inspectedTrait !== null}
+        onClose={() => setInspectedTrait(null)}
+        title={inspectedTrait?.name || 'Trait Details'}
+        size="sm"
+      >
+        {inspectedTrait && <TraitDetailsContent trait={inspectedTrait} />}
+      </Modal>
     </div>
   );
 }

@@ -15,7 +15,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { ColumnFiltersState } from '@tanstack/react-table';
-import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
+import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig, Rubric } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
 import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
@@ -97,7 +97,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   } = useBenchmarkConfiguration();
 
   // Rubric store
-  const { currentRubric } = useRubricStore();
+  const { currentRubric, setCurrentRubric } = useRubricStore();
   const { storageUrl, metadata } = useDatasetStore();
 
   // Verification state
@@ -588,6 +588,25 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         setUploadSuccess(
           `Successfully merged ${parsedUpload.stats.totalResults} results. Total results: ${Object.keys(merged).length}`
         );
+      }
+
+      // Update rubric from uploaded file if available (v2.0 format)
+      if (parsedUpload.sharedRubricDefinition) {
+        const rubricDef = parsedUpload.sharedRubricDefinition as Record<string, unknown>;
+        // Construct a proper Rubric object
+        const rubric: Rubric = {
+          llm_traits: (rubricDef.llm_traits as Rubric['llm_traits']) || [],
+          regex_traits: rubricDef.regex_traits as Rubric['regex_traits'],
+          callable_traits: rubricDef.callable_traits as Rubric['callable_traits'],
+          metric_traits: rubricDef.metric_traits as Rubric['metric_traits'],
+        };
+        console.log('📋 Applying shared rubric definition from uploaded file:', {
+          llm_traits: rubric.llm_traits?.length,
+          regex_traits: rubric.regex_traits?.length,
+          callable_traits: rubric.callable_traits?.length,
+          metric_traits: rubric.metric_traits?.length,
+        });
+        setCurrentRubric(rubric);
       }
 
       setIsUploadDialogOpen(false);
