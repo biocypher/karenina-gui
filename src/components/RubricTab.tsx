@@ -11,7 +11,7 @@ interface RubricTabProps {
 export const RubricTab: React.FC<RubricTabProps> = ({ questions }) => {
   const hasQuestions = Object.keys(questions).length > 0;
   const { currentRubric } = useRubricStore();
-  const hasGlobalRubric = currentRubric && currentRubric.traits.length > 0;
+  const hasGlobalRubric = currentRubric && currentRubric.llm_traits.length > 0;
 
   // Show rubric management if we have global rubrics OR questions for AI generation
   const showRubricManagement = hasGlobalRubric || hasQuestions;
@@ -60,7 +60,7 @@ export const RubricTab: React.FC<RubricTabProps> = ({ questions }) => {
             </div>
             <p className="text-slate-600 dark:text-slate-300 mb-6">
               {hasGlobalRubric
-                ? `Editing ${currentRubric.traits.length} LLM-evaluated traits${(currentRubric.regex_traits?.length || 0) > 0 ? `, ${currentRubric.regex_traits.length} regex traits` : ''}${(currentRubric.metric_traits?.length || 0) > 0 ? `, ${currentRubric.metric_traits.length} metric traits` : ''}. These traits are available for evaluation across all questions.`
+                ? `Editing ${currentRubric.llm_traits.length} LLM-evaluated traits${(currentRubric.regex_traits?.length || 0) > 0 ? `, ${currentRubric.regex_traits.length} regex traits` : ''}${(currentRubric.metric_traits?.length || 0) > 0 ? `, ${currentRubric.metric_traits.length} metric traits` : ''}. These traits are available for evaluation across all questions.`
                 : 'Create, edit, and organize global rubric traits (LLM-evaluated, regex, and metric). These traits will be available for evaluation across all questions in your benchmark suite.'}
             </p>
             <RubricTraitEditor />
