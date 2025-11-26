@@ -550,6 +550,20 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     }
   };
 
+  // Helper to enrich results with raw_answer from checkpoint
+  const enrichResultsWithRawAnswer = (
+    results: Record<string, VerificationResult>
+  ): Record<string, VerificationResult> => {
+    const enriched: Record<string, VerificationResult> = {};
+    for (const [key, result] of Object.entries(results)) {
+      enriched[key] = {
+        ...result,
+        raw_answer: result.raw_answer || checkpoint[result.metadata.question_id]?.raw_answer,
+      };
+    }
+    return enriched;
+  };
+
   const handleUploadConfirm = (action: MergeAction) => {
     if (action === 'cancel' || !parsedUpload) {
       setIsUploadDialogOpen(false);
@@ -558,15 +572,18 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     }
 
     try {
+      // Enrich uploaded results with raw_answer from checkpoint
+      const enrichedResults = enrichResultsWithRawAnswer(parsedUpload.results);
+
       if (action === 'replace') {
         // Replace existing results
-        setBenchmarkResults(parsedUpload.results);
+        setBenchmarkResults(enrichedResults);
         setUploadSuccess(
           `Successfully loaded ${parsedUpload.stats.totalResults} results from ${parsedUpload.stats.questions.size} questions. Previous results were replaced.`
         );
       } else if (action === 'merge') {
         // Merge with existing results
-        const merged = mergeVerificationResults(benchmarkResults, parsedUpload.results, 'replace');
+        const merged = mergeVerificationResults(benchmarkResults, enrichedResults, 'replace');
         setBenchmarkResults(merged);
         setUploadSuccess(
           `Successfully merged ${parsedUpload.stats.totalResults} results. Total results: ${Object.keys(merged).length}`

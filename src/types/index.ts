@@ -318,7 +318,7 @@ export interface VerificationResultMetadata {
   completed_without_errors: boolean;
   error?: string;
   question_text: string;
-  raw_answer?: string;
+  raw_answer?: string; // Ground truth answer from checkpoint
   keywords?: string[];
   answering_model: string;
   parsing_model: string;

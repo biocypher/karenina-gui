@@ -85,7 +85,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                     <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Raw Answer (Expected)</h4>
                     <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                       <p className="text-slate-800 dark:text-slate-200">
-                        {result.raw_answer || checkpoint[result.metadata.question_id]?.raw_answer || 'N/A'}
+                        {result.metadata.raw_answer || checkpoint[result.metadata.question_id]?.raw_answer || 'N/A'}
                       </p>
                     </div>
                   </div>
