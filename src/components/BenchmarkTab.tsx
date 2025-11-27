@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Play,
   Square,
@@ -13,6 +13,7 @@ import {
   ChevronDown,
   BookmarkPlus,
   Upload,
+  Search,
 } from 'lucide-react';
 import { ColumnFiltersState } from '@tanstack/react-table';
 import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig, Rubric } from '../types';
@@ -110,6 +111,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Test selection state
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
+  const [testSearchTerm, setTestSearchTerm] = useState('');
 
   // Few-shot custom selection state
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
@@ -137,6 +139,17 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Get finished templates from checkpoint
   const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
+
+  // Filter templates based on search term
+  const filteredTemplates = useMemo(() => {
+    if (!testSearchTerm.trim()) {
+      return finishedTemplates;
+    }
+    const searchLower = testSearchTerm.toLowerCase();
+    return finishedTemplates.filter(
+      ([id, item]) => item.question.toLowerCase().includes(searchLower) || id.toLowerCase().includes(searchLower)
+    );
+  }, [finishedTemplates, testSearchTerm]);
 
   const getQuestionPreview = (text: string) => {
     return text.length > 60 ? text.substring(0, 60) + '...' : text;
@@ -627,10 +640,20 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Test selection functions
   const handleSelectAll = () => {
-    setSelectedTests(new Set(finishedTemplates.map(([id]) => id)));
+    // Select all currently visible (filtered) tests
+    const newSelected = new Set(selectedTests);
+    filteredTemplates.forEach(([id]) => newSelected.add(id));
+    setSelectedTests(newSelected);
   };
 
   const handleSelectNone = () => {
+    // Deselect only the currently visible (filtered) tests
+    const newSelected = new Set(selectedTests);
+    filteredTemplates.forEach(([id]) => newSelected.delete(id));
+    setSelectedTests(newSelected);
+  };
+
+  const handleClearAllSelections = () => {
     setSelectedTests(new Set());
   };
 
@@ -895,24 +918,34 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Test Selection ({finishedTemplates.length} available)
+                Test Selection ({filteredTemplates.length}
+                {testSearchTerm ? ` of ${finishedTemplates.length}` : ''} available)
               </h3>
 
               <div className="flex gap-3">
                 <button
                   onClick={handleSelectAll}
-                  disabled={isRunning || finishedTemplates.length === 0}
+                  disabled={isRunning || filteredTemplates.length === 0}
                   className="px-3 py-1 text-sm bg-slate-600 text-white rounded hover:bg-slate-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all duration-200"
                 >
-                  Select All
+                  Select Visible
                 </button>
                 <button
                   onClick={handleSelectNone}
                   disabled={isRunning}
                   className="px-3 py-1 text-sm bg-slate-600 text-white rounded hover:bg-slate-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all duration-200"
                 >
-                  Select None
+                  Deselect Visible
                 </button>
+                {selectedTests.size > 0 && (
+                  <button
+                    onClick={handleClearAllSelections}
+                    disabled={isRunning}
+                    className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    Clear All ({selectedTests.size})
+                  </button>
+                )}
                 <button
                   onClick={() => handleStartVerification()}
                   disabled={isRunning || selectedTests.size === 0}
@@ -925,9 +958,35 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
               </div>
             </div>
 
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search questions..."
+                  value={testSearchTerm}
+                  onChange={(e) => setTestSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                />
+                {testSearchTerm && (
+                  <button
+                    onClick={() => setTestSearchTerm('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+
             {finishedTemplates.length === 0 ? (
               <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                 No finished templates available. Complete some templates in the curator first.
+              </div>
+            ) : filteredTemplates.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                No questions match your search. Try a different search term.
               </div>
             ) : (
               <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
@@ -937,9 +996,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                       <th className="text-left py-3 px-4 font-medium text-slate-700 dark:text-slate-300 w-12">
                         <input
                           type="checkbox"
-                          checked={selectedTests.size === finishedTemplates.length && finishedTemplates.length > 0}
+                          checked={
+                            filteredTemplates.length > 0 && filteredTemplates.every(([id]) => selectedTests.has(id))
+                          }
                           onChange={
-                            selectedTests.size === finishedTemplates.length ? handleSelectNone : handleSelectAll
+                            filteredTemplates.every(([id]) => selectedTests.has(id))
+                              ? handleSelectNone
+                              : handleSelectAll
                           }
                           disabled={isRunning}
                           className="rounded border-slate-300 dark:border-slate-600"
@@ -953,7 +1016,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                     </tr>
                   </thead>
                   <tbody>
-                    {finishedTemplates.map(([questionId, item]) => (
+                    {filteredTemplates.map(([questionId, item]) => (
                       <tr
                         key={questionId}
                         className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
