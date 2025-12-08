@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, ChevronUp, ChevronDown, X, MessageSquare, FileText } from 'lucide-react';
-import { useTraceHighlightingStore } from '../stores/useTraceHighlightingStore';
+import { Search, ChevronUp, ChevronDown, X, MessageSquare, FileText, Settings } from 'lucide-react';
+import {
+  useTraceHighlightingStore,
+  HIGHLIGHT_COLORS,
+  HighlightPattern,
+  HighlightColorId,
+} from '../stores/useTraceHighlightingStore';
+import { useConfigModalStore } from '../stores/useConfigModalStore';
 
 interface TraceHighlightedTextDisplayProps {
   text: string;
@@ -14,7 +20,9 @@ interface MatchPosition {
 }
 
 interface MessageBlock {
-  type: 'ai' | 'tool';
+  patternId: string;
+  patternName: string;
+  colorId: HighlightColorId;
   headerStart: number;
   headerEnd: number;
   contentStart: number;
@@ -22,17 +30,23 @@ interface MessageBlock {
   fullText: string;
 }
 
+// Helper to get color classes
+const getColorClasses = (colorId: HighlightColorId) => {
+  return HIGHLIGHT_COLORS.find((c) => c.id === colorId) ?? HIGHLIGHT_COLORS[0];
+};
+
 /**
  * TraceHighlightedTextDisplay - Enhanced text display component with trace message highlighting.
  *
  * Features:
- * - Highlights AI message headers in green
- * - Highlights Tool message headers in yellow
- * - "Final AI Response" toggle to show only the last AI message
+ * - Dynamic pattern highlighting with customizable colors and names
+ * - "Final Response" toggle to show only the last message of a specific type
  * - Full search functionality with regex support
+ * - Jump-to navigation with pattern names
  */
 export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayProps> = ({ text, className = '' }) => {
-  const { aiMessagePattern, toolMessagePattern, highlightingEnabled } = useTraceHighlightingStore();
+  const { patterns, highlightingEnabled } = useTraceHighlightingStore();
+  const { openModal } = useConfigModalStore();
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,8 +55,8 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [regexError, setRegexError] = useState<string | null>(null);
 
-  // View mode state
-  const [showFinalAIOnly, setShowFinalAIOnly] = useState(false);
+  // View mode state - track which pattern to show final message for
+  const [showFinalOnly, setShowFinalOnly] = useState<string | null>(null);
 
   // Track which message was just jumped to (for highlight effect)
   const [highlightedMessageIndex, setHighlightedMessageIndex] = useState<number | null>(null);
@@ -51,45 +65,47 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
   const matchRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const messageHeaderRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
+  // Get active patterns (enabled with non-empty regex)
+  const activePatterns = useMemo<HighlightPattern[]>(() => {
+    return patterns.filter((p) => p.enabled && p.pattern.trim());
+  }, [patterns]);
+
   // Parse message blocks from text
   const messageBlocks = useMemo<MessageBlock[]>(() => {
-    if (!highlightingEnabled || (!aiMessagePattern.trim() && !toolMessagePattern.trim())) {
+    if (!highlightingEnabled || activePatterns.length === 0) {
       return [];
     }
 
     const blocks: MessageBlock[] = [];
-    const patterns: { pattern: string; type: 'ai' | 'tool' }[] = [];
-
-    if (aiMessagePattern.trim()) {
-      patterns.push({ pattern: aiMessagePattern, type: 'ai' });
-    }
-    if (toolMessagePattern.trim()) {
-      patterns.push({ pattern: toolMessagePattern, type: 'tool' });
-    }
-
-    if (patterns.length === 0) return [];
 
     try {
-      // Combine patterns with alternation
-      const combinedPattern = patterns.map((p) => `(${p.pattern})`).join('|');
+      // Combine patterns with alternation - each in its own capture group
+      const combinedPattern = activePatterns.map((p) => `(${p.pattern})`).join('|');
       const regex = new RegExp(combinedPattern, 'g');
 
       interface MatchInfo {
         index: number;
         text: string;
-        type: 'ai' | 'tool';
+        patternIndex: number;
       }
 
       const matches: MatchInfo[] = [];
       let match;
 
       while ((match = regex.exec(text)) !== null) {
-        // Determine which pattern matched
-        const isAI = patterns[0]?.type === 'ai' && match[1] !== undefined;
+        // Determine which pattern matched by checking which capture group is defined
+        let patternIndex = 0;
+        for (let i = 1; i < match.length; i++) {
+          if (match[i] !== undefined) {
+            patternIndex = i - 1;
+            break;
+          }
+        }
+
         matches.push({
           index: match.index,
           text: match[0],
-          type: isAI ? 'ai' : 'tool',
+          patternIndex,
         });
 
         // Prevent infinite loop on zero-width matches
@@ -102,9 +118,12 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
       for (let i = 0; i < matches.length; i++) {
         const current = matches[i];
         const next = matches[i + 1];
+        const pattern = activePatterns[current.patternIndex];
 
         blocks.push({
-          type: current.type,
+          patternId: pattern.id,
+          patternName: pattern.name,
+          colorId: pattern.colorId,
           headerStart: current.index,
           headerEnd: current.index + current.text.length,
           contentStart: current.index + current.text.length,
@@ -117,42 +136,49 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
     }
 
     return blocks;
-  }, [text, aiMessagePattern, toolMessagePattern, highlightingEnabled]);
+  }, [text, activePatterns, highlightingEnabled]);
 
-  // Get the last AI message block
-  const lastAIMessage = useMemo(() => {
-    const aiBlocks = messageBlocks.filter((b) => b.type === 'ai');
-    return aiBlocks.length > 0 ? aiBlocks[aiBlocks.length - 1] : null;
+  // Get the last message block for each pattern type
+  const lastMessages = useMemo(() => {
+    const lastByPattern: Record<string, MessageBlock> = {};
+    for (const block of messageBlocks) {
+      lastByPattern[block.patternId] = block;
+    }
+    return lastByPattern;
   }, [messageBlocks]);
 
-  // Determine if "Final AI Response" button should be shown
-  const showFinalAIButton = messageBlocks.some((b) => b.type === 'ai');
+  // Determine which patterns have at least one match (for showing toggle buttons)
+  const matchedPatternIds = useMemo(() => {
+    return new Set(messageBlocks.map((b) => b.patternId));
+  }, [messageBlocks]);
 
   // Get text to display based on toggle state
   const displayText = useMemo(() => {
-    if (showFinalAIOnly && lastAIMessage) {
-      return lastAIMessage.fullText;
+    if (showFinalOnly && lastMessages[showFinalOnly]) {
+      return lastMessages[showFinalOnly].fullText;
     }
     return text;
-  }, [text, showFinalAIOnly, lastAIMessage]);
+  }, [text, showFinalOnly, lastMessages]);
 
-  // Recalculate message blocks for display text when in final AI mode
+  // Recalculate message blocks for display text when in final-only mode
   const displayMessageBlocks = useMemo<MessageBlock[]>(() => {
-    if (showFinalAIOnly && lastAIMessage) {
-      // Single block for the final AI message
+    if (showFinalOnly && lastMessages[showFinalOnly]) {
+      const lastMsg = lastMessages[showFinalOnly];
       return [
         {
-          type: 'ai',
+          patternId: lastMsg.patternId,
+          patternName: lastMsg.patternName,
+          colorId: lastMsg.colorId,
           headerStart: 0,
-          headerEnd: lastAIMessage.headerEnd - lastAIMessage.headerStart,
-          contentStart: lastAIMessage.headerEnd - lastAIMessage.headerStart,
-          contentEnd: lastAIMessage.fullText.length,
-          fullText: lastAIMessage.fullText,
+          headerEnd: lastMsg.headerEnd - lastMsg.headerStart,
+          contentStart: lastMsg.headerEnd - lastMsg.headerStart,
+          contentEnd: lastMsg.fullText.length,
+          fullText: lastMsg.fullText,
         },
       ];
     }
     return messageBlocks;
-  }, [showFinalAIOnly, lastAIMessage, messageBlocks]);
+  }, [showFinalOnly, lastMessages, messageBlocks]);
 
   // Find all search matches in the display text
   const matches = useMemo<MatchPosition[]>(() => {
@@ -228,7 +254,7 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
 
   // Reset view mode when text changes
   useEffect(() => {
-    setShowFinalAIOnly(false);
+    setShowFinalOnly(null);
   }, [text]);
 
   const goToNextMatch = () => {
@@ -287,8 +313,9 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
     interface HighlightRegion {
       start: number;
       end: number;
-      type: 'ai-header' | 'tool-header' | 'search' | 'search-current';
-      messageIndex?: number; // Index into displayMessageBlocks for headers
+      type: 'header' | 'search' | 'search-current';
+      colorId?: HighlightColorId;
+      messageIndex?: number;
     }
 
     const regions: HighlightRegion[] = [];
@@ -299,7 +326,8 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
         regions.push({
           start: block.headerStart,
           end: block.headerEnd,
-          type: block.type === 'ai' ? 'ai-header' : 'tool-header',
+          type: 'header',
+          colorId: block.colorId,
           messageIndex: index,
         });
       });
@@ -332,27 +360,21 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
       let textClass = '';
       let fontWeight = '';
 
-      switch (region.type) {
-        case 'ai-header':
-          bgClass = 'bg-green-200 dark:bg-green-800/60';
-          break;
-        case 'tool-header':
-          bgClass = 'bg-yellow-200 dark:bg-yellow-800/60';
-          break;
-        case 'search-current':
-          bgClass = 'bg-orange-500';
-          textClass = 'text-white';
-          fontWeight = 'font-bold';
-          break;
-        case 'search':
-          bgClass = 'bg-yellow-400';
-          textClass = 'text-black';
-          break;
+      if (region.type === 'header' && region.colorId) {
+        const color = getColorClasses(region.colorId);
+        bgClass = color.bg;
+      } else if (region.type === 'search-current') {
+        bgClass = 'bg-orange-500';
+        textClass = 'text-white';
+        fontWeight = 'font-bold';
+      } else if (region.type === 'search') {
+        bgClass = 'bg-yellow-400';
+        textClass = 'text-black';
       }
 
       const isSearchMatch = region.type === 'search' || region.type === 'search-current';
       const matchIndex = isSearchMatch ? matches.findIndex((m) => m.start === region.start) : -1;
-      const isHeader = region.type === 'ai-header' || region.type === 'tool-header';
+      const isHeader = region.type === 'header';
       const isHighlightedJump = isHeader && region.messageIndex === highlightedMessageIndex;
 
       segments.push(
@@ -384,6 +406,9 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
 
     return <pre className={`whitespace-pre-wrap text-sm overflow-x-auto ${className}`}>{segments}</pre>;
   };
+
+  // Get the first pattern that has matches (for default "Final Response" button)
+  const firstMatchedPattern = activePatterns.find((p) => matchedPatternIds.has(p.id));
 
   return (
     <div className="space-y-3">
@@ -482,18 +507,18 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
         )}
       </div>
 
-      {/* Final AI Response Toggle Button */}
-      {showFinalAIButton && (
+      {/* Final Response Toggle Button */}
+      {firstMatchedPattern && (
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowFinalAIOnly(!showFinalAIOnly)}
+            onClick={() => setShowFinalOnly(showFinalOnly ? null : firstMatchedPattern.id)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              showFinalAIOnly
+              showFinalOnly
                 ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700'
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600'
             }`}
           >
-            {showFinalAIOnly ? (
+            {showFinalOnly ? (
               <>
                 <FileText className="w-4 h-4" />
                 Show Full Trace
@@ -501,12 +526,14 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
             ) : (
               <>
                 <MessageSquare className="w-4 h-4" />
-                Final AI Response
+                Final {firstMatchedPattern.name}
               </>
             )}
           </button>
-          {showFinalAIOnly && (
-            <span className="text-xs text-slate-500 dark:text-slate-400">Showing last AI message only</span>
+          {showFinalOnly && (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Showing last {activePatterns.find((p) => p.id === showFinalOnly)?.name ?? 'message'} only
+            </span>
           )}
         </div>
       )}
@@ -514,24 +541,28 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
       {/* Message Navigation Selector */}
       {highlightingEnabled && displayMessageBlocks.length > 0 && (
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <button
+            onClick={() => openModal('traceHighlighting')}
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors flex-shrink-0"
+            title="Configure trace highlighting"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </button>
           <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">Jump to:</span>
           {(() => {
-            let aiCount = 0;
-            let toolCount = 0;
+            // Track count per pattern for numbering
+            const countsPerPattern: Record<string, number> = {};
             return displayMessageBlocks.map((block, index) => {
-              const isAI = block.type === 'ai';
-              const num = isAI ? ++aiCount : ++toolCount;
+              countsPerPattern[block.patternId] = (countsPerPattern[block.patternId] ?? 0) + 1;
+              const num = countsPerPattern[block.patternId];
+              const color = getColorClasses(block.colorId);
               return (
                 <button
                   key={index}
                   onClick={() => scrollToMessage(index)}
-                  className={`px-2 py-0.5 text-xs font-medium rounded transition-colors flex-shrink-0 ${
-                    isAI
-                      ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/60'
-                      : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-800/60'
-                  }`}
+                  className={`px-2 py-0.5 text-xs font-medium rounded transition-colors flex-shrink-0 ${color.bg} ${color.text} hover:opacity-80`}
                 >
-                  {isAI ? `AI ${num}` : `Tool ${num}`}
+                  {block.patternName} {num}
                 </button>
               );
             });

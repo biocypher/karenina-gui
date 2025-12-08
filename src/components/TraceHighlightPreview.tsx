@@ -1,44 +1,39 @@
 import React, { useMemo } from 'react';
+import { HighlightPattern, HIGHLIGHT_COLORS, HighlightColorId } from '../stores/useTraceHighlightingStore';
 
 interface TraceHighlightPreviewProps {
   text: string;
-  aiPattern: string;
-  toolPattern: string;
+  patterns: HighlightPattern[];
   enabled: boolean;
 }
 
+// Helper to get color classes
+const getColorClasses = (colorId: HighlightColorId) => {
+  return HIGHLIGHT_COLORS.find((c) => c.id === colorId) ?? HIGHLIGHT_COLORS[0];
+};
+
 /**
  * Lightweight preview component for trace highlighting configuration.
- * Displays sample trace text with header highlighting applied.
+ * Displays sample trace text with header highlighting applied using dynamic patterns.
  */
-export const TraceHighlightPreview: React.FC<TraceHighlightPreviewProps> = ({
-  text,
-  aiPattern,
-  toolPattern,
-  enabled,
-}) => {
+export const TraceHighlightPreview: React.FC<TraceHighlightPreviewProps> = ({ text, patterns, enabled }) => {
   const highlightedContent = useMemo(() => {
     // If disabled or no patterns, render plain text
-    if (!enabled || (!aiPattern && !toolPattern)) {
+    if (!enabled || patterns.length === 0) {
       return <pre className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-200">{text}</pre>;
     }
 
-    // Build regex patterns
-    const patterns: { pattern: string; type: 'ai' | 'tool' }[] = [];
-    if (aiPattern.trim()) {
-      patterns.push({ pattern: aiPattern, type: 'ai' });
-    }
-    if (toolPattern.trim()) {
-      patterns.push({ pattern: toolPattern, type: 'tool' });
-    }
+    // Filter to only enabled patterns with non-empty regex
+    const activePatterns = patterns.filter((p) => p.enabled && p.pattern.trim());
 
-    if (patterns.length === 0) {
+    if (activePatterns.length === 0) {
       return <pre className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-200">{text}</pre>;
     }
 
     try {
-      // Combine patterns with alternation, wrapping each in a capture group
-      const combinedPattern = patterns.map((p) => `(${p.pattern})`).join('|');
+      // Build combined regex with named capture groups to identify which pattern matched
+      // We'll use the index approach since JS regex named groups are tricky
+      const combinedPattern = activePatterns.map((p) => `(${p.pattern})`).join('|');
       const regex = new RegExp(combinedPattern, 'g');
 
       const segments: React.ReactNode[] = [];
@@ -52,13 +47,21 @@ export const TraceHighlightPreview: React.FC<TraceHighlightPreviewProps> = ({
           segments.push(<span key={key++}>{text.substring(lastIndex, match.index)}</span>);
         }
 
-        // Determine which pattern matched (AI is group 1, Tool is group 2)
-        const isAI = match[1] !== undefined;
-        const bgClass = isAI ? 'bg-green-200 dark:bg-green-800/60' : 'bg-yellow-200 dark:bg-yellow-800/60';
+        // Determine which pattern matched by checking which capture group is defined
+        let matchedPatternIndex = 0;
+        for (let i = 1; i < match.length; i++) {
+          if (match[i] !== undefined) {
+            matchedPatternIndex = i - 1;
+            break;
+          }
+        }
+
+        const matchedPattern = activePatterns[matchedPatternIndex];
+        const colorClasses = getColorClasses(matchedPattern.colorId);
 
         // Add highlighted match
         segments.push(
-          <span key={key++} className={`${bgClass} px-0.5 rounded`}>
+          <span key={key++} className={`${colorClasses.bg} px-0.5 rounded`}>
             {match[0]}
           </span>
         );
@@ -81,12 +84,12 @@ export const TraceHighlightPreview: React.FC<TraceHighlightPreviewProps> = ({
       // If regex is invalid, render plain text
       return <pre className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-200">{text}</pre>;
     }
-  }, [text, aiPattern, toolPattern, enabled]);
+  }, [text, patterns, enabled]);
 
   return highlightedContent;
 };
 
-// Sample text for preview in configuration modal
+// Sample text for preview in configuration modal (kept for backward compatibility)
 export const PREVIEW_SAMPLE_TEXT = `--- AI Message ---
 Hello, I can help you with that task. Let me search for the information you need.
 

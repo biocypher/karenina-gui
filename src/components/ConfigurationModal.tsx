@@ -2,15 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
 import { usePresetStore } from '../stores/usePresetStore';
+import { ConfigModalTab } from '../stores/useConfigModalStore';
 import { TraceHighlightingTab } from './TraceHighlightingTab';
 import { CheckCircle, Eye, EyeOff, RefreshCw, Save, Trash2, RotateCcw, FileText, Highlighter } from 'lucide-react';
 
 interface ConfigurationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: ConfigModalTab;
 }
 
-export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, onClose }) => {
+export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, onClose, initialTab }) => {
   const {
     defaultInterface,
     defaultProvider,
@@ -61,8 +63,12 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
       setPresetAppliedSuccess(false);
       setLocalError(null);
       setSelectedPresetId('');
+      // Set initial tab if provided
+      if (initialTab) {
+        setActiveTab(initialTab);
+      }
     }
-  }, [isOpen, loadConfiguration, loadPresets]);
+  }, [isOpen, loadConfiguration, loadPresets, initialTab]);
 
   // Clear success state when user makes changes
   useEffect(() => {
