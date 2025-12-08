@@ -299,35 +299,60 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 .then((res) => res.json())
                 .then(async (data) => {
                   setIsRunning(false);
+
+                  // Check for error in response
+                  if (data.error) {
+                    console.error('Verification failed with error:', data.error);
+                    setError(data.error);
+                    disconnectProgressWebSocket();
+                    return;
+                  }
+
                   // Handle verification results - server now returns dict with backend-generated keys
                   if (data.result_set) {
-                    let sanitizedResults: Record<string, VerificationResult> = {};
+                    const sanitizedResults: Record<string, VerificationResult> = {};
 
                     // New format: dict with backend-generated keys (includes timestamp for uniqueness)
                     // Keys like: {question_id}_{answering_model}_{parsing_model}_rep{N}_{timestamp_ms}
                     if (typeof data.result_set === 'object' && !Array.isArray(data.result_set)) {
                       console.log('Setting results from dict:', Object.keys(data.result_set).length, 'items');
-                      // Use backend keys directly - they already include timestamp for uniqueness
-                      sanitizedResults = data.result_set as Record<string, VerificationResult>;
+                      // Validate and filter results - skip malformed entries
+                      for (const [key, result] of Object.entries(data.result_set)) {
+                        if (result && typeof result === 'object' && 'metadata' in (result as object)) {
+                          sanitizedResults[key] = result as VerificationResult;
+                        } else {
+                          console.warn('Skipping malformed result entry:', key, result);
+                        }
+                      }
                     }
                     // Legacy format: VerificationResultSet with results array (backward compatibility)
                     else if (Array.isArray(data.result_set.results)) {
                       console.log('Setting results from array:', data.result_set.results.length, 'items');
                       // Convert array to dict (legacy path)
                       for (const result of data.result_set.results) {
-                        if (result && typeof result === 'object') {
+                        if (result && typeof result === 'object' && result.metadata) {
                           // Generate key from result metadata
                           const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
                             result.metadata.answering_replicate ? `_rep${result.metadata.answering_replicate}` : ''
                           }`;
                           sanitizedResults[key] = result as VerificationResult;
+                        } else {
+                          console.warn('Skipping malformed result in array:', result);
                         }
                       }
                     }
 
-                    // Accumulate results instead of replacing them
-                    setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
-                    console.log('Results set successfully');
+                    // Only set results if we have valid entries
+                    if (Object.keys(sanitizedResults).length > 0) {
+                      // Accumulate results instead of replacing them
+                      setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
+                      console.log('Results set successfully');
+                    } else {
+                      console.warn('No valid results found in response');
+                      setError(
+                        'Verification completed but no valid results were returned. The model may have failed to initialize - please check the model name and provider.'
+                      );
+                    }
 
                     // Auto-save to database after verification completes
                     try {

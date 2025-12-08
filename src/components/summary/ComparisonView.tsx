@@ -629,32 +629,37 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                         <div className="overflow-x-auto">
                           <table className="w-full text-xs border-collapse">
                             <tbody>
-                              {Object.entries(summary.replicate_stats.replicate_pass_rates).map(
-                                ([replicate, stats]) => (
-                                  <tr key={replicate} className={rowClass}>
-                                    <td className={labelClass}>Replicate {replicate}:</td>
-                                    <td className={valueClass}>
-                                      <span
-                                        className={
-                                          stats.pass_pct >= 70
-                                            ? 'text-green-600 dark:text-green-400'
-                                            : 'text-red-600 dark:text-red-400'
-                                        }
-                                      >
-                                        {stats.passed}/{stats.total}
-                                      </span>{' '}
-                                      ({stats.pass_pct.toFixed(1)}%)
-                                    </td>
-                                  </tr>
-                                )
+                              {summary.replicate_stats?.replicate_pass_rates &&
+                              typeof summary.replicate_stats.replicate_pass_rates === 'object'
+                                ? Object.entries(summary.replicate_stats.replicate_pass_rates).map(
+                                    ([replicate, stats]) => (
+                                      <tr key={replicate} className={rowClass}>
+                                        <td className={labelClass}>Replicate {replicate}:</td>
+                                        <td className={valueClass}>
+                                          <span
+                                            className={
+                                              stats.pass_pct >= 70
+                                                ? 'text-green-600 dark:text-green-400'
+                                                : 'text-red-600 dark:text-red-400'
+                                            }
+                                          >
+                                            {stats.passed}/{stats.total}
+                                          </span>{' '}
+                                          ({stats.pass_pct.toFixed(1)}%)
+                                        </td>
+                                      </tr>
+                                    )
+                                  )
+                                : null}
+                              {summary.replicate_stats?.replicate_summary && (
+                                <tr className={rowClass}>
+                                  <td className={labelClass}>Summary:</td>
+                                  <td className={valueClass}>
+                                    mean={summary.replicate_stats.replicate_summary.mean.toFixed(3)}, std=
+                                    {summary.replicate_stats.replicate_summary.std.toFixed(3)}
+                                  </td>
+                                </tr>
                               )}
-                              <tr className={rowClass}>
-                                <td className={labelClass}>Summary:</td>
-                                <td className={valueClass}>
-                                  mean={summary.replicate_stats.replicate_summary.mean.toFixed(3)}, std=
-                                  {summary.replicate_stats.replicate_summary.std.toFixed(3)}
-                                </td>
-                              </tr>
                             </tbody>
                           </table>
                         </div>
