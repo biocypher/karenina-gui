@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { Checkpoint, VerificationResult, Rubric, UsageMetadata } from '../../types';
-import { SearchableTextDisplay } from '../SearchableTextDisplay';
+import { TraceHighlightedTextDisplay } from '../TraceHighlightedTextDisplay';
 import { SearchResultsDisplay } from '../SearchResultsDisplay';
 import { RubricResultsDisplay } from '../RubricResultsDisplay';
 
@@ -95,7 +95,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                     <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
                       Raw LLM Response (Generated)
                     </h4>
-                    <SearchableTextDisplay
+                    <TraceHighlightedTextDisplay
                       text={result.template?.raw_llm_response || 'N/A'}
                       className="text-slate-800 dark:text-slate-200"
                     />

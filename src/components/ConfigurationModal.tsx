@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
 import { usePresetStore } from '../stores/usePresetStore';
-import { CheckCircle, Eye, EyeOff, RefreshCw, Save, Trash2, RotateCcw, FileText } from 'lucide-react';
+import { TraceHighlightingTab } from './TraceHighlightingTab';
+import { CheckCircle, Eye, EyeOff, RefreshCw, Save, Trash2, RotateCcw, FileText, Highlighter } from 'lucide-react';
 
 interface ConfigurationModalProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
 
   const { presets, loadPresets, getPresetDetail } = usePresetStore();
 
-  const [activeTab, setActiveTab] = useState<'defaults' | 'env'>('defaults');
+  const [activeTab, setActiveTab] = useState<'defaults' | 'env' | 'traceHighlighting'>('defaults');
   const [envFileContent, setEnvFileContent] = useState('');
   const [isEditingEnv, setIsEditingEnv] = useState(false);
   const [showApiKeys, setShowApiKeys] = useState(false);
@@ -653,6 +654,17 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
           >
             Environment Variables
           </button>
+          <button
+            onClick={() => setActiveTab('traceHighlighting')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 ${
+              activeTab === 'traceHighlighting'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            <Highlighter className="w-4 h-4" />
+            Trace Highlighting
+          </button>
         </nav>
       </div>
 
@@ -673,8 +685,10 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
         </div>
       ) : activeTab === 'defaults' ? (
         renderDefaultsTab()
-      ) : (
+      ) : activeTab === 'env' ? (
         renderEnvTab()
+      ) : (
+        <TraceHighlightingTab />
       )}
     </Modal>
   );
