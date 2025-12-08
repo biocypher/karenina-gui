@@ -44,8 +44,12 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
   // View mode state
   const [showFinalAIOnly, setShowFinalAIOnly] = useState(false);
 
+  // Track which message was just jumped to (for highlight effect)
+  const [highlightedMessageIndex, setHighlightedMessageIndex] = useState<number | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const matchRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const messageHeaderRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   // Parse message blocks from text
   const messageBlocks = useMemo<MessageBlock[]>(() => {
@@ -252,6 +256,27 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
     }
   };
 
+  // Scroll to a specific message by index (only within the trace container)
+  const scrollToMessage = (index: number) => {
+    const header = messageHeaderRefs.current[index];
+    const container = containerRef.current;
+    if (header && container) {
+      // Get positions relative to the viewport
+      const containerRect = container.getBoundingClientRect();
+      const headerRect = header.getBoundingClientRect();
+      // Calculate scroll position: current scroll + (header position - container position) - padding
+      const scrollTop = container.scrollTop + (headerRect.top - containerRect.top) - 8;
+      container.scrollTo({
+        top: scrollTop,
+        behavior: 'smooth',
+      });
+
+      // Highlight the jumped-to message temporarily
+      setHighlightedMessageIndex(index);
+      setTimeout(() => setHighlightedMessageIndex(null), 2000);
+    }
+  };
+
   // Build highlighted text segments
   const renderHighlightedText = () => {
     const segments: React.ReactNode[] = [];
@@ -263,19 +288,21 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
       start: number;
       end: number;
       type: 'ai-header' | 'tool-header' | 'search' | 'search-current';
+      messageIndex?: number; // Index into displayMessageBlocks for headers
     }
 
     const regions: HighlightRegion[] = [];
 
     // Add header regions if highlighting is enabled
     if (highlightingEnabled) {
-      for (const block of displayMessageBlocks) {
+      displayMessageBlocks.forEach((block, index) => {
         regions.push({
           start: block.headerStart,
           end: block.headerEnd,
           type: block.type === 'ai' ? 'ai-header' : 'tool-header',
+          messageIndex: index,
         });
-      }
+      });
     }
 
     // Add search match regions
@@ -325,18 +352,23 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
 
       const isSearchMatch = region.type === 'search' || region.type === 'search-current';
       const matchIndex = isSearchMatch ? matches.findIndex((m) => m.start === region.start) : -1;
+      const isHeader = region.type === 'ai-header' || region.type === 'tool-header';
+      const isHighlightedJump = isHeader && region.messageIndex === highlightedMessageIndex;
 
       segments.push(
         <span
           key={segmentKey++}
-          ref={
-            matchIndex >= 0
-              ? (el) => {
-                  matchRefs.current[matchIndex] = el;
-                }
-              : undefined
-          }
-          className={`${bgClass} ${textClass} ${fontWeight} px-0.5 rounded`}
+          ref={(el) => {
+            if (matchIndex >= 0) {
+              matchRefs.current[matchIndex] = el;
+            }
+            if (isHeader && region.messageIndex !== undefined) {
+              messageHeaderRefs.current[region.messageIndex] = el;
+            }
+          }}
+          className={`${bgClass} ${textClass} ${fontWeight} px-0.5 rounded transition-all duration-300 ${
+            isHighlightedJump ? 'ring-2 ring-blue-500 ring-offset-1 scale-[1.02]' : ''
+          }`}
         >
           {displayText.substring(region.start, region.end)}
         </span>
@@ -479,8 +511,36 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
         </div>
       )}
 
+      {/* Message Navigation Selector */}
+      {highlightingEnabled && displayMessageBlocks.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">Jump to:</span>
+          {(() => {
+            let aiCount = 0;
+            let toolCount = 0;
+            return displayMessageBlocks.map((block, index) => {
+              const isAI = block.type === 'ai';
+              const num = isAI ? ++aiCount : ++toolCount;
+              return (
+                <button
+                  key={index}
+                  onClick={() => scrollToMessage(index)}
+                  className={`px-2 py-0.5 text-xs font-medium rounded transition-colors flex-shrink-0 ${
+                    isAI
+                      ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/60'
+                      : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-800/60'
+                  }`}
+                >
+                  {isAI ? `AI ${num}` : `Tool ${num}`}
+                </button>
+              );
+            });
+          })()}
+        </div>
+      )}
+
       {/* Text Display with Highlighting */}
-      <div ref={containerRef} className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 max-h-96 overflow-y-auto">
+      <div ref={containerRef} className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 max-h-[32rem] overflow-y-auto">
         {renderHighlightedText()}
       </div>
     </div>
