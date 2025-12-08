@@ -16,6 +16,7 @@ import {
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
 import { useConfigStore } from './stores/useConfigStore';
+import { useConfigModalStore } from './stores/useConfigModalStore';
 import { useDatasetStore } from './stores/useDatasetStore';
 import { useRubricStore } from './stores/useRubricStore';
 import { QuestionData, UnifiedCheckpoint, VerificationResult, CheckpointItem } from './types';
@@ -80,11 +81,18 @@ function App() {
     getAllQuestionsWithSessionDrafts,
   } = useQuestionStore();
 
+  // Config modal store
+  const {
+    isOpen: isConfigModalOpen,
+    initialTab: configModalInitialTab,
+    openModal: openConfigModal,
+    closeModal: closeConfigModal,
+  } = useConfigModalStore();
+
   // Remaining local state - ephemeral data not managed by stores yet
   const [extractedQuestions, setExtractedQuestions] = useState<QuestionData>({});
   const [benchmarkResults, setBenchmarkResults] = useState<Record<string, VerificationResult>>({});
   const [isExpandedMode, setIsExpandedMode] = useState(false);
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
   const [isFewShotEditorOpen, setIsFewShotEditorOpen] = useState(false);
   const [questionFilter, setQuestionFilter] = useState<'all' | 'finished' | 'unfinished'>('all');
@@ -526,8 +534,8 @@ function App() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsConfigModalOpen(true)}
-                className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 
+                onClick={() => openConfigModal()}
+                className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300
                          hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
                 title="Configuration"
               >
@@ -1123,7 +1131,7 @@ function App() {
       )}
 
       {/* Configuration Modal */}
-      <ConfigurationModal isOpen={isConfigModalOpen} onClose={() => setIsConfigModalOpen(false)} />
+      <ConfigurationModal isOpen={isConfigModalOpen} onClose={closeConfigModal} initialTab={configModalInitialTab} />
     </div>
   );
 }

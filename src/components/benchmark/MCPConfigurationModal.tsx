@@ -62,7 +62,7 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
   const [serverToValidate, setServerToValidate] = useState<number | null>(null);
 
   // Trace filtering settings (for MCP agents)
-  const [useFullTraceForTemplate, setUseFullTraceForTemplate] = useState<boolean>(true);
+  const [useFullTraceForTemplate, setUseFullTraceForTemplate] = useState<boolean>(false);
   const [useFullTraceForRubric, setUseFullTraceForRubric] = useState<boolean>(true);
 
   // Save preset state (per server)
@@ -125,8 +125,8 @@ export const MCPConfigurationModal: React.FC<MCPConfigurationModalProps> = ({
       setConfiguration(newConfiguration);
       setInitialConfiguration({ servers: [...servers], selectedTools: new Set(selectedTools) });
 
-      // Initialize trace filtering settings (default to true if not specified)
-      setUseFullTraceForTemplate(initialConfig.use_full_trace_for_template ?? true);
+      // Initialize trace filtering settings
+      setUseFullTraceForTemplate(initialConfig.use_full_trace_for_template ?? false);
       setUseFullTraceForRubric(initialConfig.use_full_trace_for_rubric ?? true);
 
       // Auto-validate servers that were previously validated
