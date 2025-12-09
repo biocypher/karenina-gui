@@ -136,8 +136,8 @@ interface ConfigState {
 export const useConfigStore = create<ConfigState>((set, get) => ({
   // Initial state - working values (being edited in modal)
   defaultInterface: 'langchain',
-  defaultProvider: 'google_genai',
-  defaultModel: 'gemini-2.5-flash',
+  defaultProvider: 'anthropic',
+  defaultModel: 'claude-haiku-4-5',
   defaultEndpointBaseUrl: '',
   defaultEndpointApiKey: '',
   defaultAsyncEnabled: true,
@@ -145,8 +145,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   // Saved values (used by generation components)
   savedInterface: 'langchain',
-  savedProvider: 'google_genai',
-  savedModel: 'gemini-2.5-flash',
+  savedProvider: 'anthropic',
+  savedModel: 'claude-haiku-4-5',
   savedEndpointBaseUrl: '',
   savedEndpointApiKey: '',
   savedAsyncEnabled: true,
@@ -154,8 +154,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   originalDefaults: {
     defaultInterface: 'langchain',
-    defaultProvider: 'google_genai',
-    defaultModel: 'gemini-2.5-flash',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-haiku-4-5',
     defaultEndpointBaseUrl: '',
     defaultAsyncEnabled: true,
     defaultAsyncMaxWorkers: null,

@@ -82,15 +82,15 @@ export const useBenchmarkConfiguration = () => {
     const answeringIsDefault =
       answeringModels.length === 1 &&
       answeringModels[0].id === 'answering-1' &&
-      answeringModels[0].model_provider === 'google_genai' &&
-      answeringModels[0].model_name === 'gemini-2.5-flash' &&
+      answeringModels[0].model_provider === 'anthropic' &&
+      answeringModels[0].model_name === 'claude-haiku-4-5' &&
       answeringModels[0].interface === 'langchain';
 
     const parsingIsDefault =
       parsingModels.length === 1 &&
       parsingModels[0].id === 'parsing-1' &&
-      parsingModels[0].model_provider === 'google_genai' &&
-      parsingModels[0].model_name === 'gemini-2.5-flash' &&
+      parsingModels[0].model_provider === 'anthropic' &&
+      parsingModels[0].model_name === 'claude-haiku-4-5' &&
       parsingModels[0].interface === 'langchain';
 
     // Only update if both models are still at defaults

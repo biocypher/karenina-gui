@@ -77,8 +77,8 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   answeringModels: [
     {
       id: 'answering-1',
-      model_provider: 'google_genai',
-      model_name: 'gemini-2.5-flash',
+      model_provider: 'anthropic',
+      model_name: 'claude-haiku-4-5',
       temperature: 0.1,
       interface: 'langchain',
       system_prompt: 'You are an expert assistant. Answer the question accurately and concisely.',
@@ -87,8 +87,8 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   parsingModels: [
     {
       id: 'parsing-1',
-      model_provider: 'google_genai',
-      model_name: 'gemini-2.5-flash',
+      model_provider: 'anthropic',
+      model_name: 'claude-haiku-4-5',
       temperature: 0.1,
       interface: 'langchain',
       system_prompt:

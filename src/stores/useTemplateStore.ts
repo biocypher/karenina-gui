@@ -118,8 +118,8 @@ interface TemplateState {
 export const useTemplateStore = create<TemplateState>((set, get) => ({
   // Initial state
   config: {
-    model_provider: 'google_genai',
-    model_name: 'gemini-2.0-flash',
+    model_provider: 'anthropic',
+    model_name: 'claude-haiku-4-5',
     temperature: 0.1,
     interface: 'langchain',
   },
@@ -394,8 +394,8 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
     set(() => ({
       config: {
-        model_provider: 'google_genai',
-        model_name: 'gemini-2.0-flash',
+        model_provider: 'anthropic',
+        model_name: 'claude-haiku-4-5',
         temperature: 0.1,
         interface: 'langchain',
       },
