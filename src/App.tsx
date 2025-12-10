@@ -12,6 +12,7 @@ import {
   Filter,
   Search,
   Plus,
+  Pencil,
 } from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
@@ -25,6 +26,8 @@ import { ExpandedEditor } from './components/ExpandedEditor';
 import { StatusBadge } from './components/StatusBadge';
 import { MetadataEditor } from './components/MetadataEditor';
 import { FewShotExamplesEditor } from './components/FewShotExamplesEditor';
+import { QuestionContentEditor } from './components/QuestionContentEditor';
+import { QuestionActionsPanel } from './components/QuestionActionsPanel';
 import { FileManager } from './components/FileManager';
 import { AddQuestionModal } from './components/AddQuestionModal';
 import { TemplateGenerationTab } from './components/TemplateGenerationTab';
@@ -79,6 +82,9 @@ function App() {
     setCurrentTemplate,
     setSessionDraft,
     getAllQuestionsWithSessionDrafts,
+    updateQuestionContent,
+    deleteQuestion,
+    cloneQuestion,
   } = useQuestionStore();
 
   // Config modal store
@@ -99,6 +105,7 @@ function App() {
   const [questionSearchTerm, setQuestionSearchTerm] = useState('');
   const [hasUnsavedFieldChanges, setHasUnsavedFieldChanges] = useState(false);
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
+  const [isQuestionEditorOpen, setIsQuestionEditorOpen] = useState(false);
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
@@ -480,6 +487,39 @@ function App() {
     );
   };
 
+  // Question content editing handlers
+  const handleOpenQuestionEditor = () => {
+    setIsQuestionEditorOpen(true);
+  };
+
+  const handleSaveQuestionContent = (questionId: string, question: string, rawAnswer: string) => {
+    updateQuestionContent(questionId, question, rawAnswer);
+    setIsQuestionEditorOpen(false);
+  };
+
+  const handleDeleteQuestion = () => {
+    if (!selectedQuestionId) return;
+    const questionText = selectedQuestion?.question?.slice(0, 50) || 'this question';
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${questionText}..."?\n\nThis action cannot be undone.`
+    );
+    if (confirmed) {
+      deleteQuestion(selectedQuestionId);
+    }
+  };
+
+  const handleCloneQuestion = () => {
+    if (!selectedQuestionId) return;
+    const questionText = selectedQuestion?.question?.slice(0, 50) || 'this question';
+    const confirmed = window.confirm(
+      `Clone "${questionText}..."?\n\nThis will create a duplicate with [CLONED] prefix.`
+    );
+    if (confirmed) {
+      const newId = cloneQuestion(selectedQuestionId);
+      console.log(`✅ Cloned question to: ${newId}`);
+    }
+  };
+
   // Use store getters for computed values
   const selectedQuestion = getSelectedQuestion();
   const checkpointItem = getCheckpointItem();
@@ -814,6 +854,13 @@ function App() {
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                       <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       Raw Question
+                      <button
+                        onClick={handleOpenQuestionEditor}
+                        className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors"
+                        title="Edit question and answer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
                     </h3>
                     <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
                       <p className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
@@ -827,6 +874,13 @@ function App() {
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                       <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       Raw Answer
+                      <button
+                        onClick={handleOpenQuestionEditor}
+                        className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400 transition-colors"
+                        title="Edit question and answer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
                     </h3>
                     <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
                       <p
@@ -894,6 +948,13 @@ function App() {
                       );
                     })()}
                   </div>
+
+                  {/* Question Actions Panel */}
+                  <QuestionActionsPanel
+                    onDelete={handleDeleteQuestion}
+                    onClone={handleCloneQuestion}
+                    disabled={!selectedQuestionId}
+                  />
                 </div>
 
                 {/* Right Column - Answer Template Editor (2/3 width) */}
@@ -1079,6 +1140,18 @@ function App() {
             examples={checkpointItem.few_shot_examples || []}
             onSave={handleSaveFewShotExamples}
             onClose={handleCloseFewShotEditor}
+          />
+        )}
+
+        {/* Question Content Editor Modal */}
+        {selectedQuestion && (
+          <QuestionContentEditor
+            isOpen={isQuestionEditorOpen}
+            onClose={() => setIsQuestionEditorOpen(false)}
+            questionId={selectedQuestionId}
+            currentQuestion={selectedQuestion.question}
+            currentAnswer={selectedQuestion.raw_answer}
+            onSave={handleSaveQuestionContent}
           />
         )}
 
