@@ -265,13 +265,24 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     return `${secs.toFixed(1)}s`;
   };
 
-  // Question selection handlers
+  // Question selection handlers - operate on filtered questions only
   const handleSelectAllQuestions = () => {
-    setSelectedQuestions(new Set(availableQuestions.map((q) => q.id)));
+    // Select all currently visible (filtered) questions, preserving selections outside the filter
+    setSelectedQuestions((prev) => {
+      const newSet = new Set(prev);
+      filteredQuestions.forEach((q) => newSet.add(q.id));
+      return newSet;
+    });
   };
 
   const handleSelectNoneQuestions = () => {
-    setSelectedQuestions(new Set());
+    // Deselect all currently visible (filtered) questions, preserving selections outside the filter
+    setSelectedQuestions((prev) => {
+      const filteredIds = new Set(filteredQuestions.map((q) => q.id));
+      const newSet = new Set(prev);
+      filteredIds.forEach((id) => newSet.delete(id));
+      return newSet;
+    });
   };
 
   const handleToggleQuestion = (questionId: string) => {
@@ -288,6 +299,9 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
 
   // Keyword selection handlers
   const handleToggleKeyword = (keyword: string) => {
+    // Check if we're adding the first keyword (transitioning from no filter to filtered)
+    const isAddingFirstKeyword = selectedKeywords.size === 0 && !selectedKeywords.has(keyword);
+
     setSelectedKeywords((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(keyword)) {
@@ -297,6 +311,11 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
       }
       return newSet;
     });
+
+    // Auto-deselect all questions when first keyword is selected
+    if (isAddingFirstKeyword) {
+      setSelectedQuestions(new Set());
+    }
   };
 
   const handleClearKeywords = () => {
