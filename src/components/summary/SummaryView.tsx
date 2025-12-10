@@ -45,13 +45,15 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
   // Calculate unique answering model configurations (model + MCP)
   const uniqueAnsweringConfigs = new Set<string>();
   const uniqueParsingModels = new Set<string>();
-  Object.keys(summary.completion_by_combo).forEach((combo) => {
-    const parsed = parseCombo(combo);
-    // Create a key that includes model + MCP config
-    const answeringKey = `${parsed.answering}|${parsed.mcp}`;
-    uniqueAnsweringConfigs.add(answeringKey);
-    uniqueParsingModels.add(parsed.parsing);
-  });
+  if (summary.completion_by_combo && typeof summary.completion_by_combo === 'object') {
+    Object.keys(summary.completion_by_combo).forEach((combo) => {
+      const parsed = parseCombo(combo);
+      // Create a key that includes model + MCP config
+      const answeringKey = `${parsed.answering}|${parsed.mcp}`;
+      uniqueAnsweringConfigs.add(answeringKey);
+      uniqueParsingModels.add(parsed.parsing);
+    });
+  }
   const numAnsweringConfigs = uniqueAnsweringConfigs.size;
   const numParsingModels = uniqueParsingModels.size;
 
@@ -133,31 +135,35 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                 <td className={labelClass}>By Model Combination:</td>
                 <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
                   <div className="space-y-3">
-                    {Object.entries(summary.completion_by_combo).map(([combo, stats]) => {
-                      const parsed = parseCombo(combo);
-                      return (
-                        <div key={combo} className="text-xs space-y-0.5">
-                          <div className="font-medium text-slate-600 dark:text-slate-400">
-                            Answering Model:{' '}
-                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.answering}</span>
+                    {summary.completion_by_combo && typeof summary.completion_by_combo === 'object' ? (
+                      Object.entries(summary.completion_by_combo).map(([combo, stats]) => {
+                        const parsed = parseCombo(combo);
+                        return (
+                          <div key={combo} className="text-xs space-y-0.5">
+                            <div className="font-medium text-slate-600 dark:text-slate-400">
+                              Answering Model:{' '}
+                              <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.answering}</span>
+                            </div>
+                            <div className="font-medium text-slate-600 dark:text-slate-400">
+                              Parsing Model:{' '}
+                              <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.parsing}</span>
+                            </div>
+                            <div className="font-medium text-slate-600 dark:text-slate-400">
+                              MCP Tools:{' '}
+                              <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.mcp}</span>
+                            </div>
+                            <div className="mt-1 font-mono">
+                              <span className="text-green-600 dark:text-green-400 font-semibold">
+                                {stats.completed}/{stats.total}
+                              </span>{' '}
+                              completed ({stats.completion_pct.toFixed(1)}%)
+                            </div>
                           </div>
-                          <div className="font-medium text-slate-600 dark:text-slate-400">
-                            Parsing Model:{' '}
-                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.parsing}</span>
-                          </div>
-                          <div className="font-medium text-slate-600 dark:text-slate-400">
-                            MCP Tools:{' '}
-                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.mcp}</span>
-                          </div>
-                          <div className="mt-1 font-mono">
-                            <span className="text-green-600 dark:text-green-400 font-semibold">
-                              {stats.completed}/{stats.total}
-                            </span>{' '}
-                            completed ({stats.completion_pct.toFixed(1)}%)
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    ) : (
+                      <span className="text-slate-400">No data available</span>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -282,37 +288,41 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                 <td className={labelClass}>By Model Combination (+ MCP if used):</td>
                 <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
                   <div className="space-y-3">
-                    {Object.entries(summary.template_pass_by_combo).map(([combo, stats]) => {
-                      const parsed = parseCombo(combo);
-                      return (
-                        <div key={combo} className="text-xs space-y-0.5">
-                          <div className="font-medium text-slate-600 dark:text-slate-400">
-                            Answering Model:{' '}
-                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.answering}</span>
+                    {summary.template_pass_by_combo && typeof summary.template_pass_by_combo === 'object' ? (
+                      Object.entries(summary.template_pass_by_combo).map(([combo, stats]) => {
+                        const parsed = parseCombo(combo);
+                        return (
+                          <div key={combo} className="text-xs space-y-0.5">
+                            <div className="font-medium text-slate-600 dark:text-slate-400">
+                              Answering Model:{' '}
+                              <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.answering}</span>
+                            </div>
+                            <div className="font-medium text-slate-600 dark:text-slate-400">
+                              Parsing Model:{' '}
+                              <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.parsing}</span>
+                            </div>
+                            <div className="font-medium text-slate-600 dark:text-slate-400">
+                              MCP Tools:{' '}
+                              <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.mcp}</span>
+                            </div>
+                            <div className="mt-1 font-mono">
+                              <span
+                                className={
+                                  stats.pass_pct >= 70
+                                    ? 'text-green-600 dark:text-green-400 font-semibold'
+                                    : 'text-red-600 dark:text-red-400 font-semibold'
+                                }
+                              >
+                                {stats.passed}/{stats.total}
+                              </span>{' '}
+                              passed ({stats.pass_pct.toFixed(1)}%)
+                            </div>
                           </div>
-                          <div className="font-medium text-slate-600 dark:text-slate-400">
-                            Parsing Model:{' '}
-                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.parsing}</span>
-                          </div>
-                          <div className="font-medium text-slate-600 dark:text-slate-400">
-                            MCP Tools:{' '}
-                            <span className="font-mono text-slate-900 dark:text-slate-100">{parsed.mcp}</span>
-                          </div>
-                          <div className="mt-1 font-mono">
-                            <span
-                              className={
-                                stats.pass_pct >= 70
-                                  ? 'text-green-600 dark:text-green-400 font-semibold'
-                                  : 'text-red-600 dark:text-red-400 font-semibold'
-                              }
-                            >
-                              {stats.passed}/{stats.total}
-                            </span>{' '}
-                            passed ({stats.pass_pct.toFixed(1)}%)
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    ) : (
+                      <span className="text-slate-400">No data available</span>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -346,27 +356,35 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                   <td className={labelClass}>Template Pass Rate by Replicate:</td>
                   <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
                     <div className="space-y-1">
-                      {Object.entries(summary.replicate_stats.replicate_pass_rates).map(([replicate, stats]) => (
-                        <div key={replicate} className="font-mono text-xs">
-                          Replicate {replicate}:{' '}
-                          <span
-                            className={
-                              stats.pass_pct >= 70
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
-                            }
-                          >
-                            {stats.passed}/{stats.total}
-                          </span>{' '}
-                          passed ({stats.pass_pct.toFixed(1)}%)
-                        </div>
-                      ))}
+                      {summary.replicate_stats?.replicate_pass_rates &&
+                      typeof summary.replicate_stats.replicate_pass_rates === 'object' ? (
+                        Object.entries(summary.replicate_stats.replicate_pass_rates).map(([replicate, stats]) => (
+                          <div key={replicate} className="font-mono text-xs">
+                            Replicate {replicate}:{' '}
+                            <span
+                              className={
+                                stats.pass_pct >= 70
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : 'text-red-600 dark:text-red-400'
+                              }
+                            >
+                              {stats.passed}/{stats.total}
+                            </span>{' '}
+                            passed ({stats.pass_pct.toFixed(1)}%)
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-slate-400">No data available</span>
+                      )}
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 font-normal">
-                      Summary: mean=
-                      <span className="font-mono">{summary.replicate_stats.replicate_summary.mean.toFixed(3)}</span>,
-                      std=<span className="font-mono">{summary.replicate_stats.replicate_summary.std.toFixed(3)}</span>
-                    </div>
+                    {summary.replicate_stats?.replicate_summary && (
+                      <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 font-normal">
+                        Summary: mean=
+                        <span className="font-mono">{summary.replicate_stats.replicate_summary.mean.toFixed(3)}</span>,
+                        std=
+                        <span className="font-mono">{summary.replicate_stats.replicate_summary.std.toFixed(3)}</span>
+                      </div>
+                    )}
                   </td>
                 </tr>
               </tbody>

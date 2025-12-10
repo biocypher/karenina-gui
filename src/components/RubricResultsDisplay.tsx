@@ -136,16 +136,18 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
                 {description && <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{description}</p>}
                 {/* Metric Badges */}
                 <div className="flex flex-wrap gap-2">
-                  {Object.entries(metrics).map(([metricName, value]) => (
-                    <span
-                      key={metricName}
-                      className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/10 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-                      title={`${metricName}: ${(value * 100).toFixed(1)}%`}
-                    >
-                      <span className="capitalize">{metricName}:</span>
-                      <span className="ml-1 font-semibold">{(value * 100).toFixed(1)}%</span>
-                    </span>
-                  ))}
+                  {metrics && typeof metrics === 'object'
+                    ? Object.entries(metrics).map(([metricName, value]) => (
+                        <span
+                          key={metricName}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/10 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                          title={`${metricName}: ${(value * 100).toFixed(1)}%`}
+                        >
+                          <span className="capitalize">{metricName}:</span>
+                          <span className="ml-1 font-semibold">{(value * 100).toFixed(1)}%</span>
+                        </span>
+                      ))
+                    : null}
                 </div>
               </div>
             </div>

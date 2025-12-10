@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { Checkpoint, VerificationResult, Rubric, UsageMetadata } from '../../types';
-import { SearchableTextDisplay } from '../SearchableTextDisplay';
+import { TraceHighlightedTextDisplay } from '../TraceHighlightedTextDisplay';
 import { SearchResultsDisplay } from '../SearchResultsDisplay';
 import { RubricResultsDisplay } from '../RubricResultsDisplay';
 
@@ -35,7 +35,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
         <div className="p-6 border-b border-slate-200 dark:border-slate-600">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Detailed Answering Trace</h3>
@@ -95,7 +95,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                     <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
                       Raw LLM Response (Generated)
                     </h4>
-                    <SearchableTextDisplay
+                    <TraceHighlightedTextDisplay
                       text={result.template?.raw_llm_response || 'N/A'}
                       className="text-slate-800 dark:text-slate-200"
                     />

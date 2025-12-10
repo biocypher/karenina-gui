@@ -103,15 +103,17 @@ const RubricCell: React.FC<{
                 <span className="text-xs text-purple-600 dark:text-purple-400">(Metric)</span>
               </div>
               <div className="flex flex-wrap gap-1">
-                {Object.entries(metrics).map(([metricName, value]) => (
-                  <span
-                    key={metricName}
-                    className="text-xs text-purple-600 dark:text-purple-400"
-                    title={`${metricName}: ${(value * 100).toFixed(1)}%`}
-                  >
-                    {metricName}: {(value * 100).toFixed(1)}%
-                  </span>
-                ))}
+                {metrics && typeof metrics === 'object'
+                  ? Object.entries(metrics).map(([metricName, value]) => (
+                      <span
+                        key={metricName}
+                        className="text-xs text-purple-600 dark:text-purple-400"
+                        title={`${metricName}: ${(value * 100).toFixed(1)}%`}
+                      >
+                        {metricName}: {(value * 100).toFixed(1)}%
+                      </span>
+                    ))
+                  : null}
               </div>
             </div>
           ))}
