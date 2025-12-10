@@ -123,18 +123,22 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     const models = Array.from(modelsMap.values());
     setAvailableModels(models);
 
-    // Auto-select first 2 models
-    if (models.length >= 2) {
-      setSelectedModels([
-        { answering_model: models[0].answering_model, mcp_config: models[0].mcp_config },
-        { answering_model: models[1].answering_model, mcp_config: models[1].mcp_config },
-      ]);
+    // Auto-select first model (or first 2 if available)
+    if (models.length >= 1) {
+      const autoSelected =
+        models.length >= 2
+          ? [
+              { answering_model: models[0].answering_model, mcp_config: models[0].mcp_config },
+              { answering_model: models[1].answering_model, mcp_config: models[1].mcp_config },
+            ]
+          : [{ answering_model: models[0].answering_model, mcp_config: models[0].mcp_config }];
+      setSelectedModels(autoSelected);
     }
   }, [results, parsingModel]);
 
   // Fetch comparison when models or replicate changes
   useEffect(() => {
-    if (selectedModels.length < 2) {
+    if (selectedModels.length < 1) {
       setComparisonData(null);
       return;
     }
@@ -377,8 +381,8 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
         />
       </div>
 
-      {/* Only show comparison if at least 2 models selected */}
-      {selectedModels.length >= 2 && comparisonData && comparisonData.heatmap_data && (
+      {/* Show visualizations if at least 1 model selected */}
+      {selectedModels.length >= 1 && comparisonData && comparisonData.heatmap_data && (
         <>
           {/* Side-by-side Detailed Metrics Comparison */}
           <div>
