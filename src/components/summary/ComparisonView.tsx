@@ -123,18 +123,22 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     const models = Array.from(modelsMap.values());
     setAvailableModels(models);
 
-    // Auto-select first 2 models
-    if (models.length >= 2) {
-      setSelectedModels([
-        { answering_model: models[0].answering_model, mcp_config: models[0].mcp_config },
-        { answering_model: models[1].answering_model, mcp_config: models[1].mcp_config },
-      ]);
+    // Auto-select first model (or first 2 if available)
+    if (models.length >= 1) {
+      const autoSelected =
+        models.length >= 2
+          ? [
+              { answering_model: models[0].answering_model, mcp_config: models[0].mcp_config },
+              { answering_model: models[1].answering_model, mcp_config: models[1].mcp_config },
+            ]
+          : [{ answering_model: models[0].answering_model, mcp_config: models[0].mcp_config }];
+      setSelectedModels(autoSelected);
     }
   }, [results, parsingModel]);
 
   // Fetch comparison when models or replicate changes
   useEffect(() => {
-    if (selectedModels.length < 2) {
+    if (selectedModels.length < 1) {
       setComparisonData(null);
       return;
     }
@@ -261,13 +265,24 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     return `${secs.toFixed(1)}s`;
   };
 
-  // Question selection handlers
+  // Question selection handlers - operate on filtered questions only
   const handleSelectAllQuestions = () => {
-    setSelectedQuestions(new Set(availableQuestions.map((q) => q.id)));
+    // Select all currently visible (filtered) questions, preserving selections outside the filter
+    setSelectedQuestions((prev) => {
+      const newSet = new Set(prev);
+      filteredQuestions.forEach((q) => newSet.add(q.id));
+      return newSet;
+    });
   };
 
   const handleSelectNoneQuestions = () => {
-    setSelectedQuestions(new Set());
+    // Deselect all currently visible (filtered) questions, preserving selections outside the filter
+    setSelectedQuestions((prev) => {
+      const filteredIds = new Set(filteredQuestions.map((q) => q.id));
+      const newSet = new Set(prev);
+      filteredIds.forEach((id) => newSet.delete(id));
+      return newSet;
+    });
   };
 
   const handleToggleQuestion = (questionId: string) => {
@@ -284,6 +299,9 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
 
   // Keyword selection handlers
   const handleToggleKeyword = (keyword: string) => {
+    // Check if we're adding the first keyword (transitioning from no filter to filtered)
+    const isAddingFirstKeyword = selectedKeywords.size === 0 && !selectedKeywords.has(keyword);
+
     setSelectedKeywords((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(keyword)) {
@@ -293,6 +311,11 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
       }
       return newSet;
     });
+
+    // Auto-deselect all questions when first keyword is selected
+    if (isAddingFirstKeyword) {
+      setSelectedQuestions(new Set());
+    }
   };
 
   const handleClearKeywords = () => {
@@ -377,8 +400,8 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
         />
       </div>
 
-      {/* Only show comparison if at least 2 models selected */}
-      {selectedModels.length >= 2 && comparisonData && comparisonData.heatmap_data && (
+      {/* Show visualizations if at least 1 model selected */}
+      {selectedModels.length >= 1 && comparisonData && comparisonData.heatmap_data && (
         <>
           {/* Side-by-side Detailed Metrics Comparison */}
           <div>

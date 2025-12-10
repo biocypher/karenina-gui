@@ -725,14 +725,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       if (!benchmarkResults) {
         return [];
       }
-      const unfiltered = Object.values(benchmarkResults);
-      // Prevent memory issues with extremely large datasets
-      const maxResults = 1000;
-      if (unfiltered.length > maxResults) {
-        console.warn(`Processing first ${maxResults} results out of ${unfiltered.length} total`);
-        return unfiltered.slice(0, maxResults);
-      }
-      return unfiltered;
+      return Object.values(benchmarkResults);
     } catch (e) {
       console.error('Error in getAllUnfilteredResults:', e);
       return [];

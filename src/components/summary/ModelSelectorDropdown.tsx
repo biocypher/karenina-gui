@@ -128,10 +128,8 @@ export function ModelSelectorDropdown({
       {/* Helper Text */}
       <p className="text-xs text-slate-500 dark:text-slate-400">
         {selectedModels.length === 0
-          ? 'Select at least 2 models to compare'
-          : selectedModels.length < 2
-            ? 'Add 1 more model to enable comparison'
-            : `${selectedModels.length}/${maxModels} models selected`}
+          ? 'Select at least 1 model to visualize'
+          : `${selectedModels.length}/${maxModels} models selected`}
       </p>
     </div>
   );

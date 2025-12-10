@@ -43,6 +43,11 @@ interface QuestionState {
   setQuestionRubric: (questionId: string, rubric: Rubric) => void;
   clearQuestionRubric: (questionId: string) => void;
 
+  // Question content editing
+  updateQuestionContent: (questionId: string, question: string, rawAnswer: string) => void;
+  deleteQuestion: (questionId: string) => void;
+  cloneQuestion: (questionId: string) => string;
+
   // Computed getters
   getQuestionIds: () => string[];
   getCurrentIndex: () => number;
@@ -582,5 +587,177 @@ class Answer(BaseAnswer):
 
       set(() => ({ checkpoint: updatedCheckpoint }));
     }
+  },
+
+  // Question content editing
+  updateQuestionContent: (questionId: string, question: string, rawAnswer: string) => {
+    const state = get();
+    const existingQuestion = state.questionData[questionId];
+    const existingCheckpointItem = state.checkpoint[questionId];
+
+    if (!existingQuestion || !existingCheckpointItem) {
+      console.error('❌ updateQuestionContent: Question not found', { questionId });
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    // Update questionData
+    const updatedQuestionData = {
+      ...state.questionData,
+      [questionId]: {
+        ...existingQuestion,
+        question,
+        raw_answer: rawAnswer,
+      },
+    };
+
+    // Update checkpoint
+    const updatedCheckpoint = {
+      ...state.checkpoint,
+      [questionId]: {
+        ...existingCheckpointItem,
+        question,
+        raw_answer: rawAnswer,
+        last_modified: now,
+      },
+    };
+
+    set(() => ({
+      questionData: updatedQuestionData,
+      checkpoint: updatedCheckpoint,
+    }));
+
+    console.log('✅ Question content updated', { questionId });
+
+    // Auto-save to database
+    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
+      console.error('❌ Failed to auto-save to database after question update:', err);
+      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    });
+  },
+
+  deleteQuestion: (questionId: string) => {
+    const state = get();
+
+    if (!state.questionData[questionId] || !state.checkpoint[questionId]) {
+      console.error('❌ deleteQuestion: Question not found', { questionId });
+      return;
+    }
+
+    // Get question IDs before deletion for navigation
+    const questionIds = Object.keys(state.questionData);
+    const currentIndex = questionIds.indexOf(questionId);
+
+    // Remove from questionData
+    const updatedQuestionData = { ...state.questionData };
+    delete updatedQuestionData[questionId];
+
+    // Remove from checkpoint
+    const updatedCheckpoint = { ...state.checkpoint };
+    delete updatedCheckpoint[questionId];
+
+    // Clear session draft for deleted question
+    const remainingDrafts = Object.fromEntries(
+      Object.entries(state.sessionDrafts).filter(([key]) => key !== questionId)
+    );
+
+    // Determine which question to navigate to
+    const remainingIds = Object.keys(updatedQuestionData);
+    let newSelectedQuestionId = '';
+    let newCurrentTemplate = '';
+
+    if (remainingIds.length > 0) {
+      // Navigate to next question, or previous if we deleted the last one
+      const newIndex = Math.min(currentIndex, remainingIds.length - 1);
+      newSelectedQuestionId = remainingIds[newIndex];
+      newCurrentTemplate = updatedCheckpoint[newSelectedQuestionId]?.answer_template || '';
+    }
+
+    set(() => ({
+      questionData: updatedQuestionData,
+      checkpoint: updatedCheckpoint,
+      sessionDrafts: remainingDrafts,
+      selectedQuestionId: newSelectedQuestionId,
+      currentTemplate: newCurrentTemplate,
+    }));
+
+    console.log('✅ Question deleted', { questionId, newSelectedQuestionId });
+
+    // Auto-save to database
+    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
+      console.error('❌ Failed to auto-save to database after question deletion:', err);
+      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    });
+  },
+
+  cloneQuestion: (questionId: string) => {
+    const state = get();
+    const sourceQuestion = state.questionData[questionId];
+    const sourceCheckpointItem = state.checkpoint[questionId];
+
+    if (!sourceQuestion || !sourceCheckpointItem) {
+      console.error('❌ cloneQuestion: Source question not found', { questionId });
+      return '';
+    }
+
+    // Generate new UUID for the cloned question
+    const newQuestionId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    // Clone question text with [CLONED] prefix
+    const clonedQuestionText = `[CLONED] ${sourceQuestion.question}`;
+
+    // Create cloned question entry (copy all fields)
+    const clonedQuestion: QuestionData[string] = {
+      ...sourceQuestion,
+      question: clonedQuestionText,
+    };
+
+    // Create cloned checkpoint item (copy all fields exactly, update timestamps and finished)
+    const clonedCheckpointItem = {
+      ...sourceCheckpointItem,
+      question: clonedQuestionText,
+      date_created: now,
+      last_modified: now,
+      finished: false, // Clone needs review
+    };
+
+    // Insert cloned question immediately after the source question
+    // Rebuild objects to maintain correct order
+    const questionIds = Object.keys(state.questionData);
+    const sourceIndex = questionIds.indexOf(questionId);
+
+    const updatedQuestionData: QuestionData = {};
+    const updatedCheckpoint: Checkpoint = {};
+
+    questionIds.forEach((id, index) => {
+      // Add existing question
+      updatedQuestionData[id] = state.questionData[id];
+      updatedCheckpoint[id] = state.checkpoint[id];
+
+      // Insert clone right after source
+      if (index === sourceIndex) {
+        updatedQuestionData[newQuestionId] = clonedQuestion;
+        updatedCheckpoint[newQuestionId] = clonedCheckpointItem;
+      }
+    });
+
+    set(() => ({
+      questionData: updatedQuestionData,
+      checkpoint: updatedCheckpoint,
+      selectedQuestionId: newQuestionId,
+      currentTemplate: clonedCheckpointItem.answer_template,
+    }));
+
+    console.log('✅ Question cloned', { sourceId: questionId, newId: newQuestionId, insertedAfterIndex: sourceIndex });
+
+    // Auto-save to database
+    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
+      console.error('❌ Failed to auto-save to database after question clone:', err);
+      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    });
+
+    return newQuestionId;
   },
 }));
