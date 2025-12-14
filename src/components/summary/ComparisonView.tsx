@@ -472,6 +472,17 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
                               <td className={labelClass}>Execution Time:</td>
                               <td className={valueClass}>{formatDuration(summary.total_execution_time)}</td>
                             </tr>
+                            {summary.trace_length_stats && (
+                              <tr className={rowClass}>
+                                <td className={labelClass}>Median Iterations:</td>
+                                <td className={valueClass}>
+                                  {summary.trace_length_stats.median_iterations.toFixed(1)} iterations
+                                  <span className="text-slate-500 dark:text-slate-400 ml-1">
+                                    (± {summary.trace_length_stats.std_iterations.toFixed(1)})
+                                  </span>
+                                </td>
+                              </tr>
+                            )}
                             <tr className={rowClass}>
                               <td className={labelClass}>Total Tokens:</td>
                               <td className={valueClass}>

@@ -929,6 +929,15 @@ export interface ToolUsageStats {
   total_tool_calls: number;
 }
 
+export interface TraceLengthStats {
+  median_iterations: number;
+  mean_iterations: number;
+  std_iterations: number;
+  min_iterations: number;
+  max_iterations: number;
+  num_traces: number;
+}
+
 export interface SummaryStats {
   // Basic counts
   num_results: number;
@@ -977,6 +986,9 @@ export interface SummaryStats {
 
   // Tool usage statistics (optional - only present when agents are used)
   tool_usage_stats?: ToolUsageStats;
+
+  // Trace length statistics
+  trace_length_stats?: TraceLengthStats;
 }
 
 export interface SummaryRequest {
