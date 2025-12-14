@@ -463,6 +463,7 @@ export interface VerificationResultTemplate {
     iterations?: number;
     tool_calls?: number;
     tools_used?: string[];
+    tool_call_counts?: Record<string, number>; // Per-tool call counts
     suspect_failed_tool_calls?: number;
     suspect_failed_tools?: string[];
     // Middleware-related metrics (LangChain 1.1+)
@@ -914,6 +915,20 @@ export interface RubricTraitStats {
   };
 }
 
+// Tool usage statistics for summary
+export interface ToolUsageStats {
+  tools: Record<
+    string,
+    {
+      total_calls: number;
+      traces_using: number;
+      avg_calls_per_trace: number;
+    }
+  >;
+  total_traces_with_tools: number;
+  total_tool_calls: number;
+}
+
 export interface SummaryStats {
   // Basic counts
   num_results: number;
@@ -959,6 +974,9 @@ export interface SummaryStats {
 
   // Replicate statistics (optional)
   replicate_stats?: ReplicateStats;
+
+  // Tool usage statistics (optional - only present when agents are used)
+  tool_usage_stats?: ToolUsageStats;
 }
 
 export interface SummaryRequest {

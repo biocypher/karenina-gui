@@ -427,6 +427,158 @@ export function SummaryCharts({ summary }: SummaryChartsProps) {
           />
         </div>
       </div>
+
+      {/* Tool Usage Statistics - Two side-by-side horizontal bar plots */}
+      {summary.tool_usage_stats &&
+        summary.tool_usage_stats.tools &&
+        Object.keys(summary.tool_usage_stats.tools).length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Tool Usage Statistics</h4>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Total Calls Chart */}
+              <div>
+                <h5 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2 text-center">Total Calls</h5>
+                <div
+                  className="bg-white dark:bg-slate-800 rounded-lg p-4"
+                  style={{
+                    height: `${Math.max(200, Object.keys(summary.tool_usage_stats.tools).length * 28 + 60)}px`,
+                  }}
+                >
+                  <ResponsiveBar
+                    data={Object.entries(summary.tool_usage_stats.tools)
+                      .sort(([, a], [, b]) => b.total_calls - a.total_calls)
+                      .slice(0, 15)
+                      .map(([tool, stats]) => ({
+                        tool: tool,
+                        value: stats.total_calls,
+                      }))}
+                    keys={['value']}
+                    indexBy="tool"
+                    layout="horizontal"
+                    margin={{ top: 10, right: 60, bottom: 40, left: 180 }}
+                    padding={0.3}
+                    valueScale={{ type: 'linear' }}
+                    indexScale={{ type: 'band', round: true }}
+                    colors={['#3b82f6']}
+                    borderColor={{
+                      from: 'color',
+                      modifiers: [['darker', 1.6]],
+                    }}
+                    label={(d) => (d.value >= 1000 ? `${(d.value / 1000).toFixed(1)}K` : d.value.toString())}
+                    labelSkipWidth={12}
+                    labelTextColor="#ffffff"
+                    tooltip={({ indexValue, value }) => (
+                      <div
+                        style={{
+                          background: isDark ? '#1e293b' : '#ffffff',
+                          color: isDark ? '#e2e8f0' : '#1e293b',
+                          padding: '9px 12px',
+                          borderRadius: '6px',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        }}
+                      >
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{indexValue}</div>
+                        <div style={{ fontSize: '12px' }}>Total Calls: {value.toLocaleString()}</div>
+                      </div>
+                    )}
+                    axisTop={null}
+                    axisRight={null}
+                    axisBottom={{
+                      tickSize: 5,
+                      tickPadding: 5,
+                      tickRotation: 0,
+                      legend: 'Calls',
+                      legendPosition: 'middle',
+                      legendOffset: 32,
+                    }}
+                    axisLeft={{
+                      tickSize: 0,
+                      tickPadding: 8,
+                      tickRotation: 0,
+                    }}
+                    role="application"
+                    ariaLabel="Total tool calls bar chart"
+                    theme={theme}
+                  />
+                </div>
+              </div>
+
+              {/* Average Calls per Trace Chart */}
+              <div>
+                <h5 className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2 text-center">
+                  Average Calls per Trace
+                </h5>
+                <div
+                  className="bg-white dark:bg-slate-800 rounded-lg p-4"
+                  style={{
+                    height: `${Math.max(200, Object.keys(summary.tool_usage_stats.tools).length * 28 + 60)}px`,
+                  }}
+                >
+                  <ResponsiveBar
+                    data={Object.entries(summary.tool_usage_stats.tools)
+                      .sort(([, a], [, b]) => b.avg_calls_per_trace - a.avg_calls_per_trace)
+                      .slice(0, 15)
+                      .map(([tool, stats]) => ({
+                        tool: tool,
+                        value: parseFloat(stats.avg_calls_per_trace.toFixed(2)),
+                      }))}
+                    keys={['value']}
+                    indexBy="tool"
+                    layout="horizontal"
+                    margin={{ top: 10, right: 60, bottom: 40, left: 180 }}
+                    padding={0.3}
+                    valueScale={{ type: 'linear' }}
+                    indexScale={{ type: 'band', round: true }}
+                    colors={['#10b981']}
+                    borderColor={{
+                      from: 'color',
+                      modifiers: [['darker', 1.6]],
+                    }}
+                    label={(d) => d.value.toFixed(1)}
+                    labelSkipWidth={12}
+                    labelTextColor="#ffffff"
+                    tooltip={({ indexValue, value }) => (
+                      <div
+                        style={{
+                          background: isDark ? '#1e293b' : '#ffffff',
+                          color: isDark ? '#e2e8f0' : '#1e293b',
+                          padding: '9px 12px',
+                          borderRadius: '6px',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        }}
+                      >
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{indexValue}</div>
+                        <div style={{ fontSize: '12px' }}>Avg per Trace: {value.toFixed(2)}</div>
+                      </div>
+                    )}
+                    axisTop={null}
+                    axisRight={null}
+                    axisBottom={{
+                      tickSize: 5,
+                      tickPadding: 5,
+                      tickRotation: 0,
+                      legend: 'Avg Calls',
+                      legendPosition: 'middle',
+                      legendOffset: 32,
+                    }}
+                    axisLeft={{
+                      tickSize: 0,
+                      tickPadding: 8,
+                      tickRotation: 0,
+                    }}
+                    role="application"
+                    ariaLabel="Average tool calls per trace bar chart"
+                    theme={theme}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 text-center">
+              {summary.tool_usage_stats.total_tool_calls.toLocaleString()} total calls across{' '}
+              {summary.tool_usage_stats.total_traces_with_tools.toLocaleString()} traces
+            </div>
+          </div>
+        )}
     </div>
   );
 }
