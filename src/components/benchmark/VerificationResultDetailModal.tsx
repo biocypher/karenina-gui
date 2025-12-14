@@ -1110,12 +1110,29 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                             <div className="grid grid-cols-2 gap-4 text-sm mt-3">
                               <div>
                                 <span className="font-medium text-slate-600 dark:text-slate-300">Tools Used:</span>
-                                <p className="text-slate-800 dark:text-slate-200 text-xs mt-1">
-                                  {result.template.agent_metrics.tools_used &&
-                                  result.template.agent_metrics.tools_used.length > 0
-                                    ? result.template.agent_metrics.tools_used.join(', ')
-                                    : 'None'}
-                                </p>
+                                {result.template.agent_metrics.tool_call_counts &&
+                                Object.keys(result.template.agent_metrics.tool_call_counts).length > 0 ? (
+                                  <ul className="text-slate-800 dark:text-slate-200 text-xs mt-1 list-disc list-inside space-y-0.5">
+                                    {Object.entries(result.template.agent_metrics.tool_call_counts)
+                                      .sort(([, a], [, b]) => b - a)
+                                      .map(([tool, count]) => (
+                                        <li key={tool}>
+                                          <span className="font-mono">{tool}</span>: {count}
+                                        </li>
+                                      ))}
+                                  </ul>
+                                ) : result.template.agent_metrics.tools_used &&
+                                  result.template.agent_metrics.tools_used.length > 0 ? (
+                                  <ul className="text-slate-800 dark:text-slate-200 text-xs mt-1 list-disc list-inside space-y-0.5">
+                                    {result.template.agent_metrics.tools_used.map((tool) => (
+                                      <li key={tool}>
+                                        <span className="font-mono">{tool}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-slate-800 dark:text-slate-200 text-xs mt-1">None</p>
+                                )}
                               </div>
                               <div>
                                 <span className="font-medium text-slate-600 dark:text-slate-300">
