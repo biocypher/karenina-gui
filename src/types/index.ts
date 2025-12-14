@@ -383,7 +383,8 @@ export interface ModelConfiguration {
   agent_middleware?: AgentMiddlewareConfig;
   // Maximum context tokens for the model (used for summarization trigger)
   // For langchain interface, this is auto-detected from model profiles
-  // For openrouter and openai_endpoint interfaces, defaults to 100000 if not specified
+  // For openai_endpoint interface, auto-detected from /v1/models API if available
+  // For openrouter interface, defaults to 100000 if not specified
   max_context_tokens?: number;
 }
 

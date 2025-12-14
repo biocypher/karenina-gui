@@ -238,6 +238,16 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
         sanitized.extra_kwargs = model.extra_kwargs;
       }
 
+      // Include agent_middleware if present (for MCP-enabled agents)
+      if (model.agent_middleware) {
+        sanitized.agent_middleware = model.agent_middleware;
+      }
+
+      // Include max_context_tokens if specified
+      if (model.max_context_tokens !== undefined && model.max_context_tokens !== null) {
+        sanitized.max_context_tokens = model.max_context_tokens;
+      }
+
       return sanitized;
     };
 

@@ -4,6 +4,7 @@ import { Card } from '../ui/Card';
 import { ManualTraceUpload } from '../ManualTraceUpload';
 import { MCPConfigurationModal } from './MCPConfigurationModal';
 import ExtraKwargsModal from './ExtraKwargsModal';
+import type { AgentMiddlewareConfig } from '../../types';
 
 interface ModelConfiguration {
   id: string;
@@ -23,6 +24,10 @@ interface ModelConfiguration {
   use_full_trace_for_rubric?: boolean;
   // Extra keyword arguments
   extra_kwargs?: Record<string, unknown>;
+  // Agent middleware configuration (for MCP-enabled agents)
+  agent_middleware?: AgentMiddlewareConfig;
+  // Maximum context tokens for the model (used for summarization trigger)
+  max_context_tokens?: number;
 }
 
 interface ConfigurationPanelProps {
@@ -161,12 +166,22 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     return undefined;
   };
 
-  const handleExtraKwargsSave = (kwargs: Record<string, unknown>) => {
+  const handleExtraKwargsSave = (update: {
+    extra_kwargs: Record<string, unknown>;
+    agent_middleware?: AgentMiddlewareConfig;
+    max_context_tokens?: number;
+  }) => {
     if (extraKwargsModalState.modelId) {
+      const modelUpdate: Partial<ModelConfiguration> = {
+        extra_kwargs: Object.keys(update.extra_kwargs).length > 0 ? update.extra_kwargs : undefined,
+        agent_middleware: update.agent_middleware,
+        max_context_tokens: update.max_context_tokens,
+      };
+
       if (extraKwargsModalState.isAnswering) {
-        onUpdateAnsweringModel(extraKwargsModalState.modelId, { extra_kwargs: kwargs });
+        onUpdateAnsweringModel(extraKwargsModalState.modelId, modelUpdate);
       } else {
-        onUpdateParsingModel(extraKwargsModalState.modelId, { extra_kwargs: kwargs });
+        onUpdateParsingModel(extraKwargsModalState.modelId, modelUpdate);
       }
     }
     setExtraKwargsModalState({ isOpen: false, modelId: null, isAnswering: true });
@@ -180,6 +195,36 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       : parsingModels.find((m) => m.id === extraKwargsModalState.modelId);
 
     return model?.extra_kwargs;
+  };
+
+  const getCurrentMiddleware = () => {
+    if (!extraKwargsModalState.modelId) return undefined;
+
+    const model = extraKwargsModalState.isAnswering
+      ? answeringModels.find((m) => m.id === extraKwargsModalState.modelId)
+      : parsingModels.find((m) => m.id === extraKwargsModalState.modelId);
+
+    return model?.agent_middleware;
+  };
+
+  const getCurrentMaxContextTokens = () => {
+    if (!extraKwargsModalState.modelId) return undefined;
+
+    const model = extraKwargsModalState.isAnswering
+      ? answeringModels.find((m) => m.id === extraKwargsModalState.modelId)
+      : parsingModels.find((m) => m.id === extraKwargsModalState.modelId);
+
+    return model?.max_context_tokens;
+  };
+
+  const hasMcpForCurrentModel = () => {
+    if (!extraKwargsModalState.modelId) return false;
+
+    const model = extraKwargsModalState.isAnswering
+      ? answeringModels.find((m) => m.id === extraKwargsModalState.modelId)
+      : parsingModels.find((m) => m.id === extraKwargsModalState.modelId);
+
+    return !!(model?.mcp_urls_dict && Object.keys(model.mcp_urls_dict).length > 0);
   };
 
   const handleRemoveMCP = (modelId: string) => {
@@ -1059,6 +1104,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         onClose={() => setExtraKwargsModalState({ isOpen: false, modelId: null, isAnswering: true })}
         onSave={handleExtraKwargsSave}
         initialKwargs={getCurrentExtraKwargs()}
+        initialMiddleware={getCurrentMiddleware()}
+        initialMaxContextTokens={getCurrentMaxContextTokens()}
+        hasMcp={hasMcpForCurrentModel()}
       />
     </>
   );
