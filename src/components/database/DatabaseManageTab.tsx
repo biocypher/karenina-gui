@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Database, Loader, Save } from 'lucide-react';
+import { Plus, Database, Loader, Save, Upload } from 'lucide-react';
 import { BenchmarkCard } from './BenchmarkCard';
 import { CreateBenchmarkForm } from './CreateBenchmarkForm';
 import { DuplicateResolutionModal } from './DuplicateResolutionModal';
+import { ImportResultsModal } from './ImportResultsModal';
 import {
   UnifiedCheckpoint,
   DuplicateQuestionInfo,
@@ -47,6 +48,9 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
   // Duplicate resolution state
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicates, setDuplicates] = useState<DuplicateQuestionInfo[]>([]);
+
+  // Import modal state
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Check if we have questions loaded in memory
   const hasQuestionsInMemory = Object.keys(checkpoint).length > 0;
@@ -279,17 +283,31 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
 
   return (
     <div className="space-y-6">
-      {/* Create New Benchmark Button/Form */}
+      {/* Create New Benchmark / Import Results Buttons */}
       {!showCreateForm ? (
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700
-                   text-white rounded-lg transition-colors flex items-center justify-center gap-2
-                   shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-        >
-          <Plus className="w-5 h-5" />
-          Create New Benchmark in Database
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700
+                     text-white rounded-lg transition-colors flex items-center justify-center gap-2
+                     shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <Plus className="w-5 h-5" />
+            Create New Benchmark
+          </button>
+          <button
+            onClick={() => setShowImportModal(true)}
+            disabled={!selectedBenchmark}
+            className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600
+                     text-white rounded-lg transition-colors flex items-center justify-center gap-2
+                     shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
+                     disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            title={!selectedBenchmark ? 'Select a benchmark first' : 'Import verification results from JSON'}
+          >
+            <Upload className="w-5 h-5" />
+            Import Results
+          </button>
+        </div>
       ) : (
         <CreateBenchmarkForm
           storageUrl={storageUrl}
@@ -406,6 +424,18 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
         }}
         duplicates={duplicates}
         onApplyResolutions={handleApplyResolutions}
+      />
+
+      {/* Import Results Modal */}
+      <ImportResultsModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        storageUrl={storageUrl}
+        benchmarkName={selectedBenchmark}
+        onImportSuccess={() => {
+          // Optionally refresh benchmarks list or show success message
+          loadBenchmarks();
+        }}
       />
     </div>
   );
