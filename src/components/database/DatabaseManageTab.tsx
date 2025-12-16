@@ -4,6 +4,7 @@ import { BenchmarkCard } from './BenchmarkCard';
 import { CreateBenchmarkForm } from './CreateBenchmarkForm';
 import { DuplicateResolutionModal } from './DuplicateResolutionModal';
 import { ImportResultsModal } from './ImportResultsModal';
+import { DeleteBenchmarkModal } from './DeleteBenchmarkModal';
 import {
   UnifiedCheckpoint,
   DuplicateQuestionInfo,
@@ -51,6 +52,9 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
 
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // Delete benchmark modal state
+  const [benchmarkToDelete, setBenchmarkToDelete] = useState<BenchmarkInfo | null>(null);
 
   // Check if we have questions loaded in memory
   const hasQuestionsInMemory = Object.keys(checkpoint).length > 0;
@@ -239,6 +243,21 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
     }
   };
 
+  // Handle delete benchmark
+  const handleDeleteBenchmark = (benchmark: BenchmarkInfo) => {
+    setBenchmarkToDelete(benchmark);
+  };
+
+  const handleDeleteSuccess = () => {
+    setBenchmarkToDelete(null);
+    // Clear selection if we deleted the selected benchmark
+    if (selectedBenchmark === benchmarkToDelete?.name) {
+      setSelectedBenchmark(null);
+    }
+    // Reload benchmarks list
+    loadBenchmarks();
+  };
+
   const handleApplyResolutions = async (resolutions: DuplicateResolutions) => {
     if (!selectedBenchmark) {
       throw new Error('No benchmark selected');
@@ -353,6 +372,7 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
                 lastModified={benchmark.last_modified}
                 isSelected={selectedBenchmark === benchmark.name}
                 onClick={() => setSelectedBenchmark(benchmark.name)}
+                onDelete={() => handleDeleteBenchmark(benchmark)}
               />
             ))}
           </div>
@@ -437,6 +457,17 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
           loadBenchmarks();
         }}
       />
+
+      {/* Delete Benchmark Modal */}
+      {benchmarkToDelete && (
+        <DeleteBenchmarkModal
+          benchmark={benchmarkToDelete}
+          storageUrl={storageUrl}
+          isOpen={true}
+          onClose={() => setBenchmarkToDelete(null)}
+          onDeleted={handleDeleteSuccess}
+        />
+      )}
     </div>
   );
 };

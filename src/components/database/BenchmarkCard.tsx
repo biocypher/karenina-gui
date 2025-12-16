@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Trash2 } from 'lucide-react';
 
 interface BenchmarkCardProps {
   id: string;
@@ -10,6 +10,7 @@ interface BenchmarkCardProps {
   lastModified?: string;
   isSelected: boolean;
   onClick: () => void;
+  onDelete?: () => void;
 }
 
 export const BenchmarkCard: React.FC<BenchmarkCardProps> = ({
@@ -20,6 +21,7 @@ export const BenchmarkCard: React.FC<BenchmarkCardProps> = ({
   lastModified,
   isSelected,
   onClick,
+  onDelete,
 }) => {
   // Format the last modified timestamp
   const formatTimestamp = (timestamp?: string): string => {
@@ -53,37 +55,57 @@ export const BenchmarkCard: React.FC<BenchmarkCardProps> = ({
     }
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete();
+    }
+  };
+
   return (
-    <button
-      onClick={onClick}
+    <div
       className={`
-        w-full text-left px-4 py-3 rounded-lg border transition-all
+        flex items-center gap-2 px-4 py-3 rounded-lg border transition-all
         ${
           isSelected
             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
-            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
+            : 'border-gray-200 dark:border-gray-700'
         }
       `}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="font-medium text-gray-900 dark:text-white">{name}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {totalQuestions} question{totalQuestions !== 1 ? 's' : ''}
-            {finishedCount > 0 && (
-              <span className="ml-2">
-                ({finishedCount} finished, {unfinishedCount} unfinished)
-              </span>
+      <button
+        onClick={onClick}
+        className="flex-1 text-left hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded transition-colors -mx-2 px-2 -my-1 py-1"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="font-medium text-gray-900 dark:text-white">{name}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {totalQuestions} question{totalQuestions !== 1 ? 's' : ''}
+              {finishedCount > 0 && (
+                <span className="ml-2">
+                  ({finishedCount} finished, {unfinishedCount} unfinished)
+                </span>
+              )}
+            </div>
+            {lastModified && (
+              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                Last modified: {formatTimestamp(lastModified)}
+              </div>
             )}
           </div>
-          {lastModified && (
-            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              Last modified: {formatTimestamp(lastModified)}
-            </div>
-          )}
+          {isSelected && <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 ml-2" />}
         </div>
-        {isSelected && <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 ml-2" />}
-      </div>
-    </button>
+      </button>
+      {onDelete && (
+        <button
+          onClick={handleDeleteClick}
+          className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors flex-shrink-0"
+          title="Delete benchmark"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+    </div>
   );
 };
