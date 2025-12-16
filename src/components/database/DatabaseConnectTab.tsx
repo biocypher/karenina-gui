@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Loader, CheckCircle, AlertCircle, Folder, Plus } from 'lucide-react';
+import { Database, Loader, CheckCircle, AlertCircle, Folder, Plus, Unplug, Trash2 } from 'lucide-react';
+import { DeleteDatabaseModal } from './DeleteDatabaseModal';
+
+interface CurrentConnection {
+  storageUrl: string;
+  benchmarkName?: string | null;
+}
 
 interface DatabaseConnectTabProps {
   onConnect: (storageUrl: string) => void;
+  onDisconnect?: () => void;
+  currentConnection?: CurrentConnection | null;
 }
 
 type DatabaseType = 'sqlite' | 'postgresql' | 'mysql';
@@ -21,7 +29,11 @@ interface ListDatabasesResponse {
   error?: string;
 }
 
-export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnect }) => {
+export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
+  onConnect,
+  onDisconnect,
+  currentConnection,
+}) => {
   // Available databases
   const [databases, setDatabases] = useState<DatabaseInfo[]>([]);
   const [dbDirectory, setDbDirectory] = useState('');
@@ -45,6 +57,9 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connected' | 'error'>('idle');
   const [benchmarkCount, setBenchmarkCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Delete database modal state
+  const [databaseToDelete, setDatabaseToDelete] = useState<DatabaseInfo | null>(null);
 
   // Load available databases on mount
   useEffect(() => {
@@ -182,8 +197,76 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
     }
   };
 
+  // Extract database name from storage URL for display
+  const getDbNameFromUrl = (url: string): string => {
+    if (url.startsWith('sqlite:///')) {
+      const path = url.replace('sqlite:///', '');
+      return path.split('/').pop() || url;
+    }
+    return url;
+  };
+
+  // Handle delete button click
+  const handleDeleteClick = (db: DatabaseInfo, e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't trigger selection
+
+    // Check if this is the connected database
+    const dbStorageUrl = `sqlite:///${db.path}`;
+    if (currentConnection?.storageUrl === dbStorageUrl) {
+      // Disconnect first
+      if (onDisconnect) {
+        onDisconnect();
+      }
+    }
+
+    setDatabaseToDelete(db);
+  };
+
+  // Handle successful deletion
+  const handleDeleteSuccess = () => {
+    setDatabaseToDelete(null);
+    // Refresh the database list
+    loadDatabases();
+    // Clear selection if we deleted the selected database
+    if (selectedDatabase?.path === databaseToDelete?.path) {
+      setSelectedDatabase(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Currently Connected Banner */}
+      {currentConnection && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                  Connected to: {getDbNameFromUrl(currentConnection.storageUrl)}
+                </p>
+                {currentConnection.benchmarkName && (
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                    Benchmark: {currentConnection.benchmarkName}
+                  </p>
+                )}
+              </div>
+            </div>
+            {onDisconnect && (
+              <button
+                onClick={onDisconnect}
+                className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30
+                         hover:bg-red-100 dark:hover:bg-red-900/50 rounded-md transition-colors
+                         flex items-center gap-2 border border-red-200 dark:border-red-700"
+              >
+                <Unplug className="h-4 w-4" />
+                Disconnect
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Directory Information */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
         <div className="flex items-center gap-2 mb-1">
@@ -214,32 +297,53 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
           </div>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2">
-            {databases.map((db) => (
-              <button
-                key={db.path}
-                onClick={() => handleSelectDatabase(db)}
-                disabled={isConnecting || connectionStatus === 'connected'}
-                className={`
-                  w-full text-left px-3 py-2 rounded-md transition-colors
-                  ${
-                    selectedDatabase?.path === db.path
-                      ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-500 dark:border-blue-400'
-                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
-                  }
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Database className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{db.name}</span>
-                  </div>
-                  {db.size !== null && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{(db.size / 1024).toFixed(1)} KB</span>
-                  )}
+            {databases.map((db) => {
+              const isConnectedDb = currentConnection?.storageUrl === `sqlite:///${db.path}`;
+              return (
+                <div
+                  key={db.path}
+                  className={`
+                    flex items-center gap-2 px-3 py-2 rounded-md transition-colors
+                    ${
+                      selectedDatabase?.path === db.path
+                        ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-500 dark:border-blue-400'
+                        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
+                    }
+                  `}
+                >
+                  <button
+                    onClick={() => handleSelectDatabase(db)}
+                    disabled={isConnecting || connectionStatus === 'connected'}
+                    className="flex-1 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Database className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{db.name}</span>
+                        {isConnectedDb && (
+                          <span className="px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 rounded">
+                            Connected
+                          </span>
+                        )}
+                      </div>
+                      {db.size !== null && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {(db.size / 1024).toFixed(1)} KB
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteClick(db, e)}
+                    disabled={isConnecting}
+                    className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Delete database"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -470,6 +574,16 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({ onConnec
           )}
         </div>
       </div>
+
+      {/* Delete Database Modal */}
+      {databaseToDelete && (
+        <DeleteDatabaseModal
+          database={databaseToDelete}
+          isOpen={true}
+          onClose={() => setDatabaseToDelete(null)}
+          onDeleted={handleDeleteSuccess}
+        />
+      )}
     </div>
   );
 };

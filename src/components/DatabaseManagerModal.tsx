@@ -14,18 +14,28 @@ interface DatabaseManagerModalProps {
 type TabType = 'connect' | 'manage';
 
 export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({ isOpen, onClose, onLoadCheckpoint }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('connect');
-  const [connectedStorageUrl, setConnectedStorageUrl] = useState<string | null>(null);
+  const {
+    isConnectedToDatabase,
+    storageUrl,
+    currentBenchmarkName,
+    connectDatabase,
+    disconnectDatabase,
+    setCurrentBenchmarkName,
+  } = useDatasetStore();
 
-  const { connectDatabase, setCurrentBenchmarkName } = useDatasetStore();
+  // Initialize state from store - preserve connection across modal open/close
+  const [activeTab, setActiveTab] = useState<TabType>(isConnectedToDatabase ? 'manage' : 'connect');
+  const [connectedStorageUrl, setConnectedStorageUrl] = useState<string | null>(storageUrl);
 
-  // Reset state when modal is closed
+  // Sync state when modal opens - restore connection state from store
   useEffect(() => {
-    if (!isOpen) {
-      setActiveTab('connect');
-      setConnectedStorageUrl(null);
+    if (isOpen) {
+      if (isConnectedToDatabase && storageUrl) {
+        setConnectedStorageUrl(storageUrl);
+        setActiveTab('manage');
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isConnectedToDatabase, storageUrl]);
 
   const handleConnect = (storageUrl: string) => {
     setConnectedStorageUrl(storageUrl);
@@ -33,6 +43,15 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({ isOp
     connectDatabase(storageUrl, null);
     // Switch to manage tab
     setActiveTab('manage');
+  };
+
+  const handleDisconnect = () => {
+    // Clear global connection state
+    disconnectDatabase();
+    // Clear local state
+    setConnectedStorageUrl(null);
+    // Switch to connect tab
+    setActiveTab('connect');
   };
 
   const handleLoadBenchmark = (checkpoint: UnifiedCheckpoint, benchmarkName: string) => {
@@ -85,7 +104,15 @@ export const DatabaseManagerModal: React.FC<DatabaseManagerModalProps> = ({ isOp
 
         {/* Tab Content */}
         <div className="min-h-[400px]">
-          {activeTab === 'connect' && <DatabaseConnectTab onConnect={handleConnect} />}
+          {activeTab === 'connect' && (
+            <DatabaseConnectTab
+              onConnect={handleConnect}
+              onDisconnect={handleDisconnect}
+              currentConnection={
+                connectedStorageUrl ? { storageUrl: connectedStorageUrl, benchmarkName: currentBenchmarkName } : null
+              }
+            />
+          )}
 
           {activeTab === 'manage' && connectedStorageUrl && (
             <DatabaseManageTab storageUrl={connectedStorageUrl} onLoadBenchmark={handleLoadBenchmark} />

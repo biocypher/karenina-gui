@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
+import { useRubricStore } from './useRubricStore';
 
 // Define the question store state interface
 interface QuestionState {
@@ -248,6 +249,16 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         selectedQuestionId: firstQuestionId,
         currentTemplate: checkpoint[firstQuestionId].answer_template,
       }));
+    }
+
+    // Load global rubric if present
+    if (unifiedCheckpoint.global_rubric) {
+      console.log('🔄 Setting global rubric from checkpoint...', {
+        llm_traits: unifiedCheckpoint.global_rubric.llm_traits?.length ?? 0,
+        regex_traits: unifiedCheckpoint.global_rubric.regex_traits?.length ?? 0,
+        metric_traits: unifiedCheckpoint.global_rubric.metric_traits?.length ?? 0,
+      });
+      useRubricStore.getState().setCurrentRubric(unifiedCheckpoint.global_rubric);
     }
 
     console.log(`✅ Unified checkpoint loaded with ${Object.keys(checkpoint).length} questions!`);

@@ -70,6 +70,7 @@ export interface UnifiedExportFormat {
 export interface ExportableResultMetadata {
   question_id: string;
   template_id: string;
+  result_id?: string; // Deterministic hash ID computed from verification parameters
   completed_without_errors: boolean;
   error?: string;
   question_text: string;
