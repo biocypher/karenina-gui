@@ -326,6 +326,17 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     setSelectedKeywords(new Set());
   };
 
+  // Clear all filters (search text and keywords) and re-select all questions
+  const handleClearAllFilters = () => {
+    setQuestionSearchText('');
+    setSelectedKeywords(new Set());
+    setSelectedQuestions(new Set(availableQuestions.map((q) => q.id)));
+  };
+
+  // Check if any filters are active or if questions have been deselected
+  const hasActiveFilters =
+    questionSearchText !== '' || selectedKeywords.size > 0 || selectedQuestions.size !== availableQuestions.length;
+
   // Handle heatmap cell click - find and display the result
   const handleCellClick = (questionId: string, modelKey: string, replicate?: number) => {
     // Find the matching result for the specified replicate
@@ -963,9 +974,19 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
 
             {/* Question and Keyword Filters */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Filter Questions ({selectedQuestions.size}/{availableQuestions.length} selected):
-              </label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Filter Questions ({selectedQuestions.size}/{availableQuestions.length} selected):
+                </label>
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleClearAllFilters}
+                    className="px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 rounded border border-red-200 dark:border-red-800 transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </div>
               <div className="flex gap-4">
                 {/* Question Selector */}
                 <div className="flex-1 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 p-3">
