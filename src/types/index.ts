@@ -424,8 +424,7 @@ export interface VerificationResultMetadata {
   job_id?: string;
   answering_model_id?: string;
   parsing_model_id?: string;
-  answering_replicate?: number;
-  parsing_replicate?: number;
+  replicate?: number;
 }
 
 /**

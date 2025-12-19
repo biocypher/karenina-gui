@@ -333,7 +333,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                         if (result && typeof result === 'object' && result.metadata) {
                           // Generate key from result metadata
                           const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
-                            result.metadata.answering_replicate ? `_rep${result.metadata.answering_replicate}` : ''
+                            result.metadata.replicate ? `_rep${result.metadata.replicate}` : ''
                           }`;
                           sanitizedResults[key] = result as VerificationResult;
                         } else {

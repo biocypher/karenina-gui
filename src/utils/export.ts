@@ -84,8 +84,7 @@ export interface ExportableResultMetadata {
   timestamp: string;
   run_name?: string;
   job_id?: string;
-  answering_replicate?: number;
-  parsing_replicate?: number;
+  replicate?: number;
 }
 
 /**
@@ -494,8 +493,7 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     'rubric_summary',
     'answering_model',
     'parsing_model',
-    'answering_replicate',
-    'parsing_replicate',
+    'replicate',
     'answering_system_prompt',
     'parsing_system_prompt',
     // MCP server fields
@@ -607,8 +605,7 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
       raw_answer: escapeCSVField(result.raw_answer || ''), // Added from checkpoint during export
       answering_model: escapeCSVField(result.metadata.answering_model),
       parsing_model: escapeCSVField(result.metadata.parsing_model),
-      answering_replicate: escapeCSVField(result.metadata.answering_replicate || ''),
-      parsing_replicate: escapeCSVField(result.metadata.parsing_replicate || ''),
+      replicate: escapeCSVField(result.metadata.replicate || ''),
       completed_without_errors: escapeCSVField(
         result.template?.abstention_detected && result.template?.abstention_override_applied
           ? 'abstained'

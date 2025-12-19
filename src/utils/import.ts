@@ -72,7 +72,7 @@ function validateResultStructure(result: unknown): result is ExportableResult {
 
 /**
  * Generates a unique result ID from VerificationResult metadata
- * Format: {question_id}_{answering_model}_{parsing_model}_{answering_replicate}_{parsing_replicate}_{timestamp}
+ * Format: {question_id}_{answering_model}_{parsing_model}_{replicate}_{timestamp}
  */
 function generateResultId(result: ExportableResult, index: number): string {
   const { metadata } = result;
@@ -81,14 +81,13 @@ function generateResultId(result: ExportableResult, index: number): string {
   const cleanAnsweringModel = metadata.answering_model.replace(/[/\s]/g, '_');
   const cleanParsingModel = metadata.parsing_model.replace(/[/\s]/g, '_');
 
-  // Use replicates if available, otherwise use index
-  const answeringReplicate = metadata.answering_replicate !== undefined ? metadata.answering_replicate : index;
-  const parsingReplicate = metadata.parsing_replicate !== undefined ? metadata.parsing_replicate : index;
+  // Use replicate if available, otherwise use index
+  const replicate = metadata.replicate !== undefined ? metadata.replicate : index;
 
   // Use timestamp if available, otherwise use current time
   const timestamp = metadata.timestamp || new Date().toISOString();
 
-  return `${metadata.question_id}_${cleanAnsweringModel}_${cleanParsingModel}_${answeringReplicate}_${parsingReplicate}_${timestamp}`;
+  return `${metadata.question_id}_${cleanAnsweringModel}_${cleanParsingModel}_${replicate}_${timestamp}`;
 }
 
 /**

@@ -661,7 +661,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         cell: (info) => info.getValue() || 'N/A',
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor((row) => row.metadata.answering_replicate || row.metadata.parsing_replicate, {
+      columnHelper.accessor((row) => row.metadata.replicate, {
         id: 'replicate',
         header: 'Replicate',
         cell: (info) => info.getValue()?.toString() || '',
@@ -761,7 +761,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       );
       const replicates = new Set(
         allResults.map((r) => {
-          const replicateValue = r.metadata.answering_replicate || r.metadata.parsing_replicate;
+          const replicateValue = r.metadata.replicate;
           return replicateValue ? replicateValue.toString() : 'Single';
         })
       );

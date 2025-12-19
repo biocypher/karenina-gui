@@ -343,7 +343,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     const matchingResult = Object.values(results).find((result) => {
       if (result.metadata.question_id !== questionId) return false;
       if (result.metadata.parsing_model !== parsingModel) return false;
-      if (replicate !== undefined && result.metadata.answering_replicate !== replicate) return false;
+      if (replicate !== undefined && result.metadata.replicate !== replicate) return false;
 
       // Extract model info from result
       const resultAnsweringModel = result.metadata.answering_model;
