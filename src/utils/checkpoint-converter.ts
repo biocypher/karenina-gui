@@ -159,11 +159,21 @@ export function convertRubricTraitToRating(
       }
     : {};
 
+  // Add higher_is_better to additionalProperty
+  const additionalProperty: SchemaOrgPropertyValue[] = [
+    {
+      '@type': 'PropertyValue' as const,
+      name: 'higher_is_better',
+      value: trait.higher_is_better ?? true,
+    },
+  ];
+
   if (trait.kind === 'boolean') {
     return {
       ...baseRating,
       bestRating: 1,
       worstRating: 0,
+      additionalProperty,
       ...deepJudgmentFields,
     };
   } else {
@@ -182,6 +192,7 @@ export function convertRubricTraitToRating(
       ...baseRating,
       bestRating: maxScore,
       worstRating: minScore,
+      additionalProperty,
       ...deepJudgmentFields,
     };
   }
@@ -217,6 +228,11 @@ export function convertRegexTraitToRating(
         name: 'invert_result',
         value: trait.invert_result ?? false,
       },
+      {
+        '@type': 'PropertyValue' as const,
+        name: 'higher_is_better',
+        value: trait.higher_is_better ?? true,
+      },
     ],
   };
 }
@@ -242,6 +258,11 @@ export function convertCallableTraitToRating(
       '@type': 'PropertyValue' as const,
       name: 'invert_result',
       value: trait.invert_result ?? false,
+    },
+    {
+      '@type': 'PropertyValue' as const,
+      name: 'higher_is_better',
+      value: trait.higher_is_better ?? true,
     },
   ];
 
@@ -344,6 +365,15 @@ export function convertRatingToRubricTrait(rating: SchemaOrgRating): RubricTrait
     );
   }
 
+  // Extract higher_is_better from additionalProperty (default true for legacy)
+  let higherIsBetter = true;
+  if (rating.additionalProperty) {
+    const higherIsBetterProp = rating.additionalProperty.find((p) => p.name === 'higher_is_better');
+    if (higherIsBetterProp !== undefined) {
+      higherIsBetter = higherIsBetterProp.value as boolean;
+    }
+  }
+
   // Restore deep judgment configuration if present
   const trait: RubricTrait = {
     name: rating.name,
@@ -351,6 +381,7 @@ export function convertRatingToRubricTrait(rating: SchemaOrgRating): RubricTrait
     kind: isBoolean ? 'boolean' : 'score',
     min_score: isBoolean ? undefined : rating.worstRating,
     max_score: isBoolean ? undefined : rating.bestRating,
+    higher_is_better: higherIsBetter,
   };
 
   // Add deep judgment fields if they were saved
@@ -380,10 +411,12 @@ export function convertRatingToRegexTrait(rating: SchemaOrgRating): RegexTrait {
   const patternProp = rating.additionalProperty?.find((prop) => prop.name === 'pattern');
   const caseSensitiveProp = rating.additionalProperty?.find((prop) => prop.name === 'case_sensitive');
   const invertResultProp = rating.additionalProperty?.find((prop) => prop.name === 'invert_result');
+  const higherIsBetterProp = rating.additionalProperty?.find((prop) => prop.name === 'higher_is_better');
 
   const pattern = patternProp?.value as string | undefined;
   const caseSensitive = caseSensitiveProp?.value as boolean | undefined;
   const invertResult = invertResultProp?.value as boolean | undefined;
+  const higherIsBetter = (higherIsBetterProp?.value as boolean | undefined) ?? true;
 
   if (!pattern) {
     throw new CheckpointConversionError(`Invalid regex trait "${rating.name}": pattern is required`);
@@ -395,6 +428,7 @@ export function convertRatingToRegexTrait(rating: SchemaOrgRating): RegexTrait {
     pattern,
     case_sensitive: caseSensitive ?? true,
     invert_result: invertResult ?? false,
+    higher_is_better: higherIsBetter,
   };
 }
 
@@ -414,12 +448,14 @@ export function convertRatingToCallableTrait(rating: SchemaOrgRating): CallableT
   const minScoreProp = rating.additionalProperty?.find((prop) => prop.name === 'min_score');
   const maxScoreProp = rating.additionalProperty?.find((prop) => prop.name === 'max_score');
   const invertResultProp = rating.additionalProperty?.find((prop) => prop.name === 'invert_result');
+  const higherIsBetterProp = rating.additionalProperty?.find((prop) => prop.name === 'higher_is_better');
 
   const callableCode = callableCodeProp?.value as string | undefined;
   const kind = kindProp?.value as 'boolean' | 'score' | undefined;
   const minScore = minScoreProp?.value as number | undefined;
   const maxScore = maxScoreProp?.value as number | undefined;
   const invertResult = invertResultProp?.value as boolean | undefined;
+  const higherIsBetter = (higherIsBetterProp?.value as boolean | undefined) ?? true;
 
   if (!callableCode) {
     throw new CheckpointConversionError(`Invalid callable trait "${rating.name}": callable_code is required`);
@@ -437,6 +473,7 @@ export function convertRatingToCallableTrait(rating: SchemaOrgRating): CallableT
     ...(minScore !== undefined && { min_score: minScore }),
     ...(maxScore !== undefined && { max_score: maxScore }),
     invert_result: invertResult ?? false,
+    higher_is_better: higherIsBetter,
   };
 }
 

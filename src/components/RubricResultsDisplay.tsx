@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rubric } from '../types';
+import { Rubric, LLMRubricTrait, RegexTrait, CallableTrait, MetricRubricTrait } from '../types';
 
 interface RubricResultsDisplayProps {
   rubricResults: Record<string, number | boolean> | undefined;
@@ -7,6 +7,46 @@ interface RubricResultsDisplayProps {
   currentRubric?: Rubric;
   evaluationRubric?: Rubric; // The merged rubric that was actually used for evaluation
   className?: string;
+}
+
+// Helper to find a trait definition by name across all trait types
+function findTraitByName(
+  traitName: string,
+  rubric?: Rubric
+): LLMRubricTrait | RegexTrait | CallableTrait | MetricRubricTrait | undefined {
+  if (!rubric) return undefined;
+  return (
+    rubric.llm_traits?.find((t) => t.name === traitName) ||
+    rubric.regex_traits?.find((t) => t.name === traitName) ||
+    rubric.callable_traits?.find((t) => t.name === traitName) ||
+    rubric.metric_traits?.find((t) => t.name === traitName)
+  );
+}
+
+// Helper to determine if a trait value represents a "pass" based on directionality
+function isTraitPassed(traitName: string, value: number | boolean, rubric?: Rubric): boolean {
+  const trait = findTraitByName(traitName, rubric);
+
+  // Get higher_is_better from trait, default to true for legacy/missing traits
+  // MetricRubricTrait doesn't have higher_is_better (always true implicitly)
+  const higherIsBetter = trait && 'higher_is_better' in trait ? trait.higher_is_better : true;
+
+  if (typeof value === 'boolean') {
+    // For boolean traits: true = pass if higher_is_better, false = pass if !higher_is_better
+    return higherIsBetter ? value : !value;
+  }
+
+  // For score traits, find the score range
+  const llmTrait = trait && 'kind' in trait && trait.kind === 'score' ? trait : undefined;
+  if (llmTrait && 'min_score' in llmTrait && 'max_score' in llmTrait) {
+    const min = llmTrait.min_score ?? 1;
+    const max = llmTrait.max_score ?? 5;
+    const midpoint = (min + max) / 2;
+    return higherIsBetter ? value >= midpoint : value <= midpoint;
+  }
+
+  // Default fallback for score traits without trait definition
+  return higherIsBetter ? value >= 3 : value <= 3;
 }
 
 export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
@@ -19,6 +59,9 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
   const hasLLMTraits = rubricResults && Object.keys(rubricResults).length > 0;
   const hasMetricTraits = metricTraitMetrics && Object.keys(metricTraitMetrics).length > 0;
 
+  // Use the merged rubric for evaluation or fall back to current
+  const rubricForEvaluation = evaluationRubric || currentRubric;
+
   if (!hasLLMTraits && !hasMetricTraits) {
     return (
       <div className={`bg-slate-50 dark:bg-slate-700 rounded-lg p-3 ${className}`}>
@@ -30,7 +73,7 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
   const traits = hasLLMTraits ? Object.entries(rubricResults!) : [];
   const metricTraits = hasMetricTraits ? Object.entries(metricTraitMetrics!) : [];
 
-  const passedTraits = traits.filter(([, value]) => (typeof value === 'boolean' ? value : value && value >= 3)).length;
+  const passedTraits = traits.filter(([name, value]) => isTraitPassed(name, value, rubricForEvaluation)).length;
   const totalTraits = traits.length + metricTraits.length;
   const successRate = totalTraits > 0 ? passedTraits / totalTraits : 0;
 
@@ -86,7 +129,7 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
       <div className="space-y-2">
         {/* LLM/Manual Trait Results */}
         {traits.map(([name, value]) => {
-          const isPassed = typeof value === 'boolean' ? value : value && value >= 3;
+          const isPassed = isTraitPassed(name, value, rubricForEvaluation);
           const { description, isQuestionSpecific } = getTraitInfo(name);
 
           return (

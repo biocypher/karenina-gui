@@ -682,6 +682,7 @@ export interface LLMRubricTrait {
   kind: TraitKind;
   min_score?: number; // For score traits
   max_score?: number; // For score traits
+  higher_is_better: boolean; // Whether higher values indicate better performance
   // Deep Judgment fields
   deep_judgment_enabled?: boolean; // Enable deep judgment for this trait (default: false)
   deep_judgment_excerpt_enabled?: boolean; // Extract excerpts from answer (default: true)
@@ -697,6 +698,7 @@ export interface RegexTrait {
   pattern: string; // Regex pattern
   case_sensitive?: boolean; // Whether pattern matching should be case sensitive (default: true)
   invert_result?: boolean; // Whether to invert the boolean result (default: false)
+  higher_is_better: boolean; // Whether a regex match indicates a positive outcome
 }
 
 export interface CallableTrait {
@@ -707,6 +709,7 @@ export interface CallableTrait {
   min_score?: number; // For score traits
   max_score?: number; // For score traits
   invert_result?: boolean; // Whether to invert the boolean result (default: false)
+  higher_is_better: boolean; // Whether higher return values indicate better performance
 }
 
 export interface MetricRubricTrait {

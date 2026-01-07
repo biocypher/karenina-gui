@@ -66,6 +66,7 @@ export default function RubricTraitEditor() {
       name: `Trait ${totalTraits + 1}`,
       description: '',
       kind: 'boolean',
+      higher_is_better: true, // Default to higher is better
     };
     addTrait(newTrait);
   };
@@ -101,11 +102,12 @@ export default function RubricTraitEditor() {
           metric_traits: [...(currentRubric.metric_traits || []), convertedTrait],
         });
       } else {
-        // Convert to LLM trait
+        // Convert to LLM trait, preserving higher_is_better if it exists
         const convertedTrait: LLMRubricTrait = {
           name: regexTrait.name,
           description: regexTrait.description || '',
           kind: newType as TraitKind,
+          higher_is_better: regexTrait.higher_is_better ?? true,
           ...(newType === 'score' && { min_score: 1, max_score: 5 }),
         };
 
@@ -133,6 +135,7 @@ export default function RubricTraitEditor() {
           pattern: '',
           case_sensitive: true,
           invert_result: false,
+          higher_is_better: true, // Default to higher is better
         };
 
         setCurrentRubric({
@@ -141,11 +144,12 @@ export default function RubricTraitEditor() {
           regex_traits: [...(currentRubric.regex_traits || []), convertedTrait],
         });
       } else {
-        // Convert to LLM trait
+        // Convert to LLM trait (metric traits don't have higher_is_better, default to true)
         const convertedTrait: LLMRubricTrait = {
           name: metricTrait.name,
           description: metricTrait.description || '',
           kind: newType as TraitKind,
+          higher_is_better: true,
           ...(newType === 'score' && { min_score: 1, max_score: 5 }),
         };
 
@@ -161,13 +165,14 @@ export default function RubricTraitEditor() {
       if (!llmTrait) return;
 
       if (newType === 'manual') {
-        // Convert to manual trait
+        // Convert to manual trait, preserving higher_is_better if it exists
         const convertedTrait: RegexTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
           pattern: '',
           case_sensitive: true,
           invert_result: false,
+          higher_is_better: llmTrait.higher_is_better ?? true,
         };
 
         const updatedTraits = currentRubric.llm_traits.filter((_, i) => i !== index);
@@ -472,6 +477,38 @@ export default function RubricTraitEditor() {
                   aria-label="Trait description"
                   rows={6}
                 />
+              </div>
+
+              {/* Score Direction (Higher is Better) */}
+              <div className="col-span-5">
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Score Direction
+                </label>
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`higher-is-better-${index}`}
+                      checked={trait.higher_is_better !== false}
+                      onChange={() => handleTraitChange(index, 'higher_is_better', true)}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Higher = Better</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`higher-is-better-${index}`}
+                      checked={trait.higher_is_better === false}
+                      onChange={() => handleTraitChange(index, 'higher_is_better', false)}
+                      className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-slate-300"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Lower = Better</span>
+                  </label>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Affects how scores are interpreted for optimization and visualization
+                </p>
               </div>
 
               {/* Deep Judgment Configuration */}
@@ -885,6 +922,38 @@ export default function RubricTraitEditor() {
                 </div>
               </div>
             </div>
+
+            {/* Score Direction (Higher is Better) */}
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Score Direction
+              </label>
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`regex-higher-is-better-${index}`}
+                    checked={trait.higher_is_better !== false}
+                    onChange={() => handleRegexTraitChange(index, 'higher_is_better', true)}
+                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-slate-300"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Match = Good</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`regex-higher-is-better-${index}`}
+                    checked={trait.higher_is_better === false}
+                    onChange={() => handleRegexTraitChange(index, 'higher_is_better', false)}
+                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-slate-300"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Match = Bad</span>
+                </label>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Affects how results are interpreted for optimization and visualization
+              </p>
+            </div>
           </div>
         ))}
 
@@ -1177,6 +1246,20 @@ export default function RubricTraitEditor() {
                   </div>
                 ) : (
                   'No callable code'
+                )}
+              </div>
+            </div>
+
+            {/* Score Direction (Read-Only) */}
+            <div className="mt-4">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Score Direction (Read-Only)
+              </label>
+              <div className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                {trait.higher_is_better === false ? (
+                  <span className="text-orange-600 dark:text-orange-400">Lower = Better</span>
+                ) : (
+                  <span className="text-green-600 dark:text-green-400">Higher = Better</span>
                 )}
               </div>
             </div>
