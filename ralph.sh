@@ -1,4 +1,3 @@
-#!/bin/bash -l
 set -e
 
 if [ -z "$1" ]; then
@@ -10,7 +9,9 @@ for ((i=1; i<=$1; i++)); do
   echo "Iteration $i"
   echo "--------------------------------"
   
-  result=$(claude --settings ~/.claude/zai-settings.json --permission-mode acceptEdits -p "@plans/prd.json @progress.txt \
+  tmpfile=$(mktemp)
+  
+  claude --settings ~/.claude/zai-settings.json --permission-mode acceptEdits -p "@plans/prd.json @progress.txt \
 1. Find the highest-priority feature to work on and work only on that feature. \
 This should be the one YOU decide has the highest priority - not necessarily the first. \
 2. Check that the types and tests with npm run check. \
@@ -20,7 +21,10 @@ Use this to leave a note for the next person working in the codebase. \
 5. Make a git commit of that feature. \
 ONLY WORK ON A SINGLE FEATURE. \
 If, while implementing the feature, you notice the PRD is complete, output <promise>COMPLETE</promise>
-" 2>&1 | tee /dev/tty)
+" 2>&1 | tee "$tmpfile"
+
+  result=$(cat "$tmpfile")
+  rm "$tmpfile"
 
   if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
     echo "PRD complete, exiting."

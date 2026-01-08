@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { GitCompare, Code, Undo2, Edit3, FileText } from 'lucide-react';
 import Prism from 'prismjs';
+import DOMPurify from 'dompurify';
 import 'prismjs/components/prism-python';
 import 'prismjs/themes/prism-tomorrow.css';
 import { DiffViewer } from './DiffViewer';
@@ -86,11 +87,23 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
     const revertToOriginal = () => handleRevert('original');
     const revertToSaved = () => handleRevert('saved');
 
+    // Sanitize HTML to prevent XSS attacks
+    // Prism.js output is generally safe, but we add sanitization as a defense-in-depth measure
+    const sanitizeHighlightedCode = (html: string): string => {
+      return DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['span', 'br'],
+        ALLOWED_ATTR: ['class'],
+        ALLOW_DATA_ATTR: false,
+      });
+    };
+
     useEffect(() => {
       // Highlight the code using Prism
       try {
         const highlighted = Prism.highlight(value || '', Prism.languages.python, 'python');
-        setHighlightedCode(highlighted);
+        // Sanitize the highlighted HTML to prevent XSS attacks
+        const sanitized = sanitizeHighlightedCode(highlighted);
+        setHighlightedCode(sanitized);
       } catch (error) {
         console.error('Syntax highlighting error:', error);
         setHighlightedCode(value || '');
