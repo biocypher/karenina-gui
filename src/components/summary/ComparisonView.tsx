@@ -16,6 +16,7 @@ import { QuestionTokenBarChart } from './QuestionTokenBarChart';
 import { RubricTraitMenu } from './RubricTraitMenu';
 import { VerificationResultDetailModal } from '../benchmark/VerificationResultDetailModal';
 import { fetchModelComparison } from '../../utils/summaryApi';
+import { logger } from '../../utils/logger';
 import type {
   VerificationResult,
   ModelConfig,
@@ -68,7 +69,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   const effectiveRubric = useMemo(() => {
     // Use checkpoint rubric if available
     if (currentRubric) {
-      console.log('🎯 Using currentRubric from checkpoint:', {
+      logger.debugLog('COMPARISON', 'Using currentRubric from checkpoint', 'ComparisonView', {
         llm_traits: currentRubric.llm_traits?.length,
         regex_traits: currentRubric.regex_traits?.length,
         callable_traits: currentRubric.callable_traits?.length,
@@ -80,7 +81,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     const resultWithRubric = Object.values(results).find((result) => result.rubric?.evaluation_rubric);
 
     const extractedRubric = resultWithRubric?.rubric?.evaluation_rubric ?? null;
-    console.log('🔍 Extracting rubric from results:', {
+    logger.debugLog('COMPARISON', 'Extracting rubric from results', 'ComparisonView', {
       hasResultWithRubric: !!resultWithRubric,
       rubricComponent: resultWithRubric?.rubric,
       extractedRubric,
@@ -158,35 +159,35 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
           parsing_model: parsingModel,
         });
 
-        console.log('📊 Comparison data received:', {
+        logger.debugLog('COMPARISON', 'Comparison data received', 'ComparisonView', {
           hasData: !!data,
           hasHeatmapData: !!data?.heatmap_data,
           heatmapLength: data?.heatmap_data?.length,
           modelSummaries: data?.model_summaries ? Object.keys(data.model_summaries) : [],
         });
 
-        console.log('🔍 Detailed heatmap data:', {
+        logger.debugLog('COMPARISON', 'Detailed heatmap data', 'ComparisonView', {
           sampleQuestion: data.heatmap_data[0],
           allModelKeysInData: data.heatmap_data[0]?.results_by_model
             ? Object.keys(data.heatmap_data[0].results_by_model)
             : [],
         });
 
-        console.log('🔍 Selected models:', {
+        logger.debugLog('COMPARISON', 'Selected models', 'ComparisonView', {
           selectedModels,
           generatedModelKeys: selectedModels.map((m) => `${m.answering_model}|${m.mcp_config}`),
         });
 
         // Validate the response has required data
         if (!data || !data.heatmap_data || !Array.isArray(data.heatmap_data)) {
-          console.error('❌ Invalid comparison data:', data);
+          logger.error('COMPARISON', 'Invalid comparison data', 'ComparisonView', { data });
           setError('Invalid comparison data received from server');
           return;
         }
 
         setComparisonData(data);
       } catch (err) {
-        console.error('❌ Comparison fetch error:', err);
+        logger.error('COMPARISON', 'Comparison fetch error', 'ComparisonView', { error: err });
         setError(err instanceof Error ? err.message : 'Failed to fetch comparison');
       } finally {
         setLoading(false);
@@ -357,7 +358,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     if (matchingResult) {
       setSelectedResult(matchingResult);
     } else {
-      console.warn('No matching result found for:', { questionId, modelKey, replicate });
+      logger.warning('COMPARISON', 'No matching result found', 'ComparisonView', { questionId, modelKey, replicate });
     }
   };
 

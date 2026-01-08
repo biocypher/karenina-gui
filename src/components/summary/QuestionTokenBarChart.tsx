@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ErrorBar, ResponsiveContainer } from 'recharts';
 import type { QuestionTokenData } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface Props {
   data: QuestionTokenData[];
@@ -62,7 +63,7 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
   });
 
   // Debug logging
-  console.log('QuestionTokenBarChart Debug:', {
+  logger.debugLog('CHART', 'QuestionTokenBarChart Debug', 'QuestionTokenBarChart', {
     tokenType,
     dataLength: data.length,
     selectedModels,
