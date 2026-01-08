@@ -778,3 +778,161 @@ Replaced all 18 console.log/warn/error statements with structured logger calls:
 **Milestone:** All console.log/warn/error statements in utility files, stores, and most components have been replaced with the structured logger. The remaining console statements are primarily in large files (checkpoint-converter.ts, export.ts) that would require more extensive refactoring.
 
 ---
+
+### Completed: flaw-091 - Replace console Statements with Debug Logger in FileManager.tsx (LOW)
+
+**File:** `src/components/FileManager.tsx`
+
+**Changes:**
+Replaced all remaining console.log/warn/error statements with structured logger calls:
+- Global rubric loading/syncing operations
+- Checkpoint parsing and error handling
+- Database auto-save operations
+- JSON-LD conversion operations
+- Benchmark creation and database storage operations
+- Dataset metadata updates
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+
+---
+
+### Completed: flaw-xxx - Replace console Statements in csrf.ts and secureStorage.ts (LOW)
+
+**Files:** `src/utils/csrf.ts`, `src/utils/secureStorage.ts`
+
+**Changes:**
+- csrf.ts: Replaced console.warn and console.error with logger.warning and logger.error
+- secureStorage.ts: Replaced all console.warn statements with logger.warning
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+
+---
+
+### Completed: flaw-xxx - Replace console Statements in Components (LOW)
+
+**Files:** 
+- `src/components/TraceHighlightedTextDisplay.tsx`
+- `src/components/QuestionVisualizer.tsx`
+- `src/components/pydantic/PydanticFormEditor.tsx`
+- `src/components/CodeEditor.tsx`
+
+**Changes:**
+- TraceHighlightedTextDisplay.tsx: Replaced console.warn with logger.warning
+- QuestionVisualizer.tsx: Replaced console.error with logger.error
+- PydanticFormEditor.tsx: Replaced console.error with logger.error
+- CodeEditor.tsx: Replaced console.error with logger.error
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+
+---
+
+### Completed: flaw-xxx - Replace console Statements in BenchmarkTable.tsx (LOW)
+
+**File:** `src/components/BenchmarkTable.tsx`
+
+**Changes:**
+- Replaced console.error statements with logger.error for error handling
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+
+---
+
+### Completed: flaw-xxx - Replace console Statements in Summary Components (LOW)
+
+**Files:**
+- `src/components/summary/QuestionTokenBarChart.tsx`
+- `src/components/summary/RubricTraitMenu.tsx`
+- `src/components/summary/ComparisonView.tsx`
+
+**Changes:**
+- QuestionTokenBarChart.tsx: Replaced console.log with logger.debugLog
+- RubricTraitMenu.tsx: Replaced console.log with logger.debugLog
+- ComparisonView.tsx: Replaced all console.log/warn/error with logger calls
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+
+---
+
+### Completed: flaw-xxx - Replace console Statements in checkpoint-converter.ts (LOW)
+
+**File:** `src/utils/checkpoint-converter.ts`
+
+**Changes:**
+- Replaced console.log statements with logger.debugLog for rubric debug logging
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+
+---
+
+**Progress Summary:**
+- 30 flaws completed (added 6 new flaws to previous 24)
+- 6 flaws partially complete (flaw-042, 050, 069, 088, 089, 090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
+- 58 flaws remaining in PRD
+
+**Milestone:** Console statement replacements continued across additional utility files, components, and summary views. Approximately 42 console statements remain, primarily in BenchmarkTab.tsx.
+
+
+### Completed: flaw-031 - Database API Service with Retry Logic (HIGH)
+
+**Files:** `src/services/databaseApi.ts` (new), `src/components/database/DatabaseManageTab.tsx`
+
+**Changes:**
+
+Created new API client service module (services/databaseApi.ts) with:
+
+1. **Retry Logic with Exponential Backoff:**
+   - Configurable retry attempts (default: 3)
+   - Base delay of 1 second with exponential backoff
+   - Maximum delay cap of 10 seconds
+   - Retries on: 5xx errors, 408 Request Timeout, 429 Too Many Requests, network errors
+   - No retries on: 4xx client errors (except 408, 429), abort errors
+
+2. **Consistent Error Handling:**
+   - Custom `DatabaseApiError` class with context (statusCode, endpoint)
+   - Centralized error response parsing
+   - Proper error propagation to calling code
+
+3. **Type-Safe API Methods:**
+   - `getBenchmarks()` - List all benchmarks
+   - `loadBenchmark(benchmarkName)` - Load specific benchmark
+   - `saveBenchmark(checkpointData, detectDuplicates)` - Save with duplicate detection
+   - `resolveDuplicates(checkpointData, resolutions)` - Resolve duplicate questions
+   - `deleteBenchmark(benchmarkName)` - Delete a benchmark
+
+4. **Updated DatabaseManageTab.tsx:**
+   - Replaced all 5 inline fetch calls with service methods
+   - Added `DatabaseApiService` instance using `useMemo`
+   - Consistent error handling with `DatabaseApiError` checks
+   - Better error logging with structured logger
+
+**Benefits:**
+- Single source of truth for database API calls
+- Automatic retry on transient failures (network issues, server errors)
+- Consistent error messages to users
+- Easier to maintain and test
+- Better error logging for debugging
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no new errors
+- Build succeeds
+
+**Progress Summary:**
+- 31 flaws completed (added flaw-031 to previous 30)
+- 6 flaws partially complete (flaw-042, 050, 069, 088, 089, 090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
+- 57 flaws remaining in PRD
+

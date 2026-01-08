@@ -523,7 +523,10 @@
       "Implement: Replace inline fetch calls with service methods",
       "Verify: All database operations have consistent error handling",
       "Verify: Failed requests are retried appropriately"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2026-01-08T19:48:00.052Z",
+    "completed_by": "claude"
   },
   {
     "id": "flaw-032",
