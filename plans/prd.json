@@ -697,6 +697,8 @@
     "file": "karenina-gui/src/components/ManualTraceUpload.tsx",
     "line_range": "85-90",
     "description": "File type validation only checks file extension, not actual content. The .endsWith('.json') check is insufficient for security.",
+    "status": "completed",
+    "implementation_notes": "Created src/utils/fileValidator.ts with comprehensive validation: (1) File extension check (.json required), (2) MIME type check with whitelist of safe types and blacklist of dangerous types, (3) JSON content parsing validation, (4) File size limits, (5) Custom structure validation for manual trace files (MD5 hash keys: 32 hex chars). Updated ManualTraceUpload.tsx to call validateManualTraceFile before upload, displaying helpful error messages.",
     "depends_on": [],
     "steps": [
       "Implement: Validate JSON content by attempting to parse the file",

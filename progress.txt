@@ -106,8 +106,60 @@
 - flaw-005: BenchmarkTable.tsx is 1,047 lines - needs decomposition
 - flaw-031: DatabaseManageTab.tsx has multiple fetch calls without proper error handling
 
+---
+
+### Completed: flaw-043 - File Type Validation in ManualTraceUpload (HIGH)
+
+**File:** `src/components/ManualTraceUpload.tsx`
+
+**Changes:**
+1. Created `src/utils/fileValidator.ts` with comprehensive validation functions:
+   - `validateJsonFile(file, options)` - Generic JSON file validation with:
+     - File extension check (.json required)
+     - MIME type validation (whitelist of safe types, blacklist of dangerous types)
+     - JSON content parsing validation
+     - File size limits (configurable)
+     - Optional structure validation callback
+   - `validateManualTraceFile(file)` - Specific validation for manual trace files:
+     - Keys must be 32-character hexadecimal strings (MD5 hash format)
+     - Values must be strings (trace content)
+     - 50 MB size limit
+   - Helper functions: `getFileExtension()`, `hasValidExtension()`, `isFileNotEmpty()`
+
+2. Updated `ManualTraceUpload.tsx` to call `validateManualTraceFile` before upload in:
+   - `handleFileSelect` (line 73)
+   - `handleDrop` (line 98)
+
+**MIME Types Blocked:**
+- Executable types: application/x-msdownload, application/x-msdos-program, application/x-executable, etc.
+- Script types: application/x-sh, application/x-bat, application/x-javascript, text/javascript
+- Media types: image/, video/, audio/
+
+**Tests Added:** `src/utils/__tests__/fileValidator.test.ts`
+- 34 comprehensive file validation tests covering:
+  - Valid JSON files (objects, arrays, nested structures)
+  - Invalid JSON files (malformed JSON, wrong extensions, wrong MIME types)
+  - File size validation
+  - Custom structure validation
+  - Manual trace file validation (MD5 hash format)
+  - Security validation (dangerous MIME types, malicious content)
+
+**Verification:**
+- All 34 tests pass
+- TypeScript type checking passes
+- ESLint passes (with pre-existing warnings only)
+
+**Security Impact:**
+- Files without .json extension are rejected
+- Files with dangerous MIME types (executables, scripts) are rejected
+- Malformed JSON is rejected with helpful error messages
+- Manual trace files must have proper MD5 hash keys (32 hex characters)
+- Defense-in-depth: extension, MIME type, AND content validation
+
+---
+
 **Progress Summary:**
-- 2 flaws completed (flaw-019, flaw-041)
-- 93 flaws remaining in PRD
-- 2 critical/high security vulnerabilities addressed
+- 3 flaws completed (flaw-019, flaw-041, flaw-043)
+- 92 flaws remaining in PRD
+- 3 critical/high security vulnerabilities addressed
 
