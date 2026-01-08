@@ -113,6 +113,7 @@ interface QuestionState {
   currentTemplate: string;
   dataSource: 'default' | 'uploaded';
   sessionDrafts: Record<string, string>; // Session-only drafts (cleared on refresh)
+  error: string | null; // Last error message for UI display
 
   // Actions
   setQuestionData: (data: QuestionData) => void;
@@ -124,6 +125,8 @@ interface QuestionState {
   clearSessionDraft: (questionId: string) => void;
   hasSessionDraft: (questionId: string) => boolean;
   getAllQuestionsWithSessionDrafts: () => string[];
+  setError: (error: string | null) => void;
+  clearError: () => void;
 
   // Complex operations
   loadQuestionData: (data: QuestionData) => void;
@@ -169,6 +172,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   currentTemplate: '',
   dataSource: 'default',
   sessionDrafts: {},
+  error: null,
 
   // Basic setters
   setQuestionData: (questionData: QuestionData) => set(() => ({ questionData })),
@@ -176,6 +180,10 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   setSelectedQuestionId: (selectedQuestionId: string) => set(() => ({ selectedQuestionId })),
   setCurrentTemplate: (currentTemplate: string) => set(() => ({ currentTemplate })),
   setDataSource: (dataSource: 'default' | 'uploaded') => set(() => ({ dataSource })),
+
+  // Error management
+  setError: (error: string | null) => set(() => ({ error })),
+  clearError: () => set(() => ({ error: null })),
 
   // Session draft management
   setSessionDraft: (questionId: string, template: string) => {
@@ -216,7 +224,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       const isGenericTemplate = isPlaceholderTemplate(data[firstQuestionId].answer_template);
       if (isGenericTemplate) {
         logger.error('VALIDATION', 'Detected placeholder templates! This should not happen.', 'useQuestionStore');
-        alert(`Error: ${TEMPLATE_VALIDATION_ERRORS.PLACEHOLDER_DETECTED}`);
+        set(() => ({ error: `Error: ${TEMPLATE_VALIDATION_ERRORS.PLACEHOLDER_DETECTED}` }));
         return;
       } else {
         logger.debugLog(
@@ -227,7 +235,9 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       }
     } else {
       logger.error('VALIDATION', "Questions don't have answer templates!", 'useQuestionStore');
-      alert("Error: These questions don't have answer templates. Please use the Template Generator first.");
+      set(() => ({
+        error: "Error: These questions don't have answer templates. Please use the Template Generator first.",
+      }));
       return;
     }
 
@@ -395,7 +405,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       })
       .catch((err) => {
         logger.error('DATABASE', 'Failed to save to database', 'useQuestionStore', { error: err });
-        alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        set(() => ({ error: `Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}` }));
       });
   },
 
@@ -676,7 +686,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       logger.error('DATABASE', 'Failed to auto-save to database after question update', 'useQuestionStore', {
         error: err,
       });
-      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      set(() => ({ error: `Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}` }));
     });
   },
 
@@ -732,7 +742,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       logger.error('DATABASE', 'Failed to auto-save to database after question deletion', 'useQuestionStore', {
         error: err,
       });
-      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      set(() => ({ error: `Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}` }));
     });
   },
 
@@ -804,7 +814,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       logger.error('DATABASE', 'Failed to auto-save to database after question clone', 'useQuestionStore', {
         error: err,
       });
-      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      set(() => ({ error: `Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}` }));
     });
 
     return newQuestionId;

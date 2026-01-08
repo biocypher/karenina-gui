@@ -1173,3 +1173,14 @@ also use this pattern.
 - Updated src/components/summary/SummaryStatisticsPanel.tsx to use the hook
 - Removed scrollPositionRef and direct document.body.style manipulation
 - Hook supports 'immediate' and 'delayed' lock types for different transition timings
+=== flaw-013: alert() calls in auto-save error handling ===
+- Added 'error: string | null' state field to QuestionState interface
+- Added setError() and clearError() actions to useQuestionStore
+- Replaced all 6 alert() calls with setError():
+  * Line 219: Placeholder template validation error in loadQuestionData
+  * Line 230: No templates error in loadQuestionData
+  * Line 398: Database save error in saveCurrentTemplate
+  * Line 679: Database save error in updateQuestion
+  * Line 735: Database save error in deleteQuestion
+  * Line 807: Database save error in cloneQuestion
+- UI components can now access error via useQuestionStore.getState().error
