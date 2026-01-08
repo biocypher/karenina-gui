@@ -1216,3 +1216,8 @@ also use this pattern.
 - Confirmed well-structured component with proper JSDoc documentation
 - Component serves as reference for good structure (97 lines, focused)
 - No changes needed - component is well-designed
+=== flaw-060: useTraceHighlightingStore.ts size verification ===
+- Verified current store size is 282 lines (manageable)
+- Verified functionality works well with proper Zustand state management
+- No refactoring needed at this time
+- Recommended to monitor for continued growth
