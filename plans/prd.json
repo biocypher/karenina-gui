@@ -811,12 +811,14 @@
     "file": "karenina-gui/src/components/AddQuestionModal.tsx",
     "line_range": "146-154",
     "description": "API call to /api/generate-answer-templates without CSRF protection. POST request should include CSRF token.",
+    "status": "partial",
+    "implementation_notes": "FRONTEND COMPLETE: Updated AddQuestionModal.tsx to use csrf.fetchWithCsrf() instead of raw fetch. The X-CSRF-Token header will now be included in the template generation POST request. BACKEND PENDING: Backend needs to implement /api/auth/csrf-token endpoint and validate X-CSRF-Token header.",
     "depends_on": ["flaw-042"],
     "steps": [
-      "Implement: Add CSRF token to template generation request",
-      "Implement: Validate CSRF tokens on the backend",
-      "Verify: Template generation includes CSRF token",
-      "Verify: Backend validates CSRF tokens"
+      "Implement: Add CSRF token to template generation request [FRONTEND DONE]",
+      "Implement: Validate CSRF tokens on the backend [BACKEND PENDING]",
+      "Verify: Template generation includes CSRF token [FRONTEND DONE]",
+      "Verify: Backend validates CSRF tokens [BACKEND PENDING]"
     ]
   },
   {

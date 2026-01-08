@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Settings, Loader2, Sparkles } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
+import { csrf } from '../utils/csrf';
 
 interface AddQuestionModalProps {
   isOpen: boolean;
@@ -143,7 +144,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
         },
       };
 
-      const response = await fetch('/api/generate-answer-templates', {
+      const response = await csrf.fetchWithCsrf('/api/generate-answer-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
