@@ -1196,6 +1196,8 @@
     "file": "karenina-gui/src/components/database/DuplicateResolutionModal.tsx",
     "line_range": "52-66",
     "description": "Duplicated resolution mapping logic in handleKeepAllOld and handleKeepAllNew functions. Same pattern with different values.",
+    "status": "completed",
+    "implementation_notes": "Extracted setAllResolutions(resolution) helper function. Both handleKeepAllOld and handleKeepAllNew now call this helper with their respective resolution values, reducing code from ~15 lines to ~10 lines.",
     "depends_on": [],
     "steps": [
       "Implement: Extract bulk resolution logic to setAllResolutions(resolution: 'keep_old' | 'keep_new') helper",

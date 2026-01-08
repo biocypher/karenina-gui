@@ -1101,3 +1101,12 @@ No changes needed.
 
 **Result**: Default template is now centralized in constants/templates.ts, making it easier
 to modify and maintain. The template can be updated in one place for all new questions.
+
+## flaw-071: Extract duplicated resolution mapping logic (LOW)
+**File**: src/components/database/DuplicateResolutionModal.tsx
+**Changes**:
+- Created `setAllResolutions(resolution: 'keep_old' | 'keep_new')` helper function
+- Replaced duplicated logic in `handleKeepAllOld` and `handleKeepAllNew`
+- Both functions now call the helper with their respective resolution values
+
+**Result**: Reduced code duplication from ~15 lines to ~10 lines with a single reusable function.
