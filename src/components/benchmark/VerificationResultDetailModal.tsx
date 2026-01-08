@@ -4,6 +4,7 @@ import { Checkpoint, VerificationResult, Rubric, UsageMetadata } from '../../typ
 import { TraceHighlightedTextDisplay } from '../TraceHighlightedTextDisplay';
 import { SearchResultsDisplay } from '../SearchResultsDisplay';
 import { RubricResultsDisplay } from '../RubricResultsDisplay';
+import { logger } from '../../utils/logger';
 
 interface VerificationResultDetailModalProps {
   result: VerificationResult | null;
@@ -1161,7 +1162,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                 </div>
               );
             } catch (e) {
-              console.error('Error rendering modal content:', e);
+              logger.error('MODAL', 'Error rendering modal content', 'VerificationResultDetailModal', { error: e });
               return (
                 <div className="text-center py-8 text-red-500">
                   <AlertCircle className="w-8 h-8 mx-auto mb-2" />

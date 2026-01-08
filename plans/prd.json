@@ -653,7 +653,10 @@
       "Implement: Remove or gate console.log behind debug flag",
       "Verify: Debug logs appear in development",
       "Verify: No console output in production builds"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2025-01-08",
+    "implementation_notes": "Replaced console.log/error statements in QuestionExtractor.tsx with structured logger calls. Error logging for upload, preview, and extraction now uses development-only logger."
   },
   {
     "id": "flaw-040",
@@ -1412,7 +1415,10 @@
       "Implement: Create error reporting utility module",
       "Verify: Errors are logged appropriately in development",
       "Verify: Errors are reported to tracking service in production"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2025-01-08",
+    "implementation_notes": "Replaced console.error statement in ErrorBoundary.tsx with structured logger call. Error boundary logging now uses development-only logger. Note: Error reporting service integration (Sentry, etc.) is a future enhancement."
   },
   {
     "id": "flaw-086",
@@ -1510,7 +1516,10 @@
       "Implement: Remove or gate console.log behind debug flag",
       "Verify: Debug logs appear in development",
       "Verify: No console output in production builds"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2025-01-08",
+    "implementation_notes": "Replaced console statements in FileManager.tsx with structured logger calls. Checkpoint format detection and conversion logging now uses development-only logger."
   },
   {
     "id": "flaw-092",

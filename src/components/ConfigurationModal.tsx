@@ -5,6 +5,7 @@ import { usePresetStore } from '../stores/usePresetStore';
 import { ConfigModalTab } from '../stores/useConfigModalStore';
 import { TraceHighlightingTab } from './TraceHighlightingTab';
 import { CheckCircle, Eye, EyeOff, RefreshCw, Save, Trash2, RotateCcw, FileText, Highlighter } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 interface ConfigurationModalProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
         setEnvFileContent(data.content);
       }
     } catch (error) {
-      console.error('Failed to load .env file:', error);
+      logger.error('CONFIG', 'Failed to load .env file', 'ConfigurationModal', { error });
     }
   };
 

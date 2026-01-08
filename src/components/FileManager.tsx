@@ -15,6 +15,7 @@ import {
   isV2Checkpoint,
   CheckpointConversionError,
 } from '../utils/checkpoint-converter';
+import { logger } from '../utils/logger';
 
 interface FileManagerProps {
   onLoadCheckpoint: (checkpoint: UnifiedCheckpoint) => void;
@@ -58,14 +59,14 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
         // Check if it's a JSON-LD checkpoint
         if (isJsonLdCheckpoint(data)) {
-          console.log('📊 Detected JSON-LD checkpoint format');
+          logger.debugLog('FILE_MANAGER', 'Detected JSON-LD checkpoint format', 'FileManager');
           formatUsed = 'JSON-LD v3.0';
 
           try {
             unifiedCheckpoint = jsonLdToV2(data as JsonLdCheckpoint);
-            console.log('✅ Successfully converted JSON-LD to internal format');
+            logger.debugLog('FILE_MANAGER', 'Successfully converted JSON-LD to internal format', 'FileManager');
           } catch (conversionError) {
-            console.error('❌ JSON-LD conversion failed:', conversionError);
+            logger.error('FILE_MANAGER', 'JSON-LD conversion failed', 'FileManager', { error: conversionError });
             if (conversionError instanceof CheckpointConversionError) {
               alert(
                 `Failed to convert JSON-LD checkpoint:\n\n${conversionError.message}\n\nPlease check the file format and try again.`
@@ -78,7 +79,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         }
         // Check if it's a legacy v2.0 checkpoint
         else if (isV2Checkpoint(data)) {
-          console.log('📊 Detected legacy v2.0 checkpoint format');
+          logger.debugLog('FILE_MANAGER', 'Detected legacy v2.0 checkpoint format', 'FileManager');
           formatUsed = 'Legacy v2.0';
 
           // Show migration notice
@@ -137,7 +138,11 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         if (unifiedCheckpoint.dataset_metadata) {
           const { setMetadata } = useDatasetStore.getState();
           setMetadata(unifiedCheckpoint.dataset_metadata);
-          console.log('✅ Loaded dataset metadata:', unifiedCheckpoint.dataset_metadata.name || 'Unnamed dataset');
+          logger.debugLog(
+            'FILE_MANAGER',
+            `Loaded dataset metadata: ${unifiedCheckpoint.dataset_metadata.name || 'Unnamed dataset'}`,
+            'FileManager'
+          );
         }
 
         // Load global rubric into rubric store if present

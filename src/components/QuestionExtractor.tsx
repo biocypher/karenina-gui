@@ -6,6 +6,7 @@ import { AdvancedExtractionPanel } from './AdvancedExtractionPanel';
 import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
 import { validateDataFile } from '../utils/fileValidator';
+import { logger } from '../utils/logger';
 
 interface ExtractedQuestions {
   success: boolean;
@@ -124,7 +125,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
       // Auto-preview the file
       await handlePreviewFile(result.file_id);
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('EXTRACTOR', 'Upload error', 'QuestionExtractor', { error });
       alert('Failed to upload file. Please try again.');
     } finally {
       setIsUploading(false);
@@ -170,7 +171,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
         setCurrentStep('configure');
       }
     } catch (error) {
-      console.error('Preview error:', error);
+      logger.error('EXTRACTOR', 'Preview error', 'QuestionExtractor', { error });
       setPreviewData({ success: false, error: 'Failed to preview file' });
     } finally {
       setIsPreviewing(false);
@@ -223,7 +224,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
         }
       }
     } catch (error) {
-      console.error('Extraction error:', error);
+      logger.error('EXTRACTOR', 'Extraction error', 'QuestionExtractor', { error });
       setExtractionResult({ success: false, error: 'Failed to extract questions' });
     } finally {
       setIsExtracting(false);
