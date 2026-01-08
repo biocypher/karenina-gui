@@ -596,3 +596,52 @@ The existing `src/utils/logger.ts` provides environment-aware logging using `imp
 - 77 flaws remaining in PRD
 
 ---
+
+### Completed: flaw-054 - Replace console.log with Debug Logger in import.ts (LOW)
+
+**File:** `src/utils/import.ts`
+
+**Changes:**
+Replaced all console.log statements with structured logger calls for format detection logging:
+- `console.log('Detected v2.0 export format...')` → `logger.debugLog('IMPORT', ...)`
+- `console.log('Found shared rubric_definition...')` → `logger.debugLog('IMPORT', ...)`
+- `console.log('Detected legacy unified export format...')` → `logger.debugLog('IMPORT', ...)`
+- `console.log('Detected legacy array export format')` → `logger.debugLog('IMPORT', ...)`
+
+---
+
+### Completed: flaw-075 - Replace console Statements with Debug Logger in errorHandler.ts (LOW)
+
+**File:** `src/utils/errorHandler.ts`
+
+**Changes:**
+Replaced all console.error and console.warn statements with structured logger calls:
+- `console.error(fullMessage, error)` → `logger.error('ERROR_HANDLER', fullMessage, 'errorHandler', { error, context })`
+- `console.warn('Toast notifications not yet implemented...')` → `logger.warning('ERROR_HANDLER', ...)`
+- `console.error(fullMessage)` → Removed (redundant with logger.error)
+
+---
+
+### Completed: flaw-077 - Replace console Statements with Debug Logger in databaseAutoSave.ts (LOW)
+
+**File:** `src/utils/databaseAutoSave.ts`
+
+**Changes:**
+Replaced all console.log, console.warn, and console.error statements with structured logger calls:
+- `console.log('🔍 autoSaveToDatabase called', {...})` → `logger.debugLog('DATABASE', 'autoSaveToDatabase called', 'databaseAutoSave', {...})`
+- `console.warn('⏭️ Skipping database auto-save...', {...})` → `logger.debugLog('DATABASE', 'Skipping database auto-save...', 'databaseAutoSave', {...})`
+- `console.log('💾 Auto-saving to database...', {...})` → `logger.debugLog('DATABASE', 'Auto-saving to database...', 'databaseAutoSave', {...})`
+- `console.error('❌ Database save failed...', {...})` → `logger.error('DATABASE', 'Database save failed...', 'databaseAutoSave', {...})`
+- `console.log('✅ Auto-saved to database successfully', {...})` → `logger.debugLog('DATABASE', 'Auto-saved to database successfully', 'databaseAutoSave', {...})`
+- `console.error('❌ Failed to auto-save to database:', {...})` → `logger.error('DATABASE', 'Failed to auto-save to database', 'databaseAutoSave', {...})`
+- `showSaveNotification` console statements → `logger.debugLog` and `logger.error`
+
+Removed emoji prefixes from all log messages.
+
+**Progress Summary:**
+- 14 flaws completed (flaw-019, 041, 043, 015, 033, 070, 032, 012, 011, 048, 052, 054, 075, 077)
+- 6 flaws partially complete (flaw-042, 050, 069, 088, 089, 090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
+- 74 flaws remaining in PRD
+
+---

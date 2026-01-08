@@ -1,6 +1,7 @@
 import { Checkpoint } from '../types';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { useRubricStore } from '../stores/useRubricStore';
+import { logger } from './logger';
 
 /**
  * Auto-save the current checkpoint to the connected database.
@@ -10,7 +11,7 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
   const { isConnectedToDatabase, storageUrl, currentBenchmarkName, metadata, setIsSaving, setLastSaved, setSaveError } =
     useDatasetStore.getState();
 
-  console.log('🔍 autoSaveToDatabase called', {
+  logger.debugLog('DATABASE', 'autoSaveToDatabase called', 'databaseAutoSave', {
     isConnectedToDatabase,
     hasStorageUrl: !!storageUrl,
     currentBenchmarkName,
@@ -24,7 +25,7 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
       : !storageUrl
         ? 'no storage URL'
         : 'no benchmark name';
-    console.warn(`⏭️ Skipping database auto-save: ${reason}`, {
+    logger.debugLog('DATABASE', `Skipping database auto-save: ${reason}`, 'databaseAutoSave', {
       isConnectedToDatabase,
       storageUrl,
       currentBenchmarkName,
@@ -32,7 +33,7 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
     return;
   }
 
-  console.log('💾 Auto-saving to database...', {
+  logger.debugLog('DATABASE', 'Auto-saving to database...', 'databaseAutoSave', {
     benchmarkName: currentBenchmarkName,
     storageUrl: storageUrl.substring(0, 30) + '...',
   });
@@ -68,7 +69,7 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
     if (!response.ok) {
       const error = await response.json();
       const errorMessage = error.detail || 'Failed to save to database';
-      console.error('❌ Database save failed with HTTP error:', {
+      logger.error('DATABASE', 'Database save failed with HTTP error', 'databaseAutoSave', {
         status: response.status,
         statusText: response.statusText,
         error,
@@ -81,13 +82,13 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
     // Update last saved timestamp
     setLastSaved(data.last_modified || new Date().toISOString());
 
-    console.log('✅ Auto-saved to database successfully', {
+    logger.debugLog('DATABASE', 'Auto-saved to database successfully', 'databaseAutoSave', {
       benchmarkName: currentBenchmarkName,
       lastModified: data.last_modified,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('❌ Failed to auto-save to database:', {
+    logger.error('DATABASE', 'Failed to auto-save to database', 'databaseAutoSave', {
       error: errorMessage,
       fullError: error,
     });
@@ -123,10 +124,10 @@ export function showSaveNotification(type: 'success' | 'error', message: string)
   // For now, use browser alerts. In the future, this can be replaced with a toast library
   if (type === 'success') {
     // Success notifications can be less intrusive
-    console.log(`✅ ${message}`);
+    logger.debugLog('DATABASE', message, 'databaseAutoSave');
   } else {
     // Error notifications should be visible
-    console.error(`❌ ${message}`);
+    logger.error('DATABASE', message, 'databaseAutoSave');
     alert(`Error: ${message}`);
   }
 }

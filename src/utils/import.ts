@@ -1,5 +1,6 @@
 import type { VerificationResult } from '../types';
 import type { ExportableResult, UnifiedExportFormat, ExportMetadata } from './export';
+import { logger } from './logger';
 
 /**
  * Result of parsing and validating an uploaded verification results file
@@ -142,9 +143,9 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
     metadata = parsedObj.metadata as ExportMetadata;
     sharedData = parsedObj.shared_data as SharedData | undefined;
 
-    console.log('Detected v2.0 export format with shared_data optimization');
+    logger.debugLog('IMPORT', 'Detected v2.0 export format with shared_data optimization', 'import.ts');
     if (sharedData?.rubric_definition) {
-      console.log('Found shared rubric_definition in shared_data');
+      logger.debugLog('IMPORT', 'Found shared rubric_definition in shared_data', 'import.ts');
     }
   } else if ('metadata' in parsedObj && 'results' in parsedObj) {
     // Legacy unified format with metadata wrapper (v1.x)
@@ -157,11 +158,11 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
     resultsArray = unified.results;
     metadata = unified.metadata as ExportMetadata;
 
-    console.log('Detected legacy unified export format with metadata wrapper');
+    logger.debugLog('IMPORT', 'Detected legacy unified export format with metadata wrapper', 'import.ts');
   } else if (Array.isArray(parsed)) {
     // Legacy array format (old frontend exports)
     resultsArray = parsed;
-    console.log('Detected legacy array export format');
+    logger.debugLog('IMPORT', 'Detected legacy array export format', 'import.ts');
   } else {
     throw new ImportValidationError(
       'Unrecognized format. Expected v2.0 format {format_version: "2.0", ...}, unified format {metadata, results}, or legacy array format'

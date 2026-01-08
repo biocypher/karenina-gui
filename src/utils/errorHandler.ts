@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 export interface ErrorHandlerOptions {
   useToast?: boolean;
   logToConsole?: boolean;
@@ -17,9 +19,9 @@ export function handleFileError(error: unknown, context: string, options: ErrorH
 
   const fullMessage = `${context}: ${errorMessage}`;
 
-  // Log to console if requested
+  // Log using logger if requested (only logs in development)
   if (logToConsole) {
-    console.error(fullMessage, error);
+    logger.error('ERROR_HANDLER', fullMessage, 'errorHandler', { error, context });
   }
 
   // Set error state if provided
@@ -34,8 +36,7 @@ export function handleFileError(error: unknown, context: string, options: ErrorH
 
   // TODO: Implement toast notifications when UI component is available
   if (useToast) {
-    console.warn('Toast notifications not yet implemented, falling back to console');
-    console.error(fullMessage);
+    logger.warning('ERROR_HANDLER', 'Toast notifications not yet implemented, falling back to console', 'errorHandler');
   }
 }
 
