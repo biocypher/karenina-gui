@@ -1143,3 +1143,14 @@ once on mount using the ref pattern. No ESLint warnings are suppressed.
 
 **Result**: Reduced duplicate function calls from 5 to 2. Code is more efficient
 and easier to read.
+
+## flaw-086: JSON file size validation (LOW) - ALREADY FIXED
+**File**: src/components/database/ImportResultsModal.tsx
+**Status**: Already fixed by flaw-033
+
+ImportResultsModal uses validateJsonFile() which includes:
+- File size validation (10 MB default)
+- Checks size BEFORE parsing JSON
+- Helpful error message for oversized files
+
+No changes needed - validation was implemented in flaw-033.

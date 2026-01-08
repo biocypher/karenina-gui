@@ -1455,6 +1455,8 @@
     "file": "karenina-gui/src/components/database/ImportResultsModal.tsx",
     "line_range": "69-76",
     "description": "File content is parsed with JSON.parse() without size limits. Large JSON files could cause memory issues or DoS.",
+    "status": "completed",
+    "implementation_notes": "Already fixed by flaw-033. ImportResultsModal uses validateJsonFile() which includes file size validation (10 MB default) at lines 58-64 of fileValidator.ts. Size is checked before JSON parsing.",
     "depends_on": [],
     "steps": [
       "Implement: Add file size limit check before parsing JSON",
