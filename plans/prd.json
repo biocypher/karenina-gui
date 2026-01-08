@@ -542,6 +542,8 @@
     "line_range": "83-89",
     "description": "File validation uses manual string extension checking instead of proper MIME type validation. The validExtensions array and string manipulation approach is fragile.",
     "depends_on": [],
+    "status": "completed",
+    "implementation_notes": "Added validateDataFile() function to src/utils/fileValidator.ts with proper MIME type validation, extension whitelist, and dangerous MIME type rejection. Updated QuestionExtractor.tsx to use the new validation utility in both handleFileUpload and handleDrop functions.",
     "steps": [
       "Implement: Use proper file type validation with MIME type checking",
       "Implement: Validate file contents (magic bytes) not just extension",

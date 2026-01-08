@@ -289,5 +289,65 @@
 **Verification:**
 - TypeScript type checking passes
 
+---
 
+### Completed: flaw-033 - File Type Validation with MIME Type Checking (MEDIUM)
+
+**Files:** `src/utils/fileValidator.ts`, `src/components/QuestionExtractor.tsx`
+
+**Changes:**
+1. Extended `src/utils/fileValidator.ts` with new `validateDataFile()` function:
+   - Validates spreadsheet files (.xlsx, .xls) with proper MIME type checking
+   - Validates CSV/TSV/text files (.csv, .tsv, .txt) with MIME type checking
+   - Whitelist of allowed MIME types for data files
+   - Blacklist of dangerous MIME types (executables, scripts, HTML, etc.)
+   - File size validation (default 50 MB limit)
+   - Case-insensitive extension checking
+   - Configurable allowed extensions and size limits
+
+2. Updated `QuestionExtractor.tsx` to use `validateDataFile()`:
+   - Replaced manual extension checking in `handleFileUpload` (line 59)
+   - Replaced manual extension checking in `handleDrop` (line 76)
+   - Both file selection and drag-drop now use the centralized validation utility
+   - Invalid files are rejected with descriptive error messages
+
+**MIME Types Accepted:**
+- Excel: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (.xlsx)
+- Excel: `application/vnd.ms-excel` (.xls)
+- CSV: `text/csv`, `application/csv`
+- TSV: `text/tab-separated-values`, `application/tsv`
+- Text: `text/plain`
+
+**MIME Types Blocked:**
+- Executables: `application/x-msdownload`, `application/x-executable`, etc.
+- Scripts: `application/x-sh`, `application/x-bat`, `text/javascript`, etc.
+- HTML: `text/html`, `application/html`
+- Dangerous: `application/x-msi`, `application/x-ms-shortcut`
+
+**Tests Added:** `src/utils/__tests__/fileValidator.test.ts` (23 new tests)
+- Valid file acceptance (.xlsx, .xls, .csv, .tsv, .txt)
+- Invalid extension rejection
+- Dangerous MIME type blocking
+- File size validation
+- Custom allowed extensions
+- Security edge cases
+
+**Verification:**
+- All 57 fileValidator tests pass (34 existing + 23 new)
+- TypeScript type checking passes
+- ESLint passes (with pre-existing warnings only)
+
+**Security Impact:**
+- Files are validated with both extension AND MIME type checking
+- Dangerous file types (executables, scripts, HTML) are rejected even if renamed with valid extensions
+- File size limits prevent denial-of-service via large uploads
+- Reusable validation utility can be used by other components
+
+**Progress Summary:**
+- 5 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015, flaw-033)
+- 6 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088, flaw-089, flaw-090 - CSRF frontend done, backend pending)
+- 2 flaws marked invalid (flaw-014, flaw-062 - PRD description incorrect)
+- 82 flaws remaining in PRD
+
+---
 

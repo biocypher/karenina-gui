@@ -261,3 +261,124 @@ export function hasValidExtension(file: File, allowedExtensions: string[]): bool
 export function isFileNotEmpty(file: File): boolean {
   return file.size > 0;
 }
+
+/**
+ * MIME types for spreadsheet and text data files
+ */
+const DATA_FILE_MIME_TYPES = [
+  // Excel formats
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // .xls
+  // CSV/TSV/Text formats
+  'text/csv',
+  'text/tab-separated-values',
+  'text/plain',
+  'application/csv',
+  'application/tsv',
+] as const;
+
+/**
+ * Allowed extensions for data files (spreadsheet and text)
+ */
+const DATA_FILE_EXTENSIONS = ['xlsx', 'xls', 'csv', 'tsv', 'txt'] as const;
+
+/**
+ * Maximum size for data files (50 MB)
+ */
+const DATA_FILE_MAX_SIZE = 50 * 1024 * 1024;
+
+/**
+ * Validates a spreadsheet or text data file.
+ *
+ * Supported formats: Excel (.xlsx, .xls), CSV (.csv), TSV (.tsv, .txt)
+ *
+ * This function performs multiple checks:
+ * 1. File extension validation
+ * 2. MIME type validation with whitelist
+ * 3. File size validation
+ * 4. Dangerous MIME type rejection
+ *
+ * Note: This does not validate file content (magic bytes) as spreadsheet
+ * file formats are complex and content validation is typically handled
+ * by the parsing library (e.g., xlsx library) when the file is processed.
+ *
+ * @param file - The file to validate
+ * @param options - Optional validation options
+ * @returns FileValidationResult with valid flag and optional error message
+ *
+ * @example
+ * ```ts
+ * const result = validateDataFile(file);
+ * if (result.valid) {
+ *   // File is safe to process
+ * } else {
+ *   console.error(result.error);
+ * }
+ * ```
+ */
+export function validateDataFile(
+  file: File,
+  options: {
+    maxSizeBytes?: number;
+    allowedExtensions?: readonly string[];
+  } = {}
+): FileValidationResult {
+  const { maxSizeBytes = DATA_FILE_MAX_SIZE, allowedExtensions = DATA_FILE_EXTENSIONS } = options;
+
+  // Check file size
+  if (file.size > maxSizeBytes) {
+    return {
+      valid: false,
+      error: `File size (${formatFileSize(file.size)}) exceeds maximum allowed size (${formatFileSize(maxSizeBytes)})`,
+    };
+  }
+
+  // Check file extension
+  if (!hasValidExtension(file, [...allowedExtensions])) {
+    return {
+      valid: false,
+      error: `Invalid file type. Allowed extensions: ${allowedExtensions.map((e) => `.${e}`).join(', ')}`,
+    };
+  }
+
+  // Check MIME type
+  const mimeType = file.type.toLowerCase();
+  const hasValidMimeType = DATA_FILE_MIME_TYPES.some((validType) => mimeType === validType.toLowerCase());
+
+  // Dangerous or explicitly wrong MIME types to reject
+  const dangerousOrWrongMimeTypes = [
+    'application/x-msdownload',
+    'application/x-msdos-program',
+    'application/x-executable',
+    'application/exe',
+    'application/x-exe',
+    'application/x-sh',
+    'application/x-bat',
+    'application/x-msi',
+    'application/x-ms-shortcut',
+    'application/x-javascript',
+    'text/javascript',
+    'application/javascript',
+    'text/html',
+    'application/html',
+    'application/x-html',
+  ];
+
+  const isDangerousOrWrong =
+    mimeType &&
+    !hasValidMimeType &&
+    dangerousOrWrongMimeTypes.some((dangerous) => mimeType === dangerous || mimeType.startsWith(dangerous));
+
+  if (isDangerousOrWrong) {
+    return {
+      valid: false,
+      error: `Invalid file type: ${mimeType}. Expected a spreadsheet, CSV, or text file.`,
+    };
+  }
+
+  // Note: We allow files with empty/unknown MIME types if they have valid extensions
+  // because some browsers don't set MIME types correctly for local files.
+  // The actual file content validation will happen during parsing.
+
+  return { valid: true };
+}

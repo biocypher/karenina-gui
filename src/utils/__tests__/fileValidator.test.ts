@@ -382,6 +382,183 @@ describe('isFileNotEmpty', () => {
   });
 });
 
+describe('validateDataFile', () => {
+  describe('Valid spreadsheet and text files', () => {
+    it('should accept Excel .xlsx files with correct MIME type', () => {
+      const file = createMockFile(
+        'data.xlsx',
+        'dummy content',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(true);
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should accept Excel .xls files with correct MIME type', () => {
+      const file = createMockFile('data.xls', 'dummy content', 'application/vnd.ms-excel');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept CSV files with text/csv MIME type', () => {
+      const file = createMockFile('data.csv', 'col1,col2\nval1,val2', 'text/csv');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept TSV files with text/tab-separated-values MIME type', () => {
+      const file = createMockFile('data.tsv', 'col1\tcol2\nval1\tval2', 'text/tab-separated-values');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept .txt files with text/plain MIME type', () => {
+      const file = createMockFile('data.txt', 'some text content', 'text/plain');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept files with valid extensions but empty MIME type', () => {
+      // Some browsers don't set MIME type for local files
+      const file = createMockFile('data.csv', 'col1,col2', '');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should be case-insensitive for extensions', () => {
+      const file = createMockFile(
+        'DATA.XLSX',
+        'content',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('Invalid file extensions', () => {
+    it('should reject files with disallowed extensions', () => {
+      const file = createMockFile('data.exe', 'content', 'application/octet-stream');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Invalid file type');
+    });
+
+    it('should reject files without extension', () => {
+      const file = createMockFile('datafile', 'content', 'text/plain');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+
+    it('should reject .html files', () => {
+      const file = createMockFile('data.html', '<html></html>', 'text/html');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+
+    it('should reject .js files', () => {
+      const file = createMockFile('data.js', 'console.log("test")', 'text/javascript');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+  });
+
+  describe('Dangerous MIME type blocking', () => {
+    it('should reject files with executable MIME types', () => {
+      const file = createMockFile('data.csv.exe', 'content', 'application/x-msdownload');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Invalid file type');
+    });
+
+    it('should reject files with script MIME types', () => {
+      const file = createMockFile('data.csv', 'content', 'application/x-javascript');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+
+    it('should reject files with HTML MIME types', () => {
+      const file = createMockFile('data.csv', 'content', 'text/html');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+
+    it('should reject files with shell script MIME types', () => {
+      const file = createMockFile('data.csv', 'content', 'application/x-sh');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+  });
+
+  describe('File size validation', () => {
+    it('should accept files within default size limit (50 MB)', () => {
+      const content = 'x'.repeat(10 * 1024); // 10 KB
+      const file = createMockFile('data.csv', content, 'text/csv', 10 * 1024);
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(true);
+    });
+
+    it('should reject files exceeding default size limit', () => {
+      const file = createMockFile('data.csv', 'content', 'text/csv', 51 * 1024 * 1024); // 51 MB
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('exceeds maximum allowed size');
+    });
+
+    it('should respect custom size limit', () => {
+      const file = createMockFile('data.csv', 'content', 'text/csv', 5 * 1024); // 5 KB
+      const result = fileValidator.validateDataFile(file, { maxSizeBytes: 4 * 1024 }); // 4 KB limit
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('exceeds maximum allowed size');
+    });
+  });
+
+  describe('Custom allowed extensions', () => {
+    it('should accept only custom allowed extensions', () => {
+      const file = createMockFile('data.csv', 'content', 'text/csv');
+      const result = fileValidator.validateDataFile(file, {
+        allowedExtensions: ['csv'],
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it('should reject files not in custom allowed extensions', () => {
+      const file = createMockFile(
+        'data.xlsx',
+        'content',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      const result = fileValidator.validateDataFile(file, {
+        allowedExtensions: ['csv', 'txt'],
+      });
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('.csv, .txt');
+    });
+  });
+
+  describe('Security edge cases', () => {
+    it('should reject executable MIME type even with valid extension', () => {
+      // An executable renamed to .csv
+      const file = createMockFile('data.csv', 'content', 'application/x-executable');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+
+    it('should reject Windows shortcut MIME type', () => {
+      const file = createMockFile('data.csv', 'content', 'application/x-ms-shortcut');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+
+    it('should reject MSI installer MIME type', () => {
+      const file = createMockFile('data.csv', 'content', 'application/x-msi');
+      const result = fileValidator.validateDataFile(file);
+      expect(result.valid).toBe(false);
+    });
+  });
+});
+
 /**
  * Helper function to create a mock File object for testing
  */

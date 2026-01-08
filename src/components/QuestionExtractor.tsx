@@ -5,6 +5,7 @@ import { QuestionVisualizer } from './QuestionVisualizer';
 import { AdvancedExtractionPanel } from './AdvancedExtractionPanel';
 import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
+import { validateDataFile } from '../utils/fileValidator';
 
 interface ExtractedQuestions {
   success: boolean;
@@ -58,7 +59,18 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      handleFileSelect(file);
+      // Validate file type using proper MIME type checking and extension validation
+      const validation = validateDataFile(file);
+
+      if (validation.valid) {
+        handleFileSelect(file);
+      } else {
+        alert(validation.error || 'Please upload a valid file format');
+        // Clear the file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
     }
   };
 
@@ -79,14 +91,13 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
     const files = event.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
-      // Validate file type
-      const validExtensions = ['.xlsx', '.xls', '.csv', '.tsv', '.txt'];
-      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      // Validate file type using proper MIME type checking and extension validation
+      const validation = validateDataFile(file);
 
-      if (validExtensions.includes(fileExtension)) {
+      if (validation.valid) {
         handleFileSelect(file);
       } else {
-        alert('Please upload a valid file format: Excel (.xlsx, .xls), CSV (.csv), or TSV (.tsv, .txt)');
+        alert(validation.error || 'Please upload a valid file format');
       }
     }
   };
