@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiKeyStorage } from '../utils/secureStorage';
 
 /**
  * Represents an environment variable key-value pair
@@ -199,8 +200,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       }
       const defaults = await defaultsResponse.json();
 
-      // Load endpoint API key from localStorage if available
-      const storedApiKey = localStorage.getItem('openai_endpoint_api_key') || '';
+      // Load endpoint API key from session storage if available
+      const storedApiKey = apiKeyStorage.getEndpointApiKey();
 
       set({
         envVariables,
@@ -311,9 +312,14 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         throw new Error(error.detail || 'Failed to save defaults');
       }
 
-      // Store API key in localStorage for convenience (if provided)
+      // Store API key in session storage for convenience (if provided)
+      // Session storage is used instead of local storage for better security:
+      // - Keys are cleared when the tab/window closes
+      // - Keys do not persist across browser restarts
       if (state.defaultEndpointApiKey) {
-        localStorage.setItem('openai_endpoint_api_key', state.defaultEndpointApiKey);
+        apiKeyStorage.setEndpointApiKey(state.defaultEndpointApiKey);
+      } else {
+        apiKeyStorage.removeEndpointApiKey();
       }
 
       // Update saved values and original defaults to match current working values

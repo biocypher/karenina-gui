@@ -158,8 +158,52 @@
 
 ---
 
+### Completed: flaw-015 - API Key Storage Security (HIGH)
+
+**File:** `src/stores/useConfigStore.ts`
+
+**Changes:**
+1. Created `src/utils/secureStorage.ts` with secure storage utilities:
+   - `SessionSecureStorage` class - sessionStorage wrapper with error handling
+   - `apiKeyStorage` convenience object - typed API key operations
+   - `STORAGE_KEYS` constant - centralized key management
+2. Updated `useConfigStore.ts` to use `apiKeyStorage` instead of localStorage:
+   - Line 204: Changed from `localStorage.getItem()` to `apiKeyStorage.getEndpointApiKey()`
+   - Lines 315-323: Changed from `localStorage.setItem()` to `apiKeyStorage.setEndpointApiKey()`
+   - Added proper handling for empty/whitespace API keys
+
+**Security Improvements:**
+- sessionStorage clears when tab/window closes (vs localStorage which persists indefinitely)
+- sessionStorage does not persist across browser restarts
+- Reduces window of exposure if XSS vulnerability is discovered
+- API keys are trimmed before storage to avoid whitespace issues
+- Empty/whitespace-only keys are removed from storage
+
+**Tests Added:** `src/utils/__tests__/secureStorage.test.ts`
+- 38 comprehensive tests covering:
+  - String and object storage
+  - JSON parsing with error handling
+  - Edge cases (empty strings, invalid JSON, missing keys)
+  - sessionStorage unavailable scenarios
+  - API key specific operations (trim, empty handling)
+  - Security verification (sessionStorage vs localStorage)
+
+**Verification:**
+- All 38 tests pass
+- TypeScript type checking passes
+- ESLint passes (with pre-existing warnings only)
+
+**Security Impact:**
+- API keys now only persist for the current browser session
+- Keys are automatically cleared when user closes the tab
+- Reduces risk of long-term API key exposure from browser storage
+- Works in conjunction with XSS protections (flaw-019, flaw-041)
+
+---
+
 **Progress Summary:**
-- 3 flaws completed (flaw-019, flaw-041, flaw-043)
-- 92 flaws remaining in PRD
-- 3 critical/high security vulnerabilities addressed
+- 4 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015)
+- 91 flaws remaining in PRD
+- 4 critical/high security vulnerabilities addressed
+
 
