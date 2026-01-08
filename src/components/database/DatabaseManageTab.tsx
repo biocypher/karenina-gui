@@ -16,6 +16,7 @@ import {
 import { useQuestionStore } from '../../stores/useQuestionStore';
 import { useDatasetStore } from '../../stores/useDatasetStore';
 import { useRubricStore } from '../../stores/useRubricStore';
+import { logger } from '../../utils/logger';
 
 interface BenchmarkInfo {
   id: string;
@@ -189,7 +190,7 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
 
       // If duplicates found, show resolution modal
       if (data.duplicates && data.duplicates.length > 0) {
-        console.log(`⚠️ Found ${data.duplicates.length} duplicate question(s)`);
+        logger.debugLog('DATABASE', `Found ${data.duplicates.length} duplicate question(s)`, 'DatabaseManageTab');
         setDuplicates(data.duplicates);
         setShowDuplicateModal(true);
       } else {
@@ -229,8 +230,10 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
       await response.json();
 
       // Success - show message and reload benchmarks list to reflect updated counts
-      console.log(
-        `✅ Successfully exported ${Object.keys(checkpoint).length} questions to benchmark '${selectedBenchmark}'`
+      logger.debugLog(
+        'DATABASE',
+        `Successfully exported ${Object.keys(checkpoint).length} questions to benchmark '${selectedBenchmark}'`,
+        'DatabaseManageTab'
       );
 
       // Reload benchmarks to show updated question counts
@@ -292,7 +295,7 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
     const data = await response.json();
 
     // Success - reload benchmarks list
-    console.log(`✅ ${data.message}`);
+    logger.debugLog('DATABASE', data.message, 'DatabaseManageTab');
     await loadBenchmarks();
 
     // Clear state

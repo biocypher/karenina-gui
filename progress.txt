@@ -383,3 +383,39 @@
 
 ---
 
+### Completed: flaw-032 - Replace console.log with Debug Logger (MEDIUM)
+
+**File:** `src/components/database/DatabaseManageTab.tsx`
+
+**Changes:**
+1. Added import of `logger` from `../../utils/logger`
+2. Replaced 3 `console.log()` statements with `logger.debugLog()` calls:
+   - Line 193: Duplicate question detection now uses `logger.debugLog('DATABASE', ...)`
+   - Line 233: Export success message now uses `logger.debugLog('DATABASE', ...)`
+   - Line 298: Resolution success message now uses `logger.debugLog('DATABASE', ...)`
+
+**Logger Utility:**
+The existing `src/utils/logger.ts` already provided:
+- Environment-aware logging using `import.meta.env.DEV`
+- Structured logging with categories, levels, and timestamps
+- Conditional output in development only
+- No console output in production builds
+
+**Verification:**
+- TypeScript type checking passes
+- All console.log statements replaced with structured logging
+
+**Code Quality Impact:**
+- Debug logging is now consistent across the application
+- No console output in production builds
+- Structured logs with category and component information
+- Easier debugging with timestamps and log levels
+
+**Progress Summary:**
+- 7 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015, flaw-033, flaw-070, flaw-032)
+- 6 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088, flaw-089, flaw-090 - CSRF frontend done, backend pending)
+- 2 flaws marked invalid (flaw-014, flaw-062 - PRD description incorrect)
+- 80 flaws remaining in PRD
+
+---
+
