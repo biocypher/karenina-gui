@@ -272,19 +272,19 @@
 
 **Progress Summary:**
 - 4 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015)
-- 4 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088 - CSRF frontend done, backend pending)
+- 5 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088, flaw-089 - CSRF frontend done, backend pending)
 - 2 flaws marked invalid (flaw-014, flaw-062 - PRD description incorrect)
-- 85 flaws remaining in PRD
+- 84 flaws remaining in PRD
 
 ---
 
-### Partially Completed: flaw-088 - CSRF Protection in CreateBenchmarkForm (MEDIUM)
+### Partially Completed: flaw-089 - CSRF Protection in DeleteBenchmarkModal (MEDIUM)
 
-**File:** `src/components/database/CreateBenchmarkForm.tsx`
+**File:** `src/components/database/DeleteBenchmarkModal.tsx`
 
 **Changes:**
 - Updated to use `csrf.fetchWithCsrf()` instead of raw fetch
-- X-CSRF-Token header will now be included in create benchmark POST request
+- X-CSRF-Token header will now be included in delete benchmark DELETE request
 
 **Verification:**
 - TypeScript type checking passes
