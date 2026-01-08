@@ -13,6 +13,7 @@ import {
   SortingState,
 } from '@tanstack/react-table';
 import { useDebounce } from '../hooks/useDebounce';
+import { logger } from '../utils/logger';
 
 declare module '@tanstack/react-table' {
   interface FilterFns {
@@ -781,7 +782,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         mcpServers: Array.from(mcpServersSet).sort(),
       };
     } catch (e) {
-      console.error('Error in getUniqueModels:', e);
+      logger.error('BENCHMARK_TABLE', 'Error in getUniqueModels', 'BenchmarkTable', { error: e });
       return { answeringModels: [], parsingModels: [], runNames: [], replicates: [], mcpServers: [] };
     }
   };
@@ -1028,7 +1029,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         </div>
       );
     } catch (err) {
-      console.error('Error rendering results table:', err);
+      logger.error('BENCHMARK_TABLE', 'Error rendering results table', 'BenchmarkTable', { error: err });
       return (
         <div className="text-center py-8 text-red-500 dark:text-red-400">
           <AlertCircle className="w-8 h-8 mx-auto mb-2" />
