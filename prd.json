@@ -1,0 +1,1523 @@
+[
+  {
+    "id": "flaw-001",
+    "category": "long-file",
+    "severity": "high",
+    "file": "karenina-gui/src/components/BenchmarkTab.tsx",
+    "line_range": "1-1474",
+    "description": "BenchmarkTab.tsx is 1,474 lines - a monolithic component handling table display, filtering, sorting, pagination, and data fetching. This violates single responsibility principle and makes testing difficult.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract table rendering logic to BenchmarkTableView.tsx component",
+      "Implement: Extract filtering logic to useBenchmarkFilters.ts custom hook",
+      "Implement: Extract pagination logic to usePagination.ts custom hook",
+      "Implement: Extract data fetching to useBenchmarkData.ts hook with React Query",
+      "Implement: Keep BenchmarkTab.tsx as composition root (<300 lines)",
+      "Verify: Each extracted module has corresponding unit tests",
+      "Verify: BenchmarkTab.tsx renders correctly with all sub-components",
+      "Verify: No functionality regression in benchmark table features"
+    ]
+  },
+  {
+    "id": "flaw-002",
+    "category": "long-file",
+    "severity": "high",
+    "file": "karenina-gui/src/components/QuestionRubricEditor.tsx",
+    "line_range": "1-1418",
+    "description": "QuestionRubricEditor.tsx is 1,418 lines - a large component handling rubric trait management, editing, and validation.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract trait list rendering to TraitList.tsx component",
+      "Implement: Extract trait editing to TraitEditor.tsx component",
+      "Implement: Extract trait validation logic to useTraitValidation.ts hook",
+      "Implement: Create shared trait editor components with RubricTraitEditor.tsx",
+      "Verify: Rubric editing functionality works after refactoring",
+      "Verify: No regression in trait validation behavior"
+    ]
+  },
+  {
+    "id": "flaw-003",
+    "category": "long-file",
+    "severity": "high",
+    "file": "karenina-gui/src/components/RubricTraitEditor.tsx",
+    "line_range": "1-1405",
+    "description": "RubricTraitEditor.tsx is 1,405 lines - has significant code duplication with QuestionRubricEditor.tsx.",
+    "depends_on": ["flaw-002"],
+    "steps": [
+      "Implement: Extract shared rubric editing logic to shared/hooks/useRubricTraitEditor.ts",
+      "Implement: Create shared trait editing components in shared/components/",
+      "Implement: Refactor both QuestionRubricEditor and RubricTraitEditor to use shared components",
+      "Implement: Remove duplicate validation and editing code",
+      "Verify: Both editors maintain current functionality",
+      "Verify: Changes to shared logic affect both editors consistently"
+    ]
+  },
+  {
+    "id": "flaw-004",
+    "category": "long-file",
+    "severity": "high",
+    "file": "karenina-gui/src/App.tsx",
+    "line_range": "1-1212",
+    "description": "App.tsx is 1,212 lines - main application component handling routing, state management, and multiple UI concerns. Should be split into focused components.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract routing logic to components/AppRouter.tsx",
+      "Implement: Extract global layout to components/AppLayout.tsx",
+      "Implement: Extract tab management to hooks/useTabManagement.ts",
+      "Implement: Create individual tab route components",
+      "Implement: Keep App.tsx as minimal entry point (<100 lines)",
+      "Verify: All routes work correctly after refactoring",
+      "Verify: State persists across tab navigation"
+    ]
+  },
+  {
+    "id": "flaw-005",
+    "category": "long-file",
+    "severity": "high",
+    "file": "karenina-gui/src/components/BenchmarkTable.tsx",
+    "line_range": "1-1047",
+    "description": "BenchmarkTable.tsx is 1,047 lines - handles table rendering, cell display, and row selection. Needs decomposition.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract cell rendering to BenchmarkTableCell.tsx component",
+      "Implement: Extract row rendering to BenchmarkTableRow.tsx component",
+      "Implement: Extract selection logic to useRowSelection.ts hook",
+      "Implement: Extract cell display logic to useCellDisplay.ts hook",
+      "Verify: Table displays all data types correctly",
+      "Verify: Row selection works as expected"
+    ]
+  },
+  {
+    "id": "flaw-006",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/utils/checkpoint-converter.ts",
+    "line_range": "1-1189",
+    "description": "checkpoint-converter.ts is 1,189 lines - handles conversion between multiple checkpoint formats. Contains complex conversion logic that could be modularized.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract JSON-LD conversion to converters/jsonldConverter.ts",
+      "Implement: Extract v2.0 conversion to converters/v2Converter.ts",
+      "Implement: Extract validation logic to converters/checkpointValidator.ts",
+      "Implement: Keep checkpoint-converter.ts as orchestrator with imports",
+      "Verify: All conversion formats work correctly",
+      "Verify: No regression in import/export functionality"
+    ]
+  },
+  {
+    "id": "flaw-007",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/utils/export.ts",
+    "line_range": "1-812",
+    "description": "export.ts is 812 lines - handles JSON and CSV export with large inline data structures and formatting logic.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract CSV building logic to export/csvBuilder.ts",
+      "Implement: Extract JSON building logic to export/jsonBuilder.ts",
+      "Implement: Extract field mapping to export/fieldMapper.ts",
+      "Implement: Move type definitions to types/export.ts",
+      "Verify: Export to JSON works with all field combinations",
+      "Verify: Export to CSV works with all field combinations"
+    ]
+  },
+  {
+    "id": "flaw-008",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/stores/useQuestionStore.ts",
+    "line_range": "1-774",
+    "description": "useQuestionStore.ts is 774 lines - large Zustand store handling question state, checkpoint management, and session drafts. Has repeated checkpoint building patterns.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract checkpoint building logic to utils/checkpointBuilder.ts",
+      "Implement: Extract validation logic to utils/questionValidator.ts",
+      "Implement: Split question operations into focused actions",
+      "Implement: Add selectors for computed values",
+      "Verify: All question operations work correctly",
+      "Verify: Checkpoint persistence works as expected"
+    ]
+  },
+  {
+    "id": "flaw-009",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/types/index.ts",
+    "line_range": "1-1076",
+    "description": "types/index.ts is 1,076 lines - large type definition file. While not executable code, it should be split by domain for better maintainability.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Split checkpoint types to types/checkpoint.ts",
+      "Implement: Split verification types to types/verification.ts",
+      "Implement: Split rubric types to types/rubric.ts",
+      "Implement: Split model config types to types/modelConfig.ts",
+      "Implement: Create types/index.ts that re-exports all sub-modules",
+      "Verify: No import errors after splitting",
+      "Verify: Type definitions remain accessible"
+    ]
+  },
+  {
+    "id": "flaw-010",
+    "category": "code-smell",
+    "severity": "high",
+    "file": "karenina-gui/src/stores/useQuestionStore.ts",
+    "line_range": "112-129",
+    "description": "Template validation with placeholder strings is fragile. The check for 'Answer to the question:' is a hardcoded string that could break if templates change.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Move placeholder template detection to constant file constants/templates.ts",
+      "Implement: Add more robust template validation (check for required imports, class structure)",
+      "Implement: Create proper template validator that parses AST",
+      "Verify: Invalid templates are caught reliably",
+      "Verify: Valid templates pass validation"
+    ]
+  },
+  {
+    "id": "flaw-011",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/stores/useQuestionStore.ts",
+    "line_range": "288-314, 348-373",
+    "description": "Repeated checkpoint building pattern in saveCurrentTemplate and toggleFinished. The same logic for building a complete checkpoint is duplicated.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract checkpoint building to buildCompleteCheckpoint() helper function",
+      "Implement: Use helper in both saveCurrentTemplate and toggleFinished",
+      "Implement: Use helper in addNewQuestion, updateQuestionContent, deleteQuestion, cloneQuestion",
+      "Verify: All checkpoint updates use consistent logic",
+      "Verify: No regressions in state management"
+    ]
+  },
+  {
+    "id": "flaw-012",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/stores/useQuestionStore.ts",
+    "line_range": "271-283",
+    "description": "Debug logging in production code (saveCurrentTemplate function). Console.log statements should be removed or gated behind a debug flag.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create a debug logger utility that checks environment/feature flag",
+      "Implement: Replace all console.log calls with conditional debug logger",
+      "Implement: Remove production debug logs or gate behind isDev flag",
+      "Verify: Debug logs appear in development",
+      "Verify: No console output in production builds"
+    ]
+  },
+  {
+    "id": "flaw-013",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/stores/useQuestionStore.ts",
+    "line_range": "332-339, 379-381",
+    "description": "Auto-save to database has inline error handling with alert() calls. Error handling should be centralized and use proper UI notifications.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create error handling utility with toast/notification system",
+      "Implement: Replace alert() calls with proper error notifications",
+      "Implement: Add retry logic for failed saves",
+      "Verify: Users see appropriate error messages",
+      "Verify: Auto-save retries work correctly"
+    ]
+  },
+  {
+    "id": "flaw-014",
+    "category": "security",
+    "severity": "critical",
+    "file": "karenina-gui/src/components/SearchableTextDisplay.tsx",
+    "line_range": "entire file",
+    "description": "SearchableTextDisplay uses dangerouslySetInnerHTML to render highlighted search results. This creates XSS vulnerability if search terms or content contain malicious scripts.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Sanitize all HTML content before rendering with DOMPurify or similar library",
+      "Implement: Add unit tests for XSS attack vectors",
+      "Implement: Consider using safer highlighting approach (text node manipulation)",
+      "Verify: Script tags in content are sanitized",
+      "Verify: onerror handlers are stripped",
+      "Verify: Highlighting still works for legitimate content"
+    ]
+  },
+  {
+    "id": "flaw-015",
+    "category": "security",
+    "severity": "high",
+    "file": "karenina-gui/src/stores/useConfigStore.ts",
+    "line_range": "entire file",
+    "description": "API keys and sensitive configuration may be stored in localStorage without encryption. localStorage is accessible to any JavaScript code on the page.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Use sessionStorage instead of localStorage for sensitive data (clears on tab close)",
+      "Implement: Implement encryption for stored API keys using crypto.subtle",
+      "Implement: Never log API keys or sensitive configuration",
+      "Implement: Add option to not persist credentials at all",
+      "Verify: API keys are encrypted in storage",
+      "Verify: Keys are not visible in browser dev tools",
+      "Verify: Keys are not logged to console"
+    ]
+  },
+  {
+    "id": "flaw-016",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/utils/export.ts",
+    "line_range": "479-546, 600-742",
+    "description": "The CSV export has hardcoded field lists in allHeaders and allRowData that must be manually synced. Adding new VerificationResult fields requires updating multiple locations (developer burden).",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create single source of truth for exportable fields",
+      "Implement: Generate headers and row data programmatically from field definitions",
+      "Implement: Add validation that all ExportableResult fields are accounted for",
+      "Implement: Document the process in a checklist",
+      "Verify: Adding new fields only requires one update",
+      "Verify: All existing fields export correctly"
+    ]
+  },
+  {
+    "id": "flaw-017",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/stores/useQuestionStore.ts",
+    "line_range": "437-442",
+    "description": "Hardcoded Python template string in addNewQuestion. Template generation should be centralized and configurable.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Move default template to constants/templates.ts",
+      "Implement: Make template configurable via settings",
+      "Verify: New questions use correct template",
+      "Verify: Template can be customized if needed"
+    ]
+  },
+  {
+    "id": "flaw-018",
+    "category": "typing",
+    "severity": "low",
+    "file": "karenina-gui/src/utils/export.ts",
+    "line_range": "83",
+    "description": "The karenina_version is hardcoded as '1.0.0' with a TODO comment to get actual version from package.json.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Import version from package.json using ES modules or build-time constant",
+      "Implement: Use imported version in export metadata",
+      "Verify: Exported JSON shows correct version",
+      "Remove: TODO comment after implementation"
+    ]
+  },
+  {
+    "id": "flaw-019",
+    "category": "security",
+    "severity": "critical",
+    "file": "karenina-gui/src/components/CodeEditor.tsx",
+    "line_range": "406",
+    "description": "CodeEditor.tsx uses dangerouslySetInnerHTML to render syntax-highlighted code without sanitization. While the highlightedCode comes from prism-react-renderer, any future changes or user input could introduce XSS vulnerabilities.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Verify prism-react-renderer output is always safe, or add sanitization layer",
+      "Implement: Add unit tests for XSS attack vectors on code input",
+      "Implement: Document the safety guarantee for highlightedCode usage",
+      "Verify: Script tags in code content are not executed",
+      "Verify: Syntax highlighting still works correctly"
+    ]
+  },
+  {
+    "id": "flaw-020",
+    "category": "long-file",
+    "severity": "high",
+    "file": "karenina-gui/src/components/benchmark/VerificationResultDetailModal.tsx",
+    "line_range": "1-1178",
+    "description": "VerificationResultDetailModal.tsx is 1,178 lines - a monolithic modal handling verification result display, trace viewing, and result navigation. Needs decomposition for maintainability.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract trace display to TraceDisplayView.tsx component",
+      "Implement: Extract result details to ResultDetailsView.tsx component",
+      "Implement: Extract navigation controls to ResultNavigation.tsx component",
+      "Implement: Keep modal as composition root (<300 lines)",
+      "Verify: All verification result views work correctly",
+      "Verify: Modal navigation functions as expected"
+    ]
+  },
+  {
+    "id": "flaw-021",
+    "category": "long-file",
+    "severity": "high",
+    "file": "karenina-gui/src/components/benchmark/ConfigurationPanel.tsx",
+    "line_range": "1-1113",
+    "description": "ConfigurationPanel.tsx is 1,113 lines - handles model configuration, extra kwargs editing, MCP configuration, and async settings. This complex configuration component violates single responsibility.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract model configuration to ModelConfigurationSection.tsx",
+      "Implement: Extract kwargs editing to ExtraKwargsSection.tsx component",
+      "Implement: Extract MCP configuration to MCPConfigurationSection.tsx",
+      "Implement: Extract async settings to AsyncSettingsSection.tsx",
+      "Implement: Keep ConfigurationPanel as orchestrator (<400 lines)",
+      "Verify: All configuration options work correctly",
+      "Verify: Settings persist and load properly"
+    ]
+  },
+  {
+    "id": "flaw-022",
+    "category": "long-file",
+    "severity": "high",
+    "file": "karenina-gui/src/components/summary/ComparisonView.tsx",
+    "line_range": "1-1144",
+    "description": "ComparisonView.tsx is 1,144 lines - handles model comparison display, filtering, and visualization. Large component with multiple concerns mixed together.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract comparison table to ComparisonTable.tsx component",
+      "Implement: Extract filtering logic to useComparisonFilters.ts hook",
+      "Implement: Extract visualization to ComparisonVisualization.tsx",
+      "Implement: Keep ComparisonView as composition root (<300 lines)",
+      "Verify: Model comparison works correctly",
+      "Verify: Filtering and visualization function properly"
+    ]
+  },
+  {
+    "id": "flaw-023",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/benchmark/ExtraKwargsModal.tsx",
+    "line_range": "1-961",
+    "description": "ExtraKwargsModal.tsx is 961 lines - modal for editing extra keyword arguments. Contains complex key-value pair editing logic that could be extracted.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract kwargs editing form to ExtraKwargsForm.tsx component",
+      "Implement: Extract key-value pair editor to KvPairEditor.tsx component",
+      "Implement: Extract validation logic to useKwargsValidation.ts hook",
+      "Verify: Kwargs editing works correctly after refactoring",
+      "Verify: Validation catches invalid inputs"
+    ]
+  },
+  {
+    "id": "flaw-024",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/benchmark/MCPConfigurationModal.tsx",
+    "line_range": "1-951",
+    "description": "MCPConfigurationModal.tsx is 951 lines - modal for MCP (Model Context Protocol) server configuration. Contains server management logic that could be modularized.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract server list to MCPServerList.tsx component",
+      "Implement: Extract server form to MCPServerForm.tsx component",
+      "Implement: Extract server connection logic to useMCPConnection.ts hook",
+      "Verify: MCP server configuration works after refactoring",
+      "Verify: Server connection/disconnection functions correctly"
+    ]
+  },
+  {
+    "id": "flaw-025",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/stores/useTemplateStore.ts",
+    "line_range": "1-601",
+    "description": "useTemplateStore.ts is 601 lines - handles template generation workflow, WebSocket progress updates, and file extraction. Multiple concerns in one store.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract WebSocket logic to services/templateWebSocket.ts",
+      "Implement: Extract file upload/preview logic to hooks/useFileUploadWorkflow.ts",
+      "Implement: Split store into focused slices (generation, extraction, preview)",
+      "Verify: Template generation workflow works correctly",
+      "Verify: WebSocket progress updates work as expected"
+    ]
+  },
+  {
+    "id": "flaw-026",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/TraceHighlightedTextDisplay.tsx",
+    "line_range": "1-579",
+    "description": "TraceHighlightedTextDisplay.tsx is 579 lines - handles trace highlighting, search, and message navigation. Complex text display with multiple features.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract search functionality to useTextSearch.ts hook",
+      "Implement: Extract highlighting logic to useTraceHighlighting.ts hook",
+      "Implement: Extract message navigation to MessageNavigator.tsx component",
+      "Verify: Trace highlighting works correctly",
+      "Verify: Search and navigation function properly"
+    ]
+  },
+  {
+    "id": "flaw-027",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/ConfigurationModal.tsx",
+    "line_range": "1-701",
+    "description": "ConfigurationModal.tsx is 701 lines - modal with tabs for defaults, environment variables, and trace highlighting. Multiple configuration concerns in one modal.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract defaults tab to DefaultsConfigTab.tsx component",
+      "Implement: Extract environment tab to EnvironmentConfigTab.tsx component",
+      "Implement: Keep modal as tab container (<200 lines)",
+      "Verify: All configuration tabs work correctly",
+      "Verify: Settings save and load properly"
+    ]
+  },
+  {
+    "id": "flaw-028",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/components/MetadataEditor.tsx",
+    "line_range": "1-555",
+    "description": "MetadataEditor.tsx is 555 lines - while above 500 lines, it's reasonably structured with clear sections for author, sources, keywords, and custom properties. Lower priority for refactoring.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Consider extracting source editing to SourcesEditor.tsx if growth continues",
+      "Implement: Consider extracting keyword management to KeywordsEditor.tsx if growth continues",
+      "Verify: Current functionality works well",
+      "Verify: Monitor for future growth"
+    ]
+  },
+  {
+    "id": "flaw-029",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/components/FileManager.tsx",
+    "line_range": "1-544",
+    "description": "FileManager.tsx is 544 lines - well organized with clear sections for checkpointing, database, and actions. Functions are reasonably sized. Low priority.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Monitor for continued growth",
+      "Implement: Consider extracting checkpoint upload/download logic if file grows beyond 600 lines",
+      "Verify: Current file management features work correctly",
+      "Verify: Database integration works as expected"
+    ]
+  },
+  {
+    "id": "flaw-030",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/components/DatasetMetadataEditor.tsx",
+    "line_range": "1-618",
+    "description": "DatasetMetadataEditor.tsx is 618 lines - focused on a single responsibility (dataset metadata editing). While large, it's self-contained. Monitor for growth.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Monitor for growth beyond 700 lines",
+      "Implement: Consider extracting citation management if component expands",
+      "Verify: Dataset metadata editing works correctly",
+      "Verify: Validation catches invalid inputs"
+    ]
+  },
+  {
+    "id": "flaw-031",
+    "category": "code-smell",
+    "severity": "high",
+    "file": "karenina-gui/src/components/database/DatabaseManageTab.tsx",
+    "line_range": "73, 112, 170, 211, 274",
+    "description": "Multiple fetch calls to hardcoded API endpoints without proper error handling or retry mechanisms. The component has 5 different fetch calls with inline error handling that could be centralized.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create API client service module for database operations (services/databaseApi.ts)",
+      "Implement: Add retry logic with exponential backoff for failed requests",
+      "Implement: Centralize error handling with proper user notifications",
+      "Implement: Replace inline fetch calls with service methods",
+      "Verify: All database operations have consistent error handling",
+      "Verify: Failed requests are retried appropriately"
+    ]
+  },
+  {
+    "id": "flaw-032",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/database/DatabaseManageTab.tsx",
+    "line_range": "192, 232, 295",
+    "description": "Debug console.log statements in production code. Lines 192, 232, and 295 contain console.log statements that should be removed or gated behind a debug flag.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create debug logger utility that checks environment/feature flag",
+      "Implement: Replace all console.log calls with conditional debug logger",
+      "Verify: Debug logs appear in development",
+      "Verify: No console output in production builds"
+    ]
+  },
+  {
+    "id": "flaw-033",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/QuestionExtractor.tsx",
+    "line_range": "83-89",
+    "description": "File validation uses manual string extension checking instead of proper MIME type validation. The validExtensions array and string manipulation approach is fragile.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Use proper file type validation with MIME type checking",
+      "Implement: Validate file contents (magic bytes) not just extension",
+      "Implement: Create reusable file validation utility",
+      "Verify: Invalid files are rejected even with valid extensions",
+      "Verify: All supported file types pass validation"
+    ]
+  },
+  {
+    "id": "flaw-034",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/QuestionExtractor.tsx",
+    "line_range": "1-441",
+    "description": "QuestionExtractor.tsx is 441 lines - large component handling file upload, preview, configuration, and extraction. Multiple responsibilities in one component.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract file upload logic to FileUploader.tsx component",
+      "Implement: Extract preview handling to FilePreviewSection.tsx component",
+      "Implement: Extract configuration to ExtractionConfig.tsx component",
+      "Implement: Extract visualization to QuestionVisualizationSection.tsx",
+      "Implement: Keep QuestionExtractor as orchestration layer (<200 lines)",
+      "Verify: All extraction workflow steps work correctly",
+      "Verify: State management remains consistent"
+    ]
+  },
+  {
+    "id": "flaw-035",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/QuestionExtractor.tsx",
+    "line_range": "116, 162",
+    "description": "Uses alert() for error notification instead of proper UI notifications. Blocks execution and provides poor UX.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create toast/notification system for user feedback",
+      "Implement: Replace all alert() calls with toast notifications",
+      "Verify: Error messages are displayed non-intrusively",
+      "Verify: User can dismiss notifications"
+    ]
+  },
+  {
+    "id": "flaw-036",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/QuestionContentEditor.tsx",
+    "line_range": "49",
+    "description": "Uses window.confirm() which blocks execution and may not work in all environments. Native browser dialogs should be replaced with custom modal dialogs.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create confirmation modal component",
+      "Implement: Replace window.confirm() with custom modal",
+      "Verify: Confirmation flow works correctly",
+      "Verify: Dialog is accessible and responsive"
+    ]
+  },
+  {
+    "id": "flaw-037",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/AdvancedExtractionPanel.tsx",
+    "line_range": "entire file",
+    "description": "Missing error boundaries for complex extraction logic. If the extraction process fails unexpectedly, there's no graceful degradation or error recovery.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Add React ErrorBoundary wrapper around AdvancedExtractionPanel",
+      "Implement: Add try-catch blocks around async extraction operations",
+      "Implement: Provide user-friendly error messages and recovery options",
+      "Verify: Extraction failures don't crash the entire UI",
+      "Verify: Users can recover from extraction errors"
+    ]
+  },
+  {
+    "id": "flaw-038",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/RubricResultsDisplay.tsx",
+    "line_range": "26-50, 81-110",
+    "description": "Complex conditional logic with nested ternary operators and multiple type narrowing checks. The isTraitPassed and getTraitInfo functions have complex logic that is hard to follow.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract trait evaluation logic to separate utility module (utils/traitEvaluation.ts)",
+      "Implement: Simplify conditional logic with early returns",
+      "Implement: Add unit tests for all trait evaluation scenarios",
+      "Verify: All trait types are evaluated correctly",
+      "Verify: Logic is easier to understand and maintain"
+    ]
+  },
+  {
+    "id": "flaw-039",
+    "category": "dead-code",
+    "severity": "low",
+    "file": "karenina-gui/src/components/summary/RubricTraitMenu.tsx",
+    "line_range": "183-193",
+    "description": "Debug console.log statement in production code with emoji prefix. Line 184-193 contains extensive debug logging for trait collection that should be gated.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Remove or gate console.log behind debug flag",
+      "Verify: Debug logs appear in development",
+      "Verify: No console output in production builds"
+    ]
+  },
+  {
+    "id": "flaw-040",
+    "category": "dead-code",
+    "severity": "low",
+    "file": "karenina-gui/src/components/DatabaseManagerModal.tsx",
+    "line_range": "4",
+    "description": "Commented-out import - DatabaseManageTab import is commented out but still present in the code.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Remove commented-out DatabaseManageTab import",
+      "Verify: Component still functions correctly",
+      "Verify: No build errors"
+    ]
+  },
+  {
+    "id": "flaw-041",
+    "category": "security",
+    "severity": "high",
+    "file": "karenina-gui/src/components/QuestionVisualizer.tsx",
+    "line_range": "320-328",
+    "description": "URL is rendered in anchor tag without proper sanitization. While rel=\"noopener noreferrer\" is used, the URL itself should be validated to prevent javascript: and data: URL schemes.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create URL validation utility to check for dangerous protocols",
+      "Implement: Sanitize URLs before rendering (block javascript:, data:, vbscript:)",
+      "Implement: Add unit tests for URL XSS attack vectors",
+      "Verify: Only http:// and https:// URLs are rendered as links",
+      "Verify: Dangerous URL schemes are displayed as text only"
+    ]
+  },
+  {
+    "id": "flaw-042",
+    "category": "security",
+    "severity": "high",
+    "file": "karenina-gui/src/components/ManualTraceUpload.tsx",
+    "line_range": "37-40",
+    "description": "Direct API call to /api/upload-manual-traces without CSRF protection. While the application may be a single-page API, there's no explicit CSRF token implementation visible.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Add CSRF token to all mutation requests (POST, PUT, DELETE)",
+      "Implement: Validate CSRF tokens on the backend",
+      "Implement: Consider using SameSite cookie attribute",
+      "Verify: All form submissions include CSRF token",
+      "Verify: Backend validates CSRF tokens"
+    ]
+  },
+  {
+    "id": "flaw-043",
+    "category": "security",
+    "severity": "high",
+    "file": "karenina-gui/src/components/ManualTraceUpload.tsx",
+    "line_range": "85-90",
+    "description": "File type validation only checks file extension, not actual content. The .endsWith('.json') check is insufficient for security.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Validate JSON content by attempting to parse the file",
+      "Implement: Check file MIME type in addition to extension",
+      "Implement: Validate against expected JSON schema structure",
+      "Verify: Invalid JSON files are rejected with helpful error message",
+      "Verify: Non-JSON files with .json extension are rejected"
+    ]
+  },
+  {
+    "id": "flaw-044",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/components/QuestionVisualizer.tsx",
+    "line_range": "1-375",
+    "description": "QuestionVisualizer.tsx is 375 lines - handles question display, search, expansion, and clipboard operations. While reasonably structured, it's approaching the threshold where extraction would help.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Monitor for continued growth",
+      "Implement: Consider extracting search logic to useQuestionSearch.ts hook if file grows beyond 450 lines",
+      "Implement: Consider extracting clipboard operations to useClipboard.ts hook",
+      "Verify: Current functionality works well"
+    ]
+  },
+  {
+    "id": "flaw-045",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/QuestionExtractor.tsx",
+    "line_range": "116, 162",
+    "description": "Uses console.error for error logging in production code without conditional gating. Error logging should use a proper logger utility.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace console.error calls with conditional logger",
+      "Verify: Errors are logged in development",
+      "Verify: Production builds have no console output"
+    ]
+  },
+  {
+    "id": "flaw-046",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/AnswerTemplateGenerator.tsx",
+    "line_range": "98, 106",
+    "description": "Console.log and console.warn statements in production code for template generation debugging. Should use a proper debug logger.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace console.log calls with conditional logger",
+      "Verify: Debug logs appear in development",
+      "Verify: No console output in production builds"
+    ]
+  },
+  {
+    "id": "flaw-047",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/AnswerTemplateGenerator.tsx",
+    "line_range": "109",
+    "description": "Uses window.confirm() which blocks execution and may not work in all environments. Native browser dialogs should be replaced with custom modal.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Create confirmation modal component",
+      "Implement: Replace window.confirm() with custom modal",
+      "Verify: Confirmation flow works correctly",
+      "Verify: Dialog is accessible and responsive"
+    ]
+  },
+  {
+    "id": "flaw-048",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/AddQuestionModal.tsx",
+    "line_range": "98, 106",
+    "description": "Console.log and console.warn statements in production code for template generation debugging.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace console.log/console.warn with conditional logger",
+      "Verify: Debug logs appear in development",
+      "Verify: No console output in production builds"
+    ]
+  },
+  {
+    "id": "flaw-049",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/AddQuestionModal.tsx",
+    "line_range": "61-126",
+    "description": "Polling interval for generation progress creates unnecessary network traffic. Should use WebSocket for real-time updates instead of polling every 1 second.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Use WebSocket connection for generation progress updates",
+      "Implement: Remove polling interval and use server push notifications",
+      "Verify: Progress updates arrive in real-time",
+      "Verify: No unnecessary HTTP requests during generation"
+    ]
+  },
+  {
+    "id": "flaw-050",
+    "category": "security",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/AddQuestionModal.tsx",
+    "line_range": "146-154",
+    "description": "API call to /api/generate-answer-templates without CSRF protection. POST request should include CSRF token.",
+    "depends_on": ["flaw-042"],
+    "steps": [
+      "Implement: Add CSRF token to template generation request",
+      "Implement: Validate CSRF tokens on the backend",
+      "Verify: Template generation includes CSRF token",
+      "Verify: Backend validates CSRF tokens"
+    ]
+  },
+  {
+    "id": "flaw-051",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/pydantic/PydanticFormEditor.tsx",
+    "line_range": "129",
+    "description": "Console.error statement in production code for error logging during code generation.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace console.error with conditional logger",
+      "Verify: Errors are logged in development",
+      "Verify: Production builds have no console output"
+    ]
+  },
+  {
+    "id": "flaw-052",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/stores/useRubricStore.ts",
+    "line_range": "306, 352, 378",
+    "description": "Console.error statements in production code for API error logging in rubric store.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace console.error calls with conditional logger",
+      "Verify: API errors are logged in development",
+      "Verify: Production builds have no console output"
+    ]
+  },
+  {
+    "id": "flaw-053",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/stores/useRubricStore.ts",
+    "line_range": "60-82, 84-102, 142-164",
+    "description": "Duplicated trait name validation logic across addTrait, updateTrait, addRegexTrait, updateRegexTrait, addMetricTrait, updateMetricTrait. The same duplicate checking pattern is repeated 6 times.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract duplicate trait name check to helper function validateUniqueTraitName()",
+      "Implement: Use helper in all trait add/update operations",
+      "Implement: Reduce 6 duplicated blocks to single reusable function",
+      "Verify: Duplicate name validation works for all trait types",
+      "Verify: No regression in trait management"
+    ]
+  },
+  {
+    "id": "flaw-054",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/utils/import.ts",
+    "line_range": "145, 160, 164",
+    "description": "Console.log statements for format detection in production code. Debug logging should be conditional.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace console.log with conditional logger",
+      "Verify: Import format detection logs in development",
+      "Verify: No console output in production builds"
+    ]
+  },
+  {
+    "id": "flaw-055",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/AnswerTemplateGenerator.tsx",
+    "line_range": "1-537",
+    "description": "AnswerTemplateGenerator.tsx is 537 lines - handles template generation UI, progress tracking, and results management. Multiple concerns in one component.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract generation configuration to GenerationConfigurationPanel.tsx",
+      "Implement: Extract generated templates table to GeneratedTemplatesTable.tsx",
+      "Implement: Extract progress display to GenerationProgressDisplay.tsx",
+      "Implement: Keep AnswerTemplateGenerator as orchestrator (<300 lines)",
+      "Verify: Template generation workflow works correctly",
+      "Verify: Progress tracking and results display function properly"
+    ]
+  },
+  {
+    "id": "flaw-056",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/AddQuestionModal.tsx",
+    "line_range": "1-461",
+    "description": "AddQuestionModal.tsx is 461 lines - handles question input, metadata, and template generation. Large modal with multiple responsibilities.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract template generation section to TemplateGenerationSection.tsx",
+      "Implement: Extract metadata form to QuestionMetadataForm.tsx",
+      "Implement: Extract generation settings to GenerationSettingsPanel.tsx",
+      "Implement: Keep modal as composition root (<250 lines)",
+      "Verify: Question creation workflow works correctly",
+      "Verify: Template generation from modal functions"
+    ]
+  },
+  {
+    "id": "flaw-057",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/components/summary/RubricTraitMenu.tsx",
+    "line_range": "1-364",
+    "description": "RubricTraitMenu.tsx is 364 lines - handles rubric trait selection menu. While reasonably structured, approaching threshold for extraction.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Monitor for continued growth",
+      "Implement: Consider extracting trait list to TraitList.tsx if file grows beyond 450 lines",
+      "Verify: Current functionality works well"
+    ]
+  },
+  {
+    "id": "flaw-058",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/stores/useRubricStore.ts",
+    "line_range": "1-400",
+    "description": "useRubricStore.ts is 400 lines - manages rubric state and API calls. Has significant duplication in trait validation logic (see flaw-053).",
+    "depends_on": ["flaw-053"],
+    "steps": [
+      "Implement: Extract duplicate name validation to utils/rubricValidation.ts",
+      "Implement: Extract API operations to services/rubricApi.ts",
+      "Implement: Keep store focused on state management only",
+      "Verify: Rubric operations work correctly",
+      "Verify: Reduced duplication in validation code"
+    ]
+  },
+  {
+    "id": "flaw-059",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/stores/useBenchmarkStore.ts",
+    "line_range": "1-341",
+    "description": "useBenchmarkStore.ts is 341 lines - manages benchmark configuration and evaluation settings. Complex configuration state management.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract model configuration sanitization to utils/modelConfig.ts",
+      "Implement: Extract preset conversion logic to services/presetConverter.ts",
+      "Implement: Keep store focused on state management",
+      "Verify: Benchmark configuration works correctly",
+      "Verify: Preset save/load functionality works"
+    ]
+  },
+  {
+    "id": "flaw-060",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/stores/useTraceHighlightingStore.ts",
+    "line_range": "1-282",
+    "description": "useTraceHighlightingStore.ts is 282 lines - manages trace highlighting state. Manageable size but should be monitored for growth.",
+    "depends_on": [],
+    "steps": ["Implement: Monitor for continued growth", "Verify: Current functionality works well"]
+  },
+  {
+    "id": "flaw-061",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/utils/fileOperations.ts",
+    "line_range": "35",
+    "description": "Console.error statement for download error logging in production code.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace console.error with conditional logger",
+      "Verify: Download errors are logged in development",
+      "Verify: Production builds have no console output"
+    ]
+  },
+  {
+    "id": "flaw-062",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/SearchableTextDisplay.tsx",
+    "line_range": "253-279",
+    "description": "Uses react-highlight-words library for text highlighting. While the library is safe, there's a note in flaw-014 about dangerouslySetInnerHTML in SearchableTextDisplay that needs verification.",
+    "depends_on": ["flaw-014"],
+    "steps": [
+      "Verify: Highlighter component does not use dangerouslySetInnerHTML",
+      "Verify: Custom highlight renderer is safe from XSS",
+      "Verify: All text content is properly sanitized",
+      "Verify: Search queries cannot inject malicious code"
+    ]
+  },
+  {
+    "id": "flaw-063",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/TraceHighlightingTab.tsx",
+    "line_range": "1-390",
+    "description": "TraceHighlightingTab.tsx is 390 lines - handles trace highlighting configuration, pattern management, and preview. Multiple concerns in one component.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract pattern list to PatternList.tsx component",
+      "Implement: Extract pattern editor to PatternEditor.tsx component",
+      "Implement: Extract preview logic to TraceHighlightingPreview.tsx",
+      "Implement: Keep TraceHighlightingTab as orchestrator (<250 lines)",
+      "Verify: All pattern management features work correctly",
+      "Verify: Preview functionality remains intact"
+    ]
+  },
+  {
+    "id": "flaw-064",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/components/summary/QuestionHeatmap.tsx",
+    "line_range": "1-439",
+    "description": "QuestionHeatmap.tsx is 439 lines - handles interactive heatmap for model comparison with hierarchical column headers and tooltip display. While reasonably structured, approaching threshold.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Monitor for continued growth",
+      "Implement: Consider extracting tooltip logic to HeatmapTooltip.tsx if file grows beyond 500 lines",
+      "Implement: Consider extracting column header rendering to HeatmapHeader.tsx",
+      "Verify: Current functionality works well"
+    ]
+  },
+  {
+    "id": "flaw-065",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/summary/SummaryCharts.tsx",
+    "line_range": "1-584",
+    "description": "SummaryCharts.tsx is 584 lines - handles multiple chart visualizations using Nivo for template pass rates, token usage, and tool usage statistics. Large component with repetitive chart configuration.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract chart theme configuration to constants/chartTheme.ts",
+      "Implement: Extract individual chart components (PassRateChart, TokenUsageChart, ToolUsageChart)",
+      "Implement: Create shared chart wrapper component for common Nivo configuration",
+      "Implement: Keep SummaryCharts as composition root (<300 lines)",
+      "Verify: All charts render correctly",
+      "Verify: Dark mode theme works across all charts"
+    ]
+  },
+  {
+    "id": "flaw-066",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/summary/SummaryView.tsx",
+    "line_range": "1-403",
+    "description": "SummaryView.tsx is 403 lines - displays comprehensive summary statistics with multiple sections. Has significant template repetition for table rows.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract table row rendering to SummaryTableRow.tsx component",
+      "Implement: Extract section rendering to SummarySection.tsx component",
+      "Implement: Extract combo parsing logic to utils/comboParser.ts",
+      "Implement: Keep SummaryView as composition root (<250 lines)",
+      "Verify: All statistics display correctly",
+      "Verify: Drill-down functionality works"
+    ]
+  },
+  {
+    "id": "flaw-067",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/CustomExportDialog.tsx",
+    "line_range": "18-158",
+    "description": "CustomExportDialog.tsx has hardcoded FIELD_GROUPS constant with 157 lines of field definitions. Adding new fields requires updating this constant - maintenance burden.",
+    "depends_on": ["flaw-016"],
+    "steps": [
+      "Implement: Extract field definitions to types/exportFields.ts",
+      "Implement: Create single source of truth for exportable fields (see flaw-016)",
+      "Implement: Generate field groups programmatically from type definitions",
+      "Verify: Export field dialog matches actual exportable fields",
+      "Verify: Adding new fields only requires one update"
+    ]
+  },
+  {
+    "id": "flaw-068",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/database/ImportResultsModal.tsx",
+    "line_range": "29-32, 43-46",
+    "description": "File type validation only checks file extension (.endsWith('.json')), not actual content. Same issue as flaw-043 in different file.",
+    "depends_on": ["flaw-043"],
+    "steps": [
+      "Implement: Validate JSON content by attempting to parse the file (already done in handleImport)",
+      "Implement: Check file MIME type in addition to extension",
+      "Implement: Create reusable file validation utility (see flaw-033)",
+      "Verify: Invalid JSON files are rejected with helpful error message",
+      "Verify: Non-JSON files with .json extension are rejected"
+    ]
+  },
+  {
+    "id": "flaw-069",
+    "category": "security",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/database/ImportResultsModal.tsx",
+    "line_range": "79-90",
+    "description": "API call to /api/database/import-results without CSRF protection. POST request should include CSRF token.",
+    "depends_on": ["flaw-042"],
+    "steps": [
+      "Implement: Add CSRF token to import results request",
+      "Implement: Validate CSRF tokens on the backend",
+      "Verify: Import includes CSRF token",
+      "Verify: Backend validates CSRF tokens"
+    ]
+  },
+  {
+    "id": "flaw-070",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/database/ImportResultsModal.tsx",
+    "line_range": "29, 43",
+    "description": "File extension checking duplicated in both handleFileSelect and handleDrop functions. Should be extracted to a reusable validator.",
+    "depends_on": ["flaw-033"],
+    "steps": [
+      "Implement: Use centralized file validation utility (see flaw-033)",
+      "Implement: Remove duplicate file extension checking code",
+      "Verify: File validation works consistently",
+      "Verify: Both file selection and drag-drop use same validation"
+    ]
+  },
+  {
+    "id": "flaw-071",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/database/DuplicateResolutionModal.tsx",
+    "line_range": "52-66",
+    "description": "Duplicated resolution mapping logic in handleKeepAllOld and handleKeepAllNew functions. Same pattern with different values.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract bulk resolution logic to setAllResolutions(resolution: 'keep_old' | 'keep_new') helper",
+      "Implement: Use helper in both handleKeepAllOld and handleKeepAllNew",
+      "Implement: Reduce 2 duplicated blocks to single reusable function",
+      "Verify: Bulk resolution buttons work correctly",
+      "Verify: All items are updated to the selected resolution"
+    ]
+  },
+  {
+    "id": "flaw-072",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/DocsTab.tsx",
+    "line_range": "109-215",
+    "description": "DocsTab.tsx contains extensive inline ReactMarkdown component configuration with custom renderers. This 100+ line component prop could be extracted to a separate module.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract markdown components to components/MarkdownRenderer.tsx",
+      "Implement: Create reusable MarkdownRenderer component with custom renderers",
+      "Implement: Import and use MarkdownRenderer in DocsTab",
+      "Verify: Documentation renders correctly",
+      "Verify: Code syntax highlighting works",
+      "Verify: All markdown custom renderers function as expected"
+    ]
+  },
+  {
+    "id": "flaw-073",
+    "category": "security",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/DocsTab.tsx",
+    "line_range": "172-180",
+    "description": "ReactMarkdown component renders user-controlled markdown content. While react-markdown provides XSS protection, the custom link renderer opens links in new tab without proper rel attributes for security.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Verify all external links have rel=\"noopener noreferrer\" (currently implemented)",
+      "Implement: Add security audit for markdown content rendering",
+      "Implement: Consider adding DOMPurify for additional sanitization",
+      "Verify: No XSS vectors through markdown content",
+      "Verify: All links are safely rendered"
+    ]
+  },
+  {
+    "id": "flaw-074",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/stores/usePresetStore.ts",
+    "line_range": "51, 64, 112, 144, 166",
+    "description": "Console.error statements in production code for API error logging in preset store.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace all console.error calls with conditional logger",
+      "Verify: API errors are logged in development",
+      "Verify: Production builds have no console output"
+    ]
+  },
+  {
+    "id": "flaw-075",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/utils/errorHandler.ts",
+    "line_range": "22, 38",
+    "description": "errorHandler.ts contains console.error statements that are not gated behind debug flag. While this is a utility module for error handling, it should use conditional logging.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility consistently across error handlers",
+      "Implement: Make console.error logging conditional on debug flag",
+      "Implement: Update handleFileError and handleApiError to use conditional logging",
+      "Verify: Errors are logged in development",
+      "Verify: Production builds have no console output"
+    ]
+  },
+  {
+    "id": "flaw-076",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/utils/errorHandler.ts",
+    "line_range": "31-33, 130",
+    "description": "errorHandler.ts uses alert() for error notifications in showSaveNotification and through showAlert option. Should use proper toast notifications instead.",
+    "depends_on": ["flaw-013"],
+    "steps": [
+      "Implement: Create toast/notification system for user feedback (see flaw-013)",
+      "Implement: Replace alert() calls with toast notifications",
+      "Implement: Remove showAlert option from ErrorHandlerOptions",
+      "Verify: Error messages are displayed non-intrusively",
+      "Verify: Users can dismiss notifications"
+    ]
+  },
+  {
+    "id": "flaw-077",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/utils/databaseAutoSave.ts",
+    "line_range": "13-38, 84-87",
+    "description": "Database auto-save has extensive console.log statements for debugging. Includes emoji-prefixed log messages throughout.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace all console.log calls with conditional logger",
+      "Implement: Remove emoji prefixes or make them debug-only",
+      "Verify: Auto-save progress logs in development",
+      "Verify: Production builds have no console output"
+    ]
+  },
+  {
+    "id": "flaw-078",
+    "category": "code-smell",
+    "severity": "medium",
+    "file": "karenina-gui/src/utils/databaseAutoSave.ts",
+    "line_range": "130",
+    "description": "Database auto-save uses alert() for error notifications in showSaveNotification function.",
+    "depends_on": ["flaw-013"],
+    "steps": [
+      "Implement: Use toast/notification system for user feedback (see flaw-013)",
+      "Implement: Replace alert() with toast notifications",
+      "Verify: Save errors are displayed non-intrusively",
+      "Verify: Users can dismiss notifications"
+    ]
+  },
+  {
+    "id": "flaw-079",
+    "category": "long-file",
+    "severity": "low",
+    "file": "karenina-gui/src/hooks/useBenchmarkConfiguration.ts",
+    "line_range": "1-337",
+    "description": "useBenchmarkConfiguration.ts is 337 lines - handles benchmark configuration with complex model management logic. Has significant duplication in updateAnsweringModel and updateParsingModel functions.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract interface switching logic to utils/modelInterfaceSwitcher.ts",
+      "Implement: Deduplicate updateAnsweringModel and updateParsingModel logic",
+      "Implement: Create shared model configuration utilities",
+      "Verify: All model interface switching works correctly",
+      "Verify: Configuration persists across tab switches"
+    ]
+  },
+  {
+    "id": "flaw-080",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/hooks/useBenchmarkConfiguration.ts",
+    "line_range": "80-121",
+    "description": "Complex default model detection logic in useEffect. Hardcoded model names and providers for checking if models are at defaults.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract default model detection to constants/defaultModels.ts",
+      "Implement: Create isDefaultModelConfiguration() helper function",
+      "Implement: Remove hardcoded model strings from hook",
+      "Verify: Default model detection works correctly",
+      "Verify: Adding new default models doesn't require changing this hook"
+    ]
+  },
+  {
+    "id": "flaw-081",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/utils/dataLoader.ts",
+    "line_range": "1-17",
+    "description": "Deprecated functions with console.warn statements. loadQuestionData and loadDefaultQuestionData are deprecated but still present.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Remove deprecated loadQuestionData function",
+      "Implement: Remove deprecated loadDefaultQuestionData function",
+      "Implement: Update any remaining callers to use Question Extractor or File Manager",
+      "Verify: No remaining references to deprecated functions",
+      "Verify: Application still functions correctly"
+    ]
+  },
+  {
+    "id": "flaw-082",
+    "category": "dead-code",
+    "severity": "low",
+    "file": "karenina-gui/src/utils/dataLoader.ts",
+    "line_range": "35",
+    "description": "generateSessionId() function may be unused. Need to verify if it's called anywhere in the codebase.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Search codebase for usages of generateSessionId",
+      "Implement: Remove if unused, or document its purpose if used",
+      "Verify: No build errors after removal",
+      "Verify: Application functionality is not affected"
+    ]
+  },
+  {
+    "id": "flaw-083",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/hooks/useBenchmarkConfiguration.ts",
+    "line_range": "120",
+    "description": "Intentional eslint-disable-next-line for exhaustive-deps. This suppresses legitimate warnings about missing dependencies in useEffect.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Refactor useEffect to properly handle dependencies or use useCallback for memoized functions",
+      "Implement: Remove eslint-disable comment if possible",
+      "Implement: Add proper dependency array or use ref pattern for functions that should only run once",
+      "Verify: Hook behavior is unchanged",
+      "Verify: No ESLint warnings remain"
+    ]
+  },
+  {
+    "id": "flaw-084",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/CustomExportDialog.tsx",
+    "line_range": "1-352",
+    "description": "CustomExportDialog.tsx is 352 lines - handles custom export with field selection and format options. Contains large inline FIELD_GROUPS constant (see flaw-067).",
+    "depends_on": ["flaw-067"],
+    "steps": [
+      "Implement: Extract field groups constant (see flaw-067)",
+      "Implement: Extract field group rendering to FieldGroupSection.tsx component",
+      "Implement: Keep modal as composition root (<200 lines)",
+      "Verify: Field selection works correctly",
+      "Verify: Export to all formats functions"
+    ]
+  },
+  {
+    "id": "flaw-085",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/shared/ErrorBoundary.tsx",
+    "line_range": "25",
+    "description": "ErrorBoundary only logs to console.error. Should also report errors to error tracking service in production.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Add error reporting integration (Sentry, LogRocket, or custom)",
+      "Implement: Use conditional debug logger for console logging",
+      "Implement: Create error reporting utility module",
+      "Verify: Errors are logged appropriately in development",
+      "Verify: Errors are reported to tracking service in production"
+    ]
+  },
+  {
+    "id": "flaw-086",
+    "category": "security",
+    "severity": "low",
+    "file": "karenina-gui/src/components/database/ImportResultsModal.tsx",
+    "line_range": "69-76",
+    "description": "File content is parsed with JSON.parse() without size limits. Large JSON files could cause memory issues or DoS.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Add file size limit check before parsing JSON",
+      "Implement: Validate file size against maximum allowed limit",
+      "Implement: Provide helpful error message for oversized files",
+      "Verify: Large files are rejected before parsing",
+      "Verify: Valid files within size limit work correctly"
+    ]
+  },
+  {
+    "id": "flaw-087",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/stores/useDatasetStore.ts",
+    "line_range": "105, 132",
+    "description": "Duplicate trim() calls in addKeyword and addCustomProperty functions. Both use the same pattern.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract string sanitization to utility function sanitizeInput(input: string)",
+      "Implement: Use utility in both addKeyword and addCustomProperty",
+      "Implement: Remove duplicate trim() checks",
+      "Verify: Input sanitization works consistently",
+      "Verify: Empty strings are properly rejected"
+    ]
+  },
+  {
+    "id": "flaw-088",
+    "category": "security",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/database/CreateBenchmarkForm.tsx",
+    "line_range": "30-42",
+    "description": "API call to /api/database/create-benchmark without CSRF protection. POST request should include CSRF token.",
+    "depends_on": ["flaw-042"],
+    "steps": [
+      "Implement: Add CSRF token to create benchmark request",
+      "Implement: Validate CSRF tokens on the backend",
+      "Verify: Benchmark creation includes CSRF token",
+      "Verify: Backend validates CSRF tokens"
+    ]
+  },
+  {
+    "id": "flaw-089",
+    "category": "security",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/database/DeleteBenchmarkModal.tsx",
+    "line_range": "38-45",
+    "description": "API call to /api/database/delete-benchmark without CSRF protection. DELETE request should include CSRF token.",
+    "depends_on": ["flaw-042"],
+    "steps": [
+      "Implement: Add CSRF token to delete benchmark request",
+      "Implement: Validate CSRF tokens on the backend",
+      "Verify: Benchmark deletion includes CSRF token",
+      "Verify: Backend validates CSRF tokens"
+    ]
+  },
+  {
+    "id": "flaw-090",
+    "category": "security",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/database/DeleteDatabaseModal.tsx",
+    "line_range": "36-40",
+    "description": "API call to /api/database/delete without CSRF protection. DELETE request should include CSRF token.",
+    "depends_on": ["flaw-042"],
+    "steps": [
+      "Implement: Add CSRF token to delete database request",
+      "Implement: Validate CSRF tokens on the backend",
+      "Verify: Database deletion includes CSRF token",
+      "Verify: Backend validates CSRF tokens"
+    ]
+  },
+  {
+    "id": "flaw-091",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/summary/QuestionTokenBarChart.tsx",
+    "line_range": "65-71",
+    "description": "Debug console.log statement in production code for chart debugging.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Remove or gate console.log behind debug flag",
+      "Verify: Debug logs appear in development",
+      "Verify: No console output in production builds"
+    ]
+  },
+  {
+    "id": "flaw-092",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/summary/QuestionTokenBarChart.tsx",
+    "line_range": "33",
+    "description": "Direct DOM manipulation for dark mode detection. Uses document.documentElement.classList instead of React state/context.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Use theme context or state for dark mode detection",
+      "Implement: Remove direct DOM access in component",
+      "Verify: Chart theme updates correctly with app theme",
+      "Verify: No direct DOM manipulation needed"
+    ]
+  },
+  {
+    "id": "flaw-093",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/summary/SummaryStatisticsPanel.tsx",
+    "line_range": "92-102",
+    "description": "Direct body style manipulation for scroll position locking. Uses document.body.style directly instead of React-safe approaches.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Use React-safe scroll locking (e.g., react-remove-scroll library)",
+      "Implement: Remove direct DOM style manipulation",
+      "Verify: Scroll locking works during mode transitions",
+      "Verify: No side effects on body styles after unmount"
+    ]
+  },
+  {
+    "id": "flaw-094",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/stores/useTraceHighlightingStore.ts",
+    "line_range": "133, 150",
+    "description": "Console.warn statements in production code for localStorage load/save error handling. Should use conditional logging.",
+    "depends_on": ["flaw-012"],
+    "steps": [
+      "Implement: Use centralized debug logger utility (see flaw-012)",
+      "Implement: Replace console.warn with conditional logger",
+      "Verify: Storage errors are logged in development",
+      "Verify: Production builds have no console output"
+    ]
+  },
+  {
+    "id": "flaw-095",
+    "category": "code-smell",
+    "severity": "low",
+    "file": "karenina-gui/src/components/summary/RubricBadge.tsx",
+    "line_range": "1-97",
+    "description": "RubricBadge.tsx is 97 lines - small, focused component for displaying rubric trait badges. No issues found - well-structured with proper color utilities and score handling.",
+    "depends_on": [],
+    "steps": [
+      "Verify: Component renders correctly for all trait types",
+      "Verify: Directionality (higherIsBetter) works as expected",
+      "Verify: No changes needed - this is a reference for good component structure"
+    ]
+  },
+  {
+    "id": "flaw-096",
+    "category": "long-file",
+    "severity": "medium",
+    "file": "karenina-gui/src/components/AdvancedExtractionPanel.tsx",
+    "line_range": "1-552",
+    "description": "AdvancedExtractionPanel.tsx is 552 lines - handles advanced metadata extraction configuration with multiple field mappings (author info, URL, keywords). The component is well-structured but exceeds the 500-line threshold.",
+    "depends_on": [],
+    "steps": [
+      "Implement: Extract author information section to AuthorInfoSection.tsx component",
+      "Implement: Extract additional metadata section to AdditionalMetadataSection.tsx component",
+      "Implement: Extract keywords preview logic to useKeywordsPreview.ts hook",
+      "Implement: Keep AdvancedExtractionPanel as composition root (<300 lines)",
+      "Verify: All extraction configuration options work correctly",
+      "Verify: Preview functionality remains intact"
+    ]
+  }
+]
