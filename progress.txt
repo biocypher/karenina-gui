@@ -1168,3 +1168,8 @@ No changes needed - validation was implemented in flaw-033.
 **Result**: Components can now detect dark mode reactively without direct DOM access.
 The hook can be reused in other components (ComparisonView, SummaryCharts) that
 also use this pattern.
+=== flaw-093: Direct body style manipulation for scroll locking ===
+- Created src/hooks/useScrollLock.ts hook with lock() and unlock() functions
+- Updated src/components/summary/SummaryStatisticsPanel.tsx to use the hook
+- Removed scrollPositionRef and direct document.body.style manipulation
+- Hook supports 'immediate' and 'delayed' lock types for different transition timings

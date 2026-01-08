@@ -1583,6 +1583,14 @@
       "Implement: Remove direct DOM style manipulation",
       "Verify: Scroll locking works during mode transitions",
       "Verify: No side effects on body styles after unmount"
+    ],
+    "status": "completed",
+    "completed_at": "2026-01-08T20:39:51.789Z",
+    "steps_completed": [
+      "Created useScrollLock hook to encapsulate scroll locking behavior",
+      "Updated SummaryStatisticsPanel to use the new hook",
+      "Removed direct body style manipulation from component",
+      "Verified: Type check passed"
     ]
   },
   {
