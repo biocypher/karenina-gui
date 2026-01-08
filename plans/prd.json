@@ -293,6 +293,8 @@
     "file": "karenina-gui/src/stores/useQuestionStore.ts",
     "line_range": "437-442",
     "description": "Hardcoded Python template string in addNewQuestion. Template generation should be centralized and configurable.",
+    "status": "completed",
+    "implementation_notes": "Added generateBasicTemplate() function to constants/templates.ts. The hardcoded template is now centralized and can be easily modified. The useQuestionStore now imports and uses this function instead of the inline template string.",
     "depends_on": [],
     "steps": [
       "Implement: Move default template to constants/templates.ts",

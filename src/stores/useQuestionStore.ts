@@ -3,7 +3,7 @@ import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { useRubricStore } from './useRubricStore';
 import { logger } from '../utils/logger';
-import { PLACEHOLDER_TEMPLATE_MARKER, isPlaceholderTemplate, TEMPLATE_VALIDATION_ERRORS } from '../constants/templates';
+import { isPlaceholderTemplate, TEMPLATE_VALIDATION_ERRORS, generateBasicTemplate } from '../constants/templates';
 
 /**
  * Options for building a complete checkpoint
@@ -469,17 +469,8 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         ? generatedTemplate.trim()
         : undefined;
 
-    // Generate basic Pydantic template
-    const questionPreview = question.length > 50 ? question.substring(0, 50) + '...' : question;
-    const basicTemplate = `from karenina.schemas.answer_class import BaseAnswer
-from pydantic import Field
-
-class Answer(BaseAnswer):
-    """${PLACEHOLDER_TEMPLATE_MARKER} ${questionPreview}"""
-    answer: str = Field(description="The answer to the question")`;
-
     // Use generated template if provided, otherwise use basic template
-    const templateToUse = validGeneratedTemplate || basicTemplate;
+    const templateToUse = validGeneratedTemplate || generateBasicTemplate(question);
 
     // Log template source for debugging
     if (validGeneratedTemplate) {

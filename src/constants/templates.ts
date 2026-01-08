@@ -62,3 +62,26 @@ export function hasValidTemplateStructure(template: string): boolean {
 
   return hasRequiredImports && hasClassDeclaration;
 }
+
+/**
+ * Generates a basic default Pydantic template for a question.
+ * This is used as a fallback when no LLM-generated template is available.
+ *
+ * @param questionPreview - A preview of the question (max 50 chars)
+ * @returns A basic Pydantic template string
+ *
+ * @example
+ * ```ts
+ * const template = generateBasicTemplate("What is the capital of France?");
+ * // Returns a basic template with imports, class definition, and answer field
+ * ```
+ */
+export function generateBasicTemplate(questionPreview: string): string {
+  const preview = questionPreview.length > 50 ? questionPreview.substring(0, 50) + '...' : questionPreview;
+  return `from karenina.schemas.answer_class import BaseAnswer
+from pydantic import Field
+
+class Answer(BaseAnswer):
+    """${PLACEHOLDER_TEMPLATE_MARKER} ${preview}"""
+    answer: str = Field(description="The answer to the question")`;
+}

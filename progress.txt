@@ -1090,3 +1090,14 @@ The DatabaseManageTab import is active (line 5) and being used (line 118).
 The PRD description was outdated.
 
 No changes needed.
+
+## flaw-017: Extract hardcoded Python template to constants (LOW)
+**File**: src/constants/templates.ts, src/stores/useQuestionStore.ts
+**Changes**:
+- Added `generateBasicTemplate(questionPreview: string)` function to constants/templates.ts
+- Function generates the default Pydantic template with proper imports and class definition
+- Updated useQuestionStore.ts to import and use `generateBasicTemplate()`
+- Removed inline hardcoded template string from `addNewQuestion` function
+
+**Result**: Default template is now centralized in constants/templates.ts, making it easier
+to modify and maintain. The template can be updated in one place for all new questions.
