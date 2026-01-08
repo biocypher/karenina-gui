@@ -1129,6 +1129,8 @@
     "line_range": "29, 43",
     "description": "File extension checking duplicated in both handleFileSelect and handleDrop functions. Should be extracted to a reusable validator.",
     "depends_on": ["flaw-033"],
+    "status": "completed",
+    "implementation_notes": "Replaced duplicate file extension checking with validateJsonFile() from fileValidator.ts. Both handleFileSelect and handleDrop now use the centralized validation utility which includes MIME type checking, file size limits, and content validation.",
     "steps": [
       "Implement: Use centralized file validation utility (see flaw-033)",
       "Implement: Remove duplicate file extension checking code",

@@ -351,3 +351,35 @@
 
 ---
 
+### Completed: flaw-070 - Use Centralized File Validation in ImportResultsModal (LOW)
+
+**File:** `src/components/database/ImportResultsModal.tsx`
+
+**Changes:**
+1. Added import of `validateJsonFile` from `../../utils/fileValidator`
+2. Replaced duplicate file extension checking in `handleFileSelect`:
+   - Changed from `if (!file.name.endsWith('.json'))` to `await validateJsonFile(file)`
+   - Now validates MIME type, file size, and JSON content structure
+   - Provides descriptive error messages from the validation utility
+3. Replaced duplicate file extension checking in `handleDrop`:
+   - Same changes as handleFileSelect for consistency
+   - Both drag-drop and file selection now use the same validation logic
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes (with pre-existing warnings only)
+
+**Security Impact:**
+- File validation is now consistent across the application
+- Both file selection and drag-drop use the same robust validation
+- MIME type checking prevents malicious files with JSON extensions
+- File size limits prevent denial-of-service via large uploads
+
+**Progress Summary:**
+- 6 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015, flaw-033, flaw-070)
+- 6 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088, flaw-089, flaw-090 - CSRF frontend done, backend pending)
+- 2 flaws marked invalid (flaw-014, flaw-062 - PRD description incorrect)
+- 81 flaws remaining in PRD
+
+---
+
