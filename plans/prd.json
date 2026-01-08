@@ -170,7 +170,11 @@
       "Implement: Create proper template validator that parses AST",
       "Verify: Invalid templates are caught reliably",
       "Verify: Valid templates pass validation"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2026-01-08T19:51:55.957Z",
+    "completed_by": "claude",
+    "implementation_notes": "Created src/constants/templates.ts with template validation constants and utilities. Moved PLACEHOLDER_TEMPLATE_MARKER constant out of useQuestionStore.ts. Added isPlaceholderTemplate() and hasValidTemplateStructure() utility functions. Added TEMPLATE_VALIDATION_ERRORS constant for error messages. Updated useQuestionStore.ts to import and use these constants instead of hardcoded string."
   },
   {
     "id": "flaw-011",

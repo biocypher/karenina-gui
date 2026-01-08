@@ -3,6 +3,7 @@ import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { useRubricStore } from './useRubricStore';
 import { logger } from '../utils/logger';
+import { PLACEHOLDER_TEMPLATE_MARKER, isPlaceholderTemplate, TEMPLATE_VALIDATION_ERRORS } from '../constants/templates';
 
 /**
  * Options for building a complete checkpoint
@@ -212,12 +213,10 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     // Validation - same as original logic
     const firstQuestionId = Object.keys(data)[0];
     if (firstQuestionId && data[firstQuestionId].answer_template) {
-      const isGenericTemplate = data[firstQuestionId].answer_template.includes('Answer to the question:');
+      const isGenericTemplate = isPlaceholderTemplate(data[firstQuestionId].answer_template);
       if (isGenericTemplate) {
         logger.error('VALIDATION', 'Detected placeholder templates! This should not happen.', 'useQuestionStore');
-        alert(
-          'Error: The loaded data contains placeholder templates. Please use the Template Generator to create proper templates.'
-        );
+        alert(`Error: ${TEMPLATE_VALIDATION_ERRORS.PLACEHOLDER_DETECTED}`);
         return;
       } else {
         logger.debugLog(
@@ -476,7 +475,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 from pydantic import Field
 
 class Answer(BaseAnswer):
-    """Answer to the question: ${questionPreview}"""
+    """${PLACEHOLDER_TEMPLATE_MARKER} ${questionPreview}"""
     answer: str = Field(description="The answer to the question")`;
 
     // Use generated template if provided, otherwise use basic template

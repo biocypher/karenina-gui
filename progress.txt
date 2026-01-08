@@ -936,3 +936,43 @@ Created new API client service module (services/databaseApi.ts) with:
 - 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
 - 57 flaws remaining in PRD
 
+
+### Completed: flaw-010 - Template Validation Constants (HIGH)
+
+**Files:** `src/constants/templates.ts` (new), `src/stores/useQuestionStore.ts`
+
+**Changes:**
+
+Created new constants file (src/constants/templates.ts) with:
+
+1. **Template Validation Constants:**
+   - `PLACEHOLDER_TEMPLATE_MARKER` - centralized constant for placeholder detection
+   - `TEMPLATE_VALIDATION_ERRORS` - error message constants
+   - `TEMPLATE_PATTERNS` - patterns for required imports, class declarations, etc.
+
+2. **Utility Functions:**
+   - `isPlaceholderTemplate(template)` - checks if template is a placeholder
+   - `hasValidTemplateStructure(template)` - validates basic template structure
+
+3. **Updated useQuestionStore.ts:**
+   - Replaced hardcoded string 'Answer to the question:' with `PLACEHOLDER_TEMPLATE_MARKER`
+   - Uses `isPlaceholderTemplate()` function for validation
+   - Uses `TEMPLATE_VALIDATION_ERRORS.PLACEHOLDER_DETECTED` for error message
+
+**Benefits:**
+- Single source of truth for template validation logic
+- Easier to maintain - changing the marker only requires updating one constant
+- More robust validation with reusable utility functions
+- Better code organization with dedicated constants file
+
+**Verification:**
+- TypeScript type checking passes
+- Build succeeds
+- Template validation behavior unchanged (still detects placeholders correctly)
+
+**Progress Summary:**
+- 32 flaws completed (added flaw-010 to previous 31)
+- 6 flaws partially complete (flaw-042, 050, 069, 088, 089, 090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
+- 56 flaws remaining in PRD
+
