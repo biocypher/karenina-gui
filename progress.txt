@@ -976,3 +976,43 @@ Created new constants file (src/constants/templates.ts) with:
 - 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
 - 56 flaws remaining in PRD
 
+
+### Completed: flaw-018 - Dynamic Version from package.json (LOW)
+
+**File:** `src/utils/export.ts`
+
+**Changes:**
+
+1. **Added Version Loading Functions:**
+   - `getAppVersion()` - async function that dynamically imports package.json and reads version
+   - `getCurrentVersion()` - sync function that returns cached version or fallback
+   - Module-level preload to fetch version when export.ts loads
+
+2. **Updated Export Metadata:**
+   - Replaced hardcoded `'1.0.0'` with `getCurrentVersion()` call
+   - Removed TODO comment
+
+**Technical Details:**
+- Uses Vite's dynamic import feature (`import('../../package.json?url')`)
+- Fetches package.json content at runtime
+- Caches version in module-level variable
+- Non-blocking preload (exports work immediately with fallback)
+- Fallback to '0.1.0' if loading fails
+
+**Benefits:**
+- Version now comes from single source of truth (package.json)
+- No need to manually sync version when updating
+- Vite bundles package.json as separate chunk (4KB)
+- Export metadata shows correct application version
+
+**Verification:**
+- TypeScript type checking passes
+- Build succeeds
+- package.json successfully bundled as separate chunk
+
+**Progress Summary:**
+- 33 flaws completed (added flaw-018 to previous 32)
+- 6 flaws partially complete (flaw-042, 050, 069, 088, 089, 090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
+- 55 flaws remaining in PRD
+

@@ -3,6 +3,52 @@ import type { Rubric, RubricTrait, UsageMetadata, VerificationConfig } from '../
 import { logger } from './logger';
 
 /**
+ * Cache for the application version to avoid repeated imports
+ */
+let cachedVersion: string | null = null;
+
+/**
+ * Preload version when module loads (non-blocking)
+ */
+getAppVersion()
+  .then((v) => {
+    cachedVersion = v;
+  })
+  .catch(() => {
+    // Fallback version already handled in getVersionSync
+  });
+
+/**
+ * Get the application version from package.json
+ * Uses dynamic import to access package.json at runtime
+ */
+async function getAppVersion(): Promise<string> {
+  if (cachedVersion) {
+    return cachedVersion;
+  }
+
+  try {
+    // Dynamic import of package.json - Vite supports this
+    const pkg = await import('../../package.json?url');
+    // Use fetch to get the JSON content
+    const response = await fetch(pkg.default);
+    const data = await response.json();
+    cachedVersion = data.version || '0.0.0';
+    return cachedVersion;
+  } catch (error) {
+    logger.warning('EXPORT', 'Failed to load version from package.json, using fallback', 'export', { error });
+    return '0.0.0';
+  }
+}
+
+/**
+ * Get current version (sync, may use fallback during initial load)
+ */
+function getCurrentVersion(): string {
+  return cachedVersion || '0.1.0';
+}
+
+/**
  * Job summary metadata for exports
  */
 export interface JobSummaryMetadata {
@@ -381,7 +427,7 @@ export function exportToJSON(
         .toISOString()
         .replace('T', ' ')
         .replace(/\.\d{3}Z$/, ' UTC'),
-      karenina_version: '1.0.0', // TODO: Get actual version from package.json or env
+      karenina_version: getCurrentVersion(),
       job_id: jobId,
       verification_config: exportVerificationConfig,
       job_summary: jobSummary,
