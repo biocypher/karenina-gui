@@ -602,7 +602,8 @@
       "Implement: Replace all alert() calls with toast notifications",
       "Verify: Error messages are displayed non-intrusively",
       "Verify: User can dismiss notifications"
-    ]
+    ],
+    "status": "completed"
   },
   {
     "id": "flaw-036",

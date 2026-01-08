@@ -1016,3 +1016,16 @@ Created new constants file (src/constants/templates.ts) with:
 - 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
 - 55 flaws remaining in PRD
 
+
+## flaw-035: Replace alert() with proper error UI (MEDIUM)
+**File**: src/components/QuestionExtractor.tsx
+**Changes**:
+- Added `localError` state for inline error messages
+- Replaced 3 `alert()` calls with `setLocalError()`:
+  - File validation error in `handleFileUpload`
+  - File validation error in `handleDrop`
+  - Upload failure error in `uploadFile`
+- Enhanced error display UI to show `localError` with dismiss button
+- Clear `localError` when starting new upload or resetting
+
+**Result**: Error notifications are now non-blocking and consistent with the existing error UI pattern.

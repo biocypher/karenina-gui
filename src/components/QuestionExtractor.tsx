@@ -49,6 +49,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
   const [isExtracting, setIsExtracting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [extractionResult, setExtractionResult] = useState<ExtractedQuestions | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,7 +67,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
       if (validation.valid) {
         handleFileSelect(file);
       } else {
-        alert(validation.error || 'Please upload a valid file format');
+        setLocalError(validation.error || 'Please upload a valid file format');
         // Clear the file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -98,12 +99,13 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
       if (validation.valid) {
         handleFileSelect(file);
       } else {
-        alert(validation.error || 'Please upload a valid file format');
+        setLocalError(validation.error || 'Please upload a valid file format');
       }
     }
   };
 
   const uploadFile = async (file: File) => {
+    setLocalError(null);
     setIsUploading(true);
     try {
       const formData = new FormData();
@@ -126,7 +128,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
       await handlePreviewFile(result.file_id);
     } catch (error) {
       logger.error('EXTRACTOR', 'Upload error', 'QuestionExtractor', { error });
-      alert('Failed to upload file. Please try again.');
+      setLocalError('Failed to upload file. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -234,6 +236,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
   const handleReset = () => {
     resetExtractionWorkflow();
     setExtractionResult(null);
+    setLocalError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -438,13 +441,25 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
       )}
 
       {/* Error States */}
-      {(previewData?.error || extractionResult?.error) && (
+      {(previewData?.error || extractionResult?.error || localError) && (
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-red-800 dark:text-red-300">
-            <AlertCircle className="w-5 h-5" />
-            <span className="font-medium">Error</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-red-800 dark:text-red-300">
+              <AlertCircle className="w-5 h-5" />
+              <span className="font-medium">Error</span>
+            </div>
+            {localError && (
+              <button
+                onClick={() => setLocalError(null)}
+                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
+              >
+                Dismiss
+              </button>
+            )}
           </div>
-          <p className="text-red-700 dark:text-red-300 mt-1">{previewData?.error || extractionResult?.error}</p>
+          <p className="text-red-700 dark:text-red-300 mt-1">
+            {localError || previewData?.error || extractionResult?.error}
+          </p>
         </div>
       )}
     </div>
