@@ -1184,3 +1184,9 @@ also use this pattern.
   * Line 735: Database save error in deleteQuestion
   * Line 807: Database save error in cloneQuestion
 - UI components can now access error via useQuestionStore.getState().error
+=== flaw-037: Missing error boundaries for extraction logic ===
+- Added ErrorBoundary import to TemplateGenerationTab.tsx
+- Wrapped QuestionExtractor with ErrorBoundary and user-friendly fallback UI
+- Wrapped AnswerTemplateGenerator with ErrorBoundary and fallback UI
+- Both error boundaries show error message and provide "Reload Page" button for recovery
+- Extraction/template generation failures no longer crash the entire UI
