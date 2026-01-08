@@ -1154,3 +1154,17 @@ ImportResultsModal uses validateJsonFile() which includes:
 - Helpful error message for oversized files
 
 No changes needed - validation was implemented in flaw-033.
+
+## flaw-092: Create useDarkMode hook to replace direct DOM access (LOW)
+**Files**: src/hooks/useDarkMode.ts (new), src/components/summary/QuestionTokenBarChart.tsx
+**Changes**:
+- Created `useDarkMode()` hook in src/hooks/useDarkMode.ts
+  - Uses MutationObserver to track 'dark' class changes on documentElement
+  - Provides reactive state that updates when theme changes
+  - Properly cleans up observer on unmount
+- Updated QuestionTokenBarChart to use `useDarkMode()` hook
+- Replaced direct DOM access `document.documentElement.classList.contains('dark')`
+
+**Result**: Components can now detect dark mode reactively without direct DOM access.
+The hook can be reused in other components (ComparisonView, SummaryCharts) that
+also use this pattern.

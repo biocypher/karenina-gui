@@ -1560,6 +1560,8 @@
     "file": "karenina-gui/src/components/summary/QuestionTokenBarChart.tsx",
     "line_range": "33",
     "description": "Direct DOM manipulation for dark mode detection. Uses document.documentElement.classList instead of React state/context.",
+    "status": "completed",
+    "implementation_notes": "Created reusable useDarkMode() hook that uses MutationObserver to track changes to the 'dark' class on documentElement. QuestionTokenBarChart now uses this hook instead of direct DOM access. The hook can be reused in other components (ComparisonView, SummaryCharts).",
     "depends_on": [],
     "steps": [
       "Implement: Use theme context or state for dark mode detection",
