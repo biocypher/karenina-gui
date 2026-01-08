@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 export interface FileValidationOptions {
   allowedExtensions?: string[];
   maxSizeBytes?: number;
@@ -32,7 +34,7 @@ export function downloadFile(content: string | Blob, options: DownloadOptions): 
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('Failed to download file:', error);
+    logger.error('FILE_OPS', 'Failed to download file', 'fileOperations', { error, filename: options.filename });
     throw new Error(`Failed to download ${options.filename}`);
   }
 }

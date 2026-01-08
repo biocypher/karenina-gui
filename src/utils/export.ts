@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from '../constants/api';
 import type { Rubric, RubricTrait, UsageMetadata, VerificationConfig } from '../types';
+import { logger } from './logger';
 
 /**
  * Job summary metadata for exports
@@ -287,7 +288,7 @@ export async function exportFromServer(jobId: string, format: 'json' | 'csv'): P
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   } catch (err) {
-    console.error('Error exporting results from server:', err);
+    logger.error('EXPORT', 'Error exporting results from server', 'export', { error: err });
     throw new Error('Failed to export results. Please try again.');
   }
 }
@@ -801,7 +802,7 @@ export function exportFilteredResults(
 
     downloadFile(content, fileName, mimeType);
   } catch (err) {
-    console.error('Error exporting filtered results:', err);
+    logger.error('EXPORT', 'Error exporting filtered results', 'export', { error: err });
     const errorMsg = 'Failed to export filtered results. Please try again.';
     if (onError) {
       onError(errorMsg);

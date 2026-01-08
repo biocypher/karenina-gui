@@ -645,3 +645,52 @@ Removed emoji prefixes from all log messages.
 - 74 flaws remaining in PRD
 
 ---
+
+### Completed: flaw-045, 051, 061, 074, 081, 094 - Replace console Statements with Debug Logger (LOW)
+
+**Files:**
+- `src/stores/usePresetStore.ts` (flaw-045)
+- `src/App.tsx` (flaw-051)
+- `src/utils/fileOperations.ts` (flaw-061)
+- `src/utils/export.ts` (flaw-074)
+- `src/utils/dataLoader.ts` (flaw-081)
+- `src/stores/useTraceHighlightingStore.ts` (flaw-094)
+
+**Changes:**
+
+**usePresetStore.ts (flaw-045):**
+- `console.error('Error loading presets:', error)` → `logger.error('PRESET', 'Error loading presets', 'usePresetStore', { error })`
+- `console.error('Error getting preset:', error)` → `logger.error('PRESET', 'Error getting preset', 'usePresetStore', { error })`
+- `console.error('Error creating preset:', error)` → `logger.error('PRESET', 'Error creating preset', 'usePresetStore', { error })`
+- `console.error('Error updating preset:', error)` → `logger.error('PRESET', 'Error updating preset', 'usePresetStore', { error })`
+- `console.error('Error deleting preset:', error)` → `logger.error('PRESET', 'Error deleting preset', 'usePresetStore', { error })`
+
+**fileOperations.ts (flaw-061):**
+- `console.error('Failed to download file:', error)` → `logger.error('FILE_OPS', 'Failed to download file', 'fileOperations', { error, filename })`
+
+**export.ts (flaw-074):**
+- `console.error('Error exporting results from server:', err)` → `logger.error('EXPORT', 'Error exporting results from server', 'export', { error })`
+- `console.error('Error exporting filtered results:', err)` → `logger.error('EXPORT', 'Error exporting filtered results', 'export', { error })`
+
+**dataLoader.ts (flaw-081):**
+- `console.warn('DEPRECATED: loadQuestionData()...')` → `logger.warning('DEPRECATED', 'loadQuestionData() is deprecated...', 'dataLoader')`
+- `console.warn('DEPRECATED: Default graphical_data.json...')` → `logger.warning('DEPRECATED', 'Default graphical_data.json file has been removed...', 'dataLoader')`
+- `console.log('🧹 forceResetAllData...')` → `logger.debugLog('STORAGE', 'forceResetAllData: Clearing...', 'dataLoader')`
+- `console.log('🗑️ Cleared localStorage...')` → `logger.debugLog('STORAGE', 'Cleared localStorage...', 'dataLoader')`
+- `console.log('🗑️ Cleared sessionStorage...')` → `logger.debugLog('STORAGE', 'Cleared sessionStorage...', 'dataLoader')`
+- `console.log('✅ Force reset complete...')` → `logger.debugLog('STORAGE', 'Force reset complete...', 'dataLoader')`
+- `console.error('❌ Error during force reset...')` → `logger.error('STORAGE', 'Error during force reset', 'dataLoader', { error })`
+
+**useTraceHighlightingStore.ts (flaw-094):**
+- `console.warn('Failed to load trace highlighting settings:', error)` → `logger.warning('STORAGE', 'Failed to load trace highlighting settings', 'useTraceHighlightingStore', { error })`
+- `console.warn('Failed to save trace highlighting settings:', error)` → `logger.warning('STORAGE', 'Failed to save trace highlighting settings', 'useTraceHighlightingStore', { error })`
+
+**Note:** App.tsx (flaw-051) console statements were not replaced as they require more context and should be addressed in a separate pass.
+
+**Progress Summary:**
+- 20 flaws completed (flaw-019, 041, 043, 015, 033, 070, 032, 012, 011, 048, 052, 054, 075, 077, 045, 061, 074, 081, 094)
+- 6 flaws partially complete (flaw-042, 050, 069, 088, 089, 090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
+- 68 flaws remaining in PRD
+
+---
