@@ -16,6 +16,7 @@ import {
   SchemaOrgCreativeWork,
   DatasetMetadata,
 } from '../types/index';
+import { logger } from './logger';
 // Import context as JSON (TypeScript doesn't handle .jsonld extension)
 const schemaOrgContext = {
   '@context': {
@@ -992,7 +993,7 @@ export function jsonLdToV2(
 
         // Debug logging
         if (questionCallableRatings.length > 0 || callableTraits.length > 0) {
-          console.log(`📋 Question callable traits:`, {
+          logger.debugLog('CHECKPOINT_CONVERTER', 'Question callable traits', 'checkpoint-converter', {
             questionId: question['@id'],
             callableRatingsCount: questionCallableRatings.length,
             callableTraitsCount: callableTraits.length,
@@ -1012,17 +1013,22 @@ export function jsonLdToV2(
 
       // Log final question rubric state
       if (questionRubric) {
-        console.log(`📊 Final question rubric for: ${question.text.substring(0, 50)}...`, {
-          hasLLMTraits: !!questionRubric.llm_traits && questionRubric.llm_traits.length > 0,
-          llmTraitsCount: questionRubric.llm_traits?.length || 0,
-          hasRegexTraits: !!questionRubric.regex_traits && questionRubric.regex_traits.length > 0,
-          regexTraitsCount: questionRubric.regex_traits?.length || 0,
-          hasCallableTraits: !!questionRubric.callable_traits && questionRubric.callable_traits.length > 0,
-          callableTraitsCount: questionRubric.callable_traits?.length || 0,
-          hasMetricTraits: !!questionRubric.metric_traits && questionRubric.metric_traits.length > 0,
-          metricTraitsCount: questionRubric.metric_traits?.length || 0,
-          questionRubric,
-        });
+        logger.debugLog(
+          'CHECKPOINT_CONVERTER',
+          `Final question rubric for: ${question.text.substring(0, 50)}...`,
+          'checkpoint-converter',
+          {
+            hasLLMTraits: !!questionRubric.llm_traits && questionRubric.llm_traits.length > 0,
+            llmTraitsCount: questionRubric.llm_traits?.length || 0,
+            hasRegexTraits: !!questionRubric.regex_traits && questionRubric.regex_traits.length > 0,
+            regexTraitsCount: questionRubric.regex_traits?.length || 0,
+            hasCallableTraits: !!questionRubric.callable_traits && questionRubric.callable_traits.length > 0,
+            callableTraitsCount: questionRubric.callable_traits?.length || 0,
+            hasMetricTraits: !!questionRubric.metric_traits && questionRubric.metric_traits.length > 0,
+            metricTraitsCount: questionRubric.metric_traits?.length || 0,
+            questionRubric,
+          }
+        );
       }
 
       const checkpointItem: CheckpointItem = {
