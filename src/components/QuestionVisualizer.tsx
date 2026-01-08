@@ -13,6 +13,7 @@ import {
   Link,
 } from 'lucide-react';
 import { QuestionData } from '../types';
+import { makeUrlSafe } from '../utils/urlValidator';
 
 interface QuestionVisualizerProps {
   questions: QuestionData;
@@ -317,15 +318,27 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
                                 <Link className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                                 <div className="min-w-0 flex-1">
                                   <p className="text-xs font-medium text-amber-900 dark:text-amber-200 mb-1">URL</p>
-                                  <a
-                                    href={question.metadata.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-green-700 dark:text-green-300 hover:text-green-800 dark:hover:text-green-200 underline break-all"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {question.metadata.url}
-                                  </a>
+                                  {(() => {
+                                    const safeUrl = makeUrlSafe(question.metadata.url);
+                                    return safeUrl.href ? (
+                                      <a
+                                        href={safeUrl.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-green-700 dark:text-green-300 hover:text-green-800 dark:hover:text-green-200 underline break-all"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {safeUrl.text}
+                                      </a>
+                                    ) : (
+                                      <span
+                                        className="text-sm text-slate-500 dark:text-slate-400 break-all"
+                                        title="Potentially dangerous URL protocol - not rendered as link"
+                                      >
+                                        {safeUrl.text}
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             )}

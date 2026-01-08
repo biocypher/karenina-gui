@@ -40,17 +40,74 @@
 
 ---
 
-### Next Priority Items (all CRITICAL and HIGH severity remaining):
+### Completed: flaw-041 - URL Sanitization in QuestionVisualizer (HIGH)
+
+**File:** `src/components/QuestionVisualizer.tsx`
+
+**Changes:**
+1. Created `src/utils/urlValidator.ts` with three main functions:
+   - `sanitizeUrl(url)` - Returns sanitized URL or null if dangerous
+   - `isUrlSafe(url)` - Boolean check for URL safety
+   - `makeUrlSafe(url)` - Returns { href, text } object for rendering
+2. Updated `QuestionVisualizer.tsx` to use URL validation before rendering anchor tags
+   - Dangerous URLs (javascript:, data:, vbscript:, etc.) displayed as plain text
+   - Safe URLs (http, https, mailto, tel, ftp) rendered as clickable links
+   - URLs without protocol get https:// prefix added
+
+**Protocols Blocked:**
+- javascript: (and capitalization variations)
+- data: (including data:text/html, data:image/svg+xml)
+- vbscript:
+- file:
+- about:
+- chrome:, chrome-extension:
+- moz-extension:
+- view-source:
+- And other dangerous protocols
+
+**Tests Added:** `src/utils/__tests__/urlValidator.test.ts`
+- 44 comprehensive URL safety tests covering:
+  - Safe protocol validation (http, https, mailto, tel, ftp)
+  - Dangerous protocol blocking
+  - XSS attack vectors (javascript:, data:, vbscript:)
+  - Edge cases and malformed input
+  - Special URL formats (query params, fragments, paths, ports, etc.)
+  - Real-world attack scenarios
+
+**Verification:**
+- All 44 tests pass
+- TypeScript type checking passes
+- ESLint passes (with pre-existing warnings only)
+
+**Security Impact:**
+- URLs with dangerous protocols cannot be rendered as clickable links
+- javascript:alert(1) and similar attacks are neutralized
+- Users can still see the URL text but cannot click to execute
+- Legitimate URLs continue to work normally
+
+---
+
+### Next Priority Items (CRITICAL and HIGH severity remaining):
 
 **CRITICAL:**
-- flaw-014: XSS in SearchableTextDisplay.tsx (NOTE: PRD description appears incorrect - file does NOT use dangerouslySetInnerHTML, uses react-highlight-words which is safe)
+- flaw-014: XSS in SearchableTextDisplay.tsx (NOTE: PRD description appears incorrect - file does NOT use dangerouslySetInnerHTML, uses react-highlight-words which is safe. This flaw may be marked as invalid.)
 
 **HIGH severity:**
+- flaw-015: API keys stored in localStorage without encryption
+- flaw-042: CSRF protection missing on API calls
+- flaw-043: File type validation only checks extension (ManualTraceUpload.tsx)
+- flaw-088: CSRF protection missing (CreateBenchmarkForm.tsx)
+- flaw-089: CSRF protection missing (DeleteBenchmarkModal.tsx)
+- flaw-090: CSRF protection missing (DeleteDatabaseModal.tsx)
 - flaw-001: BenchmarkTab.tsx is 1,474 lines - needs refactoring
 - flaw-002: QuestionRubricEditor.tsx is 1,418 lines - needs refactoring
 - flaw-003: RubricTraitEditor.tsx is 1,405 lines - code duplication
 - flaw-004: App.tsx is 1,212 lines - needs refactoring
 - flaw-005: BenchmarkTable.tsx is 1,047 lines - needs decomposition
-- flaw-015: API keys stored in localStorage without encryption
-- flaw-041: URL in QuestionVisualizer.tsx not properly validated
-- flaw-042: CSRF protection missing on API calls
+- flaw-031: DatabaseManageTab.tsx has multiple fetch calls without proper error handling
+
+**Progress Summary:**
+- 2 flaws completed (flaw-019, flaw-041)
+- 93 flaws remaining in PRD
+- 2 critical/high security vulnerabilities addressed
+
