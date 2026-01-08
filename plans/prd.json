@@ -1411,12 +1411,14 @@
     "file": "karenina-gui/src/components/database/CreateBenchmarkForm.tsx",
     "line_range": "30-42",
     "description": "API call to /api/database/create-benchmark without CSRF protection. POST request should include CSRF token.",
+    "status": "partial",
+    "implementation_notes": "FRONTEND COMPLETE: Updated CreateBenchmarkForm.tsx to use csrf.fetchWithCsrf() instead of raw fetch. The X-CSRF-Token header will now be included in the create benchmark POST request. BACKEND PENDING: Backend needs to implement /api/auth/csrf-token endpoint and validate X-CSRF-Token header.",
     "depends_on": ["flaw-042"],
     "steps": [
-      "Implement: Add CSRF token to create benchmark request",
-      "Implement: Validate CSRF tokens on the backend",
-      "Verify: Benchmark creation includes CSRF token",
-      "Verify: Backend validates CSRF tokens"
+      "Implement: Add CSRF token to create benchmark request [FRONTEND DONE]",
+      "Implement: Validate CSRF tokens on the backend [BACKEND PENDING]",
+      "Verify: Benchmark creation includes CSRF token [FRONTEND DONE]",
+      "Verify: Backend validates CSRF tokens [BACKEND PENDING]"
     ]
   },
   {

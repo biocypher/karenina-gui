@@ -272,19 +272,19 @@
 
 **Progress Summary:**
 - 4 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015)
-- 3 flaws partially complete (flaw-042, flaw-050, flaw-069 - CSRF frontend done, backend pending)
+- 4 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088 - CSRF frontend done, backend pending)
 - 2 flaws marked invalid (flaw-014, flaw-062 - PRD description incorrect)
-- 86 flaws remaining in PRD
+- 85 flaws remaining in PRD
 
 ---
 
-### Partially Completed: flaw-069 - CSRF Protection in ImportResultsModal (MEDIUM)
+### Partially Completed: flaw-088 - CSRF Protection in CreateBenchmarkForm (MEDIUM)
 
-**File:** `src/components/database/ImportResultsModal.tsx`
+**File:** `src/components/database/CreateBenchmarkForm.tsx`
 
 **Changes:**
 - Updated to use `csrf.fetchWithCsrf()` instead of raw fetch
-- X-CSRF-Token header will now be included in import results POST request
+- X-CSRF-Token header will now be included in create benchmark POST request
 
 **Verification:**
 - TypeScript type checking passes
