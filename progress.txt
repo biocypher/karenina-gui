@@ -1204,3 +1204,9 @@ also use this pattern.
 - Updated useBenchmarkConfiguration.ts to use helper functions instead of hardcoded checks
 - Reduced useEffect complexity from 24 lines to 4 lines for model detection
 - Default model configuration can now be changed in one place
+=== flaw-076: alert() calls in errorHandler.ts ===
+- Removed showAlert option from ErrorHandlerOptions interface
+- Removed alert() call from handleFileError function (line 34)
+- Updated useToast option to work with setErrorState
+- Removed TODO comment for unimplemented toast notifications
+- Error handling now uses setErrorState for non-blocking error display

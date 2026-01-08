@@ -4,14 +4,13 @@ export interface ErrorHandlerOptions {
   useToast?: boolean;
   logToConsole?: boolean;
   setErrorState?: (error: string) => void;
-  showAlert?: boolean;
 }
 
 /**
  * Standardized error handling for file operations
  */
 export function handleFileError(error: unknown, context: string, options: ErrorHandlerOptions = {}): void {
-  const { logToConsole = true, setErrorState, showAlert = false, useToast = false } = options;
+  const { logToConsole = true, setErrorState, useToast = false } = options;
 
   // Extract meaningful error message
   const errorMessage =
@@ -24,19 +23,18 @@ export function handleFileError(error: unknown, context: string, options: ErrorH
     logger.error('ERROR_HANDLER', fullMessage, 'errorHandler', { error, context });
   }
 
-  // Set error state if provided
-  if (setErrorState) {
-    setErrorState(fullMessage);
-  }
-
-  // Show alert if requested (deprecated pattern but still used in legacy code)
-  if (showAlert) {
-    alert(fullMessage);
-  }
-
-  // TODO: Implement toast notifications when UI component is available
-  if (useToast) {
-    logger.warning('ERROR_HANDLER', 'Toast notifications not yet implemented, falling back to console', 'errorHandler');
+  // Set error state if provided (useToast is an alias for setErrorState)
+  if (setErrorState || useToast) {
+    const stateSetter = setErrorState;
+    if (stateSetter) {
+      stateSetter(fullMessage);
+    } else if (useToast) {
+      logger.warning(
+        'ERROR_HANDLER',
+        'useToast option provided but no setErrorState function available',
+        'errorHandler'
+      );
+    }
   }
 }
 
