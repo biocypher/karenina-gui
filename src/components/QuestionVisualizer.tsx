@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { QuestionData } from '../types';
 import { makeUrlSafe } from '../utils/urlValidator';
+import { logger } from '../utils/logger';
 
 interface QuestionVisualizerProps {
   questions: QuestionData;
@@ -52,7 +53,7 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
         setCopiedId(null);
       }, 2000);
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
+      logger.error('VISUALIZER', 'Failed to copy to clipboard', 'QuestionVisualizer', { error });
     }
   };
 

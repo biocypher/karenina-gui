@@ -6,6 +6,7 @@ import 'prismjs/components/prism-python';
 import 'prismjs/themes/prism-tomorrow.css';
 import { DiffViewer } from './DiffViewer';
 import { PydanticFormEditor, type PydanticFormEditorRef } from './pydantic/PydanticFormEditor';
+import { logger } from '../utils/logger';
 
 interface CodeEditorProps {
   value: string;
@@ -105,7 +106,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
         const sanitized = sanitizeHighlightedCode(highlighted);
         setHighlightedCode(sanitized);
       } catch (error) {
-        console.error('Syntax highlighting error:', error);
+        logger.error('CODE_EDITOR', 'Syntax highlighting error', 'CodeEditor', { error });
         setHighlightedCode(value || '');
       }
     }, [value]);

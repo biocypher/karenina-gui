@@ -7,6 +7,7 @@ import {
   HighlightColorId,
 } from '../stores/useTraceHighlightingStore';
 import { useConfigModalStore } from '../stores/useConfigModalStore';
+import { logger } from '../utils/logger';
 
 interface TraceHighlightedTextDisplayProps {
   text: string;
@@ -132,7 +133,9 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
         });
       }
     } catch (error) {
-      console.warn('Invalid trace highlighting pattern:', error);
+      logger.warning('TRACE_HIGHLIGHTING', 'Invalid trace highlighting pattern', 'TraceHighlightedTextDisplay', {
+        error,
+      });
     }
 
     return blocks;
