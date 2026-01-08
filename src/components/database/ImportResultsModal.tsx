@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Modal } from '../ui/Modal';
 import { Upload, Loader, AlertCircle, CheckCircle, FileJson } from 'lucide-react';
+import { csrf } from '../../utils/csrf';
 
 interface ImportResultsModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export const ImportResultsModal: React.FC<ImportResultsModalProps> = ({
       }
 
       // Send to import endpoint
-      const response = await fetch('/api/database/import-results', {
+      const response = await csrf.fetchWithCsrf('/api/database/import-results', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
