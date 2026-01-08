@@ -1190,3 +1190,11 @@ also use this pattern.
 - Wrapped AnswerTemplateGenerator with ErrorBoundary and fallback UI
 - Both error boundaries show error message and provide "Reload Page" button for recovery
 - Extraction/template generation failures no longer crash the entire UI
+=== flaw-038: Complex conditional logic in trait evaluation ===
+- Added Trait type alias and TraitInfo interface for better type safety
+- Extracted hasTraitInRubric() helper to reduce duplication
+- Extracted getHigherIsBetter() helper for directionality logic
+- Extracted getScoreMidpoint() helper for score range calculation
+- Simplified isTraitPassed() with early returns and helper functions
+- Simplified getTraitInfo() from 29 lines to 15 lines using helper functions
+- Added JSDoc comments to all helper functions for better documentation

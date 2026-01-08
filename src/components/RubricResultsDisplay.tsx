@@ -9,11 +9,24 @@ interface RubricResultsDisplayProps {
   className?: string;
 }
 
-// Helper to find a trait definition by name across all trait types
-function findTraitByName(
-  traitName: string,
-  rubric?: Rubric
-): LLMRubricTrait | RegexTrait | CallableTrait | MetricRubricTrait | undefined {
+/**
+ * All possible trait types that can be found in a rubric
+ */
+type Trait = LLMRubricTrait | RegexTrait | CallableTrait | MetricRubricTrait;
+
+/**
+ * Trait result info returned by getTraitInfo
+ */
+interface TraitInfo {
+  description?: string;
+  isQuestionSpecific?: boolean;
+}
+
+/**
+ * Find a trait definition by name across all trait types in a rubric.
+ * Searches in order: llm_traits, regex_traits, callable_traits, metric_traits.
+ */
+function findTraitByName(traitName: string, rubric?: Rubric): Trait | undefined {
   if (!rubric) return undefined;
   return (
     rubric.llm_traits?.find((t) => t.name === traitName) ||
@@ -23,30 +36,59 @@ function findTraitByName(
   );
 }
 
-// Helper to determine if a trait value represents a "pass" based on directionality
+/**
+ * Check if a trait exists in the given rubric (used to determine if question-specific).
+ */
+function hasTraitInRubric(traitName: string, rubric?: Rubric): boolean {
+  if (!rubric) return false;
+  return (
+    rubric.llm_traits?.some((t) => t.name === traitName) ||
+    rubric.regex_traits?.some((t) => t.name === traitName) ||
+    rubric.callable_traits?.some((t) => t.name === traitName) ||
+    rubric.metric_traits?.some((t) => t.name === traitName)
+  );
+}
+
+/**
+ * Get the higher_is_better setting for a trait.
+ * Defaults to true for legacy/missing traits (MetricRubricTrait is always true).
+ */
+function getHigherIsBetter(trait?: Trait): boolean {
+  if (!trait) return true;
+  return 'higher_is_better' in trait ? trait.higher_is_better : true;
+}
+
+/**
+ * Calculate the midpoint of a score trait's range.
+ * Returns 3 as default if trait has no min/max.
+ */
+function getScoreMidpoint(trait?: Trait): number {
+  if (!trait || trait.kind !== 'score' || !('min_score' in trait) || !('max_score' in trait)) {
+    return 3;
+  }
+  const min = trait.min_score ?? 1;
+  const max = trait.max_score ?? 5;
+  return (min + max) / 2;
+}
+
+/**
+ * Determine if a trait value represents a "pass" based on directionality.
+ * - Boolean traits: true passes if higher_is_better, false passes if lower_is_better
+ * - Score traits: passes if value >= midpoint when higher_is_better, else <= midpoint
+ * - Default: >= 3 passes when higher_is_better, else <= 3
+ */
 function isTraitPassed(traitName: string, value: number | boolean, rubric?: Rubric): boolean {
   const trait = findTraitByName(traitName, rubric);
+  const higherIsBetter = getHigherIsBetter(trait);
 
-  // Get higher_is_better from trait, default to true for legacy/missing traits
-  // MetricRubricTrait doesn't have higher_is_better (always true implicitly)
-  const higherIsBetter = trait && 'higher_is_better' in trait ? trait.higher_is_better : true;
-
+  // Boolean traits: true = pass if higher_is_better
   if (typeof value === 'boolean') {
-    // For boolean traits: true = pass if higher_is_better, false = pass if !higher_is_better
     return higherIsBetter ? value : !value;
   }
 
-  // For score traits, find the score range
-  const llmTrait = trait && 'kind' in trait && trait.kind === 'score' ? trait : undefined;
-  if (llmTrait && 'min_score' in llmTrait && 'max_score' in llmTrait) {
-    const min = llmTrait.min_score ?? 1;
-    const max = llmTrait.max_score ?? 5;
-    const midpoint = (min + max) / 2;
-    return higherIsBetter ? value >= midpoint : value <= midpoint;
-  }
-
-  // Default fallback for score traits without trait definition
-  return higherIsBetter ? value >= 3 : value <= 3;
+  // Score traits: compare against midpoint
+  const midpoint = getScoreMidpoint(trait);
+  return higherIsBetter ? value >= midpoint : value <= midpoint;
 }
 
 export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
@@ -78,30 +120,15 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
   const successRate = totalTraits > 0 ? passedTraits / totalTraits : 0;
 
   // Get trait descriptions and source info from the rubric that was actually used for evaluation
-  const getTraitInfo = (traitName: string): { description?: string; isQuestionSpecific?: boolean } => {
-    // Prioritize evaluationRubric (the merged rubric that was actually used)
+  const getTraitInfo = (traitName: string): TraitInfo => {
     const rubricToUse = evaluationRubric || currentRubric;
-    if (!rubricToUse) return {};
-
-    // Search across all trait types (use llm_traits, not traits)
-    let trait = rubricToUse.llm_traits?.find((t) => t.name === traitName);
-    if (!trait) trait = rubricToUse.regex_traits?.find((t) => t.name === traitName);
-    if (!trait) trait = rubricToUse.callable_traits?.find((t) => t.name === traitName);
-    if (!trait) trait = rubricToUse.metric_traits?.find((t) => t.name === traitName);
+    const trait = findTraitByName(traitName, rubricToUse);
 
     if (!trait) return {};
 
     // Determine if this trait is question-specific by checking if it exists in currentRubric
     // If evaluationRubric has it but currentRubric doesn't, it's question-specific
-    let isQuestionSpecific = false;
-    if (evaluationRubric && currentRubric) {
-      const existsInGlobal =
-        currentRubric.llm_traits?.some((t) => t.name === traitName) ||
-        currentRubric.regex_traits?.some((t) => t.name === traitName) ||
-        currentRubric.callable_traits?.some((t) => t.name === traitName) ||
-        currentRubric.metric_traits?.some((t) => t.name === traitName);
-      isQuestionSpecific = !existsInGlobal;
-    }
+    const isQuestionSpecific = evaluationRubric && currentRubric ? !hasTraitInRubric(traitName, currentRubric) : false;
 
     return {
       description: trait.description,
