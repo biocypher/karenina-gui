@@ -1445,12 +1445,14 @@
     "file": "karenina-gui/src/components/database/DeleteDatabaseModal.tsx",
     "line_range": "36-40",
     "description": "API call to /api/database/delete without CSRF protection. DELETE request should include CSRF token.",
+    "status": "partial",
+    "implementation_notes": "FRONTEND COMPLETE: Updated DeleteDatabaseModal.tsx to use csrf.fetchWithCsrf() instead of raw fetch. The X-CSRF-Token header will now be included in the delete database DELETE request. BACKEND PENDING: Backend needs to implement /api/auth/csrf-token endpoint and validate X-CSRF-Token header.",
     "depends_on": ["flaw-042"],
     "steps": [
-      "Implement: Add CSRF token to delete database request",
-      "Implement: Validate CSRF tokens on the backend",
-      "Verify: Database deletion includes CSRF token",
-      "Verify: Backend validates CSRF tokens"
+      "Implement: Add CSRF token to delete database request [FRONTEND DONE]",
+      "Implement: Validate CSRF tokens on the backend [BACKEND PENDING]",
+      "Verify: Database deletion includes CSRF token [FRONTEND DONE]",
+      "Verify: Backend validates CSRF tokens [BACKEND PENDING]"
     ]
   },
   {
