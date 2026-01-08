@@ -203,10 +203,59 @@
 
 **Progress Summary:**
 - 4 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015)
+- 1 flaw partially complete (flaw-042 - CSRF frontend done, backend pending)
 - 2 flaws marked invalid (flaw-014, flaw-062 - PRD description incorrect)
-- 89 flaws remaining in PRD
+- 88 flaws remaining in PRD
 - 4 critical/high security vulnerabilities addressed
 
 **Note:** flaw-014 (CRITICAL XSS in SearchableTextDisplay) was verified to be incorrectly described. The component uses react-highlight-words which safely renders through React's normal JSX, not dangerouslySetInnerHTML. No fix needed.
+
+---
+
+### Partially Completed: flaw-042 - CSRF Protection (HIGH)
+
+**File:** `src/components/ManualTraceUpload.tsx`
+
+**Frontend Changes:**
+1. Created `src/utils/csrf.ts` with comprehensive CSRF protection:
+   - `CsrfManager` class - singleton for CSRF token management
+   - `fetchWithCsrf(url, options)` - wrapper that adds X-CSRF-Token header to mutation requests
+   - `useCsrf()` hook - React hook for CSRF utilities
+   - Token stored in memory only (not persisted for security)
+   - Graceful fallback when backend endpoint doesn't exist yet
+
+2. Updated `ManualTraceUpload.tsx` to use `csrf.fetchWithCsrf()` instead of raw fetch
+
+**Token Endpoint Expected:**
+- GET `/api/auth/csrf-token` should return `{ "token": "..." }`
+- Token should be tied to user session
+- Backend should validate `X-CSRF-Token` header on POST/PUT/DELETE/PATCH requests
+
+**Tests Added:** `src/utils/__tests__/csrf.test.ts`
+- 32 comprehensive CSRF tests covering:
+  - Token initialization from default/custom endpoints
+  - Error handling (404, 500, network errors, invalid responses)
+  - Token refresh and clearing
+  - Header injection for POST/PUT/DELETE/PATCH requests
+  - No headers added for GET/HEAD requests
+  - Fallback behavior when token unavailable
+
+**Verification:**
+- All 32 tests pass
+- TypeScript type checking passes
+
+**Backend Requirements (PENDING):**
+1. Implement `/api/auth/csrf-token` endpoint
+2. Validate `X-CSRF-Token` header on all mutation requests
+3. Tie tokens to user sessions
+4. Consider SameSite cookie attribute
+
+**Security Impact:**
+- Frontend is ready for CSRF protection
+- Tokens are stored in memory only (cleared on page refresh)
+- Adds X-CSRF-Token header to all state-changing requests
+- Gracefully degrades when backend doesn't support it yet
+
+
 
 

@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { validateManualTraceFile } from '../utils/fileValidator';
+import { csrf } from '../utils/csrf';
 
 interface ManualTraceUploadProps {
   onUploadSuccess?: (traceCount: number) => void;
@@ -35,7 +36,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('/api/upload-manual-traces', {
+        const response = await csrf.fetchWithCsrf('/api/upload-manual-traces', {
           method: 'POST',
           body: formData,
         });

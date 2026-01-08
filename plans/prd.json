@@ -685,13 +685,15 @@
     "file": "karenina-gui/src/components/ManualTraceUpload.tsx",
     "line_range": "37-40",
     "description": "Direct API call to /api/upload-manual-traces without CSRF protection. While the application may be a single-page API, there's no explicit CSRF token implementation visible.",
+    "status": "partial",
+    "implementation_notes": "FRONTEND COMPLETE: Created src/utils/csrf.ts with CsrfManager class, fetchWithCsrf() wrapper, and useCsrf() hook. Updated ManualTraceUpload.tsx to use csrf.fetchWithCsrf(). Token is stored in memory only (not persisted) and fetched from /api/auth/csrf-token. Adds X-CSRF-Token header to POST/PUT/DELETE/PATCH requests. Has graceful fallback when endpoint doesn't exist yet. BACKEND PENDING: Backend needs to implement /api/auth/csrf-token endpoint and validate X-CSRF-Token header on mutation requests.",
     "depends_on": [],
     "steps": [
-      "Implement: Add CSRF token to all mutation requests (POST, PUT, DELETE)",
-      "Implement: Validate CSRF tokens on the backend",
-      "Implement: Consider using SameSite cookie attribute",
-      "Verify: All form submissions include CSRF token",
-      "Verify: Backend validates CSRF tokens"
+      "Implement: Add CSRF token to all mutation requests (POST, PUT, DELETE) [FRONTEND DONE]",
+      "Implement: Validate CSRF tokens on the backend [BACKEND PENDING]",
+      "Implement: Consider using SameSite cookie attribute [BACKEND PENDING]",
+      "Verify: All form submissions include CSRF token [FRONTEND DONE]",
+      "Verify: Backend validates CSRF tokens [BACKEND PENDING]"
     ]
   },
   {
