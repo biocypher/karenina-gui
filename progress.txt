@@ -522,3 +522,46 @@ function buildCompleteCheckpoint(
 - 78 flaws remaining in PRD
 
 ---
+
+### Completed: flaw-048 - Replace console.log/warn in AddQuestionModal with Debug Logger (LOW)
+
+**File:** `src/components/AddQuestionModal.tsx`
+
+**Changes:**
+Replaced all console.log, console.warn, and console.error statements with structured logger calls:
+
+1. **Template extraction success (line 100)**:
+   - `console.log('✅ Template extracted successfully...')` → `logger.debugLog('TEMPLATE', 'Template extracted successfully: ...', 'AddQuestionModal')`
+
+2. **Template validation warning (line 108)**:
+   - `console.warn('⚠️ Template generation completed but template is invalid...')` → `logger.warning('TEMPLATE', 'Template generation completed but template is invalid', 'AddQuestionModal', { error })`
+
+3. **Polling error handler (line 117)**:
+   - `console.error('Error polling generation progress:', error)` → `logger.error('TEMPLATE', 'Error polling generation progress', 'AddQuestionModal', { error })`
+
+4. **Generation start error handler (line 165)**:
+   - `console.error('Error starting template generation:', error)` → `logger.error('TEMPLATE', 'Error starting template generation', 'AddQuestionModal', { error })`
+
+**Logger Utility:**
+The existing `src/utils/logger.ts` provides environment-aware logging using `import.meta.env.DEV` with structured logging and no console output in production.
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+
+---
+
+### Completed: flaw-046 - Console Statements in AnswerTemplateGenerator (LOW - INVALID)
+
+**File:** `src/components/AnswerTemplateGenerator.tsx`
+
+**Finding:**
+VERIFIED: AnswerTemplateGenerator.tsx does NOT contain any console.log, console.warn, or console.error statements. The PRD description was outdated or incorrect. No changes were needed.
+
+**Progress Summary:**
+- 10 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015, flaw-033, flaw-070, flaw-032, flaw-012, flaw-011, flaw-048)
+- 6 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088, flaw-089, flaw-090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, flaw-062, flaw-046 - PRD descriptions incorrect)
+- 78 flaws remaining in PRD
+
+---

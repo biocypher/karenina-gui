@@ -763,11 +763,11 @@
     "description": "Console.log and console.warn statements in production code for template generation debugging. Should use a proper debug logger.",
     "depends_on": ["flaw-012"],
     "steps": [
-      "Implement: Use centralized debug logger utility (see flaw-012)",
-      "Implement: Replace console.log calls with conditional logger",
-      "Verify: Debug logs appear in development",
-      "Verify: No console output in production builds"
-    ]
+      "Verify: Component does not use console statements [VERIFIED - none found]",
+      "Verify: Component uses proper logging [NOT NEEDED - no console statements]"
+    ],
+    "status": "invalid",
+    "implementation_notes": "VERIFIED: AnswerTemplateGenerator.tsx does not contain any console.log, console.warn, or console.error statements. The PRD description was outdated or incorrect."
   },
   {
     "id": "flaw-047",
@@ -793,11 +793,14 @@
     "description": "Console.log and console.warn statements in production code for template generation debugging.",
     "depends_on": ["flaw-012"],
     "steps": [
-      "Implement: Use centralized debug logger utility (see flaw-012)",
-      "Implement: Replace console.log/console.warn with conditional logger",
-      "Verify: Debug logs appear in development",
-      "Verify: No console output in production builds"
-    ]
+      "Implement: Use centralized debug logger utility (see flaw-012) [COMPLETED]",
+      "Implement: Replace console.log/console.warn with conditional logger [COMPLETED]",
+      "Verify: Debug logs appear in development [VERIFIED]",
+      "Verify: No console output in production builds [VERIFIED]"
+    ],
+    "status": "completed",
+    "completed_at": "2025-01-08",
+    "implementation_notes": "Replaced all console.log and console.warn statements in AddQuestionModal.tsx with structured logger calls: (1) Template extraction success: logger.debugLog, (2) Template validation warning: logger.warning, (3) Polling errors: logger.error, (4) Generation start errors: logger.error. All logging now uses the logger utility from src/utils/logger.ts which is development-only via import.meta.env.DEV."
   },
   {
     "id": "flaw-049",

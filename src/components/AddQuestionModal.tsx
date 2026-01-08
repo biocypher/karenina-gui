@@ -3,6 +3,7 @@ import { Plus, X, Settings, Loader2, Sparkles } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
 import { csrf } from '../utils/csrf';
+import { logger } from '../utils/logger';
 
 interface AddQuestionModalProps {
   isOpen: boolean;
@@ -96,7 +97,11 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
               if (extractedTemplate && extractedTemplate.length > 0) {
                 setGeneratedTemplate(extractedTemplate);
                 setGenerationError(null);
-                console.log('✅ Template extracted successfully:', extractedTemplate.substring(0, 50) + '...');
+                logger.debugLog(
+                  'TEMPLATE',
+                  `Template extracted successfully: ${extractedTemplate.substring(0, 50)}...`,
+                  'AddQuestionModal'
+                );
               } else {
                 // Generation succeeded but template is invalid
                 const errorMsg =
@@ -104,7 +109,12 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
                   'Generated template was empty';
                 setGenerationError(String(errorMsg));
                 setGeneratedTemplate(null);
-                console.warn('⚠️ Template generation completed but template is invalid:', errorMsg);
+                logger.warning(
+                  'TEMPLATE',
+                  'Template generation completed but template is invalid',
+                  'AddQuestionModal',
+                  { error: errorMsg }
+                );
               }
             }
           } else if (progressData.status === 'failed') {
@@ -113,7 +123,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
             setGenerationError(progressData.error || 'Template generation failed');
           }
         } catch (error) {
-          console.error('Error polling generation progress:', error);
+          logger.error('TEMPLATE', 'Error polling generation progress', 'AddQuestionModal', { error });
           setIsGenerating(false);
           setJobId(null);
           setGenerationError('Failed to check generation progress');
@@ -161,7 +171,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
       const data = await response.json();
       setJobId(data.job_id);
     } catch (error) {
-      console.error('Error starting template generation:', error);
+      logger.error('TEMPLATE', 'Error starting template generation', 'AddQuestionModal', { error });
       setIsGenerating(false);
       setGenerationError(error instanceof Error ? error.message : 'Failed to start generation');
     }
