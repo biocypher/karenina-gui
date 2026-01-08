@@ -1120,3 +1120,15 @@ to modify and maintain. The template can be updated in one place for all new que
 
 **Result**: Removed 6 lines of dead code. The active version in useAppStore.ts remains
 and is used for session ID generation.
+
+## flaw-083: Remove eslint-disable and use ref pattern (LOW)
+**File**: src/hooks/useBenchmarkConfiguration.ts
+**Changes**:
+- Added `useRef` import and created `hasInitialized` ref to track initialization
+- Moved from empty deps array with eslint-disable to full dependency array
+- Added early return using `hasInitialized.current` to ensure effect only runs once
+- Removed the `// eslint-disable-next-line react-hooks/exhaustive-deps` comment
+- Added detailed comment explaining the ref pattern usage
+
+**Result**: Effect now properly declares all dependencies while ensuring it only runs
+once on mount using the ref pattern. No ESLint warnings are suppressed.

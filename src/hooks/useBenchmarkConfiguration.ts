@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ModelConfiguration } from '../types';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useBenchmarkStore } from '../stores/useBenchmarkStore';
@@ -77,7 +77,16 @@ export const useBenchmarkConfiguration = () => {
   // Update default models ONLY if they match the initial store defaults
   // This ensures user modifications persist across tab switches
   // but reset on page refresh (since Zustand store resets on page refresh)
+  //
+  // Note: We use a ref to track initialization because we want this effect to run
+  // only once on mount, even when saved config values change. If saved values change,
+  // we don't want to overwrite models that the user may have already configured.
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
+    // Skip if already initialized (e.g., component re-rendered with new saved values)
+    if (hasInitialized.current) return;
+
     // Check if models are still at their initial defaults (haven't been modified by user)
     const answeringIsDefault =
       answeringModels.length === 1 &&
@@ -117,8 +126,19 @@ export const useBenchmarkConfiguration = () => {
         },
       ]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run on mount
+
+    hasInitialized.current = true;
+  }, [
+    answeringModels,
+    parsingModels,
+    savedInterface,
+    savedProvider,
+    savedModel,
+    savedEndpointBaseUrl,
+    savedEndpointApiKey,
+    setAnsweringModels,
+    setParsingModels,
+  ]);
 
   // Model management functions - wrap store functions with additional logic
   const addAnsweringModel = () => {
