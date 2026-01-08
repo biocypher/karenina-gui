@@ -679,6 +679,8 @@
     "file": "karenina-gui/src/components/DatabaseManagerModal.tsx",
     "line_range": "4",
     "description": "Commented-out import - DatabaseManageTab import is commented out but still present in the code.",
+    "status": "completed",
+    "implementation_notes": "Already fixed - the DatabaseManageTab import is active and being used in the component (line 5, line 118).",
     "depends_on": [],
     "steps": [
       "Implement: Remove commented-out DatabaseManageTab import",

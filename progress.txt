@@ -1081,3 +1081,12 @@ No additional changes needed.
 
 **Result**: Reuses the ConfirmDialog component created in flaw-047. Non-blocking,
 accessible confirmation flow with ESC key and click-outside-to-close support.
+
+## flaw-040: Commented-out import in DatabaseManagerModal (LOW) - ALREADY FIXED
+**File**: src/components/DatabaseManagerModal.tsx
+**Status**: Already fixed
+
+The DatabaseManageTab import is active (line 5) and being used (line 118).
+The PRD description was outdated.
+
+No changes needed.
