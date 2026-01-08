@@ -1132,3 +1132,14 @@ and is used for session ID generation.
 
 **Result**: Effect now properly declares all dependencies while ensuring it only runs
 once on mount using the ref pattern. No ESLint warnings are suppressed.
+
+## flaw-087: Extract duplicate trim() calls (LOW)
+**File**: src/stores/useDatasetStore.ts
+**Changes**:
+- `addKeyword`: Store trimmed value in `trimmed` variable, reuse throughout function
+- `addCustomProperty`: Store trimmed value in `trimmedKey` variable, reuse throughout function
+- Eliminated 3 duplicate trim() calls in addKeyword
+- Eliminated 2 duplicate trim() calls in addCustomProperty
+
+**Result**: Reduced duplicate function calls from 5 to 2. Code is more efficient
+and easier to read.

@@ -1471,6 +1471,8 @@
     "file": "karenina-gui/src/stores/useDatasetStore.ts",
     "line_range": "105, 132",
     "description": "Duplicate trim() calls in addKeyword and addCustomProperty functions. Both use the same pattern.",
+    "status": "completed",
+    "implementation_notes": "Refactored to trim input once at the start of each function. addKeyword now uses 'trimmed' variable, addCustomProperty uses 'trimmedKey'. Eliminates repeated trim() calls while maintaining the same functionality.",
     "depends_on": [],
     "steps": [
       "Implement: Extract string sanitization to utility function sanitizeInput(input: string)",
