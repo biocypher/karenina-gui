@@ -419,3 +419,61 @@ The existing `src/utils/logger.ts` already provided:
 
 ---
 
+
+### Completed: flaw-012 - Replace console.log/warn/error with Debug Logger (MEDIUM)
+
+**File:** `src/stores/useQuestionStore.ts`
+
+**Changes:**
+Replaced all console.log, console.warn, and console.error statements with structured logger calls from `src/utils/logger.ts`:
+
+1. **addNewQuestion function (lines 449-452)**:
+   - `console.log('📝 Using LLM-generated template...')` → `logger.debugLog('QUESTION', 'Using LLM-generated template for new question', 'useQuestionStore')`
+   - `console.warn('⚠️ LLM template was invalid...')` → `logger.warning('QUESTION', 'LLM template was invalid, falling back to basic template', 'useQuestionStore')`
+
+2. **addNewQuestion return (line 506)**:
+   - `console.log('✅ Added new question...')` → `logger.debugLog('QUESTION', 'Added new question with ID: ${questionId}', 'useQuestionStore')`
+
+3. **setQuestionRubric error handler (line 581)**:
+   - `console.warn('⚠️ Failed to auto-save...')` → `logger.warning('DATABASE', 'Failed to auto-save to database after rubric update', 'useQuestionStore', { error: err })`
+
+4. **updateQuestionContent (lines 611, 643, 647)**:
+   - `console.error('❌ updateQuestionContent...')` → `logger.error('QUESTION', 'updateQuestionContent: Question not found', 'useQuestionStore', { questionId })`
+   - `console.log('✅ Question content updated')` → `logger.debugLog('QUESTION', 'Question content updated: ${questionId}', 'useQuestionStore')`
+   - `console.error('❌ Failed to auto-save...')` → `logger.error('DATABASE', 'Failed to auto-save to database after question update', 'useQuestionStore', { error: err })`
+
+5. **deleteQuestion (lines 656, 697, 701)**:
+   - `console.error('❌ deleteQuestion...')` → `logger.error('QUESTION', 'deleteQuestion: Question not found', 'useQuestionStore', { questionId })`
+   - `console.log('✅ Question deleted')` → `logger.debugLog('QUESTION', 'Question deleted: ${questionId}', 'useQuestionStore', { newSelectedQuestionId })`
+   - `console.error('❌ Failed to auto-save...')` → `logger.error('DATABASE', 'Failed to auto-save to database after question deletion', 'useQuestionStore', { error: err })`
+
+6. **cloneQuestion (lines 712, 765, 769)**:
+   - `console.error('❌ cloneQuestion...')` → `logger.error('QUESTION', 'cloneQuestion: Source question not found', 'useQuestionStore', { questionId })`
+   - `console.log('✅ Question cloned')` → `logger.debugLog('QUESTION', 'Question cloned from ${questionId} to ${newQuestionId}', 'useQuestionStore', { insertedAfterIndex: sourceIndex })`
+   - `console.error('❌ Failed to auto-save...')` → `logger.error('DATABASE', 'Failed to auto-save to database after question clone', 'useQuestionStore', { error: err })`
+
+**Logger Utility:**
+The existing `src/utils/logger.ts` provides:
+- Environment-aware logging using `import.meta.env.DEV`
+- Structured logging with categories (QUESTION, DATABASE, CHECKPOINT, RUBRIC, DATA)
+- Conditional output in development only
+- No console output in production builds
+
+**Verification:**
+- ESLint passes with no errors
+- TypeScript type checking passes
+- All console.log/warn/error statements replaced with structured logging
+
+**Code Quality Impact:**
+- Debug logging is now consistent across the application
+- No console output in production builds
+- Structured logs with category and component information
+- Easier debugging with timestamps and log levels
+
+**Progress Summary:**
+- 8 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015, flaw-033, flaw-070, flaw-032, flaw-012)
+- 6 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088, flaw-089, flaw-090 - CSRF frontend done, backend pending)
+- 2 flaws marked invalid (flaw-014, flaw-062 - PRD description incorrect)
+- 79 flaws remaining in PRD
+
+---

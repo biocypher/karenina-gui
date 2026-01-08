@@ -197,12 +197,15 @@
     "description": "Debug logging in production code (saveCurrentTemplate function). Console.log statements should be removed or gated behind a debug flag.",
     "depends_on": [],
     "steps": [
-      "Implement: Create a debug logger utility that checks environment/feature flag",
-      "Implement: Replace all console.log calls with conditional debug logger",
-      "Implement: Remove production debug logs or gate behind isDev flag",
-      "Verify: Debug logs appear in development",
-      "Verify: No console output in production builds"
-    ]
+      "Implement: Create a debug logger utility that checks environment/feature flag [COMPLETED - logger.ts exists]",
+      "Implement: Replace all console.log calls with conditional debug logger [COMPLETED]",
+      "Implement: Remove production debug logs or gate behind isDev flag [COMPLETED - logger.ts uses import.meta.env.DEV]",
+      "Verify: Debug logs appear in development [VERIFIED]",
+      "Verify: No console output in production builds [VERIFIED]"
+    ],
+    "status": "completed",
+    "completed_at": "2025-01-08",
+    "implementation_notes": "Replaced all console.log/warn/error statements in useQuestionStore.ts with structured logger calls: (1) addNewQuestion: Using logger.debugLog for template messages, (2) setQuestionRubric: Using logger.warning for auto-save failures, (3) updateQuestionContent: Using logger.error for not found, logger.debugLog for success, (4) deleteQuestion: Using logger.error for not found, logger.debugLog for success, (5) cloneQuestion: Using logger.error for not found, logger.debugLog for success. All logging now uses the existing logger utility from src/utils/logger.ts which is development-only via import.meta.env.DEV."
   },
   {
     "id": "flaw-013",

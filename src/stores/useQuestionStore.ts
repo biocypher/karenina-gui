@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
 import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { useRubricStore } from './useRubricStore';
+import { logger } from '../utils/logger';
 
 // Define the question store state interface
 interface QuestionState {
@@ -114,16 +115,20 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     if (firstQuestionId && data[firstQuestionId].answer_template) {
       const isGenericTemplate = data[firstQuestionId].answer_template.includes('Answer to the question:');
       if (isGenericTemplate) {
-        console.error('❌ ERROR: Detected placeholder templates! This should not happen.');
+        logger.error('VALIDATION', 'Detected placeholder templates! This should not happen.', 'useQuestionStore');
         alert(
           'Error: The loaded data contains placeholder templates. Please use the Template Generator to create proper templates.'
         );
         return;
       } else {
-        console.log('✅ Loading questions with GENERATED templates (specific descriptions)');
+        logger.debugLog(
+          'DATA',
+          'Loading questions with GENERATED templates (specific descriptions)',
+          'useQuestionStore'
+        );
       }
     } else {
-      console.error("❌ ERROR: Questions don't have answer templates!");
+      logger.error('VALIDATION', "Questions don't have answer templates!", 'useQuestionStore');
       alert("Error: These questions don't have answer templates. Please use the Template Generator first.");
       return;
     }
@@ -139,7 +144,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     const matchingIds = checkpointQuestionIds.filter((id) => dataQuestionIds.includes(id));
 
     if (matchingIds.length > 0) {
-      console.log(`✅ Checkpoint matches ${matchingIds.length} questions - your progress will be restored!`);
+      logger.debugLog(
+        'CHECKPOINT',
+        `Checkpoint matches ${matchingIds.length} questions - progress will be restored`,
+        'useQuestionStore'
+      );
 
       // Create a complete checkpoint with ALL questions
       const completeCheckpoint: Checkpoint = {};
@@ -166,7 +175,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       });
 
       set(() => ({ checkpoint: completeCheckpoint }));
-      console.log(`📝 Created complete checkpoint with ${Object.keys(completeCheckpoint).length} questions`);
+      logger.debugLog(
+        'CHECKPOINT',
+        `Created complete checkpoint with ${Object.keys(completeCheckpoint).length} questions`,
+        'useQuestionStore'
+      );
 
       // Select the first question that has checkpoint data
       const firstCheckpointId = matchingIds[0];
@@ -202,7 +215,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       });
 
       set(() => ({ checkpoint: freshCheckpoint }));
-      console.log(`📝 Created fresh checkpoint with ${Object.keys(freshCheckpoint).length} questions`);
+      logger.debugLog(
+        'CHECKPOINT',
+        `Created fresh checkpoint with ${Object.keys(freshCheckpoint).length} questions`,
+        'useQuestionStore'
+      );
 
       // Select first question if available
       const firstQuestionId = dataQuestionIds[0];
@@ -216,7 +233,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   },
 
   loadCheckpoint: (unifiedCheckpoint: UnifiedCheckpoint) => {
-    console.log('🔄 Loading unified checkpoint...', {
+    logger.debugLog('CHECKPOINT', 'Loading unified checkpoint', 'useQuestionStore', {
       version: unifiedCheckpoint.version,
       itemCount: Object.keys(unifiedCheckpoint.checkpoint).length,
       hasGlobalRubric: !!unifiedCheckpoint.global_rubric,
@@ -253,7 +270,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     // Load global rubric if present
     if (unifiedCheckpoint.global_rubric) {
-      console.log('🔄 Setting global rubric from checkpoint...', {
+      logger.debugLog('RUBRIC', 'Setting global rubric from checkpoint', 'useQuestionStore', {
         llm_traits: unifiedCheckpoint.global_rubric.llm_traits?.length ?? 0,
         regex_traits: unifiedCheckpoint.global_rubric.regex_traits?.length ?? 0,
         metric_traits: unifiedCheckpoint.global_rubric.metric_traits?.length ?? 0,
@@ -261,14 +278,18 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       useRubricStore.getState().setCurrentRubric(unifiedCheckpoint.global_rubric);
     }
 
-    console.log(`✅ Unified checkpoint loaded with ${Object.keys(checkpoint).length} questions!`);
+    logger.debugLog(
+      'CHECKPOINT',
+      `Unified checkpoint loaded with ${Object.keys(checkpoint).length} questions`,
+      'useQuestionStore'
+    );
   },
 
   saveCurrentTemplate: () => {
     const state = get();
 
     // Debug logging to understand save flow
-    console.log('💾 saveCurrentTemplate called', {
+    logger.debugLog('CHECKPOINT', 'saveCurrentTemplate called', 'useQuestionStore', {
       selectedQuestionId: state.selectedQuestionId,
       hasQuestionData: !!state.questionData[state.selectedQuestionId],
       totalQuestions: Object.keys(state.questionData).length,
@@ -276,10 +297,15 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     });
 
     if (!state.selectedQuestionId || !state.questionData[state.selectedQuestionId]) {
-      console.error('❌ saveCurrentTemplate: Early return - missing selectedQuestionId or questionData', {
-        selectedQuestionId: state.selectedQuestionId,
-        hasQuestionInData: !!state.questionData[state.selectedQuestionId],
-      });
+      logger.error(
+        'CHECKPOINT',
+        'saveCurrentTemplate: Early return - missing selectedQuestionId or questionData',
+        'useQuestionStore',
+        {
+          selectedQuestionId: state.selectedQuestionId,
+          hasQuestionInData: !!state.questionData[state.selectedQuestionId],
+        }
+      );
       return;
     }
 
@@ -315,7 +341,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     set(() => ({ checkpoint: completeCheckpoint }));
 
-    console.log('✅ Checkpoint updated in store', {
+    logger.debugLog('CHECKPOINT', 'Checkpoint updated in store', 'useQuestionStore', {
       totalItems: Object.keys(completeCheckpoint).length,
       currentQuestionId: state.selectedQuestionId,
     });
@@ -328,13 +354,13 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     set(() => ({ sessionDrafts: remainingDrafts }));
 
     // Auto-save to database after saving template
-    console.log('🔄 Attempting to save to database...');
+    logger.debugLog('DATABASE', 'Attempting to save to database', 'useQuestionStore');
     autoSaveToDatabase(completeCheckpoint)
       .then(() => {
-        console.log('✅ Successfully saved to database');
+        logger.debugLog('DATABASE', 'Successfully saved to database', 'useQuestionStore');
       })
       .catch((err) => {
-        console.error('❌ Failed to save to database:', err);
+        logger.error('DATABASE', 'Failed to save to database', 'useQuestionStore', { error: err });
         alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
       });
   },
@@ -377,7 +403,9 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     // Auto-save to database after toggling finished status
     autoSaveToDatabase(completeCheckpoint).catch((err) => {
-      console.warn('⚠️ Failed to auto-save to database after toggle finished:', err);
+      logger.warning('DATABASE', 'Failed to auto-save to database after toggle finished', 'useQuestionStore', {
+        error: err,
+      });
     });
   },
 
@@ -446,9 +474,9 @@ class Answer(BaseAnswer):
 
     // Log template source for debugging
     if (validGeneratedTemplate) {
-      console.log('📝 Using LLM-generated template for new question');
+      logger.debugLog('QUESTION', 'Using LLM-generated template for new question', 'useQuestionStore');
     } else if (generatedTemplate) {
-      console.warn('⚠️ LLM template was invalid, falling back to basic template');
+      logger.warning('QUESTION', 'LLM template was invalid, falling back to basic template', 'useQuestionStore');
     }
 
     const now = new Date().toISOString();
@@ -502,7 +530,7 @@ class Answer(BaseAnswer):
       dataSource: 'uploaded',
     }));
 
-    console.log(`✅ Added new question with ID: ${questionId}`);
+    logger.debugLog('QUESTION', `Added new question with ID: ${questionId}`, 'useQuestionStore');
     return questionId;
   },
 
@@ -577,7 +605,9 @@ class Answer(BaseAnswer):
 
       // Auto-save to database after updating rubric
       autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-        console.warn('⚠️ Failed to auto-save to database after rubric update:', err);
+        logger.warning('DATABASE', 'Failed to auto-save to database after rubric update', 'useQuestionStore', {
+          error: err,
+        });
       });
     }
   },
@@ -607,7 +637,7 @@ class Answer(BaseAnswer):
     const existingCheckpointItem = state.checkpoint[questionId];
 
     if (!existingQuestion || !existingCheckpointItem) {
-      console.error('❌ updateQuestionContent: Question not found', { questionId });
+      logger.error('QUESTION', 'updateQuestionContent: Question not found', 'useQuestionStore', { questionId });
       return;
     }
 
@@ -639,11 +669,13 @@ class Answer(BaseAnswer):
       checkpoint: updatedCheckpoint,
     }));
 
-    console.log('✅ Question content updated', { questionId });
+    logger.debugLog('QUESTION', `Question content updated: ${questionId}`, 'useQuestionStore');
 
     // Auto-save to database
     autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      console.error('❌ Failed to auto-save to database after question update:', err);
+      logger.error('DATABASE', 'Failed to auto-save to database after question update', 'useQuestionStore', {
+        error: err,
+      });
       alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
     });
   },
@@ -652,7 +684,7 @@ class Answer(BaseAnswer):
     const state = get();
 
     if (!state.questionData[questionId] || !state.checkpoint[questionId]) {
-      console.error('❌ deleteQuestion: Question not found', { questionId });
+      logger.error('QUESTION', 'deleteQuestion: Question not found', 'useQuestionStore', { questionId });
       return;
     }
 
@@ -693,11 +725,13 @@ class Answer(BaseAnswer):
       currentTemplate: newCurrentTemplate,
     }));
 
-    console.log('✅ Question deleted', { questionId, newSelectedQuestionId });
+    logger.debugLog('QUESTION', `Question deleted: ${questionId}`, 'useQuestionStore', { newSelectedQuestionId });
 
     // Auto-save to database
     autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      console.error('❌ Failed to auto-save to database after question deletion:', err);
+      logger.error('DATABASE', 'Failed to auto-save to database after question deletion', 'useQuestionStore', {
+        error: err,
+      });
       alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
     });
   },
@@ -708,7 +742,7 @@ class Answer(BaseAnswer):
     const sourceCheckpointItem = state.checkpoint[questionId];
 
     if (!sourceQuestion || !sourceCheckpointItem) {
-      console.error('❌ cloneQuestion: Source question not found', { questionId });
+      logger.error('QUESTION', 'cloneQuestion: Source question not found', 'useQuestionStore', { questionId });
       return '';
     }
 
@@ -761,11 +795,15 @@ class Answer(BaseAnswer):
       currentTemplate: clonedCheckpointItem.answer_template,
     }));
 
-    console.log('✅ Question cloned', { sourceId: questionId, newId: newQuestionId, insertedAfterIndex: sourceIndex });
+    logger.debugLog('QUESTION', `Question cloned from ${questionId} to ${newQuestionId}`, 'useQuestionStore', {
+      insertedAfterIndex: sourceIndex,
+    });
 
     // Auto-save to database
     autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      console.error('❌ Failed to auto-save to database after question clone:', err);
+      logger.error('DATABASE', 'Failed to auto-save to database after question clone', 'useQuestionStore', {
+        error: err,
+      });
       alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
     });
 
