@@ -902,7 +902,8 @@
       "Implement: Reduce 6 duplicated blocks to single reusable function",
       "Verify: Duplicate name validation works for all trait types",
       "Verify: No regression in trait management"
-    ]
+    ],
+    "status": "completed"
   },
   {
     "id": "flaw-054",

@@ -1029,3 +1029,18 @@ Created new constants file (src/constants/templates.ts) with:
 - Clear `localError` when starting new upload or resetting
 
 **Result**: Error notifications are now non-blocking and consistent with the existing error UI pattern.
+
+## flaw-053: Extract duplicate trait name validation (MEDIUM)
+**File**: src/stores/useRubricStore.ts
+**Changes**:
+- Created `validateUniqueTraitName()` helper function
+- Replaced 6 duplicate validation blocks with helper calls:
+  - `addTrait()` - checks for duplicates across all trait types
+  - `updateTrait()` - excludes current trait when checking
+  - `addRegexTrait()` - checks for duplicates
+  - `updateRegexTrait()` - excludes current regex trait
+  - `addMetricTrait()` - checks for duplicates
+  - `updateMetricTrait()` - excludes current metric trait
+- Helper function accepts rubric, name, optional excludeIndex, and excludeType
+
+**Result**: Reduced code duplication from ~90 lines to ~20 lines with a single reusable function.

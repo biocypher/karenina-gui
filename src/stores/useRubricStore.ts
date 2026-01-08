@@ -46,6 +46,34 @@ const defaultRubric: Rubric = {
   metric_traits: [],
 };
 
+/**
+ * Validates that a trait name is unique across all trait types.
+ * @param rubric - The rubric to check against
+ * @param name - The new trait name to validate
+ * @param excludeIndex - Optional index to exclude (for updates)
+ * @param excludeType - Optional trait type to exclude from ('llm' | 'regex' | 'metric')
+ * @returns true if the name is unique, false if it already exists
+ */
+function validateUniqueTraitName(
+  rubric: Rubric,
+  name: string,
+  excludeIndex?: number,
+  excludeType?: 'llm' | 'regex' | 'metric'
+): boolean {
+  const llmNames = rubric.llm_traits
+    .map((t, i) => (excludeType === 'llm' && i === excludeIndex ? null : t.name.toLowerCase()))
+    .filter(Boolean);
+  const regexNames = (rubric.regex_traits || [])
+    .map((t, i) => (excludeType === 'regex' && i === excludeIndex ? null : t.name.toLowerCase()))
+    .filter(Boolean);
+  const metricNames = (rubric.metric_traits || [])
+    .map((t, i) => (excludeType === 'metric' && i === excludeIndex ? null : t.name.toLowerCase()))
+    .filter(Boolean);
+  const existingNames = [...llmNames, ...regexNames, ...metricNames];
+
+  return !existingNames.includes(name.toLowerCase());
+}
+
 export const useRubricStore = create<RubricState>((set, get) => ({
   // Initial state
   currentRubric: null,
@@ -62,13 +90,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     const { currentRubric } = get();
     const rubric = currentRubric || defaultRubric;
 
-    // Check for duplicate names across all trait types
-    const llmNames = rubric.llm_traits.map((t) => t.name.toLowerCase());
-    const regexNames = (rubric.regex_traits || []).map((t) => t.name.toLowerCase());
-    const metricNames = (rubric.metric_traits || []).map((t) => t.name.toLowerCase());
-    const existingNames = [...llmNames, ...regexNames, ...metricNames];
-
-    if (existingNames.includes(trait.name.toLowerCase())) {
+    if (!validateUniqueTraitName(rubric, trait.name)) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
     }
@@ -89,15 +111,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       return;
     }
 
-    // Check for duplicate names (excluding current trait, checking all trait types)
-    const llmNames = currentRubric.llm_traits
-      .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
-      .filter(Boolean);
-    const regexNames = (currentRubric.regex_traits || []).map((t) => t.name.toLowerCase());
-    const metricNames = (currentRubric.metric_traits || []).map((t) => t.name.toLowerCase());
-    const existingNames = [...llmNames, ...regexNames, ...metricNames];
-
-    if (existingNames.includes(trait.name.toLowerCase())) {
+    if (!validateUniqueTraitName(currentRubric, trait.name, index, 'llm')) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
     }
@@ -144,13 +158,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     const { currentRubric } = get();
     const rubric = currentRubric || defaultRubric;
 
-    // Check for duplicate names across all trait types
-    const llmNames = rubric.llm_traits.map((t) => t.name.toLowerCase());
-    const regexNames = (rubric.regex_traits || []).map((t) => t.name.toLowerCase());
-    const metricNames = (rubric.metric_traits || []).map((t) => t.name.toLowerCase());
-    const existingNames = [...llmNames, ...regexNames, ...metricNames];
-
-    if (existingNames.includes(trait.name.toLowerCase())) {
+    if (!validateUniqueTraitName(rubric, trait.name)) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
     }
@@ -171,15 +179,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       return;
     }
 
-    // Check for duplicate names (excluding current regex trait, checking all trait types)
-    const llmNames = currentRubric.llm_traits.map((t) => t.name.toLowerCase());
-    const regexNames = currentRubric.regex_traits
-      .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
-      .filter(Boolean);
-    const metricNames = (currentRubric.metric_traits || []).map((t) => t.name.toLowerCase());
-    const existingNames = [...llmNames, ...regexNames, ...metricNames];
-
-    if (existingNames.includes(trait.name.toLowerCase())) {
+    if (!validateUniqueTraitName(currentRubric, trait.name, index, 'regex')) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
     }
@@ -212,13 +212,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     const { currentRubric } = get();
     const rubric = currentRubric || defaultRubric;
 
-    // Check for duplicate names across all trait types
-    const llmNames = rubric.llm_traits.map((t) => t.name.toLowerCase());
-    const regexNames = (rubric.regex_traits || []).map((t) => t.name.toLowerCase());
-    const metricNames = (rubric.metric_traits || []).map((t) => t.name.toLowerCase());
-    const existingNames = [...llmNames, ...regexNames, ...metricNames];
-
-    if (existingNames.includes(trait.name.toLowerCase())) {
+    if (!validateUniqueTraitName(rubric, trait.name)) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
     }
@@ -239,15 +233,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
       return;
     }
 
-    // Check for duplicate names (excluding current metric trait, checking all trait types)
-    const llmNames = currentRubric.llm_traits.map((t) => t.name.toLowerCase());
-    const regexNames = (currentRubric.regex_traits || []).map((t) => t.name.toLowerCase());
-    const metricNames = currentRubric.metric_traits
-      .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
-      .filter(Boolean);
-    const existingNames = [...llmNames, ...regexNames, ...metricNames];
-
-    if (existingNames.includes(trait.name.toLowerCase())) {
+    if (!validateUniqueTraitName(currentRubric, trait.name, index, 'metric')) {
       set({ lastError: `Trait with name "${trait.name}" already exists` });
       return;
     }
