@@ -463,7 +463,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        logger.info('WebSocket connected for job', jobId);
+        logger.info('WEBSOCKET', `WebSocket connected for job ${jobId}`, 'useTemplateStore');
       };
 
       ws.onmessage = (event) => {
@@ -532,25 +532,25 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
               break;
 
             default:
-              logger.warn('Unknown WebSocket event type:', eventData.type);
+              logger.warning('WEBSOCKET', `Unknown WebSocket event type: ${eventData.type}`, 'useTemplateStore');
           }
         } catch (err) {
-          logger.error('Failed to parse WebSocket message:', err);
+          logger.error('WEBSOCKET', 'Failed to parse WebSocket message', 'useTemplateStore', { error: err });
         }
       };
 
       ws.onerror = (error) => {
-        logger.error('WebSocket error:', error);
+        logger.error('WEBSOCKET', 'WebSocket error', 'useTemplateStore', { error });
       };
 
       ws.onclose = () => {
-        logger.info('WebSocket closed for job', jobId);
+        logger.info('WEBSOCKET', `WebSocket closed for job ${jobId}`, 'useTemplateStore');
         set(() => ({ websocket: null }));
       };
 
       set(() => ({ websocket: ws }));
     } catch (err) {
-      logger.error('Failed to create WebSocket connection:', err);
+      logger.error('WEBSOCKET', 'Failed to create WebSocket connection', 'useTemplateStore', { error: err });
     }
   },
 

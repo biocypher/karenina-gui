@@ -734,3 +734,47 @@ Removed emoji prefixes from all log messages.
 - 65 flaws remaining in PRD
 
 ---
+
+### Completed: flaw-051 - Replace console Statements with Debug Logger in App.tsx (LOW)
+
+**File:** `src/App.tsx`
+
+**Changes:**
+Replaced all 18 console.log/warn/error statements with structured logger calls:
+
+1. **Session initialization:**
+   - `console.log('🚀 App: Fresh state initialized...')` → `logger.debugLog('APP', 'App: Fresh state initialized with session', 'App', { sessionId })`
+
+2. **Auto-save operations:**
+   - `console.log('✅ Auto-saved session draft...')` → `logger.debugLog('APP', 'Auto-saved session draft...', 'App')`
+   - `console.log('💾 Auto-saving any pending fields...')` → `logger.debugLog('APP', 'Auto-saving any pending fields...', 'App')`
+   - `console.log('💾 Save button clicked')` → `logger.debugLog('APP', 'Save button clicked', 'App')`
+   - `console.log('📝 Saving unsaved fields...')` → `logger.debugLog('APP', 'Saving unsaved fields...', 'App')`
+   - `console.log('🔄 Calling saveCurrentTemplate...')` → `logger.debugLog('APP', 'Calling saveCurrentTemplate...', 'App')`
+   - `console.log('✅ handleSave completed')` → `logger.debugLog('APP', 'handleSave completed', 'App')`
+
+3. **Filter/Search:**
+   - `console.log('🔍 Filter Debug:', {...})` → `logger.debugLog('APP', 'Filter Debug', 'App', {...})`
+   - `console.log('🔄 Filter/Search changed...')` → `logger.debugLog('APP', 'Filter/Search changed', 'App', {...})`
+   - `console.log('🎯 Auto-navigating to first filtered...')` → `logger.debugLog('APP', 'Auto-navigating...', 'App')`
+   - `console.log('🚫 No questions match...')` → `logger.debugLog('APP', 'No questions match...', 'App')`
+
+4. **Configuration errors:**
+   - `console.error('Failed to load configuration defaults:', error)` → `logger.error('CONFIG', 'Failed to load configuration defaults', 'App', { error })`
+   - `console.warn('⚠️ No successfully generated templates...')` → `logger.warning('APP', 'No successfully generated templates to load into curator', 'App')`
+
+5. **Data operations:**
+   - `console.log('🧹 All data has been reset')` → `logger.debugLog('APP', 'All data has been reset', 'App')`
+   - `console.log('💾 Saved metadata for question:', ...)` → `logger.debugLog('APP', 'Saved metadata for question...', 'App', {...})`
+   - `console.log('Rubric traits updated...')` → `logger.debugLog('APP', 'Rubric traits updated...', 'App', {...})`
+   - `console.log('✅ Cloned question to:...')` → `logger.debugLog('APP', 'Cloned question to...', 'App')`
+
+**Progress Summary:**
+- 24 flaws completed (flaw-019, 041, 043, 015, 033, 070, 032, 012, 011, 048, 052, 054, 075, 077, 045, 061, 074, 081, 094, 039, 085, 091, 051)
+- 6 flaws partially complete (flaw-042, 050, 069, 088, 089, 090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, 062, 046 - PRD descriptions incorrect)
+- 64 flaws remaining in PRD
+
+**Milestone:** All console.log/warn/error statements in utility files, stores, and most components have been replaced with the structured logger. The remaining console statements are primarily in large files (checkpoint-converter.ts, export.ts) that would require more extensive refactoring.
+
+---

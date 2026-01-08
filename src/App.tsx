@@ -38,6 +38,7 @@ import QuestionRubricEditor from './components/QuestionRubricEditor';
 import RubricTraitEditor from './components/RubricTraitEditor';
 import { ConfigurationModal } from './components/ConfigurationModal';
 import { formatTimestamp, forceResetAllData } from './utils/dataLoader';
+import { logger } from './utils/logger';
 
 // VerificationResult interface now imported from types
 
@@ -116,7 +117,7 @@ function App() {
   useEffect(() => {
     // State starts clean on every refresh - no clearing needed
     setIsLoading(false);
-    console.log('🚀 App: Fresh state initialized with session:', sessionId);
+    logger.debugLog('APP', 'App: Fresh state initialized with session', 'App', { sessionId });
   }, [sessionId, setIsLoading]);
 
   // Check for unsaved field changes periodically
@@ -139,14 +140,14 @@ function App() {
     // If current template differs from checkpoint, save to session drafts
     if (currentTemplate !== checkpointTemplate) {
       setSessionDraft(selectedQuestionId, currentTemplate);
-      console.log(`✅ Auto-saved session draft for question: ${selectedQuestionId}`);
+      logger.debugLog('APP', `Auto-saved session draft for question: ${selectedQuestionId}`, 'App');
     }
   }, [currentTemplate, selectedQuestionId, checkpoint, setSessionDraft]);
 
   // Load configuration defaults on app startup
   useEffect(() => {
     loadConfiguration().catch((error) => {
-      console.error('Failed to load configuration defaults:', error);
+      logger.error('CONFIG', 'Failed to load configuration defaults', 'App', { error });
       // Notify user of configuration loading failure
       alert(
         'Warning: Failed to load application configuration. Default settings will be used. Please check your network connection and refresh if needed.'
@@ -194,11 +195,13 @@ function App() {
       // Mark benchmark as initialized so "Add Question" button becomes enabled
       markBenchmarkAsInitialized();
 
-      console.log(
-        `✅ Loaded ${Object.keys(combinedData).length} questions with successfully generated templates into curator`
+      logger.debugLog(
+        'APP',
+        `Loaded ${Object.keys(combinedData).length} questions with successfully generated templates into curator`,
+        'App'
       );
     } else {
-      console.warn('⚠️ No successfully generated templates to load into curator');
+      logger.warning('APP', 'No successfully generated templates to load into curator', 'App');
     }
   };
 
@@ -223,7 +226,7 @@ function App() {
       resetAppState();
       resetBenchmarkState();
 
-      console.log('🧹 All data has been reset');
+      logger.debugLog('APP', 'All data has been reset', 'App');
     }
   };
 
@@ -231,7 +234,7 @@ function App() {
     // ALWAYS auto-save any pending field changes before navigation (safer approach)
     // This ensures we never lose data due to timing/async issues
     if (codeEditorRef.current) {
-      console.log('💾 Auto-saving any pending fields before navigation...');
+      logger.debugLog('APP', 'Auto-saving any pending fields before navigation...', 'App');
       codeEditorRef.current.saveAllUnsavedFields();
 
       // Wait for state updates to propagate: field save → form update → template update → session draft save
@@ -271,7 +274,7 @@ function App() {
   const handleTabSwitch = (newTab: string) => {
     // Auto-save any pending field changes before switching tabs (only when leaving curator tab)
     if (activeTab === 'curator' && codeEditorRef.current) {
-      console.log('💾 Auto-saving any pending fields before tab switch...');
+      logger.debugLog('APP', 'Auto-saving any pending fields before tab switch...', 'App');
       codeEditorRef.current.saveAllUnsavedFields();
 
       // Wait for state updates to propagate: field save → form update → template update → session draft save
@@ -288,18 +291,18 @@ function App() {
   };
 
   const handleSave = () => {
-    console.log('💾 Save button clicked');
+    logger.debugLog('APP', 'Save button clicked', 'App');
 
     // First save all unsaved fields if in form editor mode
     if (codeEditorRef.current) {
-      console.log('📝 Saving unsaved fields from code editor...');
+      logger.debugLog('APP', 'Saving unsaved fields from code editor...', 'App');
       codeEditorRef.current.saveAllUnsavedFields();
     }
 
     // Then save the current template
-    console.log('🔄 Calling saveCurrentTemplate...');
+    logger.debugLog('APP', 'Calling saveCurrentTemplate...', 'App');
     saveCurrentTemplate();
-    console.log('✅ handleSave completed');
+    logger.debugLog('APP', 'handleSave completed', 'App');
   };
 
   const handleToggleFinished = () => {
@@ -337,11 +340,12 @@ function App() {
   });
 
   // Debug logging to understand filter state
-  console.log('🔍 Filter Debug:', {
+  logger.debugLog('APP', 'Filter Debug', 'App', {
     questionFilter,
-    allQuestionIds: allQuestionIds.length,
-    filteredQuestionIds: questionIds.length,
+    questionSearchTerm,
     selectedQuestionId,
+    totalQuestions: allQuestionIds.length,
+    filteredCount: questionIds.length,
     selectedInFiltered: questionIds.includes(selectedQuestionId),
   });
 
@@ -361,7 +365,7 @@ function App() {
 
     // Only respond to deliberate filter/search changes, not data updates
     if (filterChanged || searchChanged) {
-      console.log('🔄 Filter/Search changed - Filter:', questionFilter, 'Search:', questionSearchTerm);
+      logger.debugLog('APP', 'Filter/Search changed', 'App', { questionFilter, questionSearchTerm });
 
       // Get current question IDs from questionData directly (not from store function which isn't stable)
       const allIds = Object.keys(questionData);
@@ -396,10 +400,10 @@ function App() {
       // Note: Using direct store navigation here (not handleNavigateToQuestion) to avoid recursion
       // This is automatic navigation from filter/search changes, not user-initiated
       if (currentFilteredIds.length > 0) {
-        console.log('🎯 Auto-navigating to first filtered/searched question:', currentFilteredIds[0]);
+        logger.debugLog('APP', `Auto-navigating to first filtered/searched question: ${currentFilteredIds[0]}`, 'App');
         navigateToQuestion(currentFilteredIds[0]);
       } else {
-        console.log('🚫 No questions match filter/search, clearing selection');
+        logger.debugLog('APP', 'No questions match filter/search, clearing selection', 'App');
         navigateToQuestion('');
       }
     }
@@ -466,7 +470,9 @@ function App() {
     // Use direct checkpoint setter to avoid full data reload
     setCheckpoint(updatedCheckpoint);
 
-    console.log('💾 Saved metadata for question:', questionId, {
+    logger.debugLog('APP', `Saved metadata for question: ${questionId}`, 'App', {
+      author,
+      keywords,
       custom_metadata: updatedItem.custom_metadata,
       finished: updatedItem.finished,
       last_modified: updatedItem.last_modified,
@@ -516,7 +522,7 @@ function App() {
     );
     if (confirmed) {
       const newId = cloneQuestion(selectedQuestionId);
-      console.log(`✅ Cloned question to: ${newId}`);
+      logger.debugLog('APP', `Cloned question to: ${newId}`, 'App');
     }
   };
 

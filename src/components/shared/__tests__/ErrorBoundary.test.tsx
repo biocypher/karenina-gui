@@ -1,7 +1,15 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { logger } from '../../utils/logger';
+
+// Mock logger
+vi.mock('../../utils/logger', () => ({
+  logger: {
+    error: vi.fn(),
+  },
+}));
 
 // Component that throws an error for testing
 const ThrowError: React.FC<{ shouldThrow?: boolean }> = ({ shouldThrow = false }) => {
@@ -12,14 +20,8 @@ const ThrowError: React.FC<{ shouldThrow?: boolean }> = ({ shouldThrow = false }
 };
 
 describe('ErrorBoundary', () => {
-  // Suppress console.error for these tests since we expect errors
-  const originalError = console.error;
-  beforeAll(() => {
-    console.error = vi.fn();
-  });
-
-  afterAll(() => {
-    console.error = originalError;
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('renders children when there is no error', () => {
@@ -57,13 +59,21 @@ describe('ErrorBoundary', () => {
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
   });
 
-  it('logs error to console', () => {
+  it('logs error to logger', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>
     );
 
-    expect(console.error).toHaveBeenCalledWith('ErrorBoundary caught an error:', expect.any(Error), expect.any(Object));
+    expect(logger.error).toHaveBeenCalledWith(
+      'ERROR_BOUNDARY',
+      'ErrorBoundary caught an error',
+      'ErrorBoundary',
+      expect.objectContaining({
+        error: expect.any(Error),
+        errorInfo: expect.any(Object),
+      })
+    );
   });
 });

@@ -17,6 +17,10 @@ vi.mock('../../utils/logger', () => ({
     warn: {
       noGeneratedTemplates: vi.fn(),
     },
+    info: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    debugLog: vi.fn(),
   },
 }));
 
