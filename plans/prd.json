@@ -612,6 +612,8 @@
     "file": "karenina-gui/src/components/QuestionContentEditor.tsx",
     "line_range": "49",
     "description": "Uses window.confirm() which blocks execution and may not work in all environments. Native browser dialogs should be replaced with custom modal dialogs.",
+    "status": "completed",
+    "implementation_notes": "Replaced window.confirm() with reusable ConfirmDialog component (created in flaw-047). The confirmation dialog is now non-blocking with proper accessibility (ESC key, click-outside-to-close).",
     "depends_on": [],
     "steps": [
       "Implement: Create confirmation modal component",

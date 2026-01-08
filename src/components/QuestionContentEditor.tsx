@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, FileText, MessageSquare } from 'lucide-react';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 
 interface QuestionContentEditorProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const QuestionContentEditor: React.FC<QuestionContentEditorProps> = ({
   const [question, setQuestion] = useState(currentQuestion);
   const [answer, setAnswer] = useState(currentAnswer);
   const [isDirty, setIsDirty] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   // Reset form data when the question changes
   useEffect(() => {
@@ -46,10 +48,14 @@ export const QuestionContentEditor: React.FC<QuestionContentEditorProps> = ({
 
   const handleCancel = () => {
     if (isDirty) {
-      const confirmDiscard = window.confirm('You have unsaved changes. Are you sure you want to discard them?');
-      if (!confirmDiscard) return;
+      setShowDiscardConfirm(true);
+      return;
     }
 
+    discardAndClose();
+  };
+
+  const discardAndClose = () => {
     // Reset form data to original values
     setQuestion(currentQuestion);
     setAnswer(currentAnswer);
@@ -131,6 +137,18 @@ export const QuestionContentEditor: React.FC<QuestionContentEditorProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Confirmation Dialog for Discarding Changes */}
+      <ConfirmDialog
+        isOpen={showDiscardConfirm}
+        onClose={() => setShowDiscardConfirm(false)}
+        onConfirm={discardAndClose}
+        title="Discard Unsaved Changes?"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        confirmText="Discard"
+        cancelText="Keep Editing"
+        variant="warning"
+      />
     </div>
   );
 };

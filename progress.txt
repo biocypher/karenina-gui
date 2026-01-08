@@ -1070,3 +1070,14 @@ from fileValidator.ts, which provides:
 - JSON content parsing validation
 
 No additional changes needed.
+
+## flaw-036: Replace window.confirm() in QuestionContentEditor (LOW)
+**File**: src/components/QuestionContentEditor.tsx
+**Changes**:
+- Added `showDiscardConfirm` state for confirmation dialog visibility
+- Created `discardAndClose()` function to handle the actual discard action
+- Replaced `window.confirm()` with `ConfirmDialog` component
+- Added ConfirmDialog with warning variant for "Discard Unsaved Changes?"
+
+**Result**: Reuses the ConfirmDialog component created in flaw-047. Non-blocking,
+accessible confirmation flow with ESC key and click-outside-to-close support.
