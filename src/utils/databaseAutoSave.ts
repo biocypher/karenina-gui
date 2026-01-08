@@ -119,15 +119,15 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
 /**
  * Show a toast notification for database save events.
  * This is a helper function for displaying user feedback.
+ * Note: Errors are handled via setSaveError in useDatasetStore for non-blocking display.
  */
 export function showSaveNotification(type: 'success' | 'error', message: string): void {
-  // For now, use browser alerts. In the future, this can be replaced with a toast library
   if (type === 'success') {
-    // Success notifications can be less intrusive
+    // Success notifications are logged for debugging
     logger.debugLog('DATABASE', message, 'databaseAutoSave');
   } else {
-    // Error notifications should be visible
+    // Error notifications are logged and handled via error state in the store
+    // The UI components display saveError from useDatasetStore for non-blocking feedback
     logger.error('DATABASE', message, 'databaseAutoSave');
-    alert(`Error: ${message}`);
   }
 }

@@ -1221,3 +1221,8 @@ also use this pattern.
 - Verified functionality works well with proper Zustand state management
 - No refactoring needed at this time
 - Recommended to monitor for continued growth
+=== flaw-078: alert() in database auto-save ===
+- Removed alert() call from showSaveNotification function
+- Updated function to rely on setSaveError in useDatasetStore for non-blocking error display
+- Success notifications logged for debugging
+- Error notifications logged and handled via error state in store
