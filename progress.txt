@@ -1226,3 +1226,9 @@ also use this pattern.
 - Updated function to rely on setSaveError in useDatasetStore for non-blocking error display
 - Success notifications logged for debugging
 - Error notifications logged and handled via error state in store
+=== flaw-029: FileManager.tsx verification ===
+- Verified FileManager.tsx (544 lines) is well organized
+- Confirmed clear sections for checkpointing, database, and actions
+- Functions are reasonably sized
+- No refactoring needed at this time
+- Recommended to monitor for growth beyond 600 lines
