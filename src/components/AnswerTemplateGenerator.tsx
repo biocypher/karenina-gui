@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Play, Square, Download, CheckCircle, AlertCircle, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
@@ -6,6 +6,7 @@ import { useConfigStore } from '../stores/useConfigStore';
 import { QuestionSelector } from './QuestionSelector';
 import { TemplateProgress } from './TemplateProgress';
 import { TemplateResults } from './TemplateResults';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 
 interface AnswerTemplateGeneratorProps {
   questions: QuestionData;
@@ -42,6 +43,9 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
     getPendingQuestions,
     retryFailedTemplate,
   } = useTemplateStore();
+
+  // Confirmation dialog state
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Initialize config with saved defaults from configuration store
   useEffect(() => {
@@ -106,10 +110,12 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
   };
 
   const handleClearAllGenerated = () => {
-    if (window.confirm('Are you sure you want to clear all generated templates? This cannot be undone.')) {
-      // Clear all generated templates by resetting the store's generated templates
-      useTemplateStore.setState({ generatedTemplates: {} });
-    }
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearAll = () => {
+    // Clear all generated templates by resetting the store's generated templates
+    useTemplateStore.setState({ generatedTemplates: {} });
   };
 
   // Add the store getters we need
@@ -532,6 +538,18 @@ export const AnswerTemplateGenerator: React.FC<AnswerTemplateGeneratorProps> = (
           <p className="text-red-700 dark:text-red-300 mt-2">{error}</p>
         </div>
       )}
+
+      {/* Confirmation Dialog for Clear All */}
+      <ConfirmDialog
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={confirmClearAll}
+        title="Clear All Templates"
+        message="Are you sure you want to clear all generated templates? This cannot be undone."
+        confirmText="Clear All"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

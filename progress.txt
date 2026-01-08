@@ -1044,3 +1044,17 @@ Created new constants file (src/constants/templates.ts) with:
 - Helper function accepts rubric, name, optional excludeIndex, and excludeType
 
 **Result**: Reduced code duplication from ~90 lines to ~20 lines with a single reusable function.
+
+## flaw-047: Replace window.confirm() with custom modal (MEDIUM)
+**File**: src/components/AnswerTemplateGenerator.tsx
+**Changes**:
+- Created reusable `ConfirmDialog` component (src/components/ui/ConfirmDialog.tsx)
+  - Supports danger, warning, and info variants
+  - Customizable title, message, and button text
+  - Accessible with ESC key and click-outside-to-close
+- Updated `AnswerTemplateGenerator.tsx`:
+  - Added `showClearConfirm` state
+  - Replaced `window.confirm()` with `ConfirmDialog` for "Clear All" action
+  - Non-blocking, better UX than native browser dialog
+
+**Result**: Custom confirmation modal provides better UX and accessibility than native window.confirm().

@@ -800,7 +800,8 @@
       "Implement: Replace window.confirm() with custom modal",
       "Verify: Confirmation flow works correctly",
       "Verify: Dialog is accessible and responsive"
-    ]
+    ],
+    "status": "completed"
   },
   {
     "id": "flaw-048",
