@@ -565,3 +565,34 @@ VERIFIED: AnswerTemplateGenerator.tsx does NOT contain any console.log, console.
 - 78 flaws remaining in PRD
 
 ---
+
+### Completed: flaw-052 - Replace console.error with Debug Logger in useRubricStore (MEDIUM)
+
+**File:** `src/stores/useRubricStore.ts`
+
+**Changes:**
+Replaced all console.error statements with structured logger calls:
+
+1. **loadRubric error handler (line 307)**:
+   - `console.error('Error loading rubric:', error)` → `logger.error('RUBRIC', 'Error loading rubric', 'useRubricStore', { error })`
+
+2. **saveRubric error handler (line 353)**:
+   - `console.error('Error saving rubric:', error)` → `logger.error('RUBRIC', 'Error saving rubric', 'useRubricStore', { error })`
+
+3. **deleteRubric error handler (line 380)**:
+   - `console.error('Error deleting rubric:', error)` → `logger.error('RUBRIC', 'Error deleting rubric', 'useRubricStore', { error })`
+
+**Logger Utility:**
+The existing `src/utils/logger.ts` provides environment-aware logging using `import.meta.env.DEV` with structured logging and no console output in production.
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+
+**Progress Summary:**
+- 11 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015, flaw-033, flaw-070, flaw-032, flaw-012, flaw-011, flaw-048, flaw-052)
+- 6 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088, flaw-089, flaw-090 - CSRF frontend done, backend pending)
+- 3 flaws marked invalid (flaw-014, flaw-062, flaw-046 - PRD descriptions incorrect)
+- 77 flaws remaining in PRD
+
+---

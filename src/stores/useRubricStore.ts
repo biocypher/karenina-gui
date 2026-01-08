@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Rubric, RubricTrait, RegexTrait, MetricRubricTrait } from '../types';
+import { logger } from '../utils/logger';
 
 interface RubricState {
   // Current rubric being edited
@@ -303,7 +304,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
         lastError: null,
       });
     } catch (error) {
-      console.error('Error loading rubric:', error);
+      logger.error('RUBRIC', 'Error loading rubric', 'useRubricStore', { error });
       set({
         isLoadingRubric: false,
         lastError: error instanceof Error ? error.message : 'Failed to load rubric',
@@ -349,7 +350,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
         lastError: null,
       });
     } catch (error) {
-      console.error('Error saving rubric:', error);
+      logger.error('RUBRIC', 'Error saving rubric', 'useRubricStore', { error });
       set({
         isSavingRubric: false,
         lastError: error instanceof Error ? error.message : 'Failed to save rubric',
@@ -376,7 +377,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
         lastError: null,
       });
     } catch (error) {
-      console.error('Error deleting rubric:', error);
+      logger.error('RUBRIC', 'Error deleting rubric', 'useRubricStore', { error });
       set({
         isSavingRubric: false,
         lastError: error instanceof Error ? error.message : 'Failed to delete rubric',
