@@ -1385,6 +1385,8 @@
     "file": "karenina-gui/src/utils/dataLoader.ts",
     "line_range": "35",
     "description": "generateSessionId() function may be unused. Need to verify if it's called anywhere in the codebase.",
+    "status": "completed",
+    "implementation_notes": "Verified that generateSessionId() in dataLoader.ts was unused - the version in useAppStore.ts is what's being used. Removed the dead code from dataLoader.ts (lines 37-42).",
     "depends_on": [],
     "steps": [
       "Implement: Search codebase for usages of generateSessionId",

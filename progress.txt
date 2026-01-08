@@ -1110,3 +1110,13 @@ to modify and maintain. The template can be updated in one place for all new que
 - Both functions now call the helper with their respective resolution values
 
 **Result**: Reduced code duplication from ~15 lines to ~10 lines with a single reusable function.
+
+## flaw-082: Remove unused generateSessionId function (LOW)
+**File**: src/utils/dataLoader.ts
+**Changes**:
+- Searched codebase for usages of `generateSessionId`
+- Found that the version in `useAppStore.ts` is being used
+- Removed the unused duplicate from `dataLoader.ts` (lines 37-42)
+
+**Result**: Removed 6 lines of dead code. The active version in useAppStore.ts remains
+and is used for session ID generation.

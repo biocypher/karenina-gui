@@ -35,13 +35,6 @@ export const formatTimestamp = (timestamp: string): string => {
 };
 
 /**
- * Generate a unique session ID for dev mode display
- */
-export const generateSessionId = (): string => {
-  return `karenina_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
-
-/**
  * Force clear any lingering browser storage (for reset buttons)
  * Note: With pure state management, this is mainly for cleanup of any old data
  */
