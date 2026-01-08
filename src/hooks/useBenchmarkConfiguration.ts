@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ModelConfiguration } from '../types';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useBenchmarkStore } from '../stores/useBenchmarkStore';
+import { isDefaultModelConfiguration } from '../constants/defaultModels';
 
 export interface BenchmarkConfiguration {
   answeringModels: ModelConfiguration[];
@@ -88,22 +89,11 @@ export const useBenchmarkConfiguration = () => {
     if (hasInitialized.current) return;
 
     // Check if models are still at their initial defaults (haven't been modified by user)
-    const answeringIsDefault =
-      answeringModels.length === 1 &&
-      answeringModels[0].id === 'answering-1' &&
-      answeringModels[0].model_provider === 'anthropic' &&
-      answeringModels[0].model_name === 'claude-haiku-4-5' &&
-      answeringModels[0].interface === 'langchain';
-
-    const parsingIsDefault =
-      parsingModels.length === 1 &&
-      parsingModels[0].id === 'parsing-1' &&
-      parsingModels[0].model_provider === 'anthropic' &&
-      parsingModels[0].model_name === 'claude-haiku-4-5' &&
-      parsingModels[0].interface === 'langchain';
+    // Uses centralized default model detection from constants/defaultModels.ts
+    const isDefault = isDefaultModelConfiguration(answeringModels, parsingModels);
 
     // Only update if both models are still at defaults
-    if (answeringIsDefault && parsingIsDefault) {
+    if (isDefault) {
       setAnsweringModels([
         {
           ...answeringModels[0],

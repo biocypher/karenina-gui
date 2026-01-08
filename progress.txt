@@ -1198,3 +1198,9 @@ also use this pattern.
 - Simplified isTraitPassed() with early returns and helper functions
 - Simplified getTraitInfo() from 29 lines to 15 lines using helper functions
 - Added JSDoc comments to all helper functions for better documentation
+=== flaw-080: Complex default model detection logic in useEffect ===
+- Created src/constants/defaultModels.ts with centralized default model constants
+- Added helper functions: isDefaultAnsweringModel(), isDefaultParsingModel(), isDefaultModelConfiguration()
+- Updated useBenchmarkConfiguration.ts to use helper functions instead of hardcoded checks
+- Reduced useEffect complexity from 24 lines to 4 lines for model detection
+- Default model configuration can now be changed in one place
