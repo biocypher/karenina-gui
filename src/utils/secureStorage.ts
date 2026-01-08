@@ -13,6 +13,8 @@
  * so proper XSS protection (like DOMPurify) is essential.
  */
 
+import { logger } from './logger';
+
 /**
  * Secure storage keys - constants to avoid typos and enable centralized management
  */
@@ -38,8 +40,10 @@ export class SessionSecureStorage {
       sessionStorage.setItem(key, stringValue);
     } catch (error) {
       // Fail silently if sessionStorage is not available (e.g., in some iframe contexts)
-      console.warn(
-        `Failed to store item in sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`
+      logger.warning(
+        'STORAGE',
+        `Failed to store item in sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'secureStorage'
       );
     }
   }
@@ -61,8 +65,10 @@ export class SessionSecureStorage {
       }
       return value as T;
     } catch (error) {
-      console.warn(
-        `Failed to retrieve item from sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`
+      logger.warning(
+        'STORAGE',
+        `Failed to retrieve item from sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'secureStorage'
       );
       return null;
     }
@@ -76,8 +82,10 @@ export class SessionSecureStorage {
     try {
       sessionStorage.removeItem(key);
     } catch (error) {
-      console.warn(
-        `Failed to remove item from sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`
+      logger.warning(
+        'STORAGE',
+        `Failed to remove item from sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'secureStorage'
       );
     }
   }
@@ -90,7 +98,11 @@ export class SessionSecureStorage {
     try {
       sessionStorage.clear();
     } catch (error) {
-      console.warn(`Failed to clear sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logger.warning(
+        'STORAGE',
+        `Failed to clear sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'secureStorage'
+      );
     }
   }
 

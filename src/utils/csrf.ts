@@ -30,6 +30,8 @@
  * ```
  */
 
+import { logger } from './logger';
+
 interface CsrfTokenResponse {
   token: string;
 }
@@ -86,12 +88,14 @@ class CsrfManager {
       if (!response.ok) {
         // If endpoint doesn't exist yet (404), log warning but don't fail
         if (response.status === 404) {
-          console.warn(
-            `[CSRF] Token endpoint not found (${endpoint}). CSRF protection will be enabled when backend implements the endpoint.`
+          logger.warning(
+            'CSRF',
+            `Token endpoint not found (${endpoint}). CSRF protection will be enabled when backend implements the endpoint.`,
+            'csrf'
           );
           return false;
         }
-        console.error(`[CSRF] Failed to fetch token: ${response.status}`);
+        logger.error('CSRF', `Failed to fetch token: ${response.status}`, 'csrf');
         return false;
       }
 
@@ -101,10 +105,10 @@ class CsrfManager {
         return true;
       }
 
-      console.error('[CSRF] Invalid token response from server');
+      logger.error('CSRF', 'Invalid token response from server', 'csrf');
       return false;
     } catch (error) {
-      console.error('[CSRF] Error fetching token:', error);
+      logger.error('CSRF', 'Error fetching token', 'csrf', { error });
       return false;
     }
   }
