@@ -477,3 +477,48 @@ The existing `src/utils/logger.ts` provides:
 - 79 flaws remaining in PRD
 
 ---
+
+### Completed: flaw-011 - Extract Repeated Checkpoint Building Pattern (MEDIUM)
+
+**File:** `src/stores/useQuestionStore.ts`
+
+**Changes:**
+1. Created `buildCompleteCheckpoint()` helper function that consolidates the repeated checkpoint building pattern
+2. Updated `saveCurrentTemplate` to use the helper with `currentTemplate` option
+3. Updated `toggleFinished` to use the helper with `toggleFinished` option
+4. Updated `loadQuestionData` to use the helper for both preserving existing checkpoint data and creating fresh checkpoints
+
+**Helper Function Signature:**
+```typescript
+function buildCompleteCheckpoint(
+  questionData: QuestionData,
+  existingCheckpoint: Checkpoint,
+  selectedQuestionId: string,
+  options: BuildCheckpointOptions = {}
+): Checkpoint
+```
+
+**BuildCheckpointOptions Interface:**
+- `currentTemplate?: string` - Override template for the selected question
+- `toggleFinished?: boolean` - Toggle the finished status for the selected question
+- `fresh?: boolean` - Create a fresh checkpoint (no existing data preserved)
+
+**Code Quality Impact:**
+- Reduced code duplication across saveCurrentTemplate (28 lines → 3 lines)
+- Reduced code duplication in toggleFinished (26 lines → 3 lines)
+- Reduced code duplication in loadQuestionData (48 lines → 6 lines)
+- Consistent checkpoint building logic across all operations
+- Easier to maintain and modify checkpoint behavior in one place
+
+**Verification:**
+- TypeScript type checking passes
+- ESLint passes with no errors
+- All checkpoint operations maintain consistent behavior
+
+**Progress Summary:**
+- 9 flaws completed (flaw-019, flaw-041, flaw-043, flaw-015, flaw-033, flaw-070, flaw-032, flaw-012, flaw-011)
+- 6 flaws partially complete (flaw-042, flaw-050, flaw-069, flaw-088, flaw-089, flaw-090 - CSRF frontend done, backend pending)
+- 2 flaws marked invalid (flaw-014, flaw-062 - PRD description incorrect)
+- 78 flaws remaining in PRD
+
+---

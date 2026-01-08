@@ -4,6 +4,105 @@ import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { useRubricStore } from './useRubricStore';
 import { logger } from '../utils/logger';
 
+/**
+ * Options for building a complete checkpoint
+ */
+interface BuildCheckpointOptions {
+  /** Override template for the selected question */
+  currentTemplate?: string;
+  /** Toggle the finished status for the selected question */
+  toggleFinished?: boolean;
+  /** Create a fresh checkpoint (no existing data preserved) */
+  fresh?: boolean;
+}
+
+/**
+ * Helper function to build a complete checkpoint from question data.
+ * This consolidates the repeated checkpoint building pattern used across
+ * saveCurrentTemplate, toggleFinished, and loadQuestionData.
+ *
+ * @param questionData - The source question data
+ * @param existingCheckpoint - The existing checkpoint to preserve data from (ignored if fresh=true)
+ * @param selectedQuestionId - The currently selected question ID (can be empty string if no selection)
+ * @param options - Optional overrides for template, finished status, and fresh mode
+ * @returns A complete checkpoint object
+ */
+function buildCompleteCheckpoint(
+  questionData: QuestionData,
+  existingCheckpoint: Checkpoint,
+  selectedQuestionId: string,
+  options: BuildCheckpointOptions = {}
+): Checkpoint {
+  const now = new Date().toISOString();
+  const completeCheckpoint: Checkpoint = {};
+  const { fresh = false } = options;
+
+  Object.entries(questionData).forEach(([questionId, question]) => {
+    const existingCheckpointItem = existingCheckpoint[questionId];
+    const isCurrentQuestion = questionId === selectedQuestionId;
+
+    // In fresh mode, create all-new checkpoint items
+    if (fresh) {
+      completeCheckpoint[questionId] = {
+        question: question.question,
+        raw_answer: question.raw_answer,
+        original_answer_template: question.answer_template,
+        answer_template: question.answer_template,
+        last_modified: now,
+        finished: false,
+        question_rubric: undefined,
+        few_shot_examples: undefined,
+        author: question.metadata?.author,
+        keywords: question.metadata?.keywords,
+        custom_metadata: question.metadata?.url ? { url: question.metadata.url } : undefined,
+      };
+      return;
+    }
+
+    // Determine answer_template based on options
+    let answerTemplate: string;
+    if (options.currentTemplate !== undefined && isCurrentQuestion) {
+      answerTemplate = options.currentTemplate;
+    } else {
+      answerTemplate = existingCheckpointItem?.answer_template || question.answer_template;
+    }
+
+    // Determine last_modified (only update current question if template changed)
+    let lastModified: string;
+    if (isCurrentQuestion && (options.currentTemplate !== undefined || options.toggleFinished !== undefined)) {
+      lastModified = now;
+    } else {
+      lastModified = existingCheckpointItem?.last_modified || now;
+    }
+
+    // Determine finished status
+    let finished: boolean;
+    if (options.toggleFinished !== undefined && isCurrentQuestion) {
+      finished = !(existingCheckpointItem?.finished || false);
+    } else {
+      finished = existingCheckpointItem?.finished || false;
+    }
+
+    completeCheckpoint[questionId] = {
+      question: question.question,
+      raw_answer: question.raw_answer,
+      original_answer_template: question.answer_template,
+      answer_template: answerTemplate,
+      last_modified: lastModified,
+      finished: finished,
+      question_rubric: existingCheckpointItem?.question_rubric,
+      few_shot_examples: existingCheckpointItem?.few_shot_examples,
+      author: existingCheckpointItem?.author ?? question.metadata?.author,
+      keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
+      custom_metadata:
+        existingCheckpointItem?.custom_metadata ??
+        (question.metadata?.url ? { url: question.metadata.url } : undefined),
+    };
+  });
+
+  return completeCheckpoint;
+}
+
 // Define the question store state interface
 interface QuestionState {
   // Core state
@@ -150,29 +249,8 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         'useQuestionStore'
       );
 
-      // Create a complete checkpoint with ALL questions
-      const completeCheckpoint: Checkpoint = {};
-
-      Object.entries(data).forEach(([questionId, question]) => {
-        const existingCheckpointItem = state.checkpoint[questionId];
-
-        completeCheckpoint[questionId] = {
-          question: question.question,
-          raw_answer: question.raw_answer,
-          original_answer_template: question.answer_template,
-          answer_template: existingCheckpointItem?.answer_template || question.answer_template,
-          last_modified: existingCheckpointItem?.last_modified || new Date().toISOString(),
-          finished: existingCheckpointItem?.finished || false,
-          question_rubric: existingCheckpointItem?.question_rubric,
-          // Map metadata from Question to CheckpointItem (preserve existing checkpoint metadata)
-          author: existingCheckpointItem?.author ?? question.metadata?.author,
-          keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
-          // Map URL to custom metadata (CheckpointItem doesn't have direct url field)
-          custom_metadata:
-            existingCheckpointItem?.custom_metadata ??
-            (question.metadata?.url ? { url: question.metadata.url } : undefined),
-        };
-      });
+      // Build complete checkpoint using helper function (preserve existing checkpoint data)
+      const completeCheckpoint = buildCompleteCheckpoint(data, state.checkpoint, '', {});
 
       set(() => ({ checkpoint: completeCheckpoint }));
       logger.debugLog(
@@ -194,25 +272,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       }
     } else {
       // No checkpoint matches - create a fresh complete checkpoint
-      const freshCheckpoint: Checkpoint = {};
-      const now = new Date().toISOString();
-
-      Object.entries(data).forEach(([questionId, question]) => {
-        freshCheckpoint[questionId] = {
-          question: question.question,
-          raw_answer: question.raw_answer,
-          original_answer_template: question.answer_template,
-          answer_template: question.answer_template,
-          last_modified: now,
-          finished: false,
-          question_rubric: undefined,
-          // Map metadata from Question to CheckpointItem
-          author: question.metadata?.author,
-          keywords: question.metadata?.keywords,
-          // Map URL to custom metadata (CheckpointItem doesn't have direct url field)
-          custom_metadata: question.metadata?.url ? { url: question.metadata.url } : undefined,
-        };
-      });
+      const freshCheckpoint = buildCompleteCheckpoint(data, {}, '', { fresh: true });
 
       set(() => ({ checkpoint: freshCheckpoint }));
       logger.debugLog(
@@ -309,34 +369,9 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       return;
     }
 
-    const now = new Date().toISOString();
-
-    // Create a complete checkpoint with ALL questions
-    const completeCheckpoint: Checkpoint = {};
-
-    Object.entries(state.questionData).forEach(([questionId, question]) => {
-      const existingCheckpointItem = state.checkpoint[questionId];
-      const isCurrentQuestion = questionId === state.selectedQuestionId;
-
-      completeCheckpoint[questionId] = {
-        question: question.question,
-        raw_answer: question.raw_answer,
-        original_answer_template: question.answer_template,
-        answer_template: isCurrentQuestion
-          ? state.currentTemplate
-          : existingCheckpointItem?.answer_template || question.answer_template,
-        last_modified: isCurrentQuestion ? now : existingCheckpointItem?.last_modified || now,
-        finished: existingCheckpointItem?.finished || false,
-        question_rubric: existingCheckpointItem?.question_rubric,
-        // Preserve few-shot examples from existing checkpoint
-        few_shot_examples: existingCheckpointItem?.few_shot_examples,
-        // Preserve metadata from existing checkpoint or map from Question
-        author: existingCheckpointItem?.author ?? question.metadata?.author,
-        keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
-        custom_metadata:
-          existingCheckpointItem?.custom_metadata ??
-          (question.metadata?.url ? { url: question.metadata.url } : undefined),
-      };
+    // Build complete checkpoint using helper function
+    const completeCheckpoint = buildCompleteCheckpoint(state.questionData, state.checkpoint, state.selectedQuestionId, {
+      currentTemplate: state.currentTemplate,
     });
 
     set(() => ({ checkpoint: completeCheckpoint }));
@@ -369,34 +404,9 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     const state = get();
     if (!state.selectedQuestionId || !state.questionData[state.selectedQuestionId]) return;
 
-    const now = new Date().toISOString();
-
-    // Create a complete checkpoint with ALL questions
-    const completeCheckpoint: Checkpoint = {};
-
-    Object.entries(state.questionData).forEach(([questionId, question]) => {
-      const existingCheckpointItem = state.checkpoint[questionId];
-      const isCurrentQuestion = questionId === state.selectedQuestionId;
-
-      completeCheckpoint[questionId] = {
-        question: question.question,
-        raw_answer: question.raw_answer,
-        original_answer_template: question.answer_template,
-        answer_template: existingCheckpointItem?.answer_template || question.answer_template,
-        last_modified: isCurrentQuestion ? now : existingCheckpointItem?.last_modified || now,
-        finished: isCurrentQuestion
-          ? !(existingCheckpointItem?.finished || false)
-          : existingCheckpointItem?.finished || false,
-        question_rubric: existingCheckpointItem?.question_rubric,
-        // Preserve few-shot examples
-        few_shot_examples: existingCheckpointItem?.few_shot_examples,
-        // Preserve metadata from existing checkpoint or map from Question
-        author: existingCheckpointItem?.author ?? question.metadata?.author,
-        keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
-        custom_metadata:
-          existingCheckpointItem?.custom_metadata ??
-          (question.metadata?.url ? { url: question.metadata.url } : undefined),
-      };
+    // Build complete checkpoint using helper function
+    const completeCheckpoint = buildCompleteCheckpoint(state.questionData, state.checkpoint, state.selectedQuestionId, {
+      toggleFinished: true,
     });
 
     set(() => ({ checkpoint: completeCheckpoint }));
