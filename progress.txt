@@ -1058,3 +1058,15 @@ Created new constants file (src/constants/templates.ts) with:
   - Non-blocking, better UX than native browser dialog
 
 **Result**: Custom confirmation modal provides better UX and accessibility than native window.confirm().
+
+## flaw-068: File type validation in ImportResultsModal (MEDIUM) - ALREADY FIXED
+**File**: src/components/database/ImportResultsModal.tsx
+**Status**: Already completed as part of flaw-043
+
+The ImportResultsModal.tsx already uses the centralized `validateJsonFile()` function
+from fileValidator.ts, which provides:
+- File extension check (.json required)
+- MIME type validation
+- JSON content parsing validation
+
+No additional changes needed.

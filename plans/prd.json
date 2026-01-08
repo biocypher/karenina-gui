@@ -1138,6 +1138,8 @@
     "file": "karenina-gui/src/components/database/ImportResultsModal.tsx",
     "line_range": "29-32, 43-46",
     "description": "File type validation only checks file extension (.endsWith('.json')), not actual content. Same issue as flaw-043 in different file.",
+    "status": "completed",
+    "implementation_notes": "Already fixed as part of flaw-043. ImportResultsModal.tsx now uses validateJsonFile() from fileValidator.ts which validates file extension, MIME type, and JSON content.",
     "depends_on": ["flaw-043"],
     "steps": [
       "Implement: Validate JSON content by attempting to parse the file (already done in handleImport)",
