@@ -48,3 +48,15 @@
   - Removed unused useRef import from useTabManagement.ts
   - Replaced 'any' types with proper QuestionData/UnifiedCheckpoint interfaces
 - Type-check passes with no errors
+
+### flaw-023: ExtraKwargsModal.tsx Refactoring
+- Created 5 new components/hook in src/components/benchmark/kwargs/:
+  - KwargsInputComponents.tsx (267 lines) - Reusable input components (ExpandableSection, StopSequencesInput, NumberInput, SliderInput, SelectInput, ToggleInput)
+  - MiddlewareConfigurationSections.tsx (253 lines) - Agent middleware configuration with Limits, Summarization, Model Retry, Tool Retry sections
+  - KwargsJsonEditor.tsx (106 lines) - JSON editor with example templates and validation
+  - useExtraKwargsState.ts (334 lines) - Custom hook for all state management (tab state, generation params, middleware config, JSON text, conflicts, action handlers)
+  - CommonParametersTab.tsx (126 lines) - Common parameters tab with generation params and conditional middleware config
+  - index.ts (38 lines) - Clean module re-exports
+- Refactored ExtraKwargsModal.tsx from 961 to 207 lines (-754 lines, 78% reduction)
+- Modal now serves as composition root using custom hook for state management
+- Type-check passes with no errors
