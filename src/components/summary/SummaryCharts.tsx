@@ -53,20 +53,22 @@ export function SummaryCharts({ summary }: SummaryChartsProps) {
       : [];
 
   // Prepare data for token usage by evaluation type bar chart
-  const tokenData: TokenUsageByTypeData[] = [
-    {
-      type: 'Template',
-      input: summary.tokens.template_input,
-      output: summary.tokens.template_output,
-    },
-    {
-      type: 'Rubric',
-      input: summary.tokens.rubric_input,
-      output: summary.tokens.rubric_output,
-    },
-  ];
+  const tokenData: TokenUsageByTypeData[] = summary.tokens
+    ? [
+        {
+          type: 'Template',
+          input: summary.tokens.template_input ?? 0,
+          output: summary.tokens.template_output ?? 0,
+        },
+        {
+          type: 'Rubric',
+          input: summary.tokens.rubric_input ?? 0,
+          output: summary.tokens.rubric_output ?? 0,
+        },
+      ]
+    : [];
 
-  if (summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output) {
+  if (summary.tokens?.deep_judgment_input && summary.tokens.deep_judgment_output) {
     tokenData.push({
       type: 'Deep Judgment',
       input: summary.tokens.deep_judgment_input,

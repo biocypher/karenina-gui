@@ -40,6 +40,9 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
   const numAnsweringConfigs = uniqueAnsweringConfigs.size;
   const numParsingModels = uniqueParsingModels.size;
 
+  // Check if we have token data
+  const hasTokenData = summary.tokens && (summary.tokens.total_input > 0 || summary.tokens.total_output > 0);
+
   // Overview section rows
   const overviewRows: SummaryRow[] = [
     { label: 'Total Results:', value: summary.num_results },
@@ -50,32 +53,36 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
       label: 'Total Execution Time:',
       value: formatDuration(summary.total_execution_time),
     },
-    {
-      label: 'Total Tokens:',
-      value: (
-        <div>
-          <div className="font-mono">
-            {formatNumber(summary.tokens.total_input)} input, {formatNumber(summary.tokens.total_output)} output
-          </div>
-          <div className="ml-4 mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1 font-normal">
-            <div>
-              └─ Templates: {formatNumber(summary.tokens.template_input)} input,{' '}
-              {formatNumber(summary.tokens.template_output)} output
-            </div>
-            <div>
-              └─ Rubrics: {formatNumber(summary.tokens.rubric_input)} input,{' '}
-              {formatNumber(summary.tokens.rubric_output)} output
-            </div>
-            {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
+    ...(hasTokenData
+      ? [
+          {
+            label: 'Total Tokens:',
+            value: (
               <div>
-                └─ Deep Judgment: {formatNumber(summary.tokens.deep_judgment_input)} input,{' '}
-                {formatNumber(summary.tokens.deep_judgment_output)} output
+                <div className="font-mono">
+                  {formatNumber(summary.tokens.total_input)} input, {formatNumber(summary.tokens.total_output)} output
+                </div>
+                <div className="ml-4 mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1 font-normal">
+                  <div>
+                    └─ Templates: {formatNumber(summary.tokens.template_input)} input,{' '}
+                    {formatNumber(summary.tokens.template_output)} output
+                  </div>
+                  <div>
+                    └─ Rubrics: {formatNumber(summary.tokens.rubric_input)} input,{' '}
+                    {formatNumber(summary.tokens.rubric_output)} output
+                  </div>
+                  {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
+                    <div>
+                      └─ Deep Judgment: {formatNumber(summary.tokens.deep_judgment_input)} input,{' '}
+                      {formatNumber(summary.tokens.deep_judgment_output)} output
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      ),
-    },
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (

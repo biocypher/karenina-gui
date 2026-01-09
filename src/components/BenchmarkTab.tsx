@@ -99,6 +99,8 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Verification state
   const [isRunning, setIsRunning] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- isUploading is used but setter not yet implemented
+  const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState<VerificationProgress | null>(null);
   const [selectedResult, setSelectedResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +113,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const {
     selectedTests,
     testSearchTerm,
+    setTestSearchTerm,
     filteredTemplates,
     expandedQuestions,
     customFewShotSelections,

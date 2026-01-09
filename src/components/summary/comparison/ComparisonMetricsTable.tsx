@@ -90,48 +90,52 @@ export function ComparisonMetricsTable({ selectedModels, comparisonData }: Compa
                         </td>
                       </tr>
                     )}
-                    <tr className={rowClass}>
-                      <td className={labelClass}>Total Tokens:</td>
-                      <td className={valueClass}>
-                        <div>
-                          {Math.round(summary.tokens.total_input).toLocaleString()} ±{' '}
-                          {Math.round(summary.tokens.total_input_std).toLocaleString()} input,{' '}
-                          {Math.round(summary.tokens.total_output).toLocaleString()} ±{' '}
-                          {Math.round(summary.tokens.total_output_std).toLocaleString()} output
-                        </div>
-                        <div className="mt-1 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
-                          <div>
-                            └─ Templates: {Math.round(summary.tokens.template_input).toLocaleString()} ±{' '}
-                            {Math.round(summary.tokens.template_input_std).toLocaleString()} input,{' '}
-                            {Math.round(summary.tokens.template_output).toLocaleString()} ±{' '}
-                            {Math.round(summary.tokens.template_output_std).toLocaleString()} output
-                          </div>
-                          <div>
-                            └─ Rubrics: {Math.round(summary.tokens.rubric_input).toLocaleString()} ±{' '}
-                            {Math.round(summary.tokens.rubric_input_std).toLocaleString()} input,{' '}
-                            {Math.round(summary.tokens.rubric_output).toLocaleString()} ±{' '}
-                            {Math.round(summary.tokens.rubric_output_std).toLocaleString()} output
-                          </div>
-                          {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
+                    {summary.tokens && (
+                      <>
+                        <tr className={rowClass}>
+                          <td className={labelClass}>Total Tokens:</td>
+                          <td className={valueClass}>
                             <div>
-                              └─ Deep Judgment: {Math.round(summary.tokens.deep_judgment_input).toLocaleString()} ±{' '}
-                              {Math.round(summary.tokens.deep_judgment_input_std || 0).toLocaleString()} input,{' '}
-                              {Math.round(summary.tokens.deep_judgment_output).toLocaleString()} ±{' '}
-                              {Math.round(summary.tokens.deep_judgment_output_std || 0).toLocaleString()} output
+                              {Math.round(summary.tokens.total_input ?? 0).toLocaleString()} ±{' '}
+                              {Math.round(summary.tokens.total_input_std ?? 0).toLocaleString()} input,{' '}
+                              {Math.round(summary.tokens.total_output ?? 0).toLocaleString()} ±{' '}
+                              {Math.round(summary.tokens.total_output_std ?? 0).toLocaleString()} output
                             </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className={rowClass}>
-                      <td className={labelClass}>Median Tokens/Question:</td>
-                      <td className={valueClass}>
-                        {Math.round(summary.tokens.median_per_question_input).toLocaleString()} ±{' '}
-                        {Math.round(summary.tokens.median_per_question_input_std).toLocaleString()} input,{' '}
-                        {Math.round(summary.tokens.median_per_question_output).toLocaleString()} ±{' '}
-                        {Math.round(summary.tokens.median_per_question_output_std).toLocaleString()} output
-                      </td>
-                    </tr>
+                            <div className="mt-1 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                              <div>
+                                └─ Templates: {Math.round(summary.tokens.template_input ?? 0).toLocaleString()} ±{' '}
+                                {Math.round(summary.tokens.template_input_std ?? 0).toLocaleString()} input,{' '}
+                                {Math.round(summary.tokens.template_output ?? 0).toLocaleString()} ±{' '}
+                                {Math.round(summary.tokens.template_output_std ?? 0).toLocaleString()} output
+                              </div>
+                              <div>
+                                └─ Rubrics: {Math.round(summary.tokens.rubric_input ?? 0).toLocaleString()} ±{' '}
+                                {Math.round(summary.tokens.rubric_input_std ?? 0).toLocaleString()} input,{' '}
+                                {Math.round(summary.tokens.rubric_output ?? 0).toLocaleString()} ±{' '}
+                                {Math.round(summary.tokens.rubric_output_std ?? 0).toLocaleString()} output
+                              </div>
+                              {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
+                                <div>
+                                  └─ Deep Judgment: {Math.round(summary.tokens.deep_judgment_input).toLocaleString()} ±{' '}
+                                  {Math.round(summary.tokens.deep_judgment_input_std || 0).toLocaleString()} input,{' '}
+                                  {Math.round(summary.tokens.deep_judgment_output).toLocaleString()} ±{' '}
+                                  {Math.round(summary.tokens.deep_judgment_output_std || 0).toLocaleString()} output
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        <tr className={rowClass}>
+                          <td className={labelClass}>Median Tokens/Question:</td>
+                          <td className={valueClass}>
+                            {Math.round(summary.tokens.median_per_question_input ?? 0).toLocaleString()} ±{' '}
+                            {Math.round(summary.tokens.median_per_question_input_std ?? 0).toLocaleString()} input,{' '}
+                            {Math.round(summary.tokens.median_per_question_output ?? 0).toLocaleString()} ±{' '}
+                            {Math.round(summary.tokens.median_per_question_output_std ?? 0).toLocaleString()} output
+                          </td>
+                        </tr>
+                      </>
+                    )}
                   </tbody>
                 </table>
               </div>
