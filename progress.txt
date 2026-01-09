@@ -1425,3 +1425,54 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
 - Progress updates now arrive in real-time via server push
 - Eliminated unnecessary HTTP requests during generation (was polling every 1 second)
 - Reduced from 473 to 414 lines (-59 lines, 12% reduction)
+
+=== flaw-065: SummaryCharts.tsx refactoring (2026-01-09 02:20 UTC) ===
+Status: COMPLETED
+
+Created src/components/summary/charts/ directory structure:
+- chartTheme.tsx (168 lines)
+  * getChartTheme() - Nivo theme with dark mode support
+  * getTooltipStyles() - Common tooltip styles
+  * ChartTooltip component - Reusable tooltip with color border
+  * getTickColor() - Tick color based on dark mode
+  * MultilineTick component - Multiline tick renderer for model combos
+  * COMMON_LEGEND_CONFIG - Shared legend configuration
+  * formatLargeNumber() - Format numbers with K/M suffixes
+
+- PassRateChart.tsx (66 lines)
+  * Bar chart showing template pass rates by model combination
+  * Uses extracted theme and tooltip components
+  * Custom multiline tick rendering for model combo labels
+
+- TokenUsageByModelChart.tsx (68 lines)
+  * Bar chart showing token usage by model
+  * K/M number formatting on axis
+  * Tooltip shows tokens with unit label
+
+- TokenUsageByTypeChart.tsx (62 lines)
+  * Bar chart showing token usage by evaluation type (Template/Rubric/Deep Judgment)
+  * Dynamic data based on available token types
+
+- ToolUsageChart.tsx (172 lines)
+  * Two horizontal bar charts: Total Calls and Average Calls per Trace
+  * Displays top 15 tools sorted by usage
+  * Dynamic height based on number of tools
+
+- index.ts (24 lines)
+  * Clean re-exports for the charts module
+
+Refactored SummaryCharts.tsx:
+- From 584 lines to 100 lines (-484 lines, 83% reduction)
+- Now serves as composition root that:
+  * Parses model combos into readable format
+  * Prepares data for each chart
+  * Delegates rendering to extracted chart components
+
+Benefits:
+- Eliminated duplicate Nivo configuration (theme, tooltips, legends, axis formatters)
+- Each chart is self-contained and testable
+- Dark mode theme is consistent across all charts
+- Adding new charts is easier with shared utilities
+- Main component is now <200 lines (well under 300 line target)
+
+Type-check: PASSED

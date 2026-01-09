@@ -1223,6 +1223,9 @@
     "file": "karenina-gui/src/components/summary/SummaryCharts.tsx",
     "line_range": "1-584",
     "description": "SummaryCharts.tsx is 584 lines - handles multiple chart visualizations using Nivo for template pass rates, token usage, and tool usage statistics. Large component with repetitive chart configuration.",
+    "status": "completed",
+    "completed_at": "2026-01-09T02:20:00.000Z",
+    "implementation_notes": "Created src/components/summary/charts/ directory with modular structure: chartTheme.tsx (168 lines) - getChartTheme(), getTooltipStyles(), ChartTooltip component, getTickColor(), MultilineTick component, COMMON_LEGEND_CONFIG, formatLargeNumber(). PassRateChart.tsx (66 lines) - Template pass rates bar chart component. TokenUsageByModelChart.tsx (68 lines) - Token usage by model bar chart component. TokenUsageByTypeChart.tsx (62 lines) - Token usage by evaluation type bar chart component. ToolUsageChart.tsx (172 lines) - Tool usage horizontal bar charts (total calls and avg per trace). index.ts (24 lines) - Clean module re-exports. Refactored SummaryCharts.tsx from 584 lines to 100 lines (-484 lines, 83% reduction). Now serves as composition root that prepares data and renders extracted chart components. All repetitive Nivo configuration (theme, tooltips, legends, axis formatting) is centralized in chartTheme.tsx.",
     "depends_on": [],
     "steps": [
       "Implement: Extract chart theme configuration to constants/chartTheme.ts",
