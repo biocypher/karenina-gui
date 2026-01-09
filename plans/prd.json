@@ -44,12 +44,9 @@
       "Verify: Rubric editing functionality works after refactoring",
       "Verify: No regression in trait validation behavior"
     ],
-    "steps_completed": [
-      "Extracted trait validation logic to useTraitValidation hook",
-      "Extracted metric trait logic to useMetricTraits hook"
-    ],
-    "status": "partial",
-    "implementation_notes": "Partial completion: Extracted trait validation (useTraitValidation) and metric trait management (useMetricTraits) hooks. Reduced QuestionRubricEditor.tsx from 1418 to 1369 lines (-49 lines, 3.5% reduction). Improved separation of concerns and testability. Remaining: extract trait list rendering, trait editing, and create shared trait editor components."
+    "status": "completed",
+    "completed_at": "2026-01-09T03:07:00.000Z",
+    "implementation_notes": "Created src/components/rubric/ directory with 4 specialized trait card components: LLMTraitCard.tsx (273 lines) - Handles Binary/Score trait editing with Deep Judgment configuration, RegexTraitCard.tsx (248 lines) - Handles regex trait editing with pattern matching options, MetricTraitCard.tsx (241 lines) - Handles metric/confusion matrix trait editing with evaluation modes, CallableTraitCard.tsx (77 lines) - Read-only display of callable traits loaded from checkpoint. Refactored QuestionRubricEditor.tsx from 1,365 to 590 lines (-775 lines, 57% reduction). Component now serves as composition root managing state and coordinating the extracted trait card components. All trait-specific UI logic (Deep Judgment settings, regex patterns with tooltips, confusion matrix configuration) is now in separate, focused components."
   },
   {
     "id": "flaw-003",

@@ -1729,3 +1729,63 @@ Type-check: PASSED
 - Filter components can be reused across the application
 - Main table file is more maintainable
 
+
+### Completed: flaw-002 - QuestionRubricEditor.tsx Refactoring (HIGH)
+
+**Files:**
+- Created: `src/components/rubric/LLMTraitCard.tsx` (273 lines)
+- Created: `src/components/rubric/RegexTraitCard.tsx` (248 lines)
+- Created: `src/components/rubric/MetricTraitCard.tsx` (241 lines)
+- Created: `src/components/rubric/CallableTraitCard.tsx` (77 lines)
+- Modified: `src/components/QuestionRubricEditor.tsx` (1,365 → 590 lines, -775 lines)
+
+**Changes:**
+1. Created `LLMTraitCard.tsx` with:
+   - Binary/Score trait editing with name, type, description
+   - Score range inputs for score traits
+   - Deep Judgment configuration with expandable advanced settings
+   - Excerpt extraction, search enhancement toggles
+   - Max excerpts, fuzzy threshold, retry attempts settings
+
+2. Created `RegexTraitCard.tsx` with:
+   - Regex trait editing with name, type, description
+   - Regex pattern input with examples tooltip
+   - Case sensitive and invert result checkboxes
+   - Invert result explanation tooltip
+
+3. Created `MetricTraitCard.tsx` with:
+   - Metric/confusion matrix trait editing
+   - Evaluation mode selector (TP-only vs Full Matrix)
+   - Metric selection with validation indicators
+   - Instruction buckets for TP (correct) and TN (incorrect)
+   - Deduplicate excerpts toggle
+
+4. Created `CallableTraitCard.tsx` with:
+   - Read-only display of callable traits loaded from checkpoint
+   - Shows trait name, type, description, and code status
+   - Read-only badge indicator
+
+5. Refactored `QuestionRubricEditor.tsx` to serve as composition root:
+   - Removed unused state variables (showRegexExamples, showInvertTooltip)
+   - Delegates trait rendering to extracted card components
+   - Manages rubric state and trait CRUD operations
+   - Coordinates between global and question-specific rubrics
+
+**Verification:**
+- Type checking passes: `npm run type-check`
+- Linting passes with no new errors
+- Component reduced from 1,365 to 590 lines (-57%)
+
+**Impact:**
+- Each trait type has its own focused, testable component
+- Trait-specific UI logic (Deep Judgment settings, regex tooltips, confusion matrix) is now modular
+- Main editor is a clean orchestrator with clear data flow
+- Callable traits display is properly read-only with clear visual indicator
+- Reduced cognitive load when working with trait cards
+
+**Progress Summary:**
+- 59 flaws completed (added flaw-002 to previous 58)
+- 6 flaws partially complete (CSRF frontend done, backend pending)
+- 3 flaws marked invalid (PRD descriptions incorrect)
+- 28 flaws remaining in PRD
+
