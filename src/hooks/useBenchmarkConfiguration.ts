@@ -3,6 +3,11 @@ import { ModelConfiguration } from '../types';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useBenchmarkStore } from '../stores/useBenchmarkStore';
 import { isDefaultModelConfiguration } from '../constants/defaultModels';
+import {
+  processInterfaceSwitch,
+  processParsingInterfaceSwitch,
+  type InterfaceSwitchConfig,
+} from '../utils/modelInterfaceSwitcher';
 
 export interface BenchmarkConfiguration {
   answeringModels: ModelConfiguration[];
@@ -170,96 +175,25 @@ export const useBenchmarkConfiguration = () => {
 
   const updateAnsweringModel = (id: string, updates: Partial<ModelConfiguration>) => {
     // Handle interface switching - clear non-relevant fields and set defaults
-    const processedUpdates = { ...updates };
-    if (updates.interface) {
-      switch (updates.interface) {
-        case 'langchain':
-          // Ensure provider has a default value for langchain
-          if (!processedUpdates.model_provider) {
-            processedUpdates.model_provider = savedProvider;
-          }
-          // Clear endpoint fields for langchain
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-        case 'openrouter':
-          // Clear provider field for openrouter (not needed)
-          processedUpdates.model_provider = '';
-          // Clear endpoint fields for openrouter
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-        case 'openai_endpoint':
-          // Clear provider field for openai_endpoint (not needed)
-          processedUpdates.model_provider = '';
-          // Ensure endpoint fields have default values
-          if (!processedUpdates.endpoint_base_url) {
-            processedUpdates.endpoint_base_url = savedEndpointBaseUrl;
-          }
-          if (!processedUpdates.endpoint_api_key) {
-            processedUpdates.endpoint_api_key = savedEndpointApiKey;
-          }
-          break;
-        case 'manual':
-          // Clear both provider and model_name for manual
-          processedUpdates.model_provider = '';
-          processedUpdates.model_name = '';
-          // Clear endpoint fields for manual
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          // Clear MCP configuration for manual interface (not supported)
-          processedUpdates.mcp_urls_dict = undefined;
-          processedUpdates.mcp_tool_filter = undefined;
-          break;
-      }
-    }
-
+    const config: InterfaceSwitchConfig = {
+      savedProvider,
+      savedModel,
+      savedEndpointBaseUrl,
+      savedEndpointApiKey,
+    };
+    const processedUpdates = processInterfaceSwitch(updates, config);
     storeUpdateAnsweringModel(id, processedUpdates);
   };
 
   const updateParsingModel = (id: string, updates: Partial<ModelConfiguration>) => {
     // Handle interface switching - clear non-relevant fields and set defaults
-    const processedUpdates = { ...updates };
-    if (updates.interface) {
-      switch (updates.interface) {
-        case 'langchain':
-          // Ensure provider has a default value for langchain
-          if (!processedUpdates.model_provider) {
-            processedUpdates.model_provider = savedProvider;
-          }
-          // Clear endpoint fields for langchain
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-        case 'openrouter':
-          // Clear provider field for openrouter (not needed)
-          processedUpdates.model_provider = '';
-          // Clear endpoint fields for openrouter
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-        case 'openai_endpoint':
-          // Clear provider field for openai_endpoint (not needed)
-          processedUpdates.model_provider = '';
-          // Ensure endpoint fields have default values
-          if (!processedUpdates.endpoint_base_url) {
-            processedUpdates.endpoint_base_url = savedEndpointBaseUrl;
-          }
-          if (!processedUpdates.endpoint_api_key) {
-            processedUpdates.endpoint_api_key = savedEndpointApiKey;
-          }
-          break;
-        case 'manual':
-          // For parsing models, manual interface should behave like openrouter
-          // (parsing models don't support manual interface according to the UI)
-          processedUpdates.model_provider = '';
-          // Clear endpoint fields for manual
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-      }
-    }
-
+    const config: InterfaceSwitchConfig = {
+      savedProvider,
+      savedModel,
+      savedEndpointBaseUrl,
+      savedEndpointApiKey,
+    };
+    const processedUpdates = processParsingInterfaceSwitch(updates, config);
     storeUpdateParsingModel(id, processedUpdates);
   };
 

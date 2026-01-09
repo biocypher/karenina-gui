@@ -1553,3 +1553,40 @@ Benefits:
 - Easier to add new summary sections with standard styling
 
 Type-check: PASSED
+
+## 2026-01-09
+
+### Completed: flaw-079 - Deduplicate Model Interface Switching Logic (LOW)
+
+**Files:**
+- Created: `src/utils/modelInterfaceSwitcher.ts` (157 lines)
+- Modified: `src/hooks/useBenchmarkConfiguration.ts` (346 → 260 lines, -86 lines)
+
+**Changes:**
+1. Created `modelInterfaceSwitcher.ts` utility with:
+   - `ModelInterface` type alias
+   - `InterfaceSwitchConfig` interface for saved defaults
+   - `processInterfaceSwitch()` - handles interface switching for answering models
+   - `processParsingInterfaceSwitch()` - handles interface switching for parsing models
+
+2. Interface-specific behavior:
+   - **langchain**: Requires provider, clears endpoint fields
+   - **openrouter**: Clears provider and endpoint fields
+   - **openai_endpoint**: Clears provider, requires endpoint fields
+   - **manual**: Clears provider, model_name, endpoint fields, and MCP config
+
+3. Refactored `useBenchmarkConfiguration.ts`:
+   - Added imports for extracted utility functions
+   - Replaced duplicate switch statement in `updateAnsweringModel` (was 48 lines, now 10 lines)
+   - Replaced duplicate switch statement in `updateParsingModel` (was 44 lines, now 10 lines)
+
+**Verification:**
+- Type checking passes: `npm run type-check`
+- Hook reduced from 346 to 260 lines (-25%)
+- Eliminated ~90 lines of duplicate code
+
+**Impact:**
+- Interface switching logic is now centralized and testable
+- Adding new interfaces only requires updating one file
+- Both answering and parsing models share consistent behavior
+
