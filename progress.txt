@@ -2020,3 +2020,25 @@ The VerificationResult interface was refactored to use nested composition (metad
 **Remaining Work:**
 - 176 failing tests (many have similar data structure issues)
 - Some tests may have UI expectation mismatches due to component changes
+
+---
+
+2026-01-09 - ManualTraceUpload Test Fixes
+
+### Fixed: ManualTraceUpload tests (15/15 passing)
+
+**Issue:**
+The ManualTraceUpload component tests were failing because:
+1. File validation was failing on test data (invalid JSON structure for manual traces)
+2. jsdom's FileReader doesn't work reliably with test-created File objects
+3. CSRF fetch wrapper wasn't being mocked properly
+
+**Files Modified:**
+`src/__tests__/components/ManualTraceUpload.test.tsx`
+- Updated test data to use valid MD5 hash keys (32 hex characters)
+- Added mock for fileValidator to bypass jsdom FileReader issues
+- Added mock for CSRF module to use global fetch directly
+
+**Results:**
+- All 15 ManualTraceUpload tests now pass
+- Overall test progress: 171 failed, 976 passing (85.1% pass rate)
