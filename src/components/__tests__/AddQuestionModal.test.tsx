@@ -12,6 +12,34 @@ vi.mock('../../stores/useConfigStore', () => ({
   }),
 }));
 
+// Store WebSocket handlers for test control
+let mockWebSocketHandlers: {
+  onCompleted?: (result: { templates: Record<string, unknown> }) => void;
+  onFailed?: (error: string) => void;
+  onCancelled?: () => void;
+  onProgressUpdate?: (progress: unknown) => void;
+} = {};
+
+// Mock the template WebSocket service - must use vi.fn() inline in the mock
+vi.mock('../../services/templateWebSocket', () => ({
+  connectTemplateProgressWebSocket: vi.fn(
+    (
+      _jobId: string,
+      handlers: {
+        onCompleted?: (result: { templates: Record<string, unknown> }) => void;
+        onFailed?: (error: string) => void;
+        onCancelled?: () => void;
+        onProgressUpdate?: (progress: unknown) => void;
+      }
+    ) => {
+      // Store handlers so tests can trigger them
+      mockWebSocketHandlers = handlers;
+    }
+  ),
+  disconnectTemplateProgressWebSocket: vi.fn(),
+  isTemplateWebSocketConnected: vi.fn(() => false),
+}));
+
 describe('AddQuestionModal', () => {
   const mockOnClose = vi.fn();
   const mockOnAdd = vi.fn();
@@ -19,6 +47,8 @@ describe('AddQuestionModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn();
+    // Reset WebSocket handlers
+    mockWebSocketHandlers = {};
   });
 
   afterEach(() => {
@@ -297,19 +327,10 @@ class Answer(BaseAnswer):
     """Generated answer"""
     value: int = Field(description="The numeric answer")`;
 
-      const mockFetch = vi
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ job_id: 'test-job-123', status: 'started' }),
-        })
-        .mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            status: 'completed',
-            result: { 'test-id': generatedTemplate },
-          }),
-        });
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ job_id: 'test-job-123', status: 'started' }),
+      });
       global.fetch = mockFetch;
 
       render(<AddQuestionModal isOpen={true} onClose={mockOnClose} onAdd={mockOnAdd} />);
@@ -321,6 +342,22 @@ class Answer(BaseAnswer):
       await user.type(questionInput, 'What is 2+2?');
       await user.type(answerInput, 'The answer is 4');
       await user.click(generateButton);
+
+      // Wait for generation to start
+      await waitFor(() => {
+        expect(screen.getByText('Generating...')).toBeInTheDocument();
+      });
+
+      // Simulate WebSocket completion callback
+      mockWebSocketHandlers.onCompleted!({
+        templates: {
+          'test-id': {
+            template_code: generatedTemplate,
+            generation_time: 100,
+            success: true,
+          },
+        },
+      });
 
       await waitFor(
         () => {
@@ -333,19 +370,10 @@ class Answer(BaseAnswer):
     it('shows error message when generation fails', async () => {
       const user = userEvent.setup();
 
-      const mockFetch = vi
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ job_id: 'test-job-123', status: 'started' }),
-        })
-        .mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            status: 'failed',
-            error: 'LLM API error',
-          }),
-        });
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ job_id: 'test-job-123', status: 'started' }),
+      });
       global.fetch = mockFetch;
 
       render(<AddQuestionModal isOpen={true} onClose={mockOnClose} onAdd={mockOnAdd} />);
@@ -357,6 +385,14 @@ class Answer(BaseAnswer):
       await user.type(questionInput, 'What is 2+2?');
       await user.type(answerInput, 'The answer is 4');
       await user.click(generateButton);
+
+      // Wait for generation to start
+      await waitFor(() => {
+        expect(screen.getByText('Generating...')).toBeInTheDocument();
+      });
+
+      // Simulate WebSocket failure callback
+      mockWebSocketHandlers.onFailed!('LLM API error');
 
       await waitFor(
         () => {
@@ -376,19 +412,10 @@ class Answer(BaseAnswer):
     """Generated answer"""
     value: int = Field(description="The numeric answer")`;
 
-      const mockFetch = vi
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ job_id: 'test-job-123', status: 'started' }),
-        })
-        .mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            status: 'completed',
-            result: { 'test-id': generatedTemplate },
-          }),
-        });
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ job_id: 'test-job-123', status: 'started' }),
+      });
       global.fetch = mockFetch;
 
       render(<AddQuestionModal isOpen={true} onClose={mockOnClose} onAdd={mockOnAdd} />);
@@ -400,6 +427,22 @@ class Answer(BaseAnswer):
       await user.type(questionInput, 'What is 2+2?');
       await user.type(answerInput, 'The answer is 4');
       await user.click(generateButton);
+
+      // Wait for generation to start
+      await waitFor(() => {
+        expect(screen.getByText('Generating...')).toBeInTheDocument();
+      });
+
+      // Simulate WebSocket completion callback
+      mockWebSocketHandlers.onCompleted!({
+        templates: {
+          'test-id': {
+            template_code: generatedTemplate,
+            generation_time: 100,
+            success: true,
+          },
+        },
+      });
 
       await waitFor(
         () => {
