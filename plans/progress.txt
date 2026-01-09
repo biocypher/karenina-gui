@@ -60,3 +60,14 @@
 - Refactored ExtraKwargsModal.tsx from 961 to 207 lines (-754 lines, 78% reduction)
 - Modal now serves as composition root using custom hook for state management
 - Type-check passes with no errors
+
+### flaw-024: MCPConfigurationModal.tsx Refactoring
+- Created 4 new components/hook in src/components/benchmark/mcp/:
+  - useMCPState.ts (611 lines) - Custom hook for all MCP state management (configuration, servers, tools, presets, validation, action handlers)
+  - MCPQuickConfiguration.tsx (81 lines) - Quick configuration section with preset server cards
+  - MCPServerList.tsx (201 lines) - Server list with add/remove/validate/save-preset functionality
+  - MCPTools.tsx (152 lines) - Tool selection with search and select-all/none
+  - index.ts (13 lines) - Clean module re-exports
+- Refactored MCPConfigurationModal.tsx from 951 to 236 lines (-715 lines, 75% reduction)
+- Modal now serves as composition root using custom hook for state management
+- Type-check passes with no errors
