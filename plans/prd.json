@@ -685,6 +685,8 @@
     "line_range": "1-441",
     "description": "QuestionExtractor.tsx is 441 lines - large component handling file upload, preview, configuration, and extraction. Multiple responsibilities in one component.",
     "depends_on": [],
+    "status": "completed",
+    "implementation_notes": "Created src/components/extraction/ directory with 5 extracted components: FileUploader.tsx (file upload with drag-and-drop), ColumnConfiguration.tsx (column selection and advanced settings), ExtractionResults.tsx (results summary), FileInfo.tsx (file info display), ErrorDisplay.tsx (error display). Refactored QuestionExtractor.tsx from 467 to 283 lines (-39%). Main component now serves as composition root orchestrating the extraction workflow.",
     "steps": [
       "Implement: Extract file upload logic to FileUploader.tsx component",
       "Implement: Extract preview handling to FilePreviewSection.tsx component",

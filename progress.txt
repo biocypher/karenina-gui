@@ -1789,3 +1789,111 @@ Type-check: PASSED
 - 3 flaws marked invalid (PRD descriptions incorrect)
 - 28 flaws remaining in PRD
 
+---
+
+2026-01-09
+
+### Completed: flaw-056 - AddQuestionModal.tsx Refactoring (MEDIUM)
+
+**File:** `src/components/AddQuestionModal.tsx`
+
+**Changes:**
+Created `src/components/addQuestion/` directory structure:
+- `QuestionFormInputs.tsx` (73 lines)
+  * Question and answer textarea inputs with character counts
+  * Error display and validation
+  * Clear buttons for each field
+
+- `QuestionMetadataForm.tsx` (63 lines)
+  * Optional author and keywords fields
+  * Collapsible metadata section
+  * Character limits for keywords
+
+- `TemplateGenerationSection.tsx` (154 lines)
+  * Generate button with disabled state logic
+  * Collapsible generation settings panel
+  * Status messages for generating/error states
+  * Inline GenerationSettingsPanel component
+
+- `index.ts` (7 lines)
+  * Clean re-exports for the addQuestion module
+
+Refactored `AddQuestionModal.tsx`:
+- From 474 lines to 293 lines (-181 lines, -38%)
+- Now serves as composition root that:
+  * Manages form state and generation state
+  * Handles WebSocket connection for template generation
+  * Delegates rendering to extracted components
+  * Coordinates between form sections
+
+**Verification:**
+- Type checking passes: `npm run type-check`
+- Linting passes with no new errors
+
+**Impact:**
+- Form inputs are now in focused, reusable components
+- Metadata form can be reused in other contexts
+- Template generation section is self-contained
+- Main modal is cleaner and easier to understand
+
+---
+
+### Completed: flaw-034 - QuestionExtractor.tsx Refactoring (MEDIUM)
+
+**File:** `src/components/QuestionExtractor.tsx`
+
+**Changes:**
+Created `src/components/extraction/` directory structure:
+- `FileUploader.tsx` (~100 lines)
+  * File upload button with drag-and-drop support
+  * File validation using validateDataFile from utils
+  * Loading states and error handling
+  * Drag-over visual feedback
+
+- `ColumnConfiguration.tsx` (~115 lines)
+  * Column selection dropdowns for question/answer
+  * Advanced extraction settings toggle
+  * Author, affiliation, URL, keywords configuration
+  * Extract button with loading state
+
+- `ExtractionResults.tsx` (~45 lines)
+  * Success message with question count
+  * Start Over button
+  * Completion status display
+
+- `FileInfo.tsx` (~40 lines)
+  * Filename, size, row count display
+  * Start Over button
+  * File metadata formatting
+
+- `ErrorDisplay.tsx` (~50 lines)
+  * Error message display with icon
+  * Dismiss button for local errors
+  * Consistent error styling
+
+- `index.ts` (11 lines)
+  * Clean re-exports for the extraction module
+
+Refactored `QuestionExtractor.tsx`:
+- From 467 lines to 283 lines (-184 lines, -39%)
+- Now serves as composition root that:
+  * Manages workflow step state (upload, preview, configure, visualize)
+  * Handles API calls for upload, preview, extraction
+  * Delegates rendering to extracted components
+  * Coordinates between useTemplateStore and UI
+
+**Verification:**
+- Type checking passes: `npm run type-check`
+
+**Impact:**
+- Each workflow step has its own focused component
+- File upload UI can be reused elsewhere
+- Error display is consistent across the application
+- Main component is much easier to understand and maintain
+
+**Progress Summary:**
+- 61 flaws completed (added flaw-056, flaw-034 to previous 59)
+- 6 flaws partially complete (CSRF frontend done, backend pending)
+- 3 flaws marked invalid (PRD descriptions incorrect)
+- 26 flaws remaining in PRD
+
