@@ -1325,3 +1325,8 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
 - Includes custom renderers for headings, code blocks with syntax highlighting, lists, links, tables
 - Uses useTheme hook for dark/light mode syntax highlighting
 - Updated DocsTab.tsx to use MarkdownRenderer, reducing from 233 to 121 lines (-112 lines, 48% reduction)
+2026-01-09 01:08 UTC - flaw-096: Extract sections from AdvancedExtractionPanel
+- Created components/extraction/AuthorInfoSection.tsx (169 lines) with author info configuration
+- Created components/extraction/AdditionalMetadataSection.tsx (245 lines) with URL and keywords configuration
+- Updated AdvancedExtractionPanel.tsx to use extracted sections, reducing from 552 to 232 lines (-320 lines, 58% reduction)
+- Component now serves as clean composition root managing state

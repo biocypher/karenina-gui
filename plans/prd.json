@@ -1784,6 +1784,9 @@
     "file": "karenina-gui/src/components/AdvancedExtractionPanel.tsx",
     "line_range": "1-552",
     "description": "AdvancedExtractionPanel.tsx is 552 lines - handles advanced metadata extraction configuration with multiple field mappings (author info, URL, keywords). The component is well-structured but exceeds the 500-line threshold.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:08:00.000Z",
+    "implementation_notes": "Extracted author information section to components/extraction/AuthorInfoSection.tsx (169 lines) with name, email, and affiliation column selectors with preview. Extracted additional metadata section to components/extraction/AdditionalMetadataSection.tsx (245 lines) with URL and multi-column keyword configuration. Updated AdvancedExtractionPanel.tsx to use extracted components, reducing from 552 to 232 lines (-320 lines, 58% reduction). The component now serves as a clean composition root managing state and coordinating the extracted sections.",
     "depends_on": [],
     "steps": [
       "Implement: Extract author information section to AuthorInfoSection.tsx component",
