@@ -1281,3 +1281,10 @@ flaw-001 update 2025-01-09: Extracted upload/import logic from BenchmarkTab.tsx
 - Hook manages file upload, parsing, merge conflict resolution, rubric updates
 - Improved separation of concerns and testability
 - Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)
+flaw-001 update 2025-01-09: Extracted verification run logic from BenchmarkTab.tsx
+- Created src/hooks/useVerificationRun.ts (142 lines)
+- Further reduced BenchmarkTab.tsx from 1166 to 1072 lines (-94 lines)
+- Total reduction: 1474 -> 1072 lines (-402 lines, 27% reduction)
+- Hook manages verification start/cancel, API calls, WebSocket coordination
+- Improved separation of concerns and testability
+- Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)

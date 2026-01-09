@@ -16,10 +16,9 @@ import {
   Search,
 } from 'lucide-react';
 import { ColumnFiltersState } from '@tanstack/react-table';
-import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig } from '../types';
+import { Checkpoint, VerificationResult, VerificationProgress } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
-import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
 import { exportFromServer, exportFilteredResults, ExportableResult } from '../utils/export';
 import { ConfigurationPanel } from './benchmark/ConfigurationPanel';
 import { PresetManager } from './presets/PresetManager';
@@ -30,6 +29,7 @@ import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
 import { useTestSelection } from '../hooks/useTestSelection';
 import { useVerificationWebSocket } from '../hooks/useVerificationWebSocket';
 import { useBenchmarkUpload } from '../hooks/useBenchmarkUpload';
+import { useVerificationRun } from '../hooks/useVerificationRun';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
@@ -155,6 +155,27 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       setIsRunning(false);
     },
   });
+
+  // Verification run management via custom hook
+  const { handleStartVerification, handleCancelVerification: handleCancelVerificationBase } = useVerificationRun({
+    selectedTests,
+    finishedTemplates,
+    runName,
+    storageUrl,
+    benchmarkName: metadata?.name,
+    getVerificationConfig,
+    onSetIsRunning: setIsRunning,
+    onSetProgress: setProgress,
+    onSetError: setError,
+    onSetJobId: setJobId,
+    connectProgressWebSocket,
+  });
+
+  // Wrapper for cancel that also disconnects WebSocket
+  const handleCancelVerification = async () => {
+    await handleCancelVerificationBase(jobId);
+    disconnectProgressWebSocket();
+  };
 
   // Local state for replicate count input to allow clearing
   const [replicateInputValue, setReplicateInputValue] = useState<string>(replicateCount.toString());
@@ -284,120 +305,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleStartVerification = async (questionIds?: string[]) => {
-    const idsToRun = questionIds || Array.from(selectedTests);
-
-    if (idsToRun.length === 0) {
-      setError('No tests selected for verification.');
-      return;
-    }
-
-    setIsRunning(true);
-    setProgress(null);
-    // DON'T clear existing results - we want to accumulate them
-    setError(null);
-
-    try {
-      // Prepare verification config
-      const config: VerificationConfig = getVerificationConfig();
-
-      // Prepare finished templates data
-      const templatesData = finishedTemplates.map(([questionId, item]) => ({
-        question_id: questionId,
-        question_text: item.question,
-        question_preview: getQuestionPreview(item.question),
-        template_code: item.answer_template,
-        last_modified: item.last_modified,
-        finished: true,
-        question_rubric: item.question_rubric || null,
-        keywords: item.keywords || null,
-      }));
-
-      const requestPayload = {
-        config,
-        question_ids: idsToRun,
-        finished_templates: templatesData,
-        run_name: runName.trim() || undefined, // Send run name if provided
-        // Async control now via KARENINA_ASYNC_ENABLED env var on server
-        storage_url: storageUrl || undefined, // Include storage URL for database auto-save
-        benchmark_name: metadata?.name || undefined, // Include benchmark name for database auto-save
-      };
-
-      // DEBUG: Log verification request details
-      console.log('🔍 Verification Request Debug:');
-      console.log('  Config:', JSON.stringify(config, null, 2));
-      console.log('  Rubric Enabled?', config.rubric_enabled);
-
-      // Log first template's rubric (if any) to verify metric_traits are included
-      if (templatesData.length > 0 && templatesData[0].question_rubric) {
-        console.log('  Sample Question Rubric:', JSON.stringify(templatesData[0].question_rubric, null, 2));
-        console.log('  Has Metric Traits?', templatesData[0].question_rubric.metric_traits?.length > 0);
-      } else {
-        console.log('  No question rubrics found in templates');
-      }
-
-      console.log('  Complete Request Payload:', JSON.stringify(requestPayload, null, 2));
-
-      // Log database auto-save configuration
-      if (storageUrl && metadata?.name) {
-        console.log('🔗 Database auto-save enabled:', { storageUrl, benchmarkName: metadata.name });
-      } else {
-        console.warn('⚠️ Database auto-save disabled - missing:', {
-          storageUrl: storageUrl ? 'set' : 'NOT SET',
-          benchmarkName: metadata?.name ? metadata.name : 'NOT SET',
-        });
-      }
-
-      const response = await fetch(API_ENDPOINTS.START_VERIFICATION, {
-        method: HTTP_METHODS.POST,
-        headers: HEADERS.CONTENT_TYPE_JSON,
-        body: JSON.stringify(requestPayload),
-      });
-
-      if (!response.ok) {
-        // Try to get error detail from response body
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        try {
-          const errorData = await response.json();
-          if (errorData.detail) {
-            errorMessage = errorData.detail;
-          }
-        } catch {
-          // If parsing fails, use the default error message
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      setJobId(data.job_id);
-
-      // Connect to WebSocket for real-time progress updates
-      connectProgressWebSocket(data.job_id);
-    } catch (err) {
-      setIsRunning(false);
-      setError(err instanceof Error ? err.message : 'Failed to start verification');
-    }
-  };
-
-  const handleCancelVerification = async () => {
-    if (!jobId) return;
-
-    try {
-      await fetch(API_ENDPOINTS.CANCEL_VERIFICATION(jobId), {
-        method: HTTP_METHODS.POST,
-      });
-
-      // Disconnect WebSocket
-      disconnectProgressWebSocket();
-
-      setIsRunning(false);
-      setProgress(null);
-      setJobId(null);
-    } catch (err) {
-      console.error('Error cancelling verification:', err);
-    }
-  };
 
   const handleExportResults = async (format: 'json' | 'csv') => {
     if (!jobId) return;
