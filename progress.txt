@@ -1631,3 +1631,54 @@ Type-check: PASSED
 - Main panel is a simple orchestrator with clear data flow
 - Each extracted component can be tested independently
 
+
+### Completed: flaw-020 - VerificationResultDetailModal.tsx Refactoring (HIGH)
+
+**Files:**
+- Created: `src/components/benchmark/verification/DeepJudgmentResults.tsx` (180 lines)
+- Created: `src/components/benchmark/verification/DeepJudgmentRubricResults.tsx` (180 lines)
+- Created: `src/components/benchmark/verification/MetricTraitConfusionMatrix.tsx` (90 lines)
+- Created: `src/components/benchmark/verification/LLMUsageMetrics.tsx` (160 lines)
+- Created: `src/components/benchmark/verification/ResultMetadata.tsx` (45 lines)
+- Created: `src/components/benchmark/verification/EmbeddingCheckResults.tsx` (45 lines)
+- Created: `src/components/benchmark/verification/AbstentionDetectionResults.tsx` (60 lines)
+- Modified: `src/components/benchmark/VerificationResultDetailModal.tsx` (1,178 → 348 lines, -830 lines)
+
+**Changes:**
+1. Created `DeepJudgmentResults.tsx` with:
+   - Summary statistics (stages completed, model calls, retries)
+   - Extracted excerpts with hallucination risk badges
+   - Attribute reasoning display
+   - Attributes without excerpts warning
+
+2. Created `DeepJudgmentRubricResults.tsx` with:
+   - Trait evaluation summary
+   - Per-trait results with reasoning, excerpts, metadata
+   - Traits without valid excerpts warning
+
+3. Created `MetricTraitConfusionMatrix.tsx` with:
+   - Confusion matrix display for metric traits
+   - Correct (TP) and incorrect (FP) extraction lists
+   - Metrics summary (precision, recall, f1, etc.)
+
+4. Created `LLMUsageMetrics.tsx` with:
+   - Token usage table by stage
+   - Agent execution metrics (iterations, tool calls)
+   - Tools used and suspect failed tools
+
+5. Created `ResultMetadata.tsx`, `EmbeddingCheckResults.tsx`, `AbstentionDetectionResults.tsx` for smaller result sections
+
+6. Refactored `VerificationResultDetailModal.tsx` to serve as composition root:
+   - Renders extracted components for each result type
+   - Handles modal structure and error boundary
+   - Uses safeJsonStringify helper for consistent JSON display
+
+**Verification:**
+- Type checking passes: `npm run type-check`
+- Modal reduced from 1,178 to 348 lines (-70%)
+
+**Impact:**
+- Each result section is now in a focused, testable component
+- Modal is much easier to understand and maintain
+- Shared hallucination risk styling utility
+
