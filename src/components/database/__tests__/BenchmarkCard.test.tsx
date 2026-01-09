@@ -41,17 +41,17 @@ describe('BenchmarkCard', () => {
   it('shows selected state when isSelected is true', () => {
     const { container } = render(<BenchmarkCard {...defaultProps} isSelected={true} />);
 
-    // Check for selected state classes
-    const card = container.querySelector('button');
-    expect(card).toHaveClass('border-blue-500');
+    // Check for selected state classes on the outer div (the border is on the div, not the button)
+    const cardContainer = container.querySelector('div[class*="border-blue-500"]');
+    expect(cardContainer).toBeInTheDocument();
   });
 
   it('shows unselected state when isSelected is false', () => {
     const { container } = render(<BenchmarkCard {...defaultProps} isSelected={false} />);
 
-    // Check for unselected state classes
-    const card = container.querySelector('button');
-    expect(card).toHaveClass('border-gray-200');
+    // Check for unselected state classes on the outer div (the border is on the div, not the button)
+    const cardContainer = container.querySelector('div[class*="border-gray-200"]');
+    expect(cardContainer).toBeInTheDocument();
   });
 
   it('displays last modified timestamp when provided', () => {
