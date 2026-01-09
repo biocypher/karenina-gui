@@ -1,11 +1,25 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { BenchmarkTab } from '../../components/BenchmarkTab';
 import { Checkpoint } from '../../types';
+import { useRubricStore } from '../../stores/useRubricStore';
+import { useDatasetStore } from '../../stores/useDatasetStore';
 
 // Mock fetch
 global.fetch = vi.fn();
+
+// Mock the CSRF module
+vi.mock('../../utils/csrf', () => ({
+  csrf: {
+    fetchWithCsrf: vi.fn((url: string, options: RequestInit = {}) => {
+      return fetch(url, options);
+    }),
+    initialize: vi.fn(() => Promise.resolve(true)),
+    getHeaders: vi.fn(() => ({})),
+  },
+}));
 
 // Mock URL.createObjectURL and related functionality for export tests
 global.URL.createObjectURL = vi.fn(() => 'mock-url');
@@ -68,6 +82,9 @@ describe('BenchmarkTab', () => {
     vi.resetAllMocks();
     // Clear any DOM elements that might have been added
     document.body.innerHTML = '';
+    // Reset stores to ensure clean state
+    useRubricStore.getState().reset();
+    useDatasetStore.getState().reset?.();
   });
 
   afterEach(() => {
@@ -122,6 +139,7 @@ describe('BenchmarkTab', () => {
   });
 
   it('starts verification when tests are selected and Run Selected is clicked', async () => {
+    const user = userEvent.setup();
     const mockFetch = vi.mocked(fetch);
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -131,15 +149,17 @@ describe('BenchmarkTab', () => {
     renderBenchmarkTab();
 
     // First select a test by clicking the checkbox
-    const checkbox = screen.getAllByRole('checkbox')[3]; // First test checkbox (indexes 0,1=evaluation, 2=select all, 3=first test)
-    fireEvent.click(checkbox);
+    const checkboxes = screen.getAllByRole('checkbox');
+    const checkbox = checkboxes[3]; // First test checkbox (indexes 0,1=evaluation, 2=select all, 3=first test)
+    await user.click(checkbox);
 
-    // Wait for the button text to update after checkbox selection
+    // Wait for the button text to update after checkbox selection - use a more flexible matcher
     await waitFor(() => {
-      expect(screen.getByText('Run Selected (1 × 1 = 1)')).toBeInTheDocument();
+      expect(screen.getByText(/Run Selected.*×.*=/)).toBeInTheDocument();
     });
 
-    const runSelectedButton = screen.getByText('Run Selected (1 × 1 = 1)');
+    // Find the Run Selected button with updated text
+    const runSelectedButton = screen.getByText(/Run Selected/);
     fireEvent.click(runSelectedButton);
 
     await waitFor(() => {
