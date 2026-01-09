@@ -147,6 +147,9 @@
     "file": "karenina-gui/src/stores/useQuestionStore.ts",
     "line_range": "1-774",
     "description": "useQuestionStore.ts is 774 lines - large Zustand store handling question state, checkpoint management, and session drafts. Has repeated checkpoint building patterns.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:55:00.000Z",
+    "implementation_notes": "Created src/utils/questionValidator.ts (114 lines) with validation utilities: validateLoadedQuestionData() for validating loaded question data (checks empty data, missing templates, placeholder templates), questionExists() to check if question exists in data, validateKeywords() for keyword array validation, validateGeneratedTemplate() for template string validation. Created src/utils/autoSaveHelper.ts (51 lines) with performAutoSave() for auto-save with error handling (returns error message or null) and performSilentAutoSave() for background saves (logs warning only). Refactored useQuestionStore.ts to use extracted utilities: loadQuestionData now uses validateLoadedQuestionData, addNewQuestion uses validateKeywords/validateGeneratedTemplate, saveCurrentTemplate/toggleFinished/setQuestionRubric/updateQuestionContent/deleteQuestion/cloneQuestion use performAutoSave/performSilentAutoSave. Replaced 6 duplicated auto-save error handling blocks with two helper functions. Store now focuses on state management - validation and auto-save patterns are centralized.",
     "depends_on": [],
     "steps": [
       "Implement: Extract checkpoint building logic to utils/checkpointBuilder.ts",

@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
-import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { useRubricStore } from './useRubricStore';
 import { logger } from '../utils/logger';
-import { isPlaceholderTemplate, TEMPLATE_VALIDATION_ERRORS, generateBasicTemplate } from '../constants/templates';
+import { generateBasicTemplate } from '../constants/templates';
+import { validateLoadedQuestionData, validateKeywords, validateGeneratedTemplate } from '../utils/questionValidator';
+import { performAutoSave, performSilentAutoSave } from '../utils/autoSaveHelper';
 
 /**
  * Options for building a complete checkpoint
@@ -218,26 +219,10 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   loadQuestionData: (data: QuestionData) => {
     const state = get();
 
-    // Validation - same as original logic
-    const firstQuestionId = Object.keys(data)[0];
-    if (firstQuestionId && data[firstQuestionId].answer_template) {
-      const isGenericTemplate = isPlaceholderTemplate(data[firstQuestionId].answer_template);
-      if (isGenericTemplate) {
-        logger.error('VALIDATION', 'Detected placeholder templates! This should not happen.', 'useQuestionStore');
-        set(() => ({ error: `Error: ${TEMPLATE_VALIDATION_ERRORS.PLACEHOLDER_DETECTED}` }));
-        return;
-      } else {
-        logger.debugLog(
-          'DATA',
-          'Loading questions with GENERATED templates (specific descriptions)',
-          'useQuestionStore'
-        );
-      }
-    } else {
-      logger.error('VALIDATION', "Questions don't have answer templates!", 'useQuestionStore');
-      set(() => ({
-        error: "Error: These questions don't have answer templates. Please use the Template Generator first.",
-      }));
+    // Validate the loaded question data
+    const validationResult = validateLoadedQuestionData(data);
+    if (!validationResult.isValid) {
+      set(() => ({ error: validationResult.errorMessage }));
       return;
     }
 
@@ -354,7 +339,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     );
   },
 
-  saveCurrentTemplate: () => {
+  saveCurrentTemplate: async () => {
     const state = get();
 
     // Debug logging to understand save flow
@@ -391,22 +376,16 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     });
 
     // Clear session draft for the saved question (it's now permanently saved)
-    const updatedState = get();
     const remainingDrafts = Object.fromEntries(
-      Object.entries(updatedState.sessionDrafts).filter(([key]) => key !== state.selectedQuestionId)
+      Object.entries(state.sessionDrafts).filter(([key]) => key !== state.selectedQuestionId)
     );
     set(() => ({ sessionDrafts: remainingDrafts }));
 
     // Auto-save to database after saving template
-    logger.debugLog('DATABASE', 'Attempting to save to database', 'useQuestionStore');
-    autoSaveToDatabase(completeCheckpoint)
-      .then(() => {
-        logger.debugLog('DATABASE', 'Successfully saved to database', 'useQuestionStore');
-      })
-      .catch((err) => {
-        logger.error('DATABASE', 'Failed to save to database', 'useQuestionStore', { error: err });
-        set(() => ({ error: `Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}` }));
-      });
+    const error = await performAutoSave(completeCheckpoint, 'template save');
+    if (error) {
+      set(() => ({ error }));
+    }
   },
 
   toggleFinished: () => {
@@ -420,12 +399,8 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     set(() => ({ checkpoint: completeCheckpoint }));
 
-    // Auto-save to database after toggling finished status
-    autoSaveToDatabase(completeCheckpoint).catch((err) => {
-      logger.warning('DATABASE', 'Failed to auto-save to database after toggle finished', 'useQuestionStore', {
-        error: err,
-      });
-    });
+    // Silent auto-save to database after toggling finished status
+    void performSilentAutoSave(completeCheckpoint, 'toggle finished');
   },
 
   navigateToQuestion: (questionId: string) => {
@@ -467,17 +442,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     // Generate UUID for the question
     const questionId = crypto.randomUUID();
 
-    // Validate and sanitize keywords
-    const validKeywords =
-      keywords && Array.isArray(keywords) && keywords.length > 0
-        ? keywords.filter((k) => typeof k === 'string' && k.trim().length > 0)
-        : undefined;
+    // Validate and sanitize keywords using extracted utility
+    const validKeywords = validateKeywords(keywords);
 
-    // Validate generated template is a non-empty string
-    const validGeneratedTemplate =
-      typeof generatedTemplate === 'string' && generatedTemplate.trim().length > 0
-        ? generatedTemplate.trim()
-        : undefined;
+    // Validate generated template using extracted utility
+    const validGeneratedTemplate = validateGeneratedTemplate(generatedTemplate);
 
     // Use generated template if provided, otherwise use basic template
     const templateToUse = validGeneratedTemplate || generateBasicTemplate(question);
@@ -613,12 +582,8 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
       set(() => ({ checkpoint: updatedCheckpoint }));
 
-      // Auto-save to database after updating rubric
-      autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-        logger.warning('DATABASE', 'Failed to auto-save to database after rubric update', 'useQuestionStore', {
-          error: err,
-        });
-      });
+      // Silent auto-save to database after updating rubric
+      void performSilentAutoSave(updatedCheckpoint, 'rubric update');
     }
   },
 
@@ -681,12 +646,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     logger.debugLog('QUESTION', `Question content updated: ${questionId}`, 'useQuestionStore');
 
-    // Auto-save to database
-    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      logger.error('DATABASE', 'Failed to auto-save to database after question update', 'useQuestionStore', {
-        error: err,
-      });
-      set(() => ({ error: `Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}` }));
+    // Auto-save to database with error handling
+    void performAutoSave(updatedCheckpoint, 'question update').then((error) => {
+      if (error) {
+        set(() => ({ error }));
+      }
     });
   },
 
@@ -737,12 +701,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     logger.debugLog('QUESTION', `Question deleted: ${questionId}`, 'useQuestionStore', { newSelectedQuestionId });
 
-    // Auto-save to database
-    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      logger.error('DATABASE', 'Failed to auto-save to database after question deletion', 'useQuestionStore', {
-        error: err,
-      });
-      set(() => ({ error: `Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}` }));
+    // Auto-save to database with error handling
+    void performAutoSave(updatedCheckpoint, 'question deletion').then((error) => {
+      if (error) {
+        set(() => ({ error }));
+      }
     });
   },
 
@@ -809,12 +772,11 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       insertedAfterIndex: sourceIndex,
     });
 
-    // Auto-save to database
-    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      logger.error('DATABASE', 'Failed to auto-save to database after question clone', 'useQuestionStore', {
-        error: err,
-      });
-      set(() => ({ error: `Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}` }));
+    // Auto-save to database with error handling
+    void performAutoSave(updatedCheckpoint, 'question clone').then((error) => {
+      if (error) {
+        set(() => ({ error }));
+      }
     });
 
     return newQuestionId;

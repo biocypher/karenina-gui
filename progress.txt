@@ -1375,3 +1375,19 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
 - Refactored useTemplateStore.ts to use extracted services
 - Removed websocket state from store, removed connectProgressWebSocket/disconnectProgressWebSocket functions
 - Reduced from 601 to 465 lines (-136 lines, 23% reduction)
+
+2026-01-09 01:55 UTC - flaw-008: Extract validation logic and auto-save helpers from useQuestionStore.ts
+- Created src/utils/questionValidator.ts (114 lines) with validation utilities:
+  - validateLoadedQuestionData() for validating loaded question data
+  - questionExists() to check if question exists in data
+  - validateKeywords() for keyword array validation
+  - validateGeneratedTemplate() for template string validation
+- Created src/utils/autoSaveHelper.ts (51 lines) with auto-save wrappers:
+  - performAutoSave() for auto-save with error handling (returns error message or null)
+  - performSilentAutoSave() for background saves (logs warning only)
+- Refactored useQuestionStore.ts to use extracted utilities:
+  - loadQuestionData now uses validateLoadedQuestionData
+  - addNewQuestion uses validateKeywords/validateGeneratedTemplate
+  - saveCurrentTemplate/toggleFinished/setQuestionRubric/updateQuestionContent/deleteQuestion/cloneQuestion use performAutoSave/performSilentAutoSave
+- Replaced 6 duplicated auto-save error handling blocks with two helper functions
+- Store now focuses on state management - validation and auto-save patterns are centralized
