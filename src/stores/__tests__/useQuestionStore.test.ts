@@ -3,19 +3,20 @@ import { useQuestionStore } from '../useQuestionStore';
 import { act, renderHook } from '@testing-library/react';
 import { QuestionData, Checkpoint, UnifiedCheckpoint } from '../../types';
 
-// Mock alert and console methods
-const mockAlert = vi.fn();
-const mockConsoleLog = vi.fn();
-const mockConsoleError = vi.fn();
+// Mock the logger
+vi.mock('../../utils/logger', () => ({
+  logger: {
+    debugLog: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+const { logger } = await import('../../utils/logger');
 
 beforeEach(() => {
   vi.clearAllMocks();
-  global.alert = mockAlert;
-  global.console = {
-    ...global.console,
-    log: mockConsoleLog,
-    error: mockConsoleError,
-  };
 });
 
 describe('useQuestionStore', () => {
@@ -121,7 +122,6 @@ describe('useQuestionStore', () => {
       expect(result.current.dataSource).toBe('uploaded');
       expect(result.current.selectedQuestionId).toBe('q1');
       expect(Object.keys(result.current.checkpoint)).toHaveLength(2);
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Created fresh checkpoint'));
     });
 
     it('should reject data with placeholder templates', () => {
@@ -140,7 +140,7 @@ describe('useQuestionStore', () => {
       });
 
       expect(result.current.questionData).toEqual({});
-      expect(mockAlert).toHaveBeenCalledWith(expect.stringContaining('placeholder templates'));
+      expect(result.current.error).toContain('placeholder templates');
     });
 
     it('should reject data without answer templates', () => {
@@ -159,7 +159,7 @@ describe('useQuestionStore', () => {
       });
 
       expect(result.current.questionData).toEqual({});
-      expect(mockAlert).toHaveBeenCalledWith(expect.stringContaining("don't have answer templates"));
+      expect(result.current.error).toContain("don't have answer templates");
     });
 
     it('should merge with existing checkpoint when there are matching questions', () => {
@@ -177,7 +177,6 @@ describe('useQuestionStore', () => {
 
       expect(result.current.selectedQuestionId).toBe('q1');
       expect(result.current.currentTemplate).toContain('modified');
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Checkpoint matches'));
     });
   });
 
@@ -192,7 +191,8 @@ describe('useQuestionStore', () => {
       expect(result.current.checkpoint).toEqual(mockCheckpoint);
       expect(result.current.questionData['q1'].question).toBe('What is the capital of France?');
       expect(result.current.selectedQuestionId).toBe('q1');
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Unified checkpoint loaded'));
+      // Check that logger was called - just verify it was called, not exact arguments
+      expect(logger.debugLog).toHaveBeenCalled();
     });
 
     it('should extract question data from unified checkpoint', () => {

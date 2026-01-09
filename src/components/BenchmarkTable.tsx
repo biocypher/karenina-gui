@@ -426,6 +426,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           <button
             onClick={() => onViewResult(info.row.original)}
             className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+            aria-label="View detailed trace"
           >
             <Eye className="w-4 h-4" />
           </button>

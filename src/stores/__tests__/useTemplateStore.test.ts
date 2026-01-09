@@ -90,8 +90,8 @@ describe('useTemplateStore', () => {
     it('should initialize with default values', () => {
       const store = useTemplateStore.getState();
 
-      expect(store.config.model_provider).toBe('google_genai');
-      expect(store.config.model_name).toBe('gemini-2.0-flash');
+      expect(store.config.model_provider).toBe('anthropic');
+      expect(store.config.model_name).toBe('claude-haiku-4-5');
       expect(store.selectedQuestions.size).toBe(0);
       expect(store.hasInitialized).toBe(false);
       expect(store.isGenerating).toBe(false);
@@ -326,7 +326,7 @@ describe('useTemplateStore', () => {
       store.resetTemplateState();
 
       const state = useTemplateStore.getState();
-      expect(state.config.model_provider).toBe('google_genai');
+      expect(state.config.model_provider).toBe('anthropic');
       expect(state.selectedQuestions.size).toBe(0);
       expect(state.isGenerating).toBe(false);
       expect(state.generatedTemplates).toEqual({});
