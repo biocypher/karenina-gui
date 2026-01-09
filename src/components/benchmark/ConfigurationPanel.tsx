@@ -1,34 +1,11 @@
 import React, { useState } from 'react';
-import { BarChart3, Plus, Trash2, ChevronDown, ChevronUp, Settings, X } from 'lucide-react';
+import { BarChart3, Plus } from 'lucide-react';
 import { Card } from '../ui/Card';
-import { ManualTraceUpload } from '../ManualTraceUpload';
 import { MCPConfigurationModal } from './MCPConfigurationModal';
 import ExtraKwargsModal from './ExtraKwargsModal';
+import { ModelConfigurationSection, type ModelConfiguration } from './ModelConfigurationSection';
+import { EvaluationSettingsSection } from './EvaluationSettingsSection';
 import type { AgentMiddlewareConfig } from '../../types';
-
-interface ModelConfiguration {
-  id: string;
-  model_provider: string;
-  model_name: string;
-  temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'native_sdk';
-  system_prompt: string;
-  // OpenAI Endpoint configuration
-  endpoint_base_url?: string;
-  endpoint_api_key?: string;
-  // MCP (Model Context Protocol) configuration
-  mcp_urls_dict?: Record<string, string>;
-  mcp_tool_filter?: string[];
-  mcp_validated_servers?: Record<string, string>;
-  use_full_trace_for_template?: boolean;
-  use_full_trace_for_rubric?: boolean;
-  // Extra keyword arguments
-  extra_kwargs?: Record<string, unknown>;
-  // Agent middleware configuration (for MCP-enabled agents)
-  agent_middleware?: AgentMiddlewareConfig;
-  // Maximum context tokens for the model (used for summarization trigger)
-  max_context_tokens?: number;
-}
 
 interface ConfigurationPanelProps {
   answeringModels: ModelConfiguration[];
@@ -140,11 +117,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     use_full_trace_for_rubric?: boolean;
   }) => {
     if (mcpModalState.modelId) {
-      const answeringModel = answeringModels.find((m) => m.id === mcpModalState.modelId);
-
-      if (answeringModel) {
-        onUpdateAnsweringModel(mcpModalState.modelId, config);
-      }
+      onUpdateAnsweringModel(mcpModalState.modelId, config);
     }
     setMcpModalState({ isOpen: false, modelId: null });
   };
@@ -237,441 +210,6 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     });
   };
 
-  const renderModelConfiguration = (model: ModelConfiguration, index: number, isAnswering: boolean) => (
-    <div key={model.id} className="border border-slate-200 dark:border-slate-600 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="font-medium text-slate-800 dark:text-slate-200">Model {index + 1}</h4>
-        {((isAnswering && answeringModels.length > 1) || (!isAnswering && parsingModels.length > 1)) && (
-          <button
-            onClick={() => (isAnswering ? onRemoveAnsweringModel(model.id) : onRemoveParsingModel(model.id))}
-            disabled={isRunning}
-            className="text-red-600 hover:text-red-700 disabled:text-slate-400"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Interface Selection */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Interface</label>
-        <div className="flex gap-4 flex-wrap">
-          <label className="flex items-center text-slate-900 dark:text-white">
-            <input
-              type="radio"
-              name={`${model.id}-interface`}
-              value="langchain"
-              checked={model.interface === 'langchain'}
-              onChange={(e) => {
-                const update = {
-                  interface: e.target.value as ModelConfiguration['interface'],
-                };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="mr-2"
-            />
-            LangChain
-          </label>
-          <label className="flex items-center text-slate-900 dark:text-white">
-            <input
-              type="radio"
-              name={`${model.id}-interface`}
-              value="openrouter"
-              checked={model.interface === 'openrouter'}
-              onChange={(e) => {
-                const update = {
-                  interface: e.target.value as ModelConfiguration['interface'],
-                };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="mr-2"
-            />
-            OpenRouter
-          </label>
-          <label className="flex items-center text-slate-900 dark:text-white">
-            <input
-              type="radio"
-              name={`${model.id}-interface`}
-              value="openai_endpoint"
-              checked={model.interface === 'openai_endpoint'}
-              onChange={(e) => {
-                const update = {
-                  interface: e.target.value as ModelConfiguration['interface'],
-                };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="mr-2"
-            />
-            OpenAI Endpoint
-          </label>
-          <label className="flex items-center text-slate-900 dark:text-white">
-            <input
-              type="radio"
-              name={`${model.id}-interface`}
-              value="native_sdk"
-              checked={model.interface === 'native_sdk'}
-              onChange={(e) => {
-                // When switching to native_sdk, force provider to be openai or anthropic
-                const currentProvider = model.model_provider;
-                const validNativeSdkProvider =
-                  currentProvider === 'openai' || currentProvider === 'anthropic' ? currentProvider : 'openai';
-                const update = {
-                  interface: e.target.value as ModelConfiguration['interface'],
-                  model_provider: validNativeSdkProvider,
-                };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="mr-2"
-            />
-            Native SDK
-          </label>
-          {isAnswering && (
-            <label className="flex items-center text-slate-900 dark:text-white">
-              <input
-                type="radio"
-                name={`${model.id}-interface`}
-                value="manual"
-                checked={model.interface === 'manual'}
-                onChange={(e) => {
-                  const update = {
-                    interface: e.target.value as ModelConfiguration['interface'],
-                  };
-                  if (isAnswering) {
-                    onUpdateAnsweringModel(model.id, update);
-                  } else {
-                    onUpdateParsingModel(model.id, update);
-                  }
-                }}
-                disabled={isRunning}
-                className="mr-2"
-              />
-              Manual
-            </label>
-          )}
-        </div>
-      </div>
-
-      {/* Provider Selection - Show only for LangChain interface */}
-      {model.interface === 'langchain' && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Provider</label>
-          <input
-            type="text"
-            value={model.model_provider}
-            onChange={(e) => {
-              const update = { model_provider: e.target.value };
-              if (isAnswering) {
-                onUpdateAnsweringModel(model.id, update);
-              } else {
-                onUpdateParsingModel(model.id, update);
-              }
-            }}
-            disabled={isRunning}
-            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-            placeholder="e.g., google_genai, openai, anthropic"
-          />
-        </div>
-      )}
-
-      {/* OpenAI Endpoint Configuration - Show only for openai_endpoint interface */}
-      {model.interface === 'openai_endpoint' && (
-        <div className="space-y-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Endpoint Base URL <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="url"
-              value={model.endpoint_base_url || ''}
-              onChange={(e) => {
-                const update = { endpoint_base_url: e.target.value };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-              placeholder="e.g., http://localhost:11434/v1"
-            />
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              OpenAI-compatible API endpoint (e.g., vLLM, Ollama, Azure OpenAI)
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              API Key <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="password"
-              value={model.endpoint_api_key || ''}
-              onChange={(e) => {
-                const update = { endpoint_api_key: e.target.value };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-              placeholder="Enter your API key"
-            />
-            <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-300">
-              Passed directly to your endpoint (not stored server-side)
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Model Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={model.model_name}
-              onChange={(e) => {
-                const update = { model_name: e.target.value };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-              placeholder="e.g., llama2, gpt-4"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Native SDK Configuration - Show only for native_sdk interface */}
-      {model.interface === 'native_sdk' && (
-        <div className="space-y-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Provider <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={model.model_provider}
-              onChange={(e) => {
-                const update = { model_provider: e.target.value };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-            >
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-            </select>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Direct SDK calls without LangChain abstraction
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Model Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={model.model_name}
-              onChange={(e) => {
-                const update = { model_name: e.target.value };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-              placeholder={
-                model.model_provider === 'openai' ? 'e.g., gpt-4.1-mini, gpt-4o' : 'e.g., claude-sonnet-4-20250514'
-              }
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Model Name - Show for LangChain and OpenRouter interfaces */}
-      {(model.interface === 'langchain' || model.interface === 'openrouter') && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Model Name</label>
-          <input
-            type="text"
-            value={model.model_name}
-            onChange={(e) => {
-              const update = { model_name: e.target.value };
-              if (isAnswering) {
-                onUpdateAnsweringModel(model.id, update);
-              } else {
-                onUpdateParsingModel(model.id, update);
-              }
-            }}
-            disabled={isRunning}
-            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-            placeholder="e.g., gpt-4, claude-3-opus, gemini-pro"
-          />
-        </div>
-      )}
-
-      {/* Temperature - Show for LangChain, OpenRouter, OpenAI Endpoint, and Native SDK interfaces */}
-      {(model.interface === 'langchain' ||
-        model.interface === 'openrouter' ||
-        model.interface === 'openai_endpoint' ||
-        model.interface === 'native_sdk') && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Temperature: {model.temperature}
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="2"
-            step="0.1"
-            value={model.temperature}
-            onChange={(e) => {
-              const update = { temperature: parseFloat(e.target.value) };
-              if (isAnswering) {
-                onUpdateAnsweringModel(model.id, update);
-              } else {
-                onUpdateParsingModel(model.id, update);
-              }
-            }}
-            disabled={isRunning}
-            className="w-full"
-          />
-        </div>
-      )}
-
-      {/* System Prompt - Show for LangChain, OpenRouter, OpenAI Endpoint, and Native SDK interfaces */}
-      {(model.interface === 'langchain' ||
-        model.interface === 'openrouter' ||
-        model.interface === 'openai_endpoint' ||
-        model.interface === 'native_sdk') && (
-        <div className="mb-2">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">System Prompt</label>
-            <button
-              type="button"
-              onClick={() => onTogglePromptExpanded(model.id)}
-              className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-            >
-              {expandedPrompts.has(model.id) ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {expandedPrompts.has(model.id) && (
-            <textarea
-              value={model.system_prompt}
-              onChange={(e) => {
-                const update = { system_prompt: e.target.value };
-                if (isAnswering) {
-                  onUpdateAnsweringModel(model.id, update);
-                } else {
-                  onUpdateParsingModel(model.id, update);
-                }
-              }}
-              disabled={isRunning}
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-xs"
-              rows={3}
-              placeholder="Define the model's role and behavior..."
-            />
-          )}
-
-          {!expandedPrompts.has(model.id) && (
-            <div className="text-xs text-slate-500 dark:text-slate-400 p-2 bg-slate-50 dark:bg-slate-700/30 rounded border border-slate-200 dark:border-slate-600">
-              {model.system_prompt.length > 60 ? model.system_prompt.substring(0, 60) + '...' : model.system_prompt}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* MCP and Extra Arguments Configuration - Show for non-manual interface */}
-      {model.interface !== 'manual' && (
-        <div className="mt-3 flex items-center gap-2">
-          {/* MCP Configuration - Show only for answering models */}
-          {isAnswering && (
-            <button
-              onClick={() => setMcpModalState({ isOpen: true, modelId: model.id })}
-              className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center space-x-2 disabled:opacity-50"
-              disabled={isRunning}
-            >
-              <Settings className="w-4 h-4" />
-              <span>Configure MCP</span>
-              {model.mcp_tool_filter && model.mcp_tool_filter.length > 0 && (
-                <span className="ml-2 pl-1 pr-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs flex items-center gap-1">
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isRunning) handleRemoveMCP(model.id);
-                    }}
-                    className="p-0.5 rounded hover:bg-blue-200 dark:hover:bg-blue-800 hover:text-red-600 dark:hover:text-red-400 cursor-pointer transition-colors"
-                    title="Remove MCP configuration"
-                  >
-                    <X className="w-3 h-3" />
-                  </span>
-                  {model.mcp_tool_filter.length} tools
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* Extra Arguments Configuration - Show for all models */}
-          <button
-            onClick={() => setExtraKwargsModalState({ isOpen: true, modelId: model.id, isAnswering })}
-            className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center space-x-2 disabled:opacity-50"
-            disabled={isRunning}
-          >
-            <Settings className="w-4 h-4" />
-            <span>Extra Arguments</span>
-            {model.extra_kwargs && Object.keys(model.extra_kwargs).length > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs">
-                {Object.keys(model.extra_kwargs).length} params
-              </span>
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* Manual Trace Upload - Show only for answering models with manual interface */}
-      {isAnswering && model.interface === 'manual' && (
-        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
-          <ManualTraceUpload
-            onUploadSuccess={onManualTraceUploadSuccess}
-            onUploadError={onManualTraceUploadError}
-            className="text-sm"
-            finishedTemplates={finishedTemplates}
-          />
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <>
       {/* Configuration Section - Multiple Models Support */}
@@ -697,7 +235,28 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           </p>
 
           <div className="space-y-4">
-            {answeringModels.map((model, index) => renderModelConfiguration(model, index, true))}
+            {answeringModels.map((model, index) => (
+              <ModelConfigurationSection
+                key={model.id}
+                model={model}
+                index={index}
+                isAnswering={true}
+                expandedPrompts={expandedPrompts}
+                isRunning={isRunning}
+                finishedTemplates={finishedTemplates}
+                canRemove={answeringModels.length > 1}
+                onUpdateModel={onUpdateAnsweringModel}
+                onRemoveModel={onRemoveAnsweringModel}
+                onTogglePromptExpanded={onTogglePromptExpanded}
+                onConfigureMCP={(modelId) => setMcpModalState({ isOpen: true, modelId })}
+                onRemoveMCP={handleRemoveMCP}
+                onConfigureExtraKwargs={(modelId) =>
+                  setExtraKwargsModalState({ isOpen: true, modelId, isAnswering: true })
+                }
+                onManualTraceUploadSuccess={onManualTraceUploadSuccess}
+                onManualTraceUploadError={onManualTraceUploadError}
+              />
+            ))}
           </div>
         </Card>
 
@@ -722,360 +281,59 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           </p>
 
           <div className="space-y-4">
-            {parsingModels.map((model, index) => renderModelConfiguration(model, index, false))}
+            {parsingModels.map((model, index) => (
+              <ModelConfigurationSection
+                key={model.id}
+                model={model}
+                index={index}
+                isAnswering={false}
+                expandedPrompts={expandedPrompts}
+                isRunning={isRunning}
+                canRemove={parsingModels.length > 1}
+                onUpdateModel={onUpdateParsingModel}
+                onRemoveModel={onRemoveParsingModel}
+                onTogglePromptExpanded={onTogglePromptExpanded}
+                onConfigureMCP={() => {}}
+                onRemoveMCP={() => {}}
+                onConfigureExtraKwargs={(modelId) =>
+                  setExtraKwargsModalState({ isOpen: true, modelId, isAnswering: false })
+                }
+              />
+            ))}
           </div>
         </Card>
       </div>
 
       {/* Evaluation Configuration */}
-      <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Evaluation Settings</h3>
-
-          <div className="space-y-3">
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={correctnessEnabled}
-                onChange={(e) => onCorrectnessEnabledChange(e.target.checked)}
-                disabled={isRunning}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-              />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Correctness</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">(Basic answer validation and parsing)</span>
-            </label>
-
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={rubricEnabled}
-                onChange={(e) => onRubricEnabledChange(e.target.checked)}
-                disabled={isRunning}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-              />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Rubric</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                (Qualitative evaluation using defined traits)
-              </span>
-            </label>
-
-            {/* Evaluation Mode Selector */}
-            {rubricEnabled && (
-              <div className="ml-7 mt-2 space-y-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Evaluation Mode
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="evaluation-mode"
-                      value="template_and_rubric"
-                      checked={evaluationMode === 'template_and_rubric'}
-                      onChange={(e) =>
-                        onEvaluationModeChange(
-                          e.target.value as 'template_only' | 'template_and_rubric' | 'rubric_only'
-                        )
-                      }
-                      disabled={isRunning}
-                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Template + Rubric</span>
-                  </label>
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="evaluation-mode"
-                      value="rubric_only"
-                      checked={evaluationMode === 'rubric_only'}
-                      onChange={(e) =>
-                        onEvaluationModeChange(
-                          e.target.value as 'template_only' | 'template_and_rubric' | 'rubric_only'
-                        )
-                      }
-                      disabled={isRunning}
-                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Rubric Only</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {/* Rubric Evaluation Strategy Selector */}
-            {rubricEnabled && (
-              <div className="ml-7 mt-2 space-y-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Rubric Evaluation Strategy
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="rubric-strategy"
-                      value="batch"
-                      checked={rubricEvaluationStrategy === 'batch'}
-                      onChange={(e) => onRubricEvaluationStrategyChange(e.target.value as 'batch' | 'sequential')}
-                      disabled={isRunning}
-                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">All Together (Batch)</span>
-                  </label>
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="rubric-strategy"
-                      value="sequential"
-                      checked={rubricEvaluationStrategy === 'sequential'}
-                      onChange={(e) => onRubricEvaluationStrategyChange(e.target.value as 'batch' | 'sequential')}
-                      disabled={isRunning}
-                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">One by One (Sequential)</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
-            <label
-              className="flex items-center space-x-3"
-              title="Detect when models refuse to answer or abstain. When detected, marks the result as abstained regardless of other verification outcomes."
-            >
-              <input
-                type="checkbox"
-                checked={abstentionEnabled}
-                onChange={(e) => onAbstentionEnabledChange(e.target.checked)}
-                disabled={isRunning}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-              />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Abstention Detection</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                (Detect refusals and mark as abstained)
-              </span>
-            </label>
-
-            {/* Deep-Judgment Configuration */}
-            <div className="space-y-2">
-              <div className="flex items-center space-x-3">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Deep-Judgment</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  (Multi-stage LLM evaluation with evidence extraction)
-                </span>
-              </div>
-
-              {/* Templates Deep-Judgment */}
-              <div className="ml-4 space-y-2">
-                <label
-                  className="flex items-center space-x-3"
-                  title="Extract excerpts and reasoning for template validation. Always extracts excerpts when enabled."
-                >
-                  <input
-                    type="checkbox"
-                    checked={deepJudgmentTemplateEnabled}
-                    onChange={(e) => onDeepJudgmentTemplateEnabledChange(e.target.checked)}
-                    disabled={isRunning}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                  />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Templates</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">(Always extracts excerpts)</span>
-                </label>
-
-                {deepJudgmentTemplateEnabled && (
-                  <div className="ml-7 mt-2">
-                    <label
-                      className="flex items-center space-x-3"
-                      title="Validate excerpts against external search results to detect potential hallucinations."
-                    >
-                      <input
-                        type="checkbox"
-                        checked={deepJudgmentSearchEnabled}
-                        onChange={(e) => onDeepJudgmentSearchEnabledChange(e.target.checked)}
-                        disabled={isRunning}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                      />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">Search Enhancement</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        (Validate with external search)
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* Rubrics Deep-Judgment */}
-              <div className="ml-4 space-y-2">
-                <label
-                  className="flex items-center space-x-3"
-                  title="Extract excerpts and reasoning for LLM trait evaluation in rubrics."
-                >
-                  <input
-                    type="checkbox"
-                    checked={deepJudgmentRubricEnabled}
-                    onChange={(e) => onDeepJudgmentRubricEnabledChange(e.target.checked)}
-                    disabled={isRunning}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                  />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Rubrics</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">(LLM trait evaluation)</span>
-                </label>
-
-                {deepJudgmentRubricEnabled && (
-                  <div className="ml-7 mt-2 space-y-3">
-                    {/* Mode Selection */}
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Mode</label>
-                      <div className="space-y-1">
-                        <label className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            name="deep-judgment-rubric-mode"
-                            value="enable_all"
-                            checked={deepJudgmentRubricMode === 'enable_all'}
-                            onChange={(e) =>
-                              onDeepJudgmentRubricModeChange(e.target.value as 'enable_all' | 'use_checkpoint')
-                            }
-                            disabled={isRunning}
-                            className="h-3 w-3 text-violet-600 focus:ring-violet-500 border-slate-300"
-                          />
-                          <span className="text-xs text-slate-700 dark:text-slate-300">Enable All</span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">(Apply to all LLM traits)</span>
-                        </label>
-                        <label className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            name="deep-judgment-rubric-mode"
-                            value="use_checkpoint"
-                            checked={deepJudgmentRubricMode === 'use_checkpoint'}
-                            onChange={(e) =>
-                              onDeepJudgmentRubricModeChange(e.target.value as 'enable_all' | 'use_checkpoint')
-                            }
-                            disabled={isRunning}
-                            className="h-3 w-3 text-violet-600 focus:ring-violet-500 border-slate-300"
-                          />
-                          <span className="text-xs text-slate-700 dark:text-slate-300">Use Checkpoint</span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">(Per-trait configuration)</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Extract Excerpts - Only show for enable_all mode */}
-                    {deepJudgmentRubricMode === 'enable_all' && (
-                      <div className="ml-0">
-                        <label className="flex items-center space-x-2" title="Extract excerpts for rubric traits.">
-                          <input
-                            type="checkbox"
-                            checked={deepJudgmentRubricExtractExcerpts}
-                            onChange={(e) => onDeepJudgmentRubricExtractExcerptsChange(e.target.checked)}
-                            disabled={isRunning}
-                            className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                          />
-                          <span className="text-xs text-slate-700 dark:text-slate-300">Extract Excerpts</span>
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={fewShotEnabled}
-                onChange={(e) => onFewShotEnabledChange(e.target.checked)}
-                disabled={isRunning}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-              />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Few-shot Prompting</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                (Use examples to improve LLM performance)
-              </span>
-            </label>
-          </div>
-
-          {/* Few-shot Configuration */}
-          {fewShotEnabled && (
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Few-shot Mode
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="few-shot-mode"
-                      value="all"
-                      checked={fewShotMode === 'all'}
-                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'custom')}
-                      disabled={isRunning}
-                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Use all available examples</span>
-                  </label>
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="few-shot-mode"
-                      value="k-shot"
-                      checked={fewShotMode === 'k-shot'}
-                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'custom')}
-                      disabled={isRunning}
-                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Use k examples per question</span>
-                  </label>
-                  <label className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="few-shot-mode"
-                      value="custom"
-                      checked={fewShotMode === 'custom'}
-                      onChange={(e) => onFewShotModeChange(e.target.value as 'all' | 'k-shot' | 'custom')}
-                      disabled={isRunning}
-                      className="h-4 w-4 text-violet-600 focus:ring-violet-500 border-slate-300"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Custom examples selection</span>
-                  </label>
-                </div>
-              </div>
-
-              {fewShotMode === 'k-shot' && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Number of Examples (k)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={fewShotK}
-                    onChange={(e) => onFewShotKChange(parseInt(e.target.value))}
-                    disabled={isRunning}
-                    className="w-24 p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                  />
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Maximum number of examples to use per question (1-10)
-                  </p>
-                </div>
-              )}
-
-              <div className="p-3 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-md">
-                <p className="text-sm text-violet-800 dark:text-violet-200">
-                  <strong>Note:</strong> Few-shot examples are defined per question in the Template Curator. Questions
-                  without examples will use zero-shot prompting even when this feature is enabled.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {!correctnessEnabled && !rubricEnabled && (
-            <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-sm text-amber-800 dark:text-amber-200">
-              ⚠ At least one evaluation method should be enabled
-            </div>
-          )}
-        </div>
-      </Card>
+      <EvaluationSettingsSection
+        isRunning={isRunning}
+        correctnessEnabled={correctnessEnabled}
+        rubricEnabled={rubricEnabled}
+        rubricEvaluationStrategy={rubricEvaluationStrategy}
+        evaluationMode={evaluationMode}
+        abstentionEnabled={abstentionEnabled}
+        deepJudgmentTemplateEnabled={deepJudgmentTemplateEnabled}
+        deepJudgmentSearchEnabled={deepJudgmentSearchEnabled}
+        deepJudgmentRubricEnabled={deepJudgmentRubricEnabled}
+        deepJudgmentRubricMode={deepJudgmentRubricMode}
+        deepJudgmentRubricExtractExcerpts={deepJudgmentRubricExtractExcerpts}
+        fewShotEnabled={fewShotEnabled}
+        fewShotMode={fewShotMode}
+        fewShotK={fewShotK}
+        onCorrectnessEnabledChange={onCorrectnessEnabledChange}
+        onRubricEnabledChange={onRubricEnabledChange}
+        onRubricEvaluationStrategyChange={onRubricEvaluationStrategyChange}
+        onEvaluationModeChange={onEvaluationModeChange}
+        onAbstentionEnabledChange={onAbstentionEnabledChange}
+        onDeepJudgmentTemplateEnabledChange={onDeepJudgmentTemplateEnabledChange}
+        onDeepJudgmentSearchEnabledChange={onDeepJudgmentSearchEnabledChange}
+        onDeepJudgmentRubricEnabledChange={onDeepJudgmentRubricEnabledChange}
+        onDeepJudgmentRubricModeChange={onDeepJudgmentRubricModeChange}
+        onDeepJudgmentRubricExtractExcerptsChange={onDeepJudgmentRubricExtractExcerptsChange}
+        onFewShotEnabledChange={onFewShotEnabledChange}
+        onFewShotModeChange={onFewShotModeChange}
+        onFewShotKChange={onFewShotKChange}
+      />
 
       {/* Model Combinations Info */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">

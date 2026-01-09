@@ -1590,3 +1590,44 @@ Type-check: PASSED
 - Adding new interfaces only requires updating one file
 - Both answering and parsing models share consistent behavior
 
+
+### Completed: flaw-021 - ConfigurationPanel.tsx Refactoring (HIGH)
+
+**Files:**
+- Created: `src/components/benchmark/ModelConfigurationSection.tsx` (449 lines)
+- Created: `src/components/benchmark/EvaluationSettingsSection.tsx` (347 lines)
+- Modified: `src/components/benchmark/ConfigurationPanel.tsx` (1,113 → 367 lines, -746 lines)
+
+**Changes:**
+1. Created `ModelConfigurationSection.tsx` with:
+   - Interface selection (langchain, openrouter, openai_endpoint, native_sdk, manual)
+   - Provider and model name inputs (interface-specific)
+   - Temperature slider
+   - System prompt with expand/collapse
+   - MCP and Extra Arguments configuration buttons
+   - Manual trace upload (for answering models with manual interface)
+
+2. Created `EvaluationSettingsSection.tsx` with:
+   - Correctness and Rubric toggles
+   - Evaluation mode selector (template+rubric, rubric only)
+   - Rubric evaluation strategy (batch, sequential)
+   - Abstention detection
+   - Deep-Judgment settings (templates, search enhancement, rubrics, mode)
+   - Few-shot prompting configuration
+
+3. Refactored `ConfigurationPanel.tsx` to serve as composition root:
+   - Manages modal state for MCP and ExtraKwargs
+   - Renders ModelConfigurationSection for each answering/parsing model
+   - Renders EvaluationSettingsSection
+   - Displays model combinations info
+
+**Verification:**
+- Type checking passes: `npm run type-check`
+- Component reduced from 1,113 to 367 lines (-67%)
+
+**Impact:**
+- Model configuration is now in a focused, reusable component
+- Evaluation settings are cleanly separated
+- Main panel is a simple orchestrator with clear data flow
+- Each extracted component can be tested independently
+

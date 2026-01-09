@@ -413,7 +413,10 @@
       "Implement: Keep ConfigurationPanel as orchestrator (<400 lines)",
       "Verify: All configuration options work correctly",
       "Verify: Settings persist and load properly"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2026-01-09T02:44:43.538Z",
+    "implementation_notes": "Created src/components/benchmark/ModelConfigurationSection.tsx (449 lines) for individual model configuration with interface selection, provider/model inputs, temperature, system prompt, MCP, and extra arguments. Created src/components/benchmark/EvaluationSettingsSection.tsx (347 lines) for correctness, rubric, abstention, deep-judgment, and few-shot evaluation settings. Refactored ConfigurationPanel.tsx from 1,113 to 367 lines (-746 lines, 67% reduction). Now serves as composition root that manages modal state and renders extracted components."
   },
   {
     "id": "flaw-022",
