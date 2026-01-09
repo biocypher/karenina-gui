@@ -1,0 +1,25 @@
+# Ralph Loop Progress
+
+## 2026-01-09
+
+### flaw-003: RubricTraitEditor.tsx Refactoring
+- Created 4 new trait card components in src/components/rubric/:
+  - RubricLLMTraitCard.tsx (245 lines)
+  - RubricRegexTraitCard.tsx (255 lines)
+  - RubricMetricTraitCard.tsx (195 lines)
+  - RubricCallableTraitCard.tsx (70 lines)
+- Refactored RubricTraitEditor.tsx from 1,405 to 525 lines (-880 lines, 63% reduction)
+- Key difference from QuestionRubricEditor: Score Direction controls (Higher/Lower is Better) for optimization
+- Type-check passes
+
+### flaw-002: QuestionRubricEditor.tsx Refactoring (completed earlier)
+- Created 4 trait card components in src/components/rubric/:
+  - LLMTraitCard.tsx (273 lines)
+  - RegexTraitCard.tsx (248 lines)
+  - MetricTraitCard.tsx (241 lines)
+  - CallableTraitCard.tsx (77 lines)
+- Refactored QuestionRubricEditor.tsx from 1,365 to 590 lines (-775 lines, 57% reduction)
+
+## Remaining High-Priority Flaws
+- flaw-004: App.tsx refactoring (1,212 lines)
+- flaw-005: BenchmarkTable.tsx refactoring (1,047 lines)
