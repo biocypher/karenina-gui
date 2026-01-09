@@ -3,28 +3,12 @@ import { PlusIcon, TrashIcon, XMarkIcon, QuestionMarkCircleIcon } from '@heroico
 import { useRubricStore } from '../stores/useRubricStore';
 import { useQuestionStore } from '../stores/useQuestionStore';
 import { useTraitValidation } from '../hooks/useTraitValidation';
+import { useMetricTraits } from '../hooks/useMetricTraits';
 import { RubricTrait, TraitKind, Rubric, RegexTrait, MetricRubricTrait } from '../types';
 
 type TraitType = 'boolean' | 'score' | 'regex' | 'metric';
 
-// Valid metrics for each evaluation mode
-const VALID_METRICS_TP_ONLY = ['precision', 'recall', 'f1'] as const;
-const VALID_METRICS_FULL_MATRIX = ['precision', 'recall', 'specificity', 'accuracy', 'f1'] as const;
 type MetricName = 'precision' | 'recall' | 'specificity' | 'accuracy' | 'f1';
-
-// Metric requirements (which confusion matrix values are needed)
-const METRIC_REQUIREMENTS: Record<MetricName, string[]> = {
-  precision: ['tp', 'fp'],
-  recall: ['tp', 'fn'],
-  specificity: ['tn', 'fp'],
-  accuracy: ['tp', 'tn', 'fp', 'fn'],
-  f1: ['tp', 'fp', 'fn'],
-};
-
-// Get available metrics for a given evaluation mode
-const getAvailableMetrics = (evaluationMode: 'tp_only' | 'full_matrix'): readonly MetricName[] => {
-  return evaluationMode === 'tp_only' ? VALID_METRICS_TP_ONLY : VALID_METRICS_FULL_MATRIX;
-};
 
 interface QuestionRubricEditorProps {
   questionId: string;
@@ -40,6 +24,16 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     globalRubric,
     questionRubric,
   });
+
+  // Metric traits management via custom hook
+  const { handleRemoveMetricTrait, handleMetricTraitChange, getAvailableMetrics, getMetricRequirements } =
+    useMetricTraits({
+      questionId,
+      questionRubric,
+      setQuestionRubric,
+      setQuestionRubricState,
+      setLastError,
+    });
 
   const [questionRubric, setQuestionRubricState] = useState<Rubric | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -288,25 +282,6 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     setLastError(null);
   };
 
-  const handleMetricTraitChange = (
-    index: number,
-    field: keyof MetricRubricTrait,
-    value: string | string[] | boolean
-  ) => {
-    if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
-
-    const currentTrait = questionRubric.metric_traits[index];
-    const updatedTrait: MetricRubricTrait = { ...currentTrait, [field]: value };
-
-    const updatedMetricTraits = [...questionRubric.metric_traits];
-    updatedMetricTraits[index] = updatedTrait;
-
-    const updatedRubric = { ...questionRubric, metric_traits: updatedMetricTraits };
-    setQuestionRubricState(updatedRubric);
-    setQuestionRubric(questionId, updatedRubric);
-    setLastError(null);
-  };
-
   const handleMetricToggle = (index: number, metric: MetricName) => {
     if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
 
@@ -338,7 +313,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     }
 
     // Then check if we have the required instructions
-    const required = METRIC_REQUIREMENTS[metric];
+    const required = getMetricRequirements(metric);
     const hasTP = (trait.tp_instructions?.length || 0) > 0;
     const hasTN = (trait.tn_instructions?.length || 0) > 0;
 
@@ -364,30 +339,8 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     // If no metrics remain valid, default to precision
     const newMetrics = validMetrics.length > 0 ? validMetrics : ['precision'];
 
-    const updatedTrait: MetricRubricTrait = {
-      ...currentTrait,
-      evaluation_mode: mode,
-      metrics: newMetrics,
-    };
-
-    const updatedMetricTraits = [...questionRubric.metric_traits];
-    updatedMetricTraits[index] = updatedTrait;
-
-    const updatedRubric = { ...questionRubric, metric_traits: updatedMetricTraits };
-    setQuestionRubricState(updatedRubric);
-    setQuestionRubric(questionId, updatedRubric);
-    setLastError(null);
-  };
-
-  const handleRemoveMetricTrait = (index: number) => {
-    if (!questionRubric?.metric_traits || index < 0 || index >= questionRubric.metric_traits.length) return;
-
-    const updatedMetricTraits = (questionRubric.metric_traits || []).filter((_, i) => i !== index);
-    const updatedRubric = { ...questionRubric, metric_traits: updatedMetricTraits };
-
-    setQuestionRubricState(updatedRubric);
-    setQuestionRubric(questionId, updatedRubric);
-    setLastError(null);
+    handleMetricTraitChange(index, 'evaluation_mode', mode);
+    handleMetricTraitChange(index, 'metrics', newMetrics);
   };
 
   const handleClearRubric = () => {
@@ -1196,7 +1149,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
                         }`}
                       title={
                         isSelected && !canCompute
-                          ? `Missing required buckets: ${METRIC_REQUIREMENTS[metric].join(', ')}`
+                          ? `Missing required buckets: ${getMetricRequirements(metric).join(', ')}`
                           : ''
                       }
                     >

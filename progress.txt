@@ -1308,3 +1308,10 @@ flaw-002 partial 2025-01-09: Extracted trait validation logic from QuestionRubri
 - Hook manages trait name conflict checking across global and question rubrics
 - Improved separation of concerns and testability
 - Status: Partial - more extraction needed (trait list, trait editor, shared components)
+flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEditor.tsx
+- Created src/hooks/useMetricTraits.ts (116 lines)
+- Further reduced QuestionRubricEditor.tsx from 1411 to 1369 lines (-42 lines)
+- Total reduction: 1418 -> 1369 lines (-49 lines, 3.5% reduction)
+- Hook manages metric trait CRUD, validation, evaluation mode changes
+- Improved separation of concerns and testability
+- Status: Partial - more extraction needed (trait list, trait editor, shared components)

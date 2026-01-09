@@ -44,9 +44,12 @@
       "Verify: Rubric editing functionality works after refactoring",
       "Verify: No regression in trait validation behavior"
     ],
-    "steps_completed": ["Extracted trait validation logic to useTraitValidation hook"],
+    "steps_completed": [
+      "Extracted trait validation logic to useTraitValidation hook",
+      "Extracted metric trait logic to useMetricTraits hook"
+    ],
     "status": "partial",
-    "implementation_notes": "Partial completion: Extracted trait validation logic to useTraitValidation hook. Reduced QuestionRubricEditor.tsx from 1418 to 1411 lines (-7 lines). Improved separation of concerns and testability. Remaining: extract trait list rendering, trait editing, and create shared trait editor components."
+    "implementation_notes": "Partial completion: Extracted trait validation (useTraitValidation) and metric trait management (useMetricTraits) hooks. Reduced QuestionRubricEditor.tsx from 1418 to 1369 lines (-49 lines, 3.5% reduction). Improved separation of concerns and testability. Remaining: extract trait list rendering, trait editing, and create shared trait editor components."
   },
   {
     "id": "flaw-003",
