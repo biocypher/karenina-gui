@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { Eye, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { Eye, AlertCircle } from 'lucide-react';
 import { VerificationResult, Checkpoint } from '../types';
 import {
   useReactTable,
@@ -14,6 +14,10 @@ import {
 } from '@tanstack/react-table';
 import { useDebounce } from '../hooks/useDebounce';
 import { logger } from '../utils/logger';
+import { RubricCell } from './table/RubricCell';
+import { DeepJudgmentCell } from './table/DeepJudgmentCell';
+import { MultiSelectFilter } from './table/MultiSelectFilter';
+import { SortIndicator } from './table/SortIndicator';
 
 declare module '@tanstack/react-table' {
   interface FilterFns {
@@ -21,8 +25,6 @@ declare module '@tanstack/react-table' {
     arrIncludesSome: FilterFn<unknown>;
   }
 }
-
-// VerificationResult interface now imported from types
 
 interface BenchmarkTableProps {
   benchmarkResults: Record<string, VerificationResult>;
@@ -33,257 +35,6 @@ interface BenchmarkTableProps {
 }
 
 const columnHelper = createColumnHelper<VerificationResult>();
-
-const RubricCell: React.FC<{
-  rubricResult: Record<string, number | boolean> | null;
-  metricTraitMetrics?: Record<string, Record<string, number>>;
-}> = ({ rubricResult, metricTraitMetrics }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const hasLLMTraits = rubricResult && Object.keys(rubricResult).length > 0;
-  const hasMetricTraits = metricTraitMetrics && Object.keys(metricTraitMetrics).length > 0;
-
-  if (!hasLLMTraits && !hasMetricTraits) {
-    return (
-      <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-        N/A
-      </span>
-    );
-  }
-
-  const traits = hasLLMTraits ? Object.entries(rubricResult!) : [];
-  const metricTraits = hasMetricTraits ? Object.entries(metricTraitMetrics!) : [];
-
-  const passedTraits = traits.filter(([, value]) => (typeof value === 'boolean' ? value : value && value >= 3)).length;
-  const totalTraits = traits.length + metricTraits.length;
-
-  const summary = `${passedTraits}/${totalTraits}`;
-  const hasGoodResults = totalTraits > 0 && passedTraits >= totalTraits * 0.5;
-
-  return (
-    <div className="space-y-1">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-          hasGoodResults
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200'
-        } hover:opacity-80`}
-      >
-        {isExpanded ? <ChevronDown className="w-3 h-3 mr-1" /> : <ChevronRight className="w-3 h-3 mr-1" />}
-        {summary}
-      </button>
-
-      {isExpanded && (
-        <div className="mt-1 space-y-1 text-xs">
-          {traits.map(([name, value]) => (
-            <div
-              key={name}
-              className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded"
-            >
-              <span className="font-medium text-slate-700 dark:text-slate-300">{name}:</span>
-              <span
-                className={`font-semibold ${
-                  typeof value === 'boolean'
-                    ? value
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-red-600 dark:text-red-400'
-                    : value && value >= 3
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-yellow-600 dark:text-yellow-400'
-                }`}
-              >
-                {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value || 'N/A'}
-              </span>
-            </div>
-          ))}
-          {metricTraits.map(([name, metrics]) => (
-            <div key={`metric-${name}`} className="bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded space-y-1">
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-slate-700 dark:text-slate-300">{name}</span>
-                <span className="text-xs text-purple-600 dark:text-purple-400">(Metric)</span>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {metrics && typeof metrics === 'object'
-                  ? Object.entries(metrics).map(([metricName, value]) => (
-                      <span
-                        key={metricName}
-                        className="text-xs text-purple-600 dark:text-purple-400"
-                        title={`${metricName}: ${(value * 100).toFixed(1)}%`}
-                      >
-                        {metricName}: {(value * 100).toFixed(1)}%
-                      </span>
-                    ))
-                  : null}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const DeepJudgmentCell: React.FC<{ result: VerificationResult }> = ({ result }) => {
-  // Not enabled - show disabled state
-  if (!result.deep_judgment?.deep_judgment_enabled) {
-    return (
-      <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-        Disabled
-      </span>
-    );
-  }
-
-  // Enabled but not performed - show not performed state
-  if (!result.deep_judgment?.deep_judgment_performed) {
-    return (
-      <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-        Not Performed
-      </span>
-    );
-  }
-
-  // Check if search was enabled (hallucination risk assessment present)
-  const searchEnabled =
-    result.deep_judgment?.deep_judgment_search_enabled && result.deep_judgment?.hallucination_risk_assessment;
-
-  // If search was enabled, show Hallucination Risk badge
-  if (searchEnabled && result.deep_judgment?.hallucination_risk_assessment) {
-    const riskValues = Object.values(result.deep_judgment.hallucination_risk_assessment);
-
-    // Find the highest risk level across all attributes
-    let highestRisk: 'none' | 'low' | 'medium' | 'high' = 'none';
-    const riskOrder = { none: 0, low: 1, medium: 2, high: 3 };
-
-    riskValues.forEach((risk) => {
-      if (riskOrder[risk as keyof typeof riskOrder] > riskOrder[highestRisk]) {
-        highestRisk = risk as 'none' | 'low' | 'medium' | 'high';
-      }
-    });
-
-    // Color-code by highest risk level
-    const getRiskStyle = (risk: string) => {
-      switch (risk) {
-        case 'high':
-          return {
-            bg: 'bg-red-100 dark:bg-red-900/40',
-            text: 'text-red-800 dark:text-red-200',
-            border: 'border-red-300 dark:border-red-700',
-          };
-        case 'medium':
-          return {
-            bg: 'bg-orange-100 dark:bg-orange-900/40',
-            text: 'text-orange-800 dark:text-orange-200',
-            border: 'border-orange-300 dark:border-orange-700',
-          };
-        case 'low':
-          return {
-            bg: 'bg-yellow-100 dark:bg-yellow-900/40',
-            text: 'text-yellow-800 dark:text-yellow-200',
-            border: 'border-yellow-300 dark:border-yellow-700',
-          };
-        case 'none':
-        default:
-          return {
-            bg: 'bg-green-100 dark:bg-green-900/40',
-            text: 'text-green-800 dark:text-green-200',
-            border: 'border-green-300 dark:border-green-700',
-          };
-      }
-    };
-
-    const style = getRiskStyle(highestRisk);
-    const riskCount = riskValues.filter((r) => r !== 'none').length;
-
-    return (
-      <span
-        className={`inline-flex items-center px-2 py-1 rounded text-xs ${style.bg} ${style.text} border ${style.border}`}
-        title={`Hallucination risk: ${highestRisk.toUpperCase()} (${riskCount} attribute${riskCount === 1 ? '' : 's'} with risk)`}
-      >
-        {highestRisk.toUpperCase()}
-      </span>
-    );
-  }
-
-  // When search not enabled, show "None" (no risk assessment performed)
-  return (
-    <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-      None
-    </span>
-  );
-};
-
-const MultiSelectFilter: React.FC<{
-  options: string[];
-  selectedValues: Set<string>;
-  onChange: (values: Set<string>) => void;
-  placeholder: string;
-}> = ({ options, selectedValues, onChange, placeholder }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-left truncate"
-      >
-        {selectedValues.size === 0 ? placeholder : `${selectedValues.size} selected`}
-      </button>
-      {isOpen && (
-        <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded shadow-lg max-h-32 overflow-y-auto">
-          {options.map((option) => (
-            <label
-              key={option}
-              className="flex items-center px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selectedValues.has(option)}
-                onChange={(e) => {
-                  const newValues = new Set(selectedValues);
-                  if (e.target.checked) {
-                    newValues.add(option);
-                  } else {
-                    newValues.delete(option);
-                  }
-                  onChange(newValues);
-                }}
-                className="mr-2"
-              />
-              <span className="text-xs text-slate-900 dark:text-slate-100 truncate">{option}</span>
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const SortIndicator = ({ column }: { column: { getIsSorted: () => false | 'asc' | 'desc' } }) => {
-  const sorted = column.getIsSorted();
-  if (!sorted) {
-    return <span className="text-slate-400 ml-1">↕</span>;
-  }
-  return <span className="text-indigo-600 dark:text-indigo-400 ml-1">{sorted === 'asc' ? '↑' : '↓'}</span>;
-};
 
 export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
   benchmarkResults,
@@ -681,7 +432,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
       }),
     ],
-    [onViewResult, checkpoint]
+    [checkpoint, onViewResult]
   );
 
   const table = useReactTable({
@@ -847,7 +598,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
                               }}
                             >
                               {flexRender(header.column.columnDef.header, header.getContext())}
-                              {header.column.getCanSort() && <SortIndicator column={header.column} />}
+                              {header.column.getCanSort() && <SortIndicator getIsSorted={header.column.getIsSorted} />}
                             </div>
                             {header.id === 'question_text' && (
                               <input
@@ -1039,10 +790,6 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       );
     }
   };
-
-  // Reset filters function
-  // Note: resetFilters function removed since it was unused after removing useImperativeHandle
-  // If needed in the future, can be re-added when component is converted to forwardRef
 
   return renderTable();
 };

@@ -1682,3 +1682,50 @@ Type-check: PASSED
 - Modal is much easier to understand and maintain
 - Shared hallucination risk styling utility
 
+
+### Completed: flaw-005 - BenchmarkTable.tsx Refactoring (HIGH)
+
+**Files:**
+- Created: `src/components/table/RubricCell.tsx` (90 lines)
+- Created: `src/components/table/DeepJudgmentCell.tsx` (130 lines)
+- Created: `src/components/table/MultiSelectFilter.tsx` (75 lines)
+- Created: `src/components/table/SortIndicator.tsx` (15 lines)
+- Modified: `src/components/BenchmarkTable.tsx` (1,047 → 795 lines, -252 lines)
+
+**Changes:**
+1. Created `RubricCell.tsx` with:
+   - Expandable rubric results display
+   - LLM trait scores with pass/fail styling
+   - Metric trait scores with percentage display
+   - Summary badge showing passed/total traits
+
+2. Created `DeepJudgmentCell.tsx` with:
+   - Disabled/Not Performed state display
+   - Hallucination risk badge with color-coded levels
+   - Highest risk calculation across all attributes
+   - Risk count tooltip
+
+3. Created `MultiSelectFilter.tsx` with:
+   - Dropdown filter with checkbox options
+   - Click-outside-to-close behavior
+   - Selected count display
+
+4. Created `SortIndicator.tsx` with:
+   - Ascending/descending arrow display
+   - Unsorted indicator
+
+5. Refactored `BenchmarkTable.tsx` to use extracted components:
+   - Imports and uses RubricCell for rubric column
+   - Imports and uses DeepJudgmentCell for hallucination risk column
+   - Imports and uses MultiSelectFilter for filterable columns
+   - Imports and uses SortIndicator for sortable columns
+
+**Verification:**
+- Type checking passes: `npm run type-check`
+- Table reduced from 1,047 to 795 lines (-24%)
+
+**Impact:**
+- Cell rendering logic is now in focused, reusable components
+- Filter components can be reused across the application
+- Main table file is more maintainable
+
