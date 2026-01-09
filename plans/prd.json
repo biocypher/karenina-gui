@@ -130,6 +130,9 @@
     "file": "karenina-gui/src/utils/export.ts",
     "line_range": "1-812",
     "description": "export.ts is 812 lines - handles JSON and CSV export with large inline data structures and formatting logic.",
+    "status": "completed",
+    "completed_at": "2026-01-09T02:15:00.000Z",
+    "implementation_notes": "Created types/export.ts (259 lines) with all export type definitions: ExportableResult, ExportableResultMetadata, ExportableResultTemplate, ExportableResultRubric, ExportableResultDeepJudgment, ExportableResultDeepJudgmentRubric, UnifiedExportFormat, ExportMetadata, ExportModelConfig, ExportVerificationConfig, SharedDataExport, JobSummaryMetadata. Created utils/export/version.ts (48 lines) with getCurrentVersion() and reloadVersion() for version management. Created utils/export/jsonBuilder.ts (125 lines) with exportToJSON() and helper functions: processResults(), buildVerificationConfig(), buildRubricDefinition(), buildExportMetadata(). Created utils/export/csvBuilder.ts (146 lines) with exportToCSV() and helper functions: escapeCSVField(), extractAllRubricTraitNames(), separateRubricTraits(), extractTraitNames(), buildQuestionSpecificRubricsJson(). Refactored utils/export.ts from 615 lines to 118 lines (-497 lines, 81% reduction). Removed duplicate downloadFile() function - now uses fileDownload.ts. Updated types/exportFields.ts to import from types/export.ts instead of utils/export.ts. Updated types/index.ts to re-export from export.ts.",
     "depends_on": [],
     "steps": [
       "Implement: Extract CSV building logic to export/csvBuilder.ts",

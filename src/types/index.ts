@@ -38,3 +38,6 @@ export * from './summary';
 
 // Model comparison types
 export * from './comparison';
+
+// Export types
+export * from './export';

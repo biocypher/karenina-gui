@@ -9,7 +9,7 @@
  * See: .agents/dev/adding-verification-fields.md
  */
 
-import type { ExportableResult } from '../utils/export';
+import type { ExportableResult } from './export';
 
 /**
  * Field definition for exportable result fields

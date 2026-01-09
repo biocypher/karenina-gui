@@ -1391,3 +1391,25 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
   - saveCurrentTemplate/toggleFinished/setQuestionRubric/updateQuestionContent/deleteQuestion/cloneQuestion use performAutoSave/performSilentAutoSave
 - Replaced 6 duplicated auto-save error handling blocks with two helper functions
 - Store now focuses on state management - validation and auto-save patterns are centralized
+
+2026-01-09 02:15 UTC - flaw-007: Modularize export.ts (615 lines -> 118 lines)
+- Created types/export.ts (259 lines) with all export type definitions:
+  - ExportableResult, ExportableResultMetadata, ExportableResultTemplate
+  - ExportableResultRubric, ExportableResultDeepJudgment, ExportableResultDeepJudgmentRubric
+  - UnifiedExportFormat, ExportMetadata, ExportModelConfig, ExportVerificationConfig
+  - SharedDataExport, JobSummaryMetadata
+- Created utils/export/version.ts (48 lines) with version utilities:
+  - getCurrentVersion() for cached version retrieval
+  - reloadVersion() for forcing version reload
+- Created utils/export/jsonBuilder.ts (125 lines) with JSON export logic:
+  - exportToJSON() main function
+  - processResults(), buildVerificationConfig(), buildRubricDefinition(), buildExportMetadata() helpers
+- Created utils/export/csvBuilder.ts (146 lines) with CSV export logic:
+  - exportToCSV() main function
+  - escapeCSVField(), extractAllRubricTraitNames(), separateRubricTraits() helpers
+  - extractTraitNames(), buildQuestionSpecificRubricsJson() helpers
+- Refactored utils/export.ts from 615 to 118 lines (-497 lines, 81% reduction)
+- Removed duplicate downloadFile() function - now uses existing fileDownload.ts
+- Updated types/exportFields.ts to import from types/export.ts instead of utils/export.ts
+- Updated types/index.ts to re-export from export.ts
+- All existing imports continue to work due to re-exports
