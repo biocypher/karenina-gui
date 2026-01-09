@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Play,
   Square,
@@ -27,6 +27,7 @@ import { ProgressIndicator } from './benchmark/ProgressIndicator';
 import { VerificationResultDetailModal } from './benchmark/VerificationResultDetailModal';
 import { BenchmarkTable } from './BenchmarkTable';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
+import { useTestSelection } from '../hooks/useTestSelection';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
@@ -109,13 +110,25 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const [jobId, setJobId] = useState<string | null>(null);
   const [websocket, setWebsocket] = useState<WebSocket | null>(null);
 
-  // Test selection state
-  const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
-  const [testSearchTerm, setTestSearchTerm] = useState('');
+  // Get finished templates from checkpoint
+  const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
 
-  // Few-shot custom selection state
-  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
-  const [customFewShotSelections, setCustomFewShotSelections] = useState<Record<string, Set<number>>>({});
+  // Test selection and filtering via custom hook
+  const {
+    selectedTests,
+    testSearchTerm,
+    filteredTemplates,
+    expandedQuestions,
+    customFewShotSelections,
+    handleSelectAll,
+    handleSelectNone,
+    handleClearAllSelections,
+    handleToggleTest,
+    handleToggleQuestionExpansion,
+    handleToggleExampleSelection,
+  } = useTestSelection({
+    finishedTemplates,
+  });
 
   // Local state for replicate count input to allow clearing
   const [replicateInputValue, setReplicateInputValue] = useState<string>(replicateCount.toString());
@@ -136,20 +149,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Get finished templates from checkpoint
-  const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
-
-  // Filter templates based on search term
-  const filteredTemplates = useMemo(() => {
-    if (!testSearchTerm.trim()) {
-      return finishedTemplates;
-    }
-    const searchLower = testSearchTerm.toLowerCase();
-    return finishedTemplates.filter(
-      ([id, item]) => item.question.toLowerCase().includes(searchLower) || id.toLowerCase().includes(searchLower)
-    );
-  }, [finishedTemplates, testSearchTerm]);
 
   const getQuestionPreview = (text: string) => {
     return text.length > 60 ? text.substring(0, 60) + '...' : text;
@@ -661,62 +660,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
       setIsUploadDialogOpen(false);
       setParsedUpload(null);
     }
-  };
-
-  // Test selection functions
-  const handleSelectAll = () => {
-    // Select all currently visible (filtered) tests
-    const newSelected = new Set(selectedTests);
-    filteredTemplates.forEach(([id]) => newSelected.add(id));
-    setSelectedTests(newSelected);
-  };
-
-  const handleSelectNone = () => {
-    // Deselect only the currently visible (filtered) tests
-    const newSelected = new Set(selectedTests);
-    filteredTemplates.forEach(([id]) => newSelected.delete(id));
-    setSelectedTests(newSelected);
-  };
-
-  const handleClearAllSelections = () => {
-    setSelectedTests(new Set());
-  };
-
-  const handleToggleTest = (questionId: string) => {
-    const newSelected = new Set(selectedTests);
-    if (newSelected.has(questionId)) {
-      newSelected.delete(questionId);
-    } else {
-      newSelected.add(questionId);
-    }
-    setSelectedTests(newSelected);
-  };
-
-  // Few-shot example selection handlers
-  const handleToggleQuestionExpansion = (questionId: string) => {
-    const newExpanded = new Set(expandedQuestions);
-    if (newExpanded.has(questionId)) {
-      newExpanded.delete(questionId);
-    } else {
-      newExpanded.add(questionId);
-    }
-    setExpandedQuestions(newExpanded);
-  };
-
-  const handleToggleExampleSelection = (questionId: string, exampleIndex: number) => {
-    const currentSelections = customFewShotSelections[questionId] || new Set<number>();
-    const newSelections = new Set(currentSelections);
-
-    if (newSelections.has(exampleIndex)) {
-      newSelections.delete(exampleIndex);
-    } else {
-      newSelections.add(exampleIndex);
-    }
-
-    setCustomFewShotSelections({
-      ...customFewShotSelections,
-      [questionId]: newSelections,
-    });
   };
 
   // Get all unfiltered results for statistics

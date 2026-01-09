@@ -16,7 +16,10 @@
       "Verify: Each extracted module has corresponding unit tests",
       "Verify: BenchmarkTab.tsx renders correctly with all sub-components",
       "Verify: No functionality regression in benchmark table features"
-    ]
+    ],
+    "steps_completed": ["Extracted test selection and filtering logic to useTestSelection hook"],
+    "status": "partial",
+    "implementation_notes": "Partial completion: Extracted test selection and filtering logic to useTestSelection hook. Reduced BenchmarkTab.tsx from 1474 to 1417 lines. Remaining steps: extract filtering logic, pagination logic, data fetching, and table rendering."
   },
   {
     "id": "flaw-002",

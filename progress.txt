@@ -1262,3 +1262,8 @@ flaw-063 completed 2025-01-09: Extracted PatternRow component from TraceHighligh
 - Created src/components/trace-highlighting/PatternRow.tsx (173 lines)
 - Reduced TraceHighlightingTab.tsx from 390 lines to 226 lines (-164 lines)
 - PatternRow handles individual pattern editing with name, color, enabled toggle, regex input
+flaw-001 partial 2025-01-09: Extracted test selection logic from BenchmarkTab.tsx
+- Created src/hooks/useTestSelection.ts (140 lines)
+- Reduced BenchmarkTab.tsx from 1474 lines to 1417 lines (-57 lines)
+- Hook manages test selection state, search filtering, few-shot example selection
+- Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)
