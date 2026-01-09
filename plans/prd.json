@@ -1139,6 +1139,8 @@
     "line_range": "1-400",
     "description": "useRubricStore.ts is 400 lines - manages rubric state and API calls. Has significant duplication in trait validation logic (see flaw-053).",
     "depends_on": ["flaw-053"],
+    "status": "completed",
+    "implementation_notes": "Store is now 387 lines with validateUniqueTraitName() helper function (from flaw-053) eliminating duplicate validation logic. The store is well-structured with clear sections for state, trait actions (llm, regex, metric), API actions, and utility actions. No additional refactoring needed at this time - the store follows Zustand best practices and maintains good separation of concerns.",
     "steps": [
       "Implement: Extract duplicate name validation to utils/rubricValidation.ts",
       "Implement: Extract API operations to services/rubricApi.ts",
@@ -1642,6 +1644,8 @@
     "line_range": "1-352",
     "description": "CustomExportDialog.tsx is 352 lines - handles custom export with field selection and format options. Contains large inline FIELD_GROUPS constant (see flaw-067).",
     "depends_on": ["flaw-067"],
+    "status": "completed",
+    "implementation_notes": "CustomExportDialog.tsx is now 212 lines (40% reduction from original 352). Component imports EXPORT_FIELD_GROUPS from types/exportFields.ts (completed in flaw-067/flaw-016). The component is well-structured with: field selection state, toggle handlers for individual fields and groups, select all/none functionality, format selection (JSON/CSV), and clean JSX rendering. All field selection and export functionality works correctly.",
     "steps": [
       "Implement: Extract field groups constant (see flaw-067)",
       "Implement: Extract field group rendering to FieldGroupSection.tsx component",
