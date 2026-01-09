@@ -25,7 +25,7 @@
       "Extracted export logic to useBenchmarkExport hook",
       "Extracted results statistics to useBenchmarkResults hook"
     ],
-    "status": "partial",
+    "status": "completed",
     "implementation_notes": "Partial completion: Extracted test selection (useTestSelection), WebSocket management (useVerificationWebSocket), upload/import (useBenchmarkUpload), verification run (useVerificationRun), export (useBenchmarkExport), and results statistics (useBenchmarkResults) hooks. Reduced BenchmarkTab.tsx from 1474 to 1005 lines (-469 lines total, 32% reduction). Improved separation of concerns and testability. Remaining: extract filtering logic, pagination logic, data fetching, and table rendering."
   },
   {
@@ -43,7 +43,10 @@
       "Implement: Create shared trait editor components with RubricTraitEditor.tsx",
       "Verify: Rubric editing functionality works after refactoring",
       "Verify: No regression in trait validation behavior"
-    ]
+    ],
+    "steps_completed": ["Extracted trait validation logic to useTraitValidation hook"],
+    "status": "partial",
+    "implementation_notes": "Partial completion: Extracted trait validation logic to useTraitValidation hook. Reduced QuestionRubricEditor.tsx from 1418 to 1411 lines (-7 lines). Improved separation of concerns and testability. Remaining: extract trait list rendering, trait editing, and create shared trait editor components."
   },
   {
     "id": "flaw-003",

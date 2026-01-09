@@ -1302,3 +1302,9 @@ flaw-001 update 2025-01-09: Extracted results statistics logic from BenchmarkTab
 - Hook manages computed statistics for results display and analysis
 - Improved separation of concerns and testability
 - Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)
+flaw-002 partial 2025-01-09: Extracted trait validation logic from QuestionRubricEditor.tsx
+- Created src/hooks/useTraitValidation.ts (94 lines)
+- Reduced QuestionRubricEditor.tsx from 1418 to 1411 lines (-7 lines)
+- Hook manages trait name conflict checking across global and question rubrics
+- Improved separation of concerns and testability
+- Status: Partial - more extraction needed (trait list, trait editor, shared components)

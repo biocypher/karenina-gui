@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, XMarkIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useQuestionStore } from '../stores/useQuestionStore';
+import { useTraitValidation } from '../hooks/useTraitValidation';
 import { RubricTrait, TraitKind, Rubric, RegexTrait, MetricRubricTrait } from '../types';
 
 type TraitType = 'boolean' | 'score' | 'regex' | 'metric';
@@ -33,6 +34,12 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
   const { currentRubric: globalRubric, lastError: globalError, clearError: clearGlobalError } = useRubricStore();
 
   const { getQuestionRubric, setQuestionRubric, clearQuestionRubric } = useQuestionStore();
+
+  // Trait validation via custom hook
+  const { validateTraitName } = useTraitValidation({
+    globalRubric,
+    questionRubric,
+  });
 
   const [questionRubric, setQuestionRubricState] = useState<Rubric | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -219,16 +226,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
     // Check for trait name conflicts across all traits
     if (field === 'name') {
-      const globalLLMNames = (globalRubric?.llm_traits || []).map((t) => t.name.toLowerCase());
-      const globalRegexNames = (globalRubric?.regex_traits || []).map((t) => t.name.toLowerCase());
-      const questionLLMNames = questionRubric.llm_traits
-        .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
-        .filter(Boolean);
-      const questionRegexNames = (questionRubric.regex_traits || []).map((t) => t.name.toLowerCase());
-      const allExistingNames = [...globalLLMNames, ...globalRegexNames, ...questionLLMNames, ...questionRegexNames];
-
-      if (allExistingNames.includes(value.toLowerCase())) {
-        setLastError(`Trait with name "${value}" already exists`);
+      const validation = validateTraitName(String(value), index, false);
+      if (!validation.isValid) {
+        setLastError(validation.error || 'Trait name validation failed');
         return;
       }
     }
@@ -261,16 +261,9 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
     // Check for name conflicts if changing name
     if (field === 'name') {
-      const globalLLMNames = (globalRubric?.llm_traits || []).map((t) => t.name.toLowerCase());
-      const globalRegexNames = (globalRubric?.regex_traits || []).map((t) => t.name.toLowerCase());
-      const questionLLMNames = (questionRubric.llm_traits || []).map((t) => t.name.toLowerCase());
-      const questionRegexNames = (questionRubric.regex_traits || [])
-        .map((t, i) => (i !== index ? t.name.toLowerCase() : null))
-        .filter(Boolean);
-      const allExistingNames = [...globalLLMNames, ...globalRegexNames, ...questionLLMNames, ...questionRegexNames];
-
-      if (allExistingNames.includes(String(value).toLowerCase())) {
-        setLastError(`Trait with name "${value}" already exists`);
+      const validation = validateTraitName(String(value), index, true);
+      if (!validation.isValid) {
+        setLastError(validation.error || 'Trait name validation failed');
         return;
       }
     }
