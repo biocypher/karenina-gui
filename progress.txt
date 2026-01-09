@@ -1258,3 +1258,7 @@ also use this pattern.
 - Confirmed self-contained component for dataset metadata editing
 - No refactoring needed at this time
 - Recommended to monitor for growth beyond 700 lines
+flaw-063 completed 2025-01-09: Extracted PatternRow component from TraceHighlightingTab.tsx
+- Created src/components/trace-highlighting/PatternRow.tsx (173 lines)
+- Reduced TraceHighlightingTab.tsx from 390 lines to 226 lines (-164 lines)
+- PatternRow handles individual pattern editing with name, color, enabled toggle, regex input
