@@ -1350,3 +1350,10 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
   - comparison.ts (79 lines) - Model comparison types
 - Updated main index.ts to 40 lines that re-export all types
 - All existing imports continue to work due to re-exports
+
+2026-01-09 01:27 UTC - flaw-059: Extract model config utilities from useBenchmarkStore
+- Created src/utils/modelConfig.ts (84 lines) with sanitizeModelConfig() and expandModelConfig()
+- Created src/utils/presetConverter.ts (147 lines) with preset conversion functions
+- Refactored useBenchmarkStore.ts to use extracted utilities
+- Reduced from 341 to 209 lines (-132 lines, 39% reduction)
+- Store is now focused on state management only

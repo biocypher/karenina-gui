@@ -1094,6 +1094,9 @@
     "file": "karenina-gui/src/stores/useBenchmarkStore.ts",
     "line_range": "1-341",
     "description": "useBenchmarkStore.ts is 341 lines - manages benchmark configuration and evaluation settings. Complex configuration state management.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:27:00.000Z",
+    "implementation_notes": "Created src/utils/modelConfig.ts (84 lines) with sanitizeModelConfig() and expandModelConfig() functions for model configuration conversion. Created src/utils/presetConverter.ts (147 lines) with stateToVerificationConfig() and verificationConfigToState() functions for preset conversion. Refactored useBenchmarkStore.ts to use extracted utilities. Reduced from 341 to 209 lines (-132 lines, 39% reduction). Store is now focused on state management only - all conversion logic extracted to utilities. Includes normalizeEvaluationMode() helper for consistent rubric/evaluation mode handling.",
     "depends_on": [],
     "steps": [
       "Implement: Extract model configuration sanitization to utils/modelConfig.ts",

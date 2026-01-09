@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { ModelConfiguration } from '../types';
-import { VerificationConfig, FewShotConfig } from '../utils/presetApi';
+import type { ModelConfiguration } from '../types';
+import type { VerificationConfig } from '../utils/presetApi';
+import { stateToVerificationConfig, verificationConfigToState } from '../utils/presetConverter';
 
 /**
  * Benchmark configuration and evaluation settings store
@@ -197,145 +198,12 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
 
   // Preset Integration Methods
   getCurrentVerificationConfig: () => {
-    const state = useBenchmarkStore.getState();
-
-    // Helper function to sanitize model configuration
-    const sanitizeModelConfig = (model: ModelConfiguration): Record<string, unknown> => {
-      const sanitized: Record<string, unknown> = {
-        id: model.id,
-        model_provider: model.model_provider,
-        model_name: model.model_name,
-        temperature: model.temperature,
-        interface: model.interface,
-        system_prompt: model.system_prompt,
-      };
-
-      // Only include max_retries if it's set
-      if (model.max_retries !== undefined) {
-        sanitized.max_retries = model.max_retries;
-      }
-
-      // Only include endpoint fields for openai_endpoint interface
-      if (model.interface === 'openai_endpoint') {
-        if (model.endpoint_base_url) {
-          sanitized.endpoint_base_url = model.endpoint_base_url;
-        }
-        if (model.endpoint_api_key) {
-          sanitized.endpoint_api_key = model.endpoint_api_key;
-        }
-      }
-
-      // Only include MCP fields if they have values
-      if (model.mcp_urls_dict && Object.keys(model.mcp_urls_dict).length > 0) {
-        sanitized.mcp_urls_dict = model.mcp_urls_dict;
-      }
-      if (model.mcp_tool_filter && model.mcp_tool_filter.length > 0) {
-        sanitized.mcp_tool_filter = model.mcp_tool_filter;
-      }
-
-      // Only include extra_kwargs if it has values
-      if (model.extra_kwargs && Object.keys(model.extra_kwargs).length > 0) {
-        sanitized.extra_kwargs = model.extra_kwargs;
-      }
-
-      // Include agent_middleware if present (for MCP-enabled agents)
-      if (model.agent_middleware) {
-        sanitized.agent_middleware = model.agent_middleware;
-      }
-
-      // Include max_context_tokens if specified
-      if (model.max_context_tokens !== undefined && model.max_context_tokens !== null) {
-        sanitized.max_context_tokens = model.max_context_tokens;
-      }
-
-      return sanitized;
-    };
-
-    // Build few-shot config
-    const fewShotConfig: FewShotConfig | null = state.fewShotEnabled
-      ? {
-          enabled: true,
-          global_mode: state.fewShotMode,
-          global_k: state.fewShotK,
-          question_configs: {},
-          global_external_examples: [],
-        }
-      : null;
-
-    // Build verification config with sanitized models
-    const config: VerificationConfig = {
-      answering_models: state.answeringModels.map(sanitizeModelConfig),
-      parsing_models: state.parsingModels.map(sanitizeModelConfig),
-      replicate_count: state.replicateCount,
-      parsing_only: false,
-      rubric_enabled: state.rubricEnabled,
-      rubric_trait_names: null,
-      rubric_evaluation_strategy: state.rubricEvaluationStrategy,
-      evaluation_mode: state.evaluationMode,
-      abstention_enabled: state.abstentionEnabled,
-      deep_judgment_enabled: state.deepJudgmentTemplateEnabled,
-      deep_judgment_search_enabled: state.deepJudgmentSearchEnabled,
-      deep_judgment_rubric_mode: state.deepJudgmentRubricEnabled ? state.deepJudgmentRubricMode : 'disabled',
-      deep_judgment_rubric_global_excerpts: state.deepJudgmentRubricExtractExcerpts,
-      few_shot_config: fewShotConfig,
-      db_config: null, // Presets don't include DB config
-    };
-
-    return config;
+    return stateToVerificationConfig(useBenchmarkStore.getState());
   },
 
   applyVerificationConfig: (config: VerificationConfig) => {
-    // Deep clone model arrays to prevent reference sharing
-    const answeringModels = JSON.parse(JSON.stringify(config.answering_models));
-    const parsingModels = JSON.parse(JSON.stringify(config.parsing_models));
-
-    // Extract few-shot settings
-    const fewShotEnabled = config.few_shot_config?.enabled ?? false;
-    // Convert 'none' to 'all' since our UI doesn't support 'none' mode
-    const rawMode = config.few_shot_config?.global_mode ?? 'all';
-    const fewShotMode: 'all' | 'k-shot' | 'custom' = rawMode === 'none' ? 'all' : rawMode;
-    const fewShotK = config.few_shot_config?.global_k ?? 3;
-
-    // Ensure evaluation_mode is consistent with rubric_enabled
-    const rubricEnabled = config.rubric_enabled ?? false;
-    let evaluationMode = config.evaluation_mode ?? 'template_only';
-
-    // If rubric is disabled, force evaluation_mode to template_only
-    if (!rubricEnabled && evaluationMode !== 'template_only') {
-      evaluationMode = 'template_only';
-    }
-    // If rubric is enabled and mode is template_only, default to template_and_rubric
-    if (rubricEnabled && evaluationMode === 'template_only') {
-      evaluationMode = 'template_and_rubric';
-    }
-
-    // Parse deep judgment rubric configuration
-    const deepJudgmentRubricMode = (config.deep_judgment_rubric_mode ?? 'disabled') as
-      | 'disabled'
-      | 'enable_all'
-      | 'use_checkpoint';
-    const deepJudgmentRubricEnabled = deepJudgmentRubricMode !== 'disabled';
-
-    // Apply configuration to store
-    set({
-      answeringModels,
-      parsingModels,
-      replicateCount: config.replicate_count,
-      rubricEnabled,
-      rubricEvaluationStrategy: config.rubric_evaluation_strategy ?? 'batch',
-      evaluationMode,
-      abstentionEnabled: config.abstention_enabled ?? false,
-      deepJudgmentTemplateEnabled: config.deep_judgment_enabled ?? false,
-      deepJudgmentSearchEnabled: config.deep_judgment_search_enabled ?? false,
-      deepJudgmentRubricEnabled,
-      deepJudgmentRubricMode: deepJudgmentRubricEnabled ? deepJudgmentRubricMode : 'enable_all',
-      deepJudgmentRubricExtractExcerpts: config.deep_judgment_rubric_global_excerpts ?? true,
-      fewShotEnabled,
-      fewShotMode,
-      fewShotK,
-      // Clear UI-only state
-      expandedPrompts: new Set<string>(),
-      // Don't change runName - it's job-specific, not part of preset
-    });
+    const state = verificationConfigToState(config);
+    set(state);
+    // Don't change runName - it's job-specific, not part of preset
   },
 }));
