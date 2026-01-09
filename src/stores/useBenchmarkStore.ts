@@ -52,6 +52,7 @@ interface BenchmarkState {
 
   // UI State Actions
   togglePromptExpanded: (modelId: string) => void;
+  resetExpandedPrompts: () => void;
 
   // Evaluation Settings Actions
   setRubricEnabled: (enabled: boolean) => void;
@@ -166,6 +167,8 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
       }
       return { expandedPrompts: newExpanded };
     }),
+
+  resetExpandedPrompts: () => set({ expandedPrompts: new Set<string>() }),
 
   // Evaluation Settings Actions
   setRubricEnabled: (enabled) =>

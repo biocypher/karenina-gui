@@ -65,6 +65,7 @@ export const useBenchmarkConfiguration = () => {
     setReplicateCount,
     setRunName,
     togglePromptExpanded: storeTogglePromptExpanded,
+    resetExpandedPrompts,
     setRubricEnabled,
     setRubricEvaluationStrategy,
     setEvaluationMode,
@@ -272,6 +273,7 @@ export const useBenchmarkConfiguration = () => {
     updateAnsweringModel,
     updateParsingModel,
     togglePromptExpanded,
+    resetExpandedPrompts,
 
     // Utility functions
     getVerificationConfig,
