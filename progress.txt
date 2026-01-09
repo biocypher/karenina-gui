@@ -1288,3 +1288,10 @@ flaw-001 update 2025-01-09: Extracted verification run logic from BenchmarkTab.t
 - Hook manages verification start/cancel, API calls, WebSocket coordination
 - Improved separation of concerns and testability
 - Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)
+flaw-001 update 2025-01-09: Extracted export logic from BenchmarkTab.tsx
+- Created src/hooks/useBenchmarkExport.ts (97 lines)
+- Further reduced BenchmarkTab.tsx from 1072 to 1012 lines (-60 lines)
+- Total reduction: 1474 -> 1012 lines (-462 lines, 31% reduction)
+- Hook manages server export, filtered export, and custom field export
+- Improved separation of concerns and testability
+- Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)

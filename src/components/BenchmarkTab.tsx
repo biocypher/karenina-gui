@@ -19,7 +19,6 @@ import { ColumnFiltersState } from '@tanstack/react-table';
 import { Checkpoint, VerificationResult, VerificationProgress } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
-import { exportFromServer, exportFilteredResults, ExportableResult } from '../utils/export';
 import { ConfigurationPanel } from './benchmark/ConfigurationPanel';
 import { PresetManager } from './presets/PresetManager';
 import { ProgressIndicator } from './benchmark/ProgressIndicator';
@@ -30,6 +29,7 @@ import { useTestSelection } from '../hooks/useTestSelection';
 import { useVerificationWebSocket } from '../hooks/useVerificationWebSocket';
 import { useBenchmarkUpload } from '../hooks/useBenchmarkUpload';
 import { useVerificationRun } from '../hooks/useVerificationRun';
+import { useBenchmarkExport } from '../hooks/useBenchmarkExport';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
@@ -37,7 +37,6 @@ import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { SummaryStatisticsPanel } from './summary/SummaryStatisticsPanel';
 import { formatDuration } from '../utils/time';
 import { MergeResultsDialog, MergeAction } from './dialogs/MergeResultsDialog';
-import { JobSummaryMetadata } from '../utils/export';
 
 // Interfaces now imported from types
 
@@ -177,6 +176,16 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     disconnectProgressWebSocket();
   };
 
+  // Export management via custom hook
+  const { handleExportResults, handleExportFilteredResults, handleCustomExport } = useBenchmarkExport({
+    benchmarkResults,
+    progress,
+    currentRubric,
+    jobId,
+    getVerificationConfig,
+    onSetError: setError,
+  });
+
   // Local state for replicate count input to allow clearing
   const [replicateInputValue, setReplicateInputValue] = useState<string>(replicateCount.toString());
 
@@ -239,64 +248,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setTotalCount(total);
   };
 
-  // Handle export filtered results - Fix the function to work with simple client-side export
-  const handleExportFilteredResults = async (format: 'json' | 'csv') => {
-    // No transformation needed - raw_answer is already in metadata
-    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
-
-    // Build job summary from current results
-    const jobSummary: JobSummaryMetadata = {
-      total_questions: new Set(filteredResults.map((r) => r.metadata.question_id)).size,
-      successful_count: filteredResults.filter((r) => r.metadata.completed_without_errors).length,
-      failed_count: filteredResults.filter((r) => !r.metadata.completed_without_errors).length,
-      start_time: progress?.start_time,
-      end_time: progress?.end_time,
-      total_duration: progress?.duration_seconds,
-    };
-
-    exportFilteredResults(
-      filteredResults,
-      format,
-      (error) => {
-        setError(error);
-      },
-      currentRubric,
-      undefined, // selectedFields
-      jobId || undefined,
-      getVerificationConfig(),
-      jobSummary
-    );
-  };
-
-  // Handle custom export with field selection
-  const handleCustomExport = (selectedFields: string[], format: 'json' | 'csv') => {
-    // No transformation needed - raw_answer is already in metadata
-    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
-
-    // Build job summary from current results
-    const jobSummary: JobSummaryMetadata = {
-      total_questions: new Set(filteredResults.map((r) => r.metadata.question_id)).size,
-      successful_count: filteredResults.filter((r) => r.metadata.completed_without_errors).length,
-      failed_count: filteredResults.filter((r) => !r.metadata.completed_without_errors).length,
-      start_time: progress?.start_time,
-      end_time: progress?.end_time,
-      total_duration: progress?.duration_seconds,
-    };
-
-    exportFilteredResults(
-      filteredResults,
-      format,
-      (error) => {
-        setError(error);
-      },
-      currentRubric,
-      selectedFields,
-      jobId || undefined,
-      getVerificationConfig(),
-      jobSummary
-    );
-  };
-
   // WebSocket cleanup on unmount
   useEffect(() => {
     return () => {
@@ -305,17 +256,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleExportResults = async (format: 'json' | 'csv') => {
-    if (!jobId) return;
-
-    try {
-      await exportFromServer(jobId, format);
-    } catch (err) {
-      console.error('Error exporting results:', err);
-      setError('Failed to export results. Please try again.');
-    }
-  };
 
   // Get all unfiltered results for statistics
   const getAllUnfilteredResults = () => {
