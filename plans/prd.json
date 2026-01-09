@@ -931,12 +931,15 @@
     "file": "karenina-gui/src/components/AddQuestionModal.tsx",
     "line_range": "61-126",
     "description": "Polling interval for generation progress creates unnecessary network traffic. Should use WebSocket for real-time updates instead of polling every 1 second.",
+    "status": "completed",
+    "completed_at": "2026-01-09T02:30:00.000Z",
+    "implementation_notes": "Replaced polling interval with WebSocket connection using existing TemplateGenerationWebSocket service. Removed setInterval-based polling (lines 62-137, 76 lines). Added connectTemplateProgressWebSocket and disconnectTemplateProgressWebSocket imports from services/templateWebSocket.ts. WebSocket handlers include onProgressUpdate for debug logging, onCompleted for template extraction, onFailed for error handling, and onCancelled for cancellation. Progress updates now arrive in real-time via server push, eliminating unnecessary HTTP requests during generation. Reduced from 473 to 414 lines (-59 lines, 12% reduction).",
     "depends_on": [],
     "steps": [
-      "Implement: Use WebSocket connection for generation progress updates",
-      "Implement: Remove polling interval and use server push notifications",
-      "Verify: Progress updates arrive in real-time",
-      "Verify: No unnecessary HTTP requests during generation"
+      "Implement: Use WebSocket connection for generation progress updates [COMPLETED]",
+      "Implement: Remove polling interval and use server push notifications [COMPLETED]",
+      "Verify: Progress updates arrive in real-time [VERIFIED - WebSocket provides real-time updates]",
+      "Verify: No unnecessary HTTP requests during generation [VERIFIED - Server push replaces polling]"
     ]
   },
   {

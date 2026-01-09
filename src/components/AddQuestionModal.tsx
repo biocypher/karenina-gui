@@ -4,6 +4,7 @@ import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
 import { csrf } from '../utils/csrf';
 import { logger } from '../utils/logger';
+import { connectTemplateProgressWebSocket, disconnectTemplateProgressWebSocket } from '../services/templateWebSocket';
 
 interface AddQuestionModalProps {
   isOpen: boolean;
@@ -59,80 +60,81 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
     }));
   }, [savedProvider, savedModel, savedInterface]);
 
-  // Poll for generation progress
+  // WebSocket for generation progress (replaces polling)
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-
     if (isGenerating && jobId) {
-      interval = setInterval(async () => {
-        try {
-          const response = await fetch(`/api/generation-progress/${jobId}`);
-          const progressData = await response.json();
-
-          if (progressData.status === 'completed') {
-            setIsGenerating(false);
-            setJobId(null);
-            // Extract the generated template from the result
-            if (progressData.result && Object.keys(progressData.result).length > 0) {
-              // API returns: { templates: { question_id: { template_code, ... } }, ... }
-              // Extract templates object (with fallback for old API format)
-              const templates = progressData.result.templates || progressData.result;
-              const firstQuestionId = Object.keys(templates)[0];
-              const resultObj = templates[firstQuestionId];
-
-              // Extract and validate template code from result object
-              let extractedTemplate: string | null = null;
-
-              if (resultObj && typeof resultObj === 'object') {
-                // Result is an object with template_code field (current API)
-                if ('template_code' in resultObj && typeof resultObj.template_code === 'string') {
-                  extractedTemplate = resultObj.template_code.trim();
-                }
-              } else if (typeof resultObj === 'string') {
-                // Fallback: result is already a string (backwards compatibility)
-                extractedTemplate = resultObj.trim();
-              }
-
-              // Validate we got a valid template
-              if (extractedTemplate && extractedTemplate.length > 0) {
-                setGeneratedTemplate(extractedTemplate);
-                setGenerationError(null);
-                logger.debugLog(
-                  'TEMPLATE',
-                  `Template extracted successfully: ${extractedTemplate.substring(0, 50)}...`,
-                  'AddQuestionModal'
-                );
-              } else {
-                // Generation succeeded but template is invalid
-                const errorMsg =
-                  (resultObj && typeof resultObj === 'object' && 'error' in resultObj && resultObj.error) ||
-                  'Generated template was empty';
-                setGenerationError(String(errorMsg));
-                setGeneratedTemplate(null);
-                logger.warning(
-                  'TEMPLATE',
-                  'Template generation completed but template is invalid',
-                  'AddQuestionModal',
-                  { error: errorMsg }
-                );
-              }
-            }
-          } else if (progressData.status === 'failed') {
-            setIsGenerating(false);
-            setJobId(null);
-            setGenerationError(progressData.error || 'Template generation failed');
+      // Connect to WebSocket for real-time progress updates
+      connectTemplateProgressWebSocket(jobId, {
+        onProgressUpdate: (progress) => {
+          // Optional: Show progress percentage or current question being processed
+          if (progress.current_question) {
+            logger.debugLog('TEMPLATE', `Processing: ${progress.current_question}`, 'AddQuestionModal');
           }
-        } catch (error) {
-          logger.error('TEMPLATE', 'Error polling generation progress', 'AddQuestionModal', { error });
+        },
+        onCompleted: (result) => {
           setIsGenerating(false);
           setJobId(null);
-          setGenerationError('Failed to check generation progress');
-        }
-      }, 1000);
+          // Extract the generated template from the result
+          if (result && Object.keys(result).length > 0) {
+            // API returns: { templates: { question_id: { template_code, ... } }, ... }
+            // Extract templates object (with fallback for old API format)
+            const templates = result.templates || result;
+            const firstQuestionId = Object.keys(templates)[0];
+            const resultObj = templates[firstQuestionId];
+
+            // Extract and validate template code from result object
+            let extractedTemplate: string | null = null;
+
+            if (resultObj && typeof resultObj === 'object') {
+              // Result is an object with template_code field (current API)
+              if ('template_code' in resultObj && typeof resultObj.template_code === 'string') {
+                extractedTemplate = resultObj.template_code.trim();
+              }
+            } else if (typeof resultObj === 'string') {
+              // Fallback: result is already a string (backwards compatibility)
+              extractedTemplate = resultObj.trim();
+            }
+
+            // Validate we got a valid template
+            if (extractedTemplate && extractedTemplate.length > 0) {
+              setGeneratedTemplate(extractedTemplate);
+              setGenerationError(null);
+              logger.debugLog(
+                'TEMPLATE',
+                `Template extracted successfully: ${extractedTemplate.substring(0, 50)}...`,
+                'AddQuestionModal'
+              );
+            } else {
+              // Generation succeeded but template is invalid
+              const errorMsg =
+                (resultObj && typeof resultObj === 'object' && 'error' in resultObj && resultObj.error) ||
+                'Generated template was empty';
+              setGenerationError(String(errorMsg));
+              setGeneratedTemplate(null);
+              logger.warning('TEMPLATE', 'Template generation completed but template is invalid', 'AddQuestionModal', {
+                error: errorMsg,
+              });
+            }
+          }
+        },
+        onFailed: (error) => {
+          setIsGenerating(false);
+          setJobId(null);
+          setGenerationError(error || 'Template generation failed');
+        },
+        onCancelled: () => {
+          setIsGenerating(false);
+          setJobId(null);
+          setGenerationError('Template generation was cancelled');
+        },
+      });
     }
 
+    // Cleanup: disconnect WebSocket when generation ends or component unmounts
     return () => {
-      if (interval) clearInterval(interval);
+      if (jobId) {
+        disconnectTemplateProgressWebSocket();
+      }
     };
   }, [isGenerating, jobId]);
 

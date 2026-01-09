@@ -1413,3 +1413,15 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
 - Updated types/exportFields.ts to import from types/export.ts instead of utils/export.ts
 - Updated types/index.ts to re-export from export.ts
 - All existing imports continue to work due to re-exports
+
+2026-01-09 02:30 UTC - flaw-049: Replace polling with WebSocket in AddQuestionModal.tsx
+- Replaced setInterval-based polling (76 lines removed) with WebSocket connection
+- Added connectTemplateProgressWebSocket and disconnectTemplateProgressWebSocket imports from services/templateWebSocket.ts
+- WebSocket handlers include:
+  - onProgressUpdate: Debug logging for current question being processed
+  - onCompleted: Template extraction and validation
+  - onFailed: Error handling with user-friendly messages
+  - onCancelled: Cancellation handling
+- Progress updates now arrive in real-time via server push
+- Eliminated unnecessary HTTP requests during generation (was polling every 1 second)
+- Reduced from 473 to 414 lines (-59 lines, 12% reduction)
