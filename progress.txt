@@ -1357,3 +1357,14 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
 - Refactored useBenchmarkStore.ts to use extracted utilities
 - Reduced from 341 to 209 lines (-132 lines, 39% reduction)
 - Store is now focused on state management only
+
+2026-01-09 01:35 UTC - flaw-006: Modularize checkpoint-converter.ts (1,189 lines)
+- Created src/utils/checkpoint/ directory with modular structure
+- types.ts (57 lines): CheckpointConversionError, ConversionOptions, DEFAULT_CONVERSION_OPTIONS, schemaOrgContext
+- idGenerator.ts (19 lines): generateQuestionId() function
+- validators.ts (132 lines): validateJsonLdCheckpoint(), isJsonLdCheckpoint(), isV2Checkpoint() type guards
+- traitConverters.ts (482 lines): All trait conversion functions (rubric, regex, callable, metric traits)
+- converter.ts (550 lines): Main v2ToJsonLd() and jsonLdToV2() conversion orchestration
+- index.ts (42 lines): Re-exports for clean module API
+- Original checkpoint-converter.ts now just re-exports for backward compatibility (34 lines)
+- Reduced main file from 1,189 to 34 lines (97% reduction)

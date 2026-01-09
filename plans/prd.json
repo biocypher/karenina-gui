@@ -110,6 +110,9 @@
     "file": "karenina-gui/src/utils/checkpoint-converter.ts",
     "line_range": "1-1189",
     "description": "checkpoint-converter.ts is 1,189 lines - handles conversion between multiple checkpoint formats. Contains complex conversion logic that could be modularized.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:35:00.000Z",
+    "implementation_notes": "Created src/utils/checkpoint/ directory with modular structure: types.ts (57 lines) - CheckpointConversionError class, ConversionOptions interface, DEFAULT_CONVERSION_OPTIONS, schemaOrgContext. idGenerator.ts (19 lines) - generateQuestionId() function. validators.ts (132 lines) - validateJsonLdCheckpoint(), isJsonLdCheckpoint(), isV2Checkpoint() type guards. traitConverters.ts (482 lines) - All trait conversion functions (convertRubricTraitToRating, convertRegexTraitToRating, convertCallableTraitToRating, convertMetricTraitToRating and reverse). converter.ts (550 lines) - Main v2ToJsonLd() and jsonLdToV2() conversion orchestration. index.ts (42 lines) - Re-exports for clean module API. Original checkpoint-converter.ts now just re-exports from checkpoint/ for backward compatibility (34 lines). Reduced main file from 1,189 to 34 lines (97% reduction). Each module is focused and testable.",
     "depends_on": [],
     "steps": [
       "Implement: Extract JSON-LD conversion to converters/jsonldConverter.ts",
