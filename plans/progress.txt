@@ -82,3 +82,13 @@
 - Refactored TraceHighlightedTextDisplay.tsx from 582 to 215 lines (-367 lines, 63% reduction)
 - Component now serves as composition root using custom hooks for state and extracted components for UI
 - Type-check passes with no errors
+
+### flaw-055: AnswerTemplateGenerator.tsx Refactoring
+- Created 3 new components in src/components/template/:
+  - TemplateConfigurationPanel.tsx (249 lines) - LLM interface selection (langchain/openrouter/openai_endpoint), model configuration forms, temperature slider, generation/cancel buttons
+  - GeneratedTemplatesSection.tsx (189 lines) - Generated templates table with stats, retry/download/clear actions, add-to-curation CTA button
+  - EmptyState.tsx (inline) - No questions and all-completed states
+  - index.ts (6 lines) - Clean module re-exports
+- Refactored AnswerTemplateGenerator.tsx from 555 to 244 lines (-311 lines, 56% reduction)
+- Component now serves as composition root orchestrating question selection, configuration, and generated templates display
+- Type-check passes with no errors
