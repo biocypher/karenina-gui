@@ -8,6 +8,8 @@ import {
 } from '../types';
 import { logger } from '../utils/logger';
 import { handleApiError } from '../utils/errorHandler';
+import { downloadJSON } from '../utils/fileDownload';
+import { connectTemplateProgressWebSocket, disconnectTemplateProgressWebSocket } from '../services/templateWebSocket';
 
 // Extraction workflow types
 export interface FileInfo {
@@ -61,9 +63,6 @@ interface TemplateState {
   error: string | null;
   jobId: string | null;
 
-  // WebSocket state
-  websocket: WebSocket | null;
-
   // Generated templates state (ephemeral - not persisted)
   generatedTemplates: Record<string, GeneratedTemplate>;
 
@@ -103,10 +102,6 @@ interface TemplateState {
   resetTemplateState: () => void;
   retryFailedTemplate: (questionId: string, questions: QuestionData) => Promise<void>;
 
-  // WebSocket operations
-  connectProgressWebSocket: (jobId: string) => void;
-  disconnectProgressWebSocket: () => void;
-
   // Computed getters
   getPendingQuestions: (questions: QuestionData) => QuestionData;
   getSelectedCount: () => number;
@@ -144,7 +139,6 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   result: null,
   error: null,
   jobId: null,
-  websocket: null,
   generatedTemplates: {},
 
   // Basic setters
@@ -253,7 +247,16 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       set(() => ({ jobId: data.job_id }));
 
       // Connect to WebSocket for real-time progress updates
-      get().connectProgressWebSocket(data.job_id);
+      connectTemplateProgressWebSocket(data.job_id, {
+        onProgressUpdate: get().updateProgress,
+        onCompleted: get().completeGeneration,
+        onFailed: get().failGeneration,
+        onCancelled: () => {
+          set(() => ({
+            progress: { ...get().progress, status: 'cancelled' } as TemplateGenerationProgress,
+          }));
+        },
+      });
     } catch (err) {
       set(() => ({
         isGenerating: false,
@@ -272,7 +275,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       });
 
       // Disconnect WebSocket
-      state.disconnectProgressWebSocket();
+      disconnectTemplateProgressWebSocket();
 
       set(() => ({
         isGenerating: false,
@@ -325,31 +328,13 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   downloadResults: () => {
     const state = get();
     if (!state.result) return;
-
-    const dataStr = JSON.stringify(state.result.templates, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-
-    const exportFileDefaultName = `answer_templates_${new Date().toISOString().split('T')[0]}.json`;
-
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    downloadJSON(state.result.templates, 'answer_templates');
   },
 
   downloadAllGenerated: () => {
     const state = get();
     if (Object.keys(state.generatedTemplates).length === 0) return;
-
-    const dataStr = JSON.stringify(state.generatedTemplates, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-
-    const exportFileDefaultName = `all_generated_templates_${new Date().toISOString().split('T')[0]}.json`;
-
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    downloadJSON(state.generatedTemplates, 'all_generated_templates');
   },
 
   addToCuration: (
@@ -390,7 +375,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
   resetTemplateState: () => {
     // Disconnect WebSocket before resetting
-    get().disconnectProgressWebSocket();
+    disconnectTemplateProgressWebSocket();
 
     set(() => ({
       config: {
@@ -416,7 +401,6 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       result: null,
       error: null,
       jobId: null,
-      websocket: null,
       generatedTemplates: {},
     }));
   },
@@ -444,126 +428,6 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
     // Start generation with force regenerate
     await state.startGeneration(questions, true);
-  },
-
-  // WebSocket operations
-  connectProgressWebSocket: (jobId: string) => {
-    const state = get();
-
-    // Disconnect any existing connection
-    if (state.websocket) {
-      state.disconnectProgressWebSocket();
-    }
-
-    try {
-      // Determine WebSocket protocol based on current page protocol
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/ws/generation-progress/${jobId}`;
-
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        logger.info('WEBSOCKET', `WebSocket connected for job ${jobId}`, 'useTemplateStore');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const eventData = JSON.parse(event.data);
-
-          // Handle different event types
-          switch (eventData.type) {
-            case 'snapshot':
-            case 'job_started':
-            case 'task_started':
-            case 'task_completed':
-              // Update progress
-              state.updateProgress({
-                job_id: eventData.job_id,
-                status: eventData.status,
-                percentage: eventData.percentage,
-                processed_count: eventData.processed,
-                total_count: eventData.total,
-                current_question: eventData.current_question || '',
-                start_time: eventData.start_time, // Unix timestamp for live clock
-                duration_seconds: eventData.duration_seconds,
-                last_task_duration: eventData.last_task_duration,
-                in_progress_questions: eventData.in_progress_questions || [],
-              });
-              break;
-
-            case 'job_completed':
-              // Update progress to show completed status
-              state.updateProgress({
-                ...state.progress,
-                job_id: jobId,
-                status: 'completed',
-                percentage: 100,
-                in_progress_questions: [],
-                current_question: '',
-              } as TemplateGenerationProgress);
-
-              // Fetch final result
-              fetch(`/api/generation-progress/${jobId}`)
-                .then((res) => res.json())
-                .then((data) => {
-                  if (data.result) {
-                    state.completeGeneration(data.result);
-                  }
-                  state.disconnectProgressWebSocket();
-                })
-                .catch((err) => {
-                  logger.error('Failed to fetch final result:', err);
-                  state.disconnectProgressWebSocket();
-                });
-              break;
-
-            case 'job_failed':
-              state.failGeneration(eventData.error || 'Generation failed');
-              state.disconnectProgressWebSocket();
-              break;
-
-            case 'job_cancelled':
-              state.updateProgress({
-                ...state.progress,
-                job_id: jobId,
-                status: 'cancelled',
-              } as TemplateGenerationProgress);
-              state.disconnectProgressWebSocket();
-              break;
-
-            default:
-              logger.warning('WEBSOCKET', `Unknown WebSocket event type: ${eventData.type}`, 'useTemplateStore');
-          }
-        } catch (err) {
-          logger.error('WEBSOCKET', 'Failed to parse WebSocket message', 'useTemplateStore', { error: err });
-        }
-      };
-
-      ws.onerror = (error) => {
-        logger.error('WEBSOCKET', 'WebSocket error', 'useTemplateStore', { error });
-      };
-
-      ws.onclose = () => {
-        logger.info('WEBSOCKET', `WebSocket closed for job ${jobId}`, 'useTemplateStore');
-        set(() => ({ websocket: null }));
-      };
-
-      set(() => ({ websocket: ws }));
-    } catch (err) {
-      logger.error('WEBSOCKET', 'Failed to create WebSocket connection', 'useTemplateStore', { error: err });
-    }
-  },
-
-  disconnectProgressWebSocket: () => {
-    const state = get();
-    if (state.websocket) {
-      try {
-        state.websocket.close();
-      } catch (err) {
-        logger.error('Error closing WebSocket:', err);
-      }
-      set(() => ({ websocket: null }));
-    }
   },
 
   // Computed getters

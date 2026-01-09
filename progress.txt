@@ -1368,3 +1368,10 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
 - index.ts (42 lines): Re-exports for clean module API
 - Original checkpoint-converter.ts now just re-exports for backward compatibility (34 lines)
 - Reduced main file from 1,189 to 34 lines (97% reduction)
+
+2026-01-09 01:43 UTC - flaw-025: Extract services from useTemplateStore.ts (601 lines)
+- Created src/services/templateWebSocket.ts (175 lines) with TemplateGenerationWebSocket class
+- Created src/utils/fileDownload.ts (67 lines) with downloadFile(), downloadJSON() utilities
+- Refactored useTemplateStore.ts to use extracted services
+- Removed websocket state from store, removed connectProgressWebSocket/disconnectProgressWebSocket functions
+- Reduced from 601 to 465 lines (-136 lines, 23% reduction)

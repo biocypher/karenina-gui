@@ -465,6 +465,9 @@
     "file": "karenina-gui/src/stores/useTemplateStore.ts",
     "line_range": "1-601",
     "description": "useTemplateStore.ts is 601 lines - handles template generation workflow, WebSocket progress updates, and file extraction. Multiple concerns in one store.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:43:00.000Z",
+    "implementation_notes": "Created src/services/templateWebSocket.ts (175 lines) with TemplateGenerationWebSocket class for WebSocket connection management. Created src/utils/fileDownload.ts (67 lines) with downloadFile(), downloadJSON(), and generateDateStampedFilename() utilities. Refactored useTemplateStore.ts to use extracted services - removed websocket state, removed connectProgressWebSocket/disconnectProgressWebSocket functions (now handled by service). Reduced from 601 to 465 lines (-136 lines, 23% reduction). Store is now more focused on state management.",
     "depends_on": [],
     "steps": [
       "Implement: Extract WebSocket logic to services/templateWebSocket.ts",
