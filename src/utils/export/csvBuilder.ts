@@ -128,8 +128,12 @@ function separateRubricTraits(
 function extractTraitNames(rubric: Rubric): string[] {
   const names: string[] = [];
 
+  // Support both old traits and new llm_traits structure
   if (rubric.traits) {
     rubric.traits.forEach((trait: RubricTrait) => names.push(trait.name));
+  }
+  if (rubric.llm_traits) {
+    rubric.llm_traits.forEach((trait: RubricTrait) => names.push(trait.name));
   }
   if (rubric.regex_traits) {
     rubric.regex_traits.forEach((trait) => names.push(trait.name));

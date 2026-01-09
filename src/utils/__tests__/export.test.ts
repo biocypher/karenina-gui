@@ -1,12 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  downloadFile,
-  exportFromServer,
-  exportToJSON,
-  exportToCSV,
-  exportFilteredResults,
-  ExportableResult,
-} from '../export';
+import { exportFromServer, exportToJSON, exportToCSV, exportFilteredResults, ExportableResult } from '../export';
+import { downloadFile } from '../fileDownload';
 import { API_ENDPOINTS } from '../../constants/api';
 
 // Mock DOM methods
@@ -21,58 +15,79 @@ Object.defineProperty(window, 'URL', {
 describe('Export Utils', () => {
   const mockResults: ExportableResult[] = [
     {
-      question_id: 'q1',
-      question_text: 'What is 2+2?',
-      raw_llm_response: 'The answer is 4',
-      parsed_response: { answer: 4 },
-      verify_result: true,
-      verify_granular_result: { correct: true },
-      verify_rubric: {
-        Conciseness: true,
-        Directness: 4,
-        specific_trait: 3,
+      metadata: {
+        question_id: 'q1',
+        template_id: 'q1-template',
+        completed_without_errors: true,
+        question_text: 'What is 2+2?',
+        answering_model: 'gpt-4',
+        parsing_model: 'gpt-4-parser',
+        execution_time: 1.5,
+        timestamp: '2023-01-01T00:00:00Z',
+        run_name: 'test-run',
+        job_id: 'job-123',
+        replicate: 1,
+        answering_system_prompt: 'You are a math expert',
+        parsing_system_prompt: 'Parse the answer',
       },
-      answering_model: 'gpt-4',
-      parsing_model: 'gpt-4-parser',
-      replicate: 1,
-      answering_system_prompt: 'You are a math expert',
-      parsing_system_prompt: 'Parse the answer',
-      completed_without_errors: true,
-      execution_time: 1.5,
-      timestamp: '2023-01-01T00:00:00Z',
-      run_name: 'test-run',
-      job_id: 'job-123',
-      // Embedding check metadata
-      embedding_check_performed: true,
-      embedding_similarity_score: 0.95,
-      embedding_override_applied: false,
-      embedding_model_used: 'all-MiniLM-L6-v2',
+      template: {
+        raw_llm_response: 'The answer is 4',
+        parsed_gt_response: { answer: 4 },
+        parsed_llm_response: { answer: 4 },
+        verify_result: true,
+        verify_granular_result: { correct: true },
+        // Embedding check fields
+        embedding_check_performed: true,
+        embedding_similarity_score: 0.95,
+        embedding_override_applied: false,
+        embedding_model_used: 'all-MiniLM-L6-v2',
+      },
+      rubric: {
+        rubric_evaluation_performed: true,
+        llm_trait_scores: {
+          Conciseness: 1,
+          Directness: 4,
+          specific_trait: 3,
+        },
+      },
     },
     {
-      question_id: 'q2',
-      question_text: 'What is "hello, world"?',
-      raw_llm_response: "It's a greeting",
-      verify_rubric: {
-        Conciseness: false,
-        Directness: 2,
-        another_specific: true,
+      metadata: {
+        question_id: 'q2',
+        template_id: 'q2-template',
+        completed_without_errors: false,
+        question_text: 'What is "hello, world"?',
+        answering_model: 'gpt-4',
+        parsing_model: 'gpt-4-parser',
+        error: 'Parse error',
+        execution_time: 0.8,
+        timestamp: '2023-01-01T00:01:00Z',
+        replicate: 1,
       },
-      answering_model: 'gpt-4',
-      parsing_model: 'gpt-4-parser',
-      completed_without_errors: false,
-      error: 'Parse error',
-      execution_time: 0.8,
-      timestamp: '2023-01-01T00:01:00Z',
-      // Embedding check metadata
-      embedding_check_performed: true,
-      embedding_similarity_score: 0.72,
-      embedding_override_applied: true,
-      embedding_model_used: 'all-MiniLM-L6-v2',
+      template: {
+        raw_llm_response: "It's a greeting",
+        // Embedding check fields
+        embedding_check_performed: true,
+        embedding_similarity_score: 0.72,
+        embedding_override_applied: true,
+        embedding_model_used: 'all-MiniLM-L6-v2',
+        // Abstention fields
+        abstention_detected: true,
+        abstention_override_applied: true,
+        abstention_reasoning: 'Model refused to answer',
+      },
+      rubric: {
+        llm_trait_scores: {
+          Conciseness: 0,
+          Directness: 2,
+          another_specific: 1,
+        },
+      },
     },
   ];
 
   const mockGlobalRubric = {
-    traits: [
+    llm_traits: [
       { name: 'Conciseness', description: 'Is the response concise?', kind: 'boolean' },
       { name: 'Directness', description: 'Is the response direct?', kind: 'score', min_score: 1, max_score: 5 },
     ],
@@ -149,54 +164,69 @@ describe('Export Utils', () => {
   });
 
   describe('exportToJSON', () => {
-    it('should convert results to JSON with row indices', () => {
+    it('should convert results to JSON with unified export format v2.0', () => {
       const json = exportToJSON(mockResults);
       const parsed = JSON.parse(json);
 
-      expect(parsed).toHaveLength(2);
-      expect(parsed[0]).toHaveProperty('row_index', 1);
-      expect(parsed[1]).toHaveProperty('row_index', 2);
-      expect(parsed[0]).toHaveProperty('question_id', 'q1');
-      expect(parsed[1]).toHaveProperty('question_id', 'q2');
+      // Should have v2.0 format structure
+      expect(parsed).toHaveProperty('format_version', '2.0');
+      expect(parsed).toHaveProperty('metadata');
+      expect(parsed).toHaveProperty('shared_data');
+      expect(parsed).toHaveProperty('results');
+
+      // Results should be an array with 2 items
+      expect(parsed.results).toHaveLength(2);
+      expect(parsed.results[0].metadata).toHaveProperty('question_id', 'q1');
+      expect(parsed.results[1].metadata).toHaveProperty('question_id', 'q2');
     });
 
     it('should handle empty results', () => {
       const json = exportToJSON([]);
       const parsed = JSON.parse(json);
 
-      expect(parsed).toEqual([]);
+      // Should still have v2.0 format structure but with empty results
+      expect(parsed).toHaveProperty('format_version', '2.0');
+      expect(parsed.results).toEqual([]);
     });
 
     it('should replace completed_without_errors with "abstained" when abstention is detected in JSON export', () => {
       const resultsWithAbstention: ExportableResult[] = [
         {
-          question_id: 'q1',
-          question_text: 'Test question',
-          raw_llm_response: 'I cannot answer that',
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: true,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
-          // Abstention detected
-          abstention_check_performed: true,
-          abstention_detected: true,
-          abstention_override_applied: true,
-          abstention_reasoning: 'Model refused to answer',
+          metadata: {
+            question_id: 'q1',
+            template_id: 'q1-template',
+            question_text: 'Test question',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: true,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
+          },
+          template: {
+            raw_llm_response: 'I cannot answer that',
+            abstention_check_performed: true,
+            abstention_detected: true,
+            abstention_override_applied: true,
+            abstention_reasoning: 'Model refused to answer',
+          },
         },
         {
-          question_id: 'q2',
-          question_text: 'Normal question',
-          raw_llm_response: 'Normal answer',
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: false,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
-          // No abstention
-          abstention_check_performed: true,
-          abstention_detected: false,
-          abstention_override_applied: false,
+          metadata: {
+            question_id: 'q2',
+            template_id: 'q2-template',
+            question_text: 'Normal question',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: false,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
+          },
+          template: {
+            raw_llm_response: 'Normal answer',
+            abstention_check_performed: true,
+            abstention_detected: false,
+            abstention_override_applied: false,
+          },
         },
       ];
 
@@ -204,10 +234,10 @@ describe('Export Utils', () => {
       const parsed = JSON.parse(json);
 
       // First result should show "abstained" instead of true
-      expect(parsed[0]).toHaveProperty('completed_without_errors', 'abstained');
+      expect(parsed.results[0].metadata).toHaveProperty('completed_without_errors', 'abstained');
 
       // Second result should show normal boolean
-      expect(parsed[1]).toHaveProperty('completed_without_errors', false);
+      expect(parsed.results[1].metadata).toHaveProperty('completed_without_errors', false);
     });
   });
 
@@ -224,14 +254,19 @@ describe('Export Utils', () => {
     it('should handle fields with commas and quotes', () => {
       const resultsWithSpecialChars: ExportableResult[] = [
         {
-          question_id: 'q1',
-          question_text: 'What is "hello, world"?',
-          raw_llm_response: 'Answer with, commas and "quotes"',
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: true,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
+          metadata: {
+            question_id: 'q1',
+            template_id: 'q1-template',
+            question_text: 'What is "hello, world"?',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: true,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
+          },
+          template: {
+            raw_llm_response: 'Answer with, commas and "quotes"',
+          },
         },
       ];
 
@@ -253,17 +288,22 @@ describe('Export Utils', () => {
     it('should handle undefined/null values', () => {
       const resultsWithNulls: ExportableResult[] = [
         {
-          question_id: 'q1',
-          question_text: 'Test question',
-          raw_llm_response: 'Test response',
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: true,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
-          // Optional fields left undefined
-          run_name: undefined,
-          error: undefined,
+          metadata: {
+            question_id: 'q1',
+            template_id: 'q1-template',
+            question_text: 'Test question',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: true,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
+            // Optional fields left undefined
+            run_name: undefined,
+            error: undefined,
+          },
+          template: {
+            raw_llm_response: 'Test response',
+          },
         },
       ];
 
@@ -284,31 +324,38 @@ describe('Export Utils', () => {
       expect(lines[0]).not.toContain('rubric_another_specific');
 
       // Check first row has global rubric values and consolidated question-specific
-      expect(lines[1]).toContain('true'); // Conciseness
+      expect(lines[1]).toContain('1'); // Conciseness (true converted to 1)
       expect(lines[1]).toContain('4'); // Directness
       expect(lines[1]).toContain('"{""specific_trait"":3}"'); // question-specific rubrics as JSON (CSV escaped)
 
       // Check second row
-      expect(lines[2]).toContain('false'); // Conciseness
+      expect(lines[2]).toContain('0'); // Conciseness (false converted to 0)
       expect(lines[2]).toContain('2'); // Directness
-      expect(lines[2]).toContain('"{""another_specific"":true}"'); // question-specific rubrics as JSON (CSV escaped)
+      expect(lines[2]).toContain('"{""another_specific"":1}"'); // question-specific rubrics as JSON (CSV escaped, true -> 1)
     });
 
     it('should handle all global rubrics when no question-specific rubrics exist', () => {
       const resultsOnlyGlobal: ExportableResult[] = [
         {
-          question_id: 'q1',
-          question_text: 'Test question',
-          raw_llm_response: 'Test response',
-          verify_rubric: {
-            Conciseness: true,
-            Directness: 4,
+          metadata: {
+            question_id: 'q1',
+            template_id: 'q1-template',
+            question_text: 'Test question',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: true,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
           },
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: true,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
+          template: {
+            raw_llm_response: 'Test response',
+          },
+          rubric: {
+            llm_trait_scores: {
+              Conciseness: 1,
+              Directness: 4,
+            },
+          },
         },
       ];
 
@@ -330,46 +377,60 @@ describe('Export Utils', () => {
       expect(lines[0]).not.toContain('rubric_Directness');
       expect(lines[0]).toContain('question_specific_rubrics');
 
-      // Check JSON consolidation (CSV escaped)
-      expect(lines[1]).toContain('"{""Conciseness"":true,""Directness"":4,""specific_trait"":3}"');
-      expect(lines[2]).toContain('"{""Conciseness"":false,""Directness"":2,""another_specific"":true}"');
+      // Check JSON consolidation (CSV escaped) - numeric scores instead of booleans
+      expect(lines[1]).toContain('"{""Conciseness"":1,""Directness"":4,""specific_trait"":3}"');
+      expect(lines[2]).toContain('"{""Conciseness"":0,""Directness"":2,""another_specific"":1}"');
     });
 
     it('should handle empty question-specific rubrics with proper JSON', () => {
       const resultsNoQuestionSpecific: ExportableResult[] = [
         {
-          question_id: 'q1',
-          question_text: 'Test question',
-          raw_llm_response: 'Test response',
-          verify_rubric: {
-            Conciseness: true,
-            Directness: 4,
+          metadata: {
+            question_id: 'q1',
+            template_id: 'q1-template',
+            question_text: 'Test question',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: true,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
           },
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: true,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
+          template: {
+            raw_llm_response: 'Test response',
+          },
+          rubric: {
+            llm_trait_scores: {
+              Conciseness: 1,
+              Directness: 4,
+            },
+          },
         },
         {
-          question_id: 'q2',
-          question_text: 'Test question 2',
-          raw_llm_response: 'Test response 2',
-          verify_rubric: {
-            Conciseness: false,
-            // Missing Directness and other specific traits
+          metadata: {
+            question_id: 'q2',
+            template_id: 'q2-template',
+            question_text: 'Test question 2',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: true,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
           },
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: true,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
+          template: {
+            raw_llm_response: 'Test response 2',
+          },
+          rubric: {
+            llm_trait_scores: {
+              Conciseness: 0,
+              // Missing Directness and other specific traits
+            },
+          },
         },
       ];
 
       // Mock global rubric that includes some traits not in all results
       const extendedGlobalRubric = {
-        traits: [
+        llm_traits: [
           { name: 'Conciseness', description: 'Is the response concise?', kind: 'boolean' },
           { name: 'Directness', description: 'Is the response direct?', kind: 'score', min_score: 1, max_score: 5 },
           { name: 'extra_trait', description: 'Extra trait', kind: 'boolean' },
@@ -380,11 +441,11 @@ describe('Export Utils', () => {
       const lines = csv.split('\n');
 
       // Should handle missing global traits gracefully
-      expect(lines[1]).toContain('true'); // Conciseness
+      expect(lines[1]).toContain('1'); // Conciseness (true converted to 1 for score)
       expect(lines[1]).toContain('4'); // Directness
       expect(lines[1]).toContain(''); // extra_trait missing (empty)
 
-      expect(lines[2]).toContain('false'); // Conciseness
+      expect(lines[2]).toContain('0'); // Conciseness (false converted to 0 for score)
       expect(lines[2]).toContain(''); // Directness missing (empty)
       expect(lines[2]).toContain(''); // extra_trait missing (empty)
     });
@@ -414,33 +475,41 @@ describe('Export Utils', () => {
     it('should replace completed_without_errors with "abstained" when abstention is detected in CSV export', () => {
       const resultsWithAbstention: ExportableResult[] = [
         {
-          question_id: 'q1',
-          question_text: 'Test question',
-          raw_llm_response: 'I cannot answer that',
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: true,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
-          // Abstention detected
-          abstention_check_performed: true,
-          abstention_detected: true,
-          abstention_override_applied: true,
-          abstention_reasoning: 'Model refused to answer',
+          metadata: {
+            question_id: 'q1',
+            template_id: 'q1-template',
+            question_text: 'Test question',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: true,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
+          },
+          template: {
+            raw_llm_response: 'I cannot answer that',
+            abstention_check_performed: true,
+            abstention_detected: true,
+            abstention_override_applied: true,
+            abstention_reasoning: 'Model refused to answer',
+          },
         },
         {
-          question_id: 'q2',
-          question_text: 'Normal question',
-          raw_llm_response: 'Normal answer',
-          answering_model: 'test-model',
-          parsing_model: 'test-parser',
-          completed_without_errors: true,
-          execution_time: 1.0,
-          timestamp: '2023-01-01T00:00:00Z',
-          // No abstention
-          abstention_check_performed: true,
-          abstention_detected: false,
-          abstention_override_applied: false,
+          metadata: {
+            question_id: 'q2',
+            template_id: 'q2-template',
+            question_text: 'Normal question',
+            answering_model: 'test-model',
+            parsing_model: 'test-parser',
+            completed_without_errors: true,
+            execution_time: 1.0,
+            timestamp: '2023-01-01T00:00:00Z',
+          },
+          template: {
+            raw_llm_response: 'Normal answer',
+            abstention_check_performed: true,
+            abstention_detected: false,
+            abstention_override_applied: false,
+          },
         },
       ];
 

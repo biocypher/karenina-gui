@@ -10,7 +10,7 @@ describe('Global Rubric Export', () => {
     return {
       version: '2.0',
       global_rubric: {
-        traits: globalRubricTraits,
+        llm_traits: globalRubricTraits,
       },
       checkpoint: {
         question_1: {
@@ -41,7 +41,7 @@ describe('Global Rubric Export', () => {
       expect(jsonLdResult.rating).toHaveLength(1);
 
       const exportedRating = jsonLdResult.rating![0];
-      expect(exportedRating).toEqual({
+      expect(exportedRating).toMatchObject({
         '@type': 'Rating',
         '@id': 'urn:uuid:rating-accuracy',
         name: 'Accuracy',
@@ -49,6 +49,12 @@ describe('Global Rubric Export', () => {
         bestRating: 1,
         worstRating: 0,
         additionalType: 'GlobalRubricTrait',
+      });
+      // Check for higher_is_better in additionalProperty
+      expect(exportedRating.additionalProperty).toContainEqual({
+        '@type': 'PropertyValue',
+        name: 'higher_is_better',
+        value: true,
       });
     });
   });
@@ -71,7 +77,7 @@ describe('Global Rubric Export', () => {
       expect(jsonLdResult.rating).toHaveLength(1);
 
       const exportedRating = jsonLdResult.rating![0];
-      expect(exportedRating).toEqual({
+      expect(exportedRating).toMatchObject({
         '@type': 'Rating',
         '@id': 'urn:uuid:rating-completeness',
         name: 'Completeness',
@@ -79,6 +85,12 @@ describe('Global Rubric Export', () => {
         bestRating: 5,
         worstRating: 1,
         additionalType: 'GlobalRubricTrait',
+      });
+      // Check for higher_is_better in additionalProperty
+      expect(exportedRating.additionalProperty).toContainEqual({
+        '@type': 'PropertyValue',
+        name: 'higher_is_better',
+        value: true,
       });
     });
   });
@@ -151,30 +163,32 @@ describe('Global Rubric Export', () => {
 
       // Check that global rubric is preserved
       expect(convertedV2.global_rubric).toBeDefined();
-      expect(convertedV2.global_rubric!.traits).toHaveLength(2);
+      expect(convertedV2.global_rubric!.llm_traits).toHaveLength(2);
 
       // Verify traits are preserved
-      const convertedTraitNames = convertedV2.global_rubric!.traits.map((t) => t.name);
+      const convertedTraitNames = convertedV2.global_rubric!.llm_traits.map((t) => t.name);
       expect(convertedTraitNames).toContain('Accuracy');
       expect(convertedTraitNames).toContain('Detail Level');
 
       // Verify specific trait details
-      const accuracyTrait = convertedV2.global_rubric!.traits.find((t) => t.name === 'Accuracy');
-      expect(accuracyTrait).toEqual({
+      const accuracyTrait = convertedV2.global_rubric!.llm_traits.find((t) => t.name === 'Accuracy');
+      expect(accuracyTrait).toMatchObject({
         name: 'Accuracy',
         description: 'Is the answer factually correct?',
         kind: 'boolean',
         min_score: undefined,
         max_score: undefined,
+        higher_is_better: true,
       });
 
-      const detailTrait = convertedV2.global_rubric!.traits.find((t) => t.name === 'Detail Level');
-      expect(detailTrait).toEqual({
+      const detailTrait = convertedV2.global_rubric!.llm_traits.find((t) => t.name === 'Detail Level');
+      expect(detailTrait).toMatchObject({
         name: 'Detail Level',
         description: 'How detailed is the answer?',
         kind: 'score',
         min_score: 2,
         max_score: 8,
+        higher_is_better: true,
       });
     });
   });
@@ -206,7 +220,7 @@ describe('Global Rubric Export', () => {
       const v2Checkpoint: UnifiedCheckpoint = {
         version: '2.0',
         global_rubric: {
-          traits: [],
+          llm_traits: [],
         },
         checkpoint: {
           question_1: {
@@ -222,8 +236,8 @@ describe('Global Rubric Export', () => {
 
       const jsonLdResult = v2ToJsonLd(v2Checkpoint, DEFAULT_CONVERSION_OPTIONS);
 
-      // Should have empty rating array
-      expect(jsonLdResult.rating).toEqual([]);
+      // Should have empty rating array (or undefined)
+      expect(jsonLdResult.rating).toBeUndefined();
     });
   });
 
@@ -248,7 +262,7 @@ describe('Global Rubric Export', () => {
       const v2Checkpoint: UnifiedCheckpoint = {
         version: '2.0',
         global_rubric: {
-          traits: globalTraits,
+          llm_traits: globalTraits,
         },
         checkpoint: {
           question_1: {
@@ -259,7 +273,7 @@ describe('Global Rubric Export', () => {
             last_modified: '2024-07-22T10:00:00Z',
             finished: true,
             question_rubric: {
-              traits: [questionSpecificTrait],
+              llm_traits: [questionSpecificTrait],
             },
           },
         },

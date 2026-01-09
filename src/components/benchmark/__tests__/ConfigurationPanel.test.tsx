@@ -219,13 +219,17 @@ describe('ConfigurationPanel', () => {
     const allAnsweringRadios = screen.getAllByRole('radio');
     const langchainRadios = screen.getAllByLabelText('LangChain');
     const openrouterRadios = screen.getAllByLabelText('OpenRouter');
+    const openaiEndpointRadios = screen.getAllByLabelText('OpenAI Endpoint');
+    const nativeSdkRadios = screen.getAllByLabelText('Native SDK');
 
-    // Should have 3 radio options per model (LangChain, OpenRouter, Manual) for answering
-    // and 2 radio options per model (LangChain, OpenRouter) for parsing
-    // Total: 3 + 2 = 5 radio buttons
-    expect(allAnsweringRadios).toHaveLength(5);
+    // Should have 5 radio options for answering (LangChain, OpenRouter, OpenAI Endpoint, Native SDK, Manual)
+    // and 4 radio options for parsing (LangChain, OpenRouter, OpenAI Endpoint, Native SDK)
+    // Total: 5 + 4 = 9 radio buttons
+    expect(allAnsweringRadios).toHaveLength(9);
     expect(langchainRadios).toHaveLength(2); // One for answering, one for parsing
     expect(openrouterRadios).toHaveLength(2); // One for answering, one for parsing
+    expect(openaiEndpointRadios).toHaveLength(2); // One for answering, one for parsing
+    expect(nativeSdkRadios).toHaveLength(2); // One for answering, one for parsing
     expect(manualRadios).toHaveLength(1); // Only for answering models
   });
 
