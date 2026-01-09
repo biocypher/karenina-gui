@@ -19,10 +19,11 @@
     ],
     "steps_completed": [
       "Extracted test selection and filtering logic to useTestSelection hook",
-      "Extracted WebSocket management logic to useVerificationWebSocket hook"
+      "Extracted WebSocket management logic to useVerificationWebSocket hook",
+      "Extracted upload/import logic to useBenchmarkUpload hook"
     ],
     "status": "partial",
-    "implementation_notes": "Partial completion: Extracted test selection (useTestSelection) and WebSocket management (useVerificationWebSocket) hooks. Reduced BenchmarkTab.tsx from 1474 to 1256 lines (-218 lines total). Improved separation of concerns and testability. Remaining: extract filtering logic, pagination logic, data fetching, and table rendering."
+    "implementation_notes": "Partial completion: Extracted test selection (useTestSelection), WebSocket management (useVerificationWebSocket), and upload/import (useBenchmarkUpload) hooks. Reduced BenchmarkTab.tsx from 1474 to 1166 lines (-308 lines total, 21% reduction). Improved separation of concerns and testability. Remaining: extract filtering logic, pagination logic, data fetching, and table rendering."
   },
   {
     "id": "flaw-002",

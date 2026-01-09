@@ -1274,3 +1274,10 @@ flaw-001 update 2025-01-09: Extracted WebSocket management logic from BenchmarkT
 - Hook manages WebSocket connection, progress updates, job completion/failed/cancelled events
 - Improved separation of concerns and testability
 - Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)
+flaw-001 update 2025-01-09: Extracted upload/import logic from BenchmarkTab.tsx
+- Created src/hooks/useBenchmarkUpload.ts (172 lines)
+- Further reduced BenchmarkTab.tsx from 1256 to 1166 lines (-90 lines)
+- Total reduction: 1474 -> 1166 lines (-308 lines, 21% reduction)
+- Hook manages file upload, parsing, merge conflict resolution, rubric updates
+- Improved separation of concerns and testability
+- Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)
