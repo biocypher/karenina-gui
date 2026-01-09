@@ -1973,3 +1973,50 @@ After completing flaw-053 and flaw-084, all remaining frontend flaws in the PRD 
   * Performance improvements (WebSocket vs polling, retry logic)
   * UX improvements (replaced alert/confirm with custom modals)
 
+
+---
+
+2026-01-09 - Test Fixes for VerificationResult v2.0 Structure
+
+### Fixed: Test suite compatibility with nested VerificationResult structure
+
+**Issue:**
+The VerificationResult interface was refactored to use nested composition (metadata, template, rubric, deep_judgment) in v2.0, but many test files still used the old flat structure, causing 203 test failures.
+
+**Files Modified:**
+1. `src/__tests__/components/BenchmarkTab.filters.test.tsx`
+   - Updated mockVerificationResults to use nested structure with metadata and template
+   - Fixed filter logic tests to access result.metadata.* and result.template.*
+   - Fixed getAllByPlaceholderText usage for multiple filter inputs
+
+2. `src/components/BenchmarkTab.tsx`
+   - Added missing `isUploading` state variable (was referenced but not defined)
+   - Added missing `setTestSearchTerm` to destructuring from useTestSelection hook
+
+3. `src/components/summary/SummaryView.tsx`
+   - Added null checks for summary.tokens before accessing properties
+   - Only shows token section when token data is available
+
+4. `src/components/summary/SummaryCharts.tsx`
+   - Added null checks and default values for token properties
+
+5. `src/components/summary/comparison/ComparisonMetricsTable.tsx`
+   - Added conditional rendering for token rows
+
+6. `__tests__/EmbeddingCheck.test.tsx`
+   - Updated createMockResult to use nested structure
+   - Added backward compatibility layer for flat structure overrides
+   - Fixed data type tests to access template properties
+
+7. `src/components/shared/__tests__/ErrorBoundary.test.tsx`
+   - Fixed logger import path from ../../utils/logger to ../../../utils/logger
+
+**Results:**
+- Reduced test failures from 203 to 176 (27 tests fixed)
+- All type checks pass: `npm run type-check`
+- Fixed source code bugs (missing state variables)
+- Added defensive null checks for token-related data
+
+**Remaining Work:**
+- 176 failing tests (many have similar data structure issues)
+- Some tests may have UI expectation mismatches due to component changes
