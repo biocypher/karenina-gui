@@ -300,6 +300,9 @@
     "file": "karenina-gui/src/utils/export.ts",
     "line_range": "479-546, 600-742",
     "description": "The CSV export has hardcoded field lists in allHeaders and allRowData that must be manually synced. Adding new VerificationResult fields requires updating multiple locations (developer burden).",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:00:00.000Z",
+    "implementation_notes": "Created src/types/exportFields.ts as single source of truth for all exportable fields. Contains: (1) ExportFieldDefinition interface with key, label, description, path, isJson, defaultValue, and extractor properties, (2) EXPORT_FIELD_GROUPS array organizing all fields by category (Basic Information, LLM Response Data, Template, Verification Results, Rubric, Embedding, Abstention, MCP, Usage, Deep-Judgment, Deep-Judgment Rubric), (3) Dynamic field config for rubric traits (RUBRIC_TRAIT_FIELDS), (4) Helper functions: getAllExportFields(), extractFieldValue(), etc. Refactored export.ts to use getAllExportFields() and extractFieldValue() instead of hardcoded arrays. Refactored CustomExportDialog.tsx to import EXPORT_FIELD_GROUPS from exportFields.ts instead of maintaining duplicate FIELD_GROUPS constant. Now adding new fields only requires updating exportFields.ts - both CSV export and custom export dialog automatically use the same definitions.",
     "depends_on": [],
     "steps": [
       "Implement: Create single source of truth for exportable fields",
@@ -1233,6 +1236,9 @@
     "file": "karenina-gui/src/components/CustomExportDialog.tsx",
     "line_range": "18-158",
     "description": "CustomExportDialog.tsx has hardcoded FIELD_GROUPS constant with 157 lines of field definitions. Adding new fields requires updating this constant - maintenance burden.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:00:00.000Z",
+    "implementation_notes": "Completed as part of flaw-016. CustomExportDialog.tsx now imports EXPORT_FIELD_GROUPS from types/exportFields.ts instead of maintaining a duplicate FIELD_GROUPS constant. The component went from 158 lines of field definitions to a single import statement. Adding new fields now only requires updating exportFields.ts.",
     "depends_on": ["flaw-016"],
     "steps": [
       "Implement: Extract field definitions to types/exportFields.ts",

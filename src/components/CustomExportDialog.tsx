@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import type { ExportableResult, Rubric } from '../utils/export';
+import { EXPORT_FIELD_GROUPS } from '../types/exportFields';
 
 interface CustomExportDialogProps {
   isOpen: boolean;
@@ -10,152 +11,11 @@ interface CustomExportDialogProps {
   onExport: (selectedFields: string[], format: 'json' | 'csv') => void;
 }
 
-interface FieldGroup {
-  name: string;
-  fields: { key: string; label: string; description?: string }[];
-}
+// Field groups are now imported from types/exportFields.ts as single source of truth
+// When adding new fields, update EXPORT_FIELD_GROUPS in exportFields.ts only
 
-const FIELD_GROUPS: FieldGroup[] = [
-  {
-    name: 'Basic Information',
-    fields: [
-      { key: 'row_index', label: 'Row Index', description: 'Sequential row number' },
-      { key: 'question_id', label: 'Question ID', description: 'Unique identifier for the question' },
-      { key: 'question_text', label: 'Question Text', description: 'The original question' },
-      { key: 'raw_answer', label: 'Raw Answer', description: 'Ground truth answer from original data' },
-      { key: 'success', label: 'Success', description: 'Whether the verification was successful' },
-      { key: 'execution_time', label: 'Execution Time', description: 'Time taken to process' },
-      { key: 'timestamp', label: 'Timestamp', description: 'When the verification was run' },
-    ],
-  },
-  {
-    name: 'LLM Response Data',
-    fields: [
-      { key: 'raw_llm_response', label: 'Raw LLM Response', description: 'Original response from the LLM' },
-      {
-        key: 'parsed_gt_answer',
-        label: 'Ground Truth Answer',
-        description: 'Expected response from the "correct" field',
-      },
-      {
-        key: 'parsed_llm_answer',
-        label: 'LLM Extracted Answer',
-        description: 'Structured data extracted by the parsing model',
-      },
-      { key: 'answering_model', label: 'Answering Model', description: 'Model used for answering' },
-      { key: 'parsing_model', label: 'Parsing Model', description: 'Model used for parsing' },
-      { key: 'replicate', label: 'Replicate', description: 'Replicate number' },
-      {
-        key: 'answering_mcp_servers',
-        label: 'Answering MCP Servers',
-        description: 'MCP servers attached to answering model',
-      },
-    ],
-  },
-  {
-    name: 'Verification Results',
-    fields: [
-      { key: 'verify_result', label: 'Verify Result', description: 'Basic verification outcome' },
-      { key: 'verify_granular_result', label: 'Granular Result', description: 'Detailed verification breakdown' },
-      { key: 'verify_rubric', label: 'Rubric Scores', description: 'Individual rubric trait scores' },
-      { key: 'rubric_summary', label: 'Rubric Summary', description: 'Summary of rubric evaluation' },
-    ],
-  },
-  {
-    name: 'System Prompts & Metadata',
-    fields: [
-      {
-        key: 'answering_system_prompt',
-        label: 'Answering System Prompt',
-        description: 'System prompt used for answering',
-      },
-      { key: 'parsing_system_prompt', label: 'Parsing System Prompt', description: 'System prompt used for parsing' },
-      { key: 'error', label: 'Error Message', description: 'Error details if verification failed' },
-      { key: 'run_name', label: 'Run Name', description: 'Name of the verification run' },
-      { key: 'job_id', label: 'Job ID', description: 'Unique job identifier' },
-    ],
-  },
-  {
-    name: 'Embedding Check Results',
-    fields: [
-      {
-        key: 'embedding_check_performed',
-        label: 'Embedding Check Performed',
-        description: 'Whether embedding similarity check was attempted',
-      },
-      {
-        key: 'embedding_similarity_score',
-        label: 'Embedding Similarity Score',
-        description: 'Cosine similarity score between embeddings (0.0 to 1.0)',
-      },
-      {
-        key: 'embedding_override_applied',
-        label: 'Embedding Override Applied',
-        description: 'Whether embedding check overrode the original verification result',
-      },
-      {
-        key: 'embedding_model_used',
-        label: 'Embedding Model Used',
-        description: 'Name of the sentence transformer model used for similarity computation',
-      },
-    ],
-  },
-  {
-    name: 'Deep-Judgment Analysis',
-    fields: [
-      {
-        key: 'deep_judgment_enabled',
-        label: 'Deep-Judgment Enabled',
-        description: 'Whether deep-judgment multi-stage parsing was enabled for this verification',
-      },
-      {
-        key: 'deep_judgment_performed',
-        label: 'Deep-Judgment Performed',
-        description: 'Whether deep-judgment parsing was actually performed',
-      },
-      {
-        key: 'extracted_excerpts',
-        label: 'Extracted Excerpts',
-        description: 'Verbatim text excerpts extracted for each attribute with confidence and similarity scores',
-      },
-      {
-        key: 'attribute_reasoning',
-        label: 'Attribute Reasoning',
-        description: 'Reasoning traces explaining how excerpts map to attribute values',
-      },
-      {
-        key: 'deep_judgment_stages_completed',
-        label: 'Stages Completed',
-        description: 'List of pipeline stages completed (excerpts, reasoning, parameters)',
-      },
-      {
-        key: 'deep_judgment_model_calls',
-        label: 'Model Calls',
-        description: 'Number of LLM invocations used for deep-judgment parsing',
-      },
-      {
-        key: 'deep_judgment_excerpt_retry_count',
-        label: 'Excerpt Retry Count',
-        description: 'Number of retry attempts for failed excerpt fuzzy matching',
-      },
-      {
-        key: 'attributes_without_excerpts',
-        label: 'Attributes Without Excerpts',
-        description: 'List of attributes that could not be supported with verbatim excerpts',
-      },
-      {
-        key: 'deep_judgment_search_enabled',
-        label: 'Search Enhancement Enabled',
-        description: 'Whether external search validation was enabled for deep-judgment',
-      },
-      {
-        key: 'hallucination_risk_assessment',
-        label: 'Hallucination Risk Assessment',
-        description: 'Per-attribute risk assessment from search validation (none/low/medium/high)',
-      },
-    ],
-  },
-];
+// Re-export type from exportFields for convenience
+type FieldGroup = (typeof EXPORT_FIELD_GROUPS)[number];
 
 export const CustomExportDialog: React.FC<CustomExportDialogProps> = ({
   isOpen,
@@ -165,7 +25,7 @@ export const CustomExportDialog: React.FC<CustomExportDialogProps> = ({
   onExport,
 }) => {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(
-    new Set(FIELD_GROUPS.flatMap((group) => group.fields.map((field) => field.key)))
+    new Set(EXPORT_FIELD_GROUPS.flatMap((group) => group.fields.map((field) => field.key)))
   );
   const [format, setFormat] = useState<'json' | 'csv'>('csv');
 
@@ -195,7 +55,7 @@ export const CustomExportDialog: React.FC<CustomExportDialogProps> = ({
   };
 
   const handleSelectAll = () => {
-    const allFields = FIELD_GROUPS.flatMap((group) => group.fields.map((field) => field.key));
+    const allFields = EXPORT_FIELD_GROUPS.flatMap((group) => group.fields.map((field) => field.key));
     setSelectedFields(new Set(allFields));
   };
 
@@ -210,7 +70,7 @@ export const CustomExportDialog: React.FC<CustomExportDialogProps> = ({
   };
 
   const selectedCount = selectedFields.size;
-  const totalCount = FIELD_GROUPS.flatMap((group) => group.fields).length;
+  const totalCount = EXPORT_FIELD_GROUPS.flatMap((group) => group.fields).length;
   const canExport = selectedCount > 0 && results.length > 0;
 
   return (
@@ -247,7 +107,7 @@ export const CustomExportDialog: React.FC<CustomExportDialogProps> = ({
           </div>
 
           <div className="space-y-6">
-            {FIELD_GROUPS.map((group, groupIndex) => {
+            {EXPORT_FIELD_GROUPS.map((group, groupIndex) => {
               const groupFields = group.fields.map((f) => f.key);
               const selectedInGroup = groupFields.filter((field) => selectedFields.has(field)).length;
               const allGroupSelected = selectedInGroup === groupFields.length;

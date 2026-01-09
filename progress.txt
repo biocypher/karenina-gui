@@ -1315,3 +1315,8 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
 - Hook manages metric trait CRUD, validation, evaluation mode changes
 - Improved separation of concerns and testability
 - Status: Partial - more extraction needed (trait list, trait editor, shared components)
+2026-01-09 01:00 UTC - flaw-016, flaw-067: Single source of truth for exportable fields
+- Created src/types/exportFields.ts with ExportFieldDefinition interface and EXPORT_FIELD_GROUPS
+- Refactored export.ts to use getAllExportFields() and extractFieldValue()
+- Refactored CustomExportDialog.tsx to import EXPORT_FIELD_GROUPS
+- Now adding new fields only requires updating exportFields.ts

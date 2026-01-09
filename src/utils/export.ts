@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from '../constants/api';
 import type { Rubric, RubricTrait, UsageMetadata, VerificationConfig } from '../types';
 import { logger } from './logger';
+import { getAllExportFields, extractFieldValue, RUBRIC_TRAIT_FIELDS } from '../types/exportFields';
 
 /**
  * Cache for the application version to avoid repeated imports
@@ -455,26 +456,22 @@ function escapeCSVField(field: unknown): string {
 
 /**
  * Converts results to CSV format
+ *
+ * Uses field definitions from types/exportFields.ts as single source of truth.
+ * When adding new fields to VerificationResult, add them to exportFields.ts only.
  */
 export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, selectedFields?: string[]): string {
-  // Extract all unique rubric trait names from results to create dynamic columns
+  // Get all static field definitions (single source of truth)
+  const allFields = getAllExportFields();
+  const staticHeaders = allFields.map((field) => field.key);
+
+  // Extract dynamic rubric trait names from results
   const allRubricTraitNames = new Set<string>();
   results.forEach((result) => {
-    if (result.rubric) {
-      // Collect from all trait score dicts (llm, regex, callable, metric)
-      [
-        result.rubric.llm_trait_scores,
-        result.rubric.regex_trait_scores,
-        result.rubric.callable_trait_scores,
-        result.rubric.metric_trait_scores,
-      ].forEach((traitDict) => {
-        if (traitDict) {
-          Object.keys(traitDict).forEach((traitName) => {
-            allRubricTraitNames.add(traitName);
-          });
-        }
-      });
-    }
+    const dynamicTraits = RUBRIC_TRAIT_FIELDS.extractor(result);
+    Object.keys(dynamicTraits).forEach((traitName) => {
+      allRubricTraitNames.add(traitName);
+    });
   });
 
   // Determine global vs question-specific rubrics
@@ -510,86 +507,15 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
     .filter((trait) => !globalTraitNames.has(trait))
     .sort();
 
-  // Create headers for global rubrics only
+  // Create dynamic rubric headers
   const globalRubricHeaders = globalTraits.map((trait) => `rubric_${trait}`);
+  const hasQuestionSpecificTraits = questionSpecificTraits.length > 0;
 
-  /**
-   * CRITICAL DEVELOPER WARNING:
-   *
-   * When adding new fields to VerificationResult model, you MUST add them here.
-   *
-   * This is the CSV headers array. Every field in ExportableResult interface
-   * that should be exported must have a corresponding header here.
-   *
-   * See: .agents/dev/adding-verification-fields.md for complete checklist
-   */
+  // Combine static and dynamic headers
   const allHeaders = [
-    'row_index',
-    'question_id',
-    'question_text',
-    'raw_answer',
-    'raw_llm_response',
-    'parsed_gt_answer',
-    'parsed_llm_answer',
-    'template_verification_performed',
-    'verify_result',
-    'verify_granular_result',
-    'rubric_evaluation_performed',
+    ...staticHeaders,
     ...globalRubricHeaders,
-    ...(questionSpecificTraits.length > 0 ? ['question_specific_rubrics'] : []),
-    'rubric_summary',
-    'answering_model',
-    'parsing_model',
-    'replicate',
-    'answering_system_prompt',
-    'parsing_system_prompt',
-    // MCP server fields
-    'answering_mcp_servers',
-    'completed_without_errors',
-    'error',
-    'execution_time',
-    'timestamp',
-    'run_name',
-    'job_id',
-    // Embedding check fields
-    'embedding_check_performed',
-    'embedding_similarity_score',
-    'embedding_override_applied',
-    'embedding_model_used',
-    // Abstention detection fields
-    'abstention_check_performed',
-    'abstention_detected',
-    'abstention_override_applied',
-    'abstention_reasoning',
-    // Deep-judgment fields
-    'deep_judgment_enabled',
-    'deep_judgment_performed',
-    'extracted_excerpts',
-    'attribute_reasoning',
-    'deep_judgment_stages_completed',
-    'deep_judgment_model_calls',
-    'deep_judgment_excerpt_retry_count',
-    'attributes_without_excerpts',
-    // Search-enhanced deep-judgment fields
-    'deep_judgment_search_enabled',
-    'hallucination_risk_assessment',
-    // Deep-judgment rubric fields
-    'deep_judgment_rubric_performed',
-    'deep_judgment_rubric_scores',
-    'rubric_trait_reasoning',
-    'extracted_rubric_excerpts',
-    'trait_metadata',
-    'traits_without_valid_excerpts',
-    'rubric_hallucination_risk_assessment',
-    'total_deep_judgment_model_calls',
-    'total_traits_evaluated',
-    'total_excerpt_retries',
-    // Metric trait fields
-    'metric_trait_confusion_lists',
-    'metric_trait_metrics',
-    // LLM usage tracking fields
-    'usage_metadata',
-    'agent_metrics',
+    ...(hasQuestionSpecificTraits ? ['question_specific_rubrics'] : []),
   ];
 
   // Filter headers based on selected fields if provided
@@ -597,211 +523,40 @@ export function exportToCSV(results: ExportableResult[], globalRubric?: Rubric, 
 
   const csvRows = [headers.join(',')];
 
+  // Build rows using field definitions
   results.forEach((result, index) => {
-    // Merge all trait scores for CSV export (from all trait score dicts)
-    const mergedTraits: Record<string, number | boolean | Record<string, number>> = {};
-    if (result.rubric) {
-      if (result.rubric.llm_trait_scores) Object.assign(mergedTraits, result.rubric.llm_trait_scores);
-      if (result.rubric.regex_trait_scores) Object.assign(mergedTraits, result.rubric.regex_trait_scores);
-      if (result.rubric.callable_trait_scores) Object.assign(mergedTraits, result.rubric.callable_trait_scores);
-      if (result.rubric.metric_trait_scores) Object.assign(mergedTraits, result.rubric.metric_trait_scores);
+    const rowData: Record<string, string> = {};
+
+    // Extract values using field definitions (single source of truth)
+    for (const field of allFields) {
+      const value = extractFieldValue(result, field, index);
+      if (field.isJson && value !== '' && value !== undefined) {
+        rowData[field.key] = escapeCSVField(JSON.stringify(value));
+      } else {
+        rowData[field.key] = escapeCSVField(value ?? field.defaultValue ?? '');
+      }
     }
 
-    // Create question-specific rubrics JSON
-    const questionSpecificRubrics: Record<string, number | boolean | Record<string, number>> = {};
-    if (Object.keys(mergedTraits).length > 0) {
-      questionSpecificTraits.forEach((trait) => {
-        if (trait in mergedTraits) {
-          questionSpecificRubrics[trait] = mergedTraits[trait];
-        }
-      });
-    }
-    const questionSpecificRubricsValue =
-      questionSpecificTraits.length > 0 ? escapeCSVField(JSON.stringify(questionSpecificRubrics)) : '';
-
-    // Create rubric summary
-    let rubricSummary = '';
-    if (Object.keys(mergedTraits).length > 0) {
-      const traits = Object.entries(mergedTraits);
-      const passedTraits = traits.filter(([, value]) =>
-        typeof value === 'boolean' ? value : typeof value === 'number' ? value && value >= 3 : false
-      ).length;
-      rubricSummary = `${passedTraits}/${traits.length}`;
-    }
-
-    /**
-     * CRITICAL DEVELOPER WARNING:
-     *
-     * When adding new fields to VerificationResult model, you MUST add them here.
-     *
-     * This is the CSV row data object. For each field in ExportableResult interface
-     * that should be exported, add a corresponding key-value pair here.
-     *
-     * IMPORTANT:
-     * - Use escapeCSVField() for all values to handle special characters
-     * - Use JSON.stringify() for complex types (objects, arrays, etc.)
-     * - Provide sensible defaults for optional fields (e.g., || false, || '', || 0)
-     *
-     * See: .agents/dev/adding-verification-fields.md for complete checklist
-     */
-    const allRowData: Record<string, string> = {
-      row_index: String(index + 1),
-      // Metadata fields
-      question_id: escapeCSVField(result.metadata.question_id),
-      question_text: escapeCSVField(result.metadata.question_text),
-      raw_answer: escapeCSVField(result.raw_answer || ''), // Added from checkpoint during export
-      answering_model: escapeCSVField(result.metadata.answering_model),
-      parsing_model: escapeCSVField(result.metadata.parsing_model),
-      replicate: escapeCSVField(result.metadata.replicate || ''),
-      completed_without_errors: escapeCSVField(
-        result.template?.abstention_detected && result.template?.abstention_override_applied
-          ? 'abstained'
-          : result.metadata.completed_without_errors
-      ),
-      error: escapeCSVField(result.metadata.error || ''),
-      execution_time: escapeCSVField(result.metadata.execution_time),
-      timestamp: escapeCSVField(result.metadata.timestamp),
-      run_name: escapeCSVField(result.metadata.run_name || ''),
-      job_id: escapeCSVField(result.metadata.job_id || ''),
-      // Template fields
-      raw_llm_response: escapeCSVField(result.template?.raw_llm_response || ''),
-      parsed_gt_answer: escapeCSVField(
-        result.template?.parsed_gt_response ? JSON.stringify(result.template.parsed_gt_response) : ''
-      ),
-      parsed_llm_answer: escapeCSVField(
-        result.template?.parsed_llm_response ? JSON.stringify(result.template.parsed_llm_response) : ''
-      ),
-      template_verification_performed: escapeCSVField(
-        result.template?.template_verification_performed !== undefined
-          ? result.template.template_verification_performed
-          : ''
-      ),
-      verify_result: escapeCSVField(
-        result.template?.verify_result !== undefined ? JSON.stringify(result.template.verify_result) : 'N/A'
-      ),
-      verify_granular_result: escapeCSVField(
-        result.template?.verify_granular_result !== undefined
-          ? JSON.stringify(result.template.verify_granular_result)
-          : 'N/A'
-      ),
-      answering_system_prompt: escapeCSVField(result.template?.answering_system_prompt || ''),
-      parsing_system_prompt: escapeCSVField(result.template?.parsing_system_prompt || ''),
-      // Embedding check fields
-      embedding_check_performed: escapeCSVField(result.template?.embedding_check_performed || false),
-      embedding_similarity_score: escapeCSVField(result.template?.embedding_similarity_score || ''),
-      embedding_override_applied: escapeCSVField(result.template?.embedding_override_applied || false),
-      embedding_model_used: escapeCSVField(result.template?.embedding_model_used || ''),
-      // Abstention detection fields
-      abstention_check_performed: escapeCSVField(result.template?.abstention_check_performed || false),
-      abstention_detected: escapeCSVField(
-        result.template?.abstention_detected !== null && result.template?.abstention_detected !== undefined
-          ? result.template.abstention_detected
-          : ''
-      ),
-      abstention_override_applied: escapeCSVField(result.template?.abstention_override_applied || false),
-      abstention_reasoning: escapeCSVField(result.template?.abstention_reasoning || ''),
-      // MCP server fields
-      answering_mcp_servers: escapeCSVField(
-        result.template?.answering_mcp_servers ? JSON.stringify(result.template.answering_mcp_servers) : ''
-      ),
-      // LLM usage tracking fields
-      usage_metadata: escapeCSVField(
-        result.template?.usage_metadata ? JSON.stringify(result.template.usage_metadata) : ''
-      ),
-      agent_metrics: escapeCSVField(
-        result.template?.agent_metrics ? JSON.stringify(result.template.agent_metrics) : ''
-      ),
-      // Rubric fields
-      rubric_evaluation_performed: escapeCSVField(
-        result.rubric?.rubric_evaluation_performed !== undefined ? result.rubric.rubric_evaluation_performed : ''
-      ),
-      rubric_summary: escapeCSVField(rubricSummary),
-      metric_trait_confusion_lists: escapeCSVField(
-        result.rubric?.metric_trait_confusion_lists ? JSON.stringify(result.rubric.metric_trait_confusion_lists) : ''
-      ),
-      metric_trait_metrics: escapeCSVField(
-        result.rubric?.metric_trait_scores ? JSON.stringify(result.rubric.metric_trait_scores) : ''
-      ),
-      // Deep-judgment fields
-      deep_judgment_enabled: escapeCSVField(result.deep_judgment?.deep_judgment_enabled || false),
-      deep_judgment_performed: escapeCSVField(result.deep_judgment?.deep_judgment_performed || false),
-      extracted_excerpts: escapeCSVField(
-        result.deep_judgment?.extracted_excerpts ? JSON.stringify(result.deep_judgment.extracted_excerpts) : ''
-      ),
-      attribute_reasoning: escapeCSVField(
-        result.deep_judgment?.attribute_reasoning ? JSON.stringify(result.deep_judgment.attribute_reasoning) : ''
-      ),
-      deep_judgment_stages_completed: escapeCSVField(
-        result.deep_judgment?.deep_judgment_stages_completed
-          ? JSON.stringify(result.deep_judgment.deep_judgment_stages_completed)
-          : ''
-      ),
-      deep_judgment_model_calls: escapeCSVField(result.deep_judgment?.deep_judgment_model_calls || 0),
-      deep_judgment_excerpt_retry_count: escapeCSVField(result.deep_judgment?.deep_judgment_excerpt_retry_count || 0),
-      attributes_without_excerpts: escapeCSVField(
-        result.deep_judgment?.attributes_without_excerpts
-          ? JSON.stringify(result.deep_judgment.attributes_without_excerpts)
-          : ''
-      ),
-      // Search-enhanced deep-judgment fields
-      deep_judgment_search_enabled: escapeCSVField(result.deep_judgment?.deep_judgment_search_enabled || false),
-      hallucination_risk_assessment: escapeCSVField(
-        result.deep_judgment?.hallucination_risk_assessment
-          ? JSON.stringify(result.deep_judgment.hallucination_risk_assessment)
-          : ''
-      ),
-      // Deep-judgment rubric fields
-      deep_judgment_rubric_performed: escapeCSVField(
-        result.deep_judgment_rubric?.deep_judgment_rubric_performed || false
-      ),
-      deep_judgment_rubric_scores: escapeCSVField(
-        result.deep_judgment_rubric?.deep_judgment_rubric_scores
-          ? JSON.stringify(result.deep_judgment_rubric.deep_judgment_rubric_scores)
-          : ''
-      ),
-      rubric_trait_reasoning: escapeCSVField(
-        result.deep_judgment_rubric?.rubric_trait_reasoning
-          ? JSON.stringify(result.deep_judgment_rubric.rubric_trait_reasoning)
-          : ''
-      ),
-      extracted_rubric_excerpts: escapeCSVField(
-        result.deep_judgment_rubric?.extracted_rubric_excerpts
-          ? JSON.stringify(result.deep_judgment_rubric.extracted_rubric_excerpts)
-          : ''
-      ),
-      trait_metadata: escapeCSVField(
-        result.deep_judgment_rubric?.trait_metadata ? JSON.stringify(result.deep_judgment_rubric.trait_metadata) : ''
-      ),
-      traits_without_valid_excerpts: escapeCSVField(
-        result.deep_judgment_rubric?.traits_without_valid_excerpts
-          ? JSON.stringify(result.deep_judgment_rubric.traits_without_valid_excerpts)
-          : ''
-      ),
-      rubric_hallucination_risk_assessment: escapeCSVField(
-        result.deep_judgment_rubric?.rubric_hallucination_risk_assessment
-          ? JSON.stringify(result.deep_judgment_rubric.rubric_hallucination_risk_assessment)
-          : ''
-      ),
-      total_deep_judgment_model_calls: escapeCSVField(
-        result.deep_judgment_rubric?.total_deep_judgment_model_calls || 0
-      ),
-      total_traits_evaluated: escapeCSVField(result.deep_judgment_rubric?.total_traits_evaluated || 0),
-      total_excerpt_retries: escapeCSVField(result.deep_judgment_rubric?.total_excerpt_retries || 0),
-    };
-
-    // Add global rubric values from merged traits
+    // Add global rubric values (dynamic fields)
+    const dynamicTraits = RUBRIC_TRAIT_FIELDS.extractor(result);
     globalTraits.forEach((traitName) => {
-      const value = mergedTraits[traitName];
-      allRowData[`rubric_${traitName}`] = escapeCSVField(value !== undefined ? value : '');
+      const value = dynamicTraits[traitName];
+      rowData[`rubric_${traitName}`] = escapeCSVField(value !== undefined ? value : '');
     });
 
-    // Add question-specific rubrics if they exist
-    if (questionSpecificTraits.length > 0) {
-      allRowData['question_specific_rubrics'] = questionSpecificRubricsValue;
+    // Add question-specific rubrics as combined JSON if they exist
+    if (hasQuestionSpecificTraits) {
+      const questionSpecificRubrics: Record<string, unknown> = {};
+      questionSpecificTraits.forEach((trait) => {
+        if (trait in dynamicTraits) {
+          questionSpecificRubrics[trait] = dynamicTraits[trait];
+        }
+      });
+      rowData['question_specific_rubrics'] = escapeCSVField(JSON.stringify(questionSpecificRubrics));
     }
 
     // Build row based on selected headers
-    const row = headers.map((header) => allRowData[header] || '');
+    const row = headers.map((header) => rowData[header] ?? '');
     csvRows.push(row.join(','));
   });
 
