@@ -506,6 +506,9 @@
     "file": "karenina-gui/src/components/ConfigurationModal.tsx",
     "line_range": "1-701",
     "description": "ConfigurationModal.tsx is 701 lines - modal with tabs for defaults, environment variables, and trace highlighting. Multiple configuration concerns in one modal.",
+    "status": "completed",
+    "completed_at": "2026-01-09T02:18:00.000Z",
+    "implementation_notes": "Created src/components/configuration/ directory with modular structure: DefaultsConfigTab.tsx (274 lines) - Handles default LLM settings, interface selection, provider/model configuration, preset application. EnvConfigTab.tsx (211 lines) - Handles environment variables viewing, editing, adding, removing variables. index.ts (7 lines) - Clean module re-exports. Refactored ConfigurationModal.tsx from 702 lines to 134 lines (-568 lines, 81% reduction). Now serves as composition root that handles tab navigation, loading state, error display, and delegates to extracted tab components. The TraceHighlightingTab was already extracted. All configuration concerns are now in separate, focused components.",
     "depends_on": [],
     "steps": [
       "Implement: Extract defaults tab to DefaultsConfigTab.tsx component",

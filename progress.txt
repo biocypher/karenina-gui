@@ -1476,3 +1476,39 @@ Benefits:
 - Main component is now <200 lines (well under 300 line target)
 
 Type-check: PASSED
+
+=== flaw-027: ConfigurationModal.tsx refactoring (2026-01-09 02:18 UTC) ===
+Status: COMPLETED
+
+Created src/components/configuration/ directory structure:
+- DefaultsConfigTab.tsx (274 lines)
+  * Handles default LLM settings (interface, provider, model)
+  * Preset application from benchmark presets
+  * Save/reset functionality with success feedback
+  * OpenAI Endpoint configuration with localStorage warnings
+
+- EnvConfigTab.tsx (211 lines)
+  * Environment variables viewing and editing
+  * Raw .env file editing mode
+  * Add/remove environment variables
+  * Show/hide API keys toggle
+  * Parser ground truth exposure toggle
+
+- index.ts (7 lines)
+  * Clean re-exports for the configuration module
+
+Refactored ConfigurationModal.tsx:
+- From 702 lines to 134 lines (-568 lines, 81% reduction)
+- Now serves as composition root that:
+  * Manages tab state and navigation
+  * Handles loading and error states
+  * Delegates rendering to extracted tab components
+  * TraceHighlightingTab was already extracted
+
+Benefits:
+- Each configuration concern is in a separate, focused component
+- Tab components are self-contained with their own state
+- Easier to add new configuration tabs in the future
+- Main modal is now <200 lines (well under 200 line target)
+
+Type-check: PASSED
