@@ -439,7 +439,10 @@
       "Implement: Keep ComparisonView as composition root (<300 lines)",
       "Verify: Model comparison works correctly",
       "Verify: Filtering and visualization function properly"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2026-01-09T04:00:00.000Z",
+    "implementation_notes": "Created src/components/summary/comparison/ directory with 3 modular components: ComparisonMetricsTable.tsx (274 lines) - Side-by-side metrics comparison with overview, completion status, evaluation types, template pass rates, and replicate statistics. ToolUsageSection.tsx (230 lines) - Collapsible tool usage statistics with Nivo bar charts for total calls and average calls per trace. QuestionFilters.tsx (120 lines) - Question and keyword filter controls with search, select all/none, and keyword pills. index.ts (4 lines) - Clean module re-exports. Refactored ComparisonView.tsx from 1,144 to 513 lines (-631 lines, 55% reduction). Component now serves as composition root that manages state, data fetching, and orchestrates the extracted visualization components."
   },
   {
     "id": "flaw-023",

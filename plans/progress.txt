@@ -2,6 +2,15 @@
 
 ## 2026-01-09
 
+### flaw-022: ComparisonView.tsx Refactoring
+- Created 3 new components in src/components/summary/comparison/:
+  - ComparisonMetricsTable.tsx (274 lines) - Side-by-side metrics comparison
+  - ToolUsageSection.tsx (230 lines) - Collapsible tool usage statistics with charts
+  - QuestionFilters.tsx (120 lines) - Question and keyword filter controls
+- Refactored ComparisonView.tsx from 1,144 to 513 lines (-631 lines, 55% reduction)
+- Component now serves as composition root for state management and data fetching
+- Type-check passes
+
 ### flaw-003: RubricTraitEditor.tsx Refactoring
 - Created 4 new trait card components in src/components/rubric/:
   - RubricLLMTraitCard.tsx (245 lines)
