@@ -1246,6 +1246,9 @@
     "file": "karenina-gui/src/components/summary/SummaryView.tsx",
     "line_range": "1-403",
     "description": "SummaryView.tsx is 403 lines - displays comprehensive summary statistics with multiple sections. Has significant template repetition for table rows.",
+    "status": "completed",
+    "completed_at": "2026-01-09T02:33:00.000Z",
+    "implementation_notes": "Created src/utils/summary/ directory with modular utilities: comboParser.ts (58 lines) - parseCombo, formatCombo, getAnsweringKey functions for parsing model combination strings. formatters.ts (23 lines) - formatDuration and formatNumber utility functions. index.ts (7 lines) - Clean module re-exports. Created src/components/summary/SummarySection.tsx (45 lines) - Reusable section wrapper with title, header styling, and children. Created src/components/summary/SummaryTable.tsx (62 lines) - Reusable table component for summary statistics with default row/label/value styling. Refactored SummaryView.tsx from 403 to 376 lines (-27 lines, 7% reduction). While the line reduction was modest, the component now uses shared utilities for combo parsing, number/duration formatting, and consistent section/table styling. The Overview section now uses SummaryTable for cleaner data rendering.",
     "depends_on": [],
     "steps": [
       "Implement: Extract table row rendering to SummaryTableRow.tsx component",

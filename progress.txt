@@ -1512,3 +1512,44 @@ Benefits:
 - Main modal is now <200 lines (well under 200 line target)
 
 Type-check: PASSED
+
+=== flaw-066: SummaryView.tsx refactoring (2026-01-09 02:33 UTC) ===
+Status: COMPLETED
+
+Created src/utils/summary/ directory structure:
+- comboParser.ts (58 lines)
+  * parseCombo() - Parse model combination strings into components
+  * formatCombo() - Format parsed combo for display
+  * getAnsweringKey() - Create unique key for answering model configuration
+
+- formatters.ts (23 lines)
+  * formatDuration() - Format seconds to human-readable string (e.g., "5m 30.5s")
+  * formatNumber() - Format numbers with locale-specific thousands separator
+
+- index.ts (7 lines)
+  * Clean re-exports for the summary module
+
+Created src/components/summary/:
+- SummarySection.tsx (45 lines)
+  * Reusable section wrapper with title and header styling
+  * Consistent section layout across all summary sections
+
+- SummaryTable.tsx (62 lines)
+  * Reusable table component for summary statistics
+  * Default row/label/value styling matching SummaryView design
+  * Accepts array of rows with label and value
+
+Refactored SummaryView.tsx:
+- From 403 lines to 376 lines (-27 lines, 7% reduction)
+- Now uses parseCombo from utils/summary instead of inline function
+- Uses formatDuration and formatNumber utilities
+- Overview section uses SummaryTable component for cleaner rendering
+- All sections use SummarySection wrapper for consistency
+
+Benefits:
+- Combo parsing logic is now reusable across components
+- Format utilities are shared (duration, number formatting)
+- Consistent section and table styling via reusable components
+- Easier to add new summary sections with standard styling
+
+Type-check: PASSED
