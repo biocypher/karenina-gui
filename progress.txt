@@ -1295,3 +1295,10 @@ flaw-001 update 2025-01-09: Extracted export logic from BenchmarkTab.tsx
 - Hook manages server export, filtered export, and custom field export
 - Improved separation of concerns and testability
 - Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)
+flaw-001 update 2025-01-09: Extracted results statistics logic from BenchmarkTab.tsx
+- Created src/hooks/useBenchmarkResults.ts (99 lines)
+- Further reduced BenchmarkTab.tsx from 1012 to 1005 lines (-7 lines)
+- Total reduction: 1474 -> 1005 lines (-469 lines, 32% reduction)
+- Hook manages computed statistics for results display and analysis
+- Improved separation of concerns and testability
+- Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)

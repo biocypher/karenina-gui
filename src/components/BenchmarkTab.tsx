@@ -30,6 +30,7 @@ import { useVerificationWebSocket } from '../hooks/useVerificationWebSocket';
 import { useBenchmarkUpload } from '../hooks/useBenchmarkUpload';
 import { useVerificationRun } from '../hooks/useVerificationRun';
 import { useBenchmarkExport } from '../hooks/useBenchmarkExport';
+import { useBenchmarkResults } from '../hooks/useBenchmarkResults';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
@@ -186,6 +187,11 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     onSetError: setError,
   });
 
+  // Results statistics via custom hook
+  const { getAllUnfilteredResults, stats } = useBenchmarkResults({
+    benchmarkResults,
+  });
+
   // Local state for replicate count input to allow clearing
   const [replicateInputValue, setReplicateInputValue] = useState<string>(replicateCount.toString());
 
@@ -256,19 +262,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Get all unfiltered results for statistics
-  const getAllUnfilteredResults = () => {
-    try {
-      if (!benchmarkResults) {
-        return [];
-      }
-      return Object.values(benchmarkResults);
-    } catch (e) {
-      console.error('Error in getAllUnfilteredResults:', e);
-      return [];
-    }
-  };
 
   // Don't load historical results on mount - we want a fresh start on page refresh
   // Results will only accumulate during the current page session
@@ -740,24 +733,18 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             />
 
             {/* Aggregated Test Stats - Only show after verification completes */}
-            {!isRunning && getAllUnfilteredResults().length > 0 && (
+            {!isRunning && stats.hasResults && (
               <div className="grid grid-cols-6 gap-3 mb-4">
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {getAllUnfilteredResults().length}
-                  </div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.totalResults}</div>
                   <div className="text-xs text-slate-600 dark:text-slate-300">Total Tests</div>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    {getAllUnfilteredResults().filter((r) => r.metadata.completed_without_errors).length}
-                  </div>
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.successfulCount}</div>
                   <div className="text-xs text-green-600 dark:text-green-400">Completed Without Errors</div>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                    {getAllUnfilteredResults().filter((r) => !r.metadata.completed_without_errors).length}
-                  </div>
+                  <div className="text-2xl font-bold text-red-700 dark:text-red-300">{stats.failedCount}</div>
                   <div className="text-xs text-red-600 dark:text-red-400">With Errors</div>
                 </div>
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-center">
@@ -772,13 +759,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 </div>
                 <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                    {getAllUnfilteredResults().filter((r) => r.template?.verify_result === true).length}
+                    {stats.passedVerificationCount}
                   </div>
                   <div className="text-xs text-emerald-600 dark:text-emerald-400">Passed</div>
                 </div>
                 <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
-                    {getAllUnfilteredResults().filter((r) => r.template?.verify_result === false).length}
+                    {stats.failedVerificationCount}
                   </div>
                   <div className="text-xs text-rose-600 dark:text-rose-400">Failed</div>
                 </div>
@@ -856,7 +843,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                {getAllUnfilteredResults().length > 0 && !isRunning && (
+                {stats.hasResults && !isRunning && (
                   <button
                     onClick={() => {
                       if (confirm('Are you sure you want to clear all test results? This action cannot be undone.')) {
@@ -898,7 +885,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             </div>
 
             {/* Filters help text */}
-            {getAllUnfilteredResults().length > 0 && (
+            {stats.hasResults && (
               <div className="mb-4 text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Filter className="w-4 h-4" />
@@ -921,7 +908,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
           </Card>
 
           {/* Summary Statistics Panel */}
-          {Object.keys(benchmarkResults).length > 0 && (
+          {stats.hasResults && (
             <SummaryStatisticsPanel
               benchmarkResults={benchmarkResults}
               checkpoint={checkpoint}
