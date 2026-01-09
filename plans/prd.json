@@ -1102,7 +1102,10 @@
       "Implement: Keep modal as composition root (<250 lines)",
       "Verify: Question creation workflow works correctly",
       "Verify: Template generation from modal functions"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2025-01-09",
+    "implementation_notes": "Refactored AddQuestionModal.tsx from 474 to 293 lines (38% reduction). Created src/components/addQuestion/ directory with QuestionFormInputs.tsx (73 lines), QuestionMetadataForm.tsx (63 lines), TemplateGenerationSection.tsx (154 lines with inline GenerationSettingsPanel), and index.ts (7 lines). Modal now serves as composition root orchestrating form state, WebSocket template generation, and extracted UI components."
   },
   {
     "id": "flaw-057",

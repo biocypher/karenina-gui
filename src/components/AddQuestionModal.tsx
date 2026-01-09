@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Settings, Loader2, Sparkles } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
 import { csrf } from '../utils/csrf';
 import { logger } from '../utils/logger';
 import { connectTemplateProgressWebSocket, disconnectTemplateProgressWebSocket } from '../services/templateWebSocket';
+import { QuestionFormInputs, QuestionMetadataForm, TemplateGenerationSection, GenerationConfig } from './addQuestion';
 
 interface AddQuestionModalProps {
   isOpen: boolean;
@@ -18,14 +19,8 @@ interface AddQuestionModalProps {
   ) => void;
 }
 
-interface GenerationConfig {
-  model_provider: string;
-  model_name: string;
-  temperature: number;
-  interface: 'langchain' | 'openrouter';
-}
-
 export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onClose, onAdd }) => {
+  // Form state
   const [question, setQuestion] = useState('');
   const [rawAnswer, setRawAnswer] = useState('');
   const [author, setAuthor] = useState('');
@@ -239,215 +234,45 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
         {/* Instructions */}
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
           <p className="text-sm text-blue-800 dark:text-blue-300">
-            <strong>💡 Tip:</strong> Add a new question manually to your benchmark. A basic Pydantic template will be
+            <strong>Tip:</strong> Add a new question manually to your benchmark. A basic Pydantic template will be
             auto-generated, which you can then edit in the Template Curator.
           </p>
         </div>
 
-        {/* Question Field */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-            Question <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            value={question}
-            onChange={(e) => {
-              setQuestion(e.target.value);
-              if (errors.question) setErrors({ ...errors, question: undefined });
-            }}
-            rows={4}
-            placeholder="Enter the question text..."
-            className={`w-full px-4 py-3 border ${
-              errors.question ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'
-            } rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 resize-y`}
-          />
-          {errors.question && <p className="mt-1 text-sm text-red-500">{errors.question}</p>}
-        </div>
-
-        {/* Raw Answer Field */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-            Raw Answer <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            value={rawAnswer}
-            onChange={(e) => {
-              setRawAnswer(e.target.value);
-              if (errors.rawAnswer) setErrors({ ...errors, rawAnswer: undefined });
-            }}
-            rows={4}
-            placeholder="Enter the answer text..."
-            className={`w-full px-4 py-3 border ${
-              errors.rawAnswer ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'
-            } rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 resize-y`}
-          />
-          {errors.rawAnswer && <p className="mt-1 text-sm text-red-500">{errors.rawAnswer}</p>}
-        </div>
+        {/* Question and Answer Inputs */}
+        <QuestionFormInputs
+          question={question}
+          rawAnswer={rawAnswer}
+          errors={errors}
+          onQuestionChange={setQuestion}
+          onRawAnswerChange={setRawAnswer}
+          onClearQuestionError={() => setErrors({ ...errors, question: undefined })}
+          onClearRawAnswerError={() => setErrors({ ...errors, rawAnswer: undefined })}
+          disabled={isGenerating}
+        />
 
         {/* Optional Metadata */}
-        <div className="border-t border-slate-200 dark:border-slate-600 pt-4">
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Optional Metadata</h4>
-
-          {/* Author Field */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Author</label>
-            <input
-              type="text"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              placeholder="Question author name..."
-              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
-            />
-          </div>
-
-          {/* Keywords Field */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Keywords (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              placeholder="e.g., math, geometry, basic"
-              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
-            />
-          </div>
-        </div>
+        <QuestionMetadataForm
+          author={author}
+          keywords={keywords}
+          onAuthorChange={setAuthor}
+          onKeywordsChange={setKeywords}
+          disabled={isGenerating}
+        />
 
         {/* Template Generation Section */}
-        <div className="border-t border-slate-200 dark:border-slate-600 pt-4">
-          <div className="space-y-4">
-            {/* Button Row */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleGenerateTemplate}
-                disabled={!question.trim() || !rawAnswer.trim() || isGenerating}
-                className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Generate Answer Template
-                  </>
-                )}
-              </button>
-
-              {/* Settings Toggle Button */}
-              <button
-                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                disabled={isGenerating}
-                className="p-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Generation settings"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Collapsible Settings Panel */}
-            {isSettingsOpen && (
-              <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600 rounded-lg p-4 space-y-4">
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Generation Settings</h4>
-
-                {/* Interface Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Interface</label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center text-slate-900 dark:text-white">
-                      <input
-                        type="radio"
-                        value="langchain"
-                        checked={config.interface === 'langchain'}
-                        onChange={(e) =>
-                          setConfig({ ...config, interface: e.target.value as 'langchain' | 'openrouter' })
-                        }
-                        className="mr-2"
-                      />
-                      LangChain
-                    </label>
-                    <label className="flex items-center text-slate-900 dark:text-white">
-                      <input
-                        type="radio"
-                        value="openrouter"
-                        checked={config.interface === 'openrouter'}
-                        onChange={(e) =>
-                          setConfig({ ...config, interface: e.target.value as 'langchain' | 'openrouter' })
-                        }
-                        className="mr-2"
-                      />
-                      OpenRouter
-                    </label>
-                  </div>
-                </div>
-
-                {/* Provider (for LangChain) */}
-                {config.interface === 'langchain' && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Provider
-                    </label>
-                    <input
-                      type="text"
-                      value={config.model_provider}
-                      onChange={(e) => setConfig({ ...config, model_provider: e.target.value })}
-                      placeholder="e.g., openai, google_genai, anthropic"
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                    />
-                  </div>
-                )}
-
-                {/* Model Name */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Model Name
-                  </label>
-                  <input
-                    type="text"
-                    value={config.model_name}
-                    onChange={(e) => setConfig({ ...config, model_name: e.target.value })}
-                    placeholder={config.interface === 'openrouter' ? 'e.g., openai/gpt-4' : 'e.g., gpt-4.1-mini'}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-
-                {/* Temperature */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Temperature: {config.temperature}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="2"
-                    step="0.1"
-                    value={config.temperature}
-                    onChange={(e) => setConfig({ ...config, temperature: parseFloat(e.target.value) })}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Status Messages */}
-            <div>
-              {/* Status Messages */}
-              {generatedTemplate && (
-                <div className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <Sparkles className="w-4 h-4" />
-                  Template generated successfully!
-                </div>
-              )}
-              {generationError && (
-                <div className="text-sm text-red-600 dark:text-red-400">Error: {generationError}</div>
-              )}
-            </div>
-          </div>
-        </div>
+        <TemplateGenerationSection
+          isGenerating={isGenerating}
+          hasQuestion={question.trim().length > 0}
+          hasRawAnswer={rawAnswer.trim().length > 0}
+          generatedTemplate={generatedTemplate}
+          generationError={generationError}
+          isSettingsOpen={isSettingsOpen}
+          config={config}
+          onGenerate={handleGenerateTemplate}
+          onToggleSettings={() => setIsSettingsOpen(!isSettingsOpen)}
+          onConfigChange={setConfig}
+        />
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-600 pt-4">

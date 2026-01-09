@@ -92,3 +92,14 @@
 - Refactored AnswerTemplateGenerator.tsx from 555 to 244 lines (-311 lines, 56% reduction)
 - Component now serves as composition root orchestrating question selection, configuration, and generated templates display
 - Type-check passes with no errors
+
+### flaw-056: AddQuestionModal.tsx Refactoring
+- Created 3 new components in src/components/addQuestion/:
+  - QuestionFormInputs.tsx (73 lines) - Question and answer textarea inputs with validation
+  - QuestionMetadataForm.tsx (63 lines) - Optional author and keywords fields
+  - TemplateGenerationSection.tsx (154 lines) - Generate button, collapsible settings panel (interface, provider, model, temperature), status messages
+  - index.ts (7 lines) - Clean module re-exports
+- Refactored AddQuestionModal.tsx from 474 to 293 lines (-181 lines, 38% reduction)
+- Modal now serves as composition root orchestrating form state, WebSocket template generation, and extracted UI components
+- Type-check passes with no errors
+
