@@ -1325,6 +1325,9 @@
     "file": "karenina-gui/src/components/DocsTab.tsx",
     "line_range": "109-215",
     "description": "DocsTab.tsx contains extensive inline ReactMarkdown component configuration with custom renderers. This 100+ line component prop could be extracted to a separate module.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:04:00.000Z",
+    "implementation_notes": "Created src/components/MarkdownRenderer.tsx (129 lines) with reusable markdown rendering configuration including custom renderers for h1-h3, p, code (inline and block with syntax highlighting), ul/ol/li, a, blockquote, strong/em, and table elements. Uses useTheme hook for dark/light mode syntax highlighting. Updated DocsTab.tsx to use MarkdownRenderer component, reducing from 233 to 121 lines (-112 lines, 48% reduction). The MarkdownRenderer can now be reused across the application for consistent markdown rendering.",
     "depends_on": [],
     "steps": [
       "Implement: Extract markdown components to components/MarkdownRenderer.tsx",
