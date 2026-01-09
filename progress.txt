@@ -2042,3 +2042,27 @@ The ManualTraceUpload component tests were failing because:
 **Results:**
 - All 15 ManualTraceUpload tests now pass
 - Overall test progress: 171 failed, 976 passing (85.1% pass rate)
+
+---
+
+2026-01-09 - QuestionExtractor Test Fixes
+
+### Fixed: QuestionExtractor tests (15/15 passing)
+
+**Issue:**
+The QuestionExtractor tests were failing because:
+1. Zustand store state was persisting across tests, causing wrong UI state
+2. No CSRF and fileValidator mocks for jsdom environment
+3. Test for extracted questions was using props instead of store
+
+**Files Modified:**
+`src/__tests__/components/QuestionExtractor.test.tsx`
+- Added `useTemplateStore.getState().resetTemplateState()` in beforeEach
+- Added CSRF and fileValidator mocks
+- Fixed extracted questions test to use store instead of props
+- Added waitFor for async assertions
+
+**Results:**
+- All 15 QuestionExtractor tests now pass
+- Overall test progress: 158 failed, 989 passing (86.2% pass rate)
+- Net gain: +13 passing tests this session
