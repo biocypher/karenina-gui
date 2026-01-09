@@ -161,6 +161,9 @@
     "file": "karenina-gui/src/types/index.ts",
     "line_range": "1-1076",
     "description": "types/index.ts is 1,076 lines - large type definition file. While not executable code, it should be split by domain for better maintainability.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:18:00.000Z",
+    "implementation_notes": "Split types/index.ts into 12 domain-specific files: question.ts (47 lines, Question and Schema.org types), checkpoint.ts (187 lines, checkpoint and JSON-LD types), template.ts (67 lines, template generation types), agent.ts (81 lines, agent middleware types), benchmark.ts (41 lines, model configuration types), verification.ts (299 lines, VerificationResult types), rubric.ts (63 lines, rubric trait types), pydantic.ts (56 lines, Pydantic editor types), mcp.ts (45 lines, MCP types), search.ts (9 lines, search result types), summary.ts (150 lines, summary statistics types), comparison.ts (79 lines, model comparison types). Updated main index.ts to 40 lines that re-export all types. Total lines: 1,124 across 12 files (avg 94 lines per file). All existing imports continue to work due to re-exports.",
     "depends_on": [],
     "steps": [
       "Implement: Split checkpoint types to types/checkpoint.ts",

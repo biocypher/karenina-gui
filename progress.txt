@@ -1334,3 +1334,19 @@ flaw-002 update 2025-01-09: Extracted metric trait logic from QuestionRubricEdit
 - Verified that MarkdownRenderer.tsx (from flaw-072) includes rel="noopener noreferrer" on all links
 - ReactMarkdown provides built-in XSS protection by default
 - All documentation links now open safely with proper security attributes
+2026-01-09 01:18 UTC - flaw-009: Split types/index.ts into domain-specific files
+- Created 12 domain-specific type files:
+  - question.ts (47 lines) - Question and Schema.org types
+  - checkpoint.ts (187 lines) - Checkpoint and JSON-LD types
+  - template.ts (67 lines) - Template generation types
+  - agent.ts (81 lines) - Agent middleware types
+  - benchmark.ts (41 lines) - Model configuration types
+  - verification.ts (299 lines) - VerificationResult types
+  - rubric.ts (63 lines) - Rubric trait types
+  - pydantic.ts (56 lines) - Pydantic editor types
+  - mcp.ts (45 lines) - MCP types
+  - search.ts (9 lines) - Search result types
+  - summary.ts (150 lines) - Summary statistics types
+  - comparison.ts (79 lines) - Model comparison types
+- Updated main index.ts to 40 lines that re-export all types
+- All existing imports continue to work due to re-exports
