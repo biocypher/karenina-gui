@@ -1345,6 +1345,9 @@
     "file": "karenina-gui/src/components/DocsTab.tsx",
     "line_range": "172-180",
     "description": "ReactMarkdown component renders user-controlled markdown content. While react-markdown provides XSS protection, the custom link renderer opens links in new tab without proper rel attributes for security.",
+    "status": "completed",
+    "completed_at": "2026-01-09T01:12:00.000Z",
+    "implementation_notes": "Already addressed by flaw-072 refactoring: The MarkdownRenderer.tsx component (extracted from DocsTab.tsx) includes proper security attributes on the link renderer (rel=\"noopener noreferrer\" on line 76). ReactMarkdown also provides built-in XSS protection by default. All external links from documentation markdown now open safely with proper security attributes.",
     "depends_on": [],
     "steps": [
       "Implement: Verify all external links have rel=\"noopener noreferrer\" (currently implemented)",
