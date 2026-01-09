@@ -28,6 +28,13 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     css: true,
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+      },
+    },
+    teardownTimeout: 5000,
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'src/test-setup.ts', '**/*.d.ts', '**/*.config.*', 'dist/'],

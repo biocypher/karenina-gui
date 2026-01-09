@@ -1267,3 +1267,10 @@ flaw-001 partial 2025-01-09: Extracted test selection logic from BenchmarkTab.ts
 - Reduced BenchmarkTab.tsx from 1474 lines to 1417 lines (-57 lines)
 - Hook manages test selection state, search filtering, few-shot example selection
 - Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)
+flaw-001 update 2025-01-09: Extracted WebSocket management logic from BenchmarkTab.tsx
+- Created src/hooks/useVerificationWebSocket.ts (167 lines)
+- Further reduced BenchmarkTab.tsx from 1417 to 1256 lines (-161 lines)
+- Total reduction: 1474 -> 1256 lines (-218 lines from original)
+- Hook manages WebSocket connection, progress updates, job completion/failed/cancelled events
+- Improved separation of concerns and testability
+- Status: Partial - more extraction needed (filtering, pagination, data fetching, table rendering)

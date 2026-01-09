@@ -17,9 +17,12 @@
       "Verify: BenchmarkTab.tsx renders correctly with all sub-components",
       "Verify: No functionality regression in benchmark table features"
     ],
-    "steps_completed": ["Extracted test selection and filtering logic to useTestSelection hook"],
+    "steps_completed": [
+      "Extracted test selection and filtering logic to useTestSelection hook",
+      "Extracted WebSocket management logic to useVerificationWebSocket hook"
+    ],
     "status": "partial",
-    "implementation_notes": "Partial completion: Extracted test selection and filtering logic to useTestSelection hook. Reduced BenchmarkTab.tsx from 1474 to 1417 lines. Remaining steps: extract filtering logic, pagination logic, data fetching, and table rendering."
+    "implementation_notes": "Partial completion: Extracted test selection (useTestSelection) and WebSocket management (useVerificationWebSocket) hooks. Reduced BenchmarkTab.tsx from 1474 to 1256 lines (-218 lines total). Improved separation of concerns and testability. Remaining: extract filtering logic, pagination logic, data fetching, and table rendering."
   },
   {
     "id": "flaw-002",
