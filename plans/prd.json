@@ -528,7 +528,10 @@
       "Implement: Extract message navigation to MessageNavigator.tsx component",
       "Verify: Trace highlighting works correctly",
       "Verify: Search and navigation function properly"
-    ]
+    ],
+    "status": "completed",
+    "completed_at": "2026-01-09T05:15:00.000Z",
+    "implementation_notes": "Created src/components/trace/ directory with 4 modular components: useTraceSearch.ts (167 lines) - Custom hook for search functionality (query, case sensitivity, regex, navigation, match finding). useTraceMessageBlocks.ts (225 lines) - Custom hook for message block parsing and highlighting (active patterns, message blocks, final-only mode, scroll-to-message). TraceSearchControls.tsx (139 lines) - Search input with navigation buttons, case/regex toggles, match counter. TraceMessageNavigation.tsx (106 lines) - Final-only toggle and message jump buttons. index.ts (13 lines) - Clean module re-exports. Refactored TraceHighlightedTextDisplay.tsx from 582 to 215 lines (-367 lines, 63% reduction). Component now serves as composition root using custom hooks for state and extracted components for UI."
   },
   {
     "id": "flaw-027",

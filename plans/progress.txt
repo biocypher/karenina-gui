@@ -71,3 +71,14 @@
 - Refactored MCPConfigurationModal.tsx from 951 to 236 lines (-715 lines, 75% reduction)
 - Modal now serves as composition root using custom hook for state management
 - Type-check passes with no errors
+
+### flaw-026: TraceHighlightedTextDisplay.tsx Refactoring
+- Created 4 new components/hook in src/components/trace/:
+  - useTraceSearch.ts (167 lines) - Custom hook for search functionality (query, case sensitivity, regex, navigation, match finding)
+  - useTraceMessageBlocks.ts (225 lines) - Custom hook for message block parsing and highlighting (active patterns, message blocks, final-only mode, scroll-to-message)
+  - TraceSearchControls.tsx (139 lines) - Search input with navigation buttons, case/regex toggles, match counter
+  - TraceMessageNavigation.tsx (106 lines) - Final-only toggle and message jump buttons
+  - index.ts (13 lines) - Clean module re-exports
+- Refactored TraceHighlightedTextDisplay.tsx from 582 to 215 lines (-367 lines, 63% reduction)
+- Component now serves as composition root using custom hooks for state and extracted components for UI
+- Type-check passes with no errors
