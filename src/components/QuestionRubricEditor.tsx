@@ -23,6 +23,11 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
   const { getQuestionRubric, setQuestionRubric, clearQuestionRubric } = useQuestionStore();
 
+  // State must be declared BEFORE hooks that depend on it
+  const [questionRubric, setQuestionRubricState] = useState<Rubric | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
   // Trait validation via custom hook
   const { validateTraitName } = useTraitValidation({
     globalRubric,
@@ -38,10 +43,6 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
       setQuestionRubricState,
       setLastError,
     });
-
-  const [questionRubric, setQuestionRubricState] = useState<Rubric | null>(null);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load question rubric when questionId changes
   useEffect(() => {
