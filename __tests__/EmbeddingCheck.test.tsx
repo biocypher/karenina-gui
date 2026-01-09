@@ -38,25 +38,84 @@ vi.mock('../src/hooks/useBenchmarkConfiguration', () => ({
 // Mock the API calls
 global.fetch = vi.fn();
 
-const createMockResult = (overrides: Partial<VerificationResult> = {}): VerificationResult => ({
-  question_id: 'test-question-1',
-  completed_without_errors: true,
-  question_text: 'What is 2+2?',
-  raw_llm_response: 'The answer is 4.',
-  parsed_gt_response: { answer: '4' },
-  parsed_llm_response: { answer: '4' },
-  verify_result: true,
-  answering_model: 'gpt-4',
-  parsing_model: 'gpt-3.5-turbo',
-  execution_time: 2.5,
-  timestamp: '2024-01-01T12:00:00Z',
-  // Embedding check defaults
-  embedding_check_performed: false,
-  embedding_similarity_score: null,
-  embedding_override_applied: false,
-  embedding_model_used: null,
-  ...overrides,
-});
+const createMockResult = (overrides: Partial<VerificationResult> = {}): VerificationResult => {
+  const baseResult: VerificationResult = {
+    metadata: {
+      question_id: 'test-question-1',
+      template_id: 'test-question-1-template',
+      completed_without_errors: true,
+      question_text: 'What is 2+2?',
+      answering_model: 'gpt-4',
+      parsing_model: 'gpt-3.5-turbo',
+    },
+    template: {
+      raw_llm_response: 'The answer is 4.',
+      parsed_llm_response: { answer: '4' },
+      verify_result: true,
+      // Embedding check defaults
+      embedding_check_performed: false,
+      embedding_similarity_score: null,
+      embedding_override_applied: false,
+      embedding_model_used: null,
+    },
+  };
+
+  // Check if overrides use the old flat structure (backward compatibility)
+  const flatFields = [
+    'question_id',
+    'completed_without_errors',
+    'question_text',
+    'answering_model',
+    'parsing_model',
+    'raw_llm_response',
+    'parsed_llm_response',
+    'verify_result',
+    'embedding_check_performed',
+    'embedding_similarity_score',
+    'embedding_override_applied',
+    'embedding_model_used',
+  ];
+  const hasFlatFields = flatFields.some((field) => field in overrides);
+
+  if (hasFlatFields) {
+    // Map flat structure to nested structure
+    const metadataFields: Record<string, unknown> = {};
+    const templateFields: Record<string, unknown> = {};
+
+    if (overrides.question_id) metadataFields.question_id = overrides.question_id;
+    if (overrides.completed_without_errors !== undefined)
+      metadataFields.completed_without_errors = overrides.completed_without_errors;
+    if (overrides.question_text) metadataFields.question_text = overrides.question_text;
+    if (overrides.answering_model) metadataFields.answering_model = overrides.answering_model;
+    if (overrides.parsing_model) metadataFields.parsing_model = overrides.parsing_model;
+
+    if (overrides.raw_llm_response) templateFields.raw_llm_response = overrides.raw_llm_response;
+    if (overrides.parsed_llm_response) templateFields.parsed_llm_response = overrides.parsed_llm_response;
+    if (overrides.verify_result !== undefined) templateFields.verify_result = overrides.verify_result;
+    if (overrides.embedding_check_performed !== undefined)
+      templateFields.embedding_check_performed = overrides.embedding_check_performed;
+    if (overrides.embedding_similarity_score !== undefined)
+      templateFields.embedding_similarity_score = overrides.embedding_similarity_score;
+    if (overrides.embedding_override_applied !== undefined)
+      templateFields.embedding_override_applied = overrides.embedding_override_applied;
+    if (overrides.embedding_model_used !== undefined)
+      templateFields.embedding_model_used = overrides.embedding_model_used;
+
+    return {
+      ...baseResult,
+      metadata: { ...baseResult.metadata, ...metadataFields },
+      template: { ...baseResult.template, ...templateFields },
+    };
+  }
+
+  // If overrides already has nested structure, do a proper merge
+  return {
+    ...baseResult,
+    ...overrides,
+    metadata: { ...baseResult.metadata, ...overrides.metadata },
+    template: { ...baseResult.template, ...overrides.template },
+  };
+};
 
 describe('EmbeddingCheck UI Components', () => {
   describe('DetailedTrace Modal', () => {
@@ -265,10 +324,11 @@ describe('EmbeddingCheck Data Types', () => {
       embedding_model_used: 'test-model',
     });
 
-    expect(typeof mockResult.embedding_check_performed).toBe('boolean');
-    expect(typeof mockResult.embedding_similarity_score).toBe('number');
-    expect(typeof mockResult.embedding_override_applied).toBe('boolean');
-    expect(typeof mockResult.embedding_model_used).toBe('string');
+    // Access from nested template structure
+    expect(typeof mockResult.template?.embedding_check_performed).toBe('boolean');
+    expect(typeof mockResult.template?.embedding_similarity_score).toBe('number');
+    expect(typeof mockResult.template?.embedding_override_applied).toBe('boolean');
+    expect(typeof mockResult.template?.embedding_model_used).toBe('string');
   });
 
   it('should handle null/undefined embedding values', () => {
@@ -279,9 +339,9 @@ describe('EmbeddingCheck Data Types', () => {
       embedding_model_used: null,
     });
 
-    expect(mockResult.embedding_check_performed).toBe(false);
-    expect(mockResult.embedding_similarity_score).toBeNull();
-    expect(mockResult.embedding_override_applied).toBe(false);
-    expect(mockResult.embedding_model_used).toBeNull();
+    expect(mockResult.template?.embedding_check_performed).toBe(false);
+    expect(mockResult.template?.embedding_similarity_score).toBeNull();
+    expect(mockResult.template?.embedding_override_applied).toBe(false);
+    expect(mockResult.template?.embedding_model_used).toBeNull();
   });
 });
