@@ -30,5 +30,21 @@
 - Refactored QuestionRubricEditor.tsx from 1,365 to 590 lines (-775 lines, 57% reduction)
 
 ## Remaining High-Priority Flaws
-- flaw-004: App.tsx refactoring (1,212 lines)
 - flaw-005: BenchmarkTable.tsx refactoring (1,047 lines)
+
+## 2026-01-09 (continued)
+
+### flaw-004: App.tsx Refactoring
+- Created 5 new components/hooks:
+  - AppLayout.tsx (33 lines) - Loading state and background gradient layout wrapper
+  - AppHeader.tsx (82 lines) - Logo, title, dev mode status, config button, theme toggle
+  - TabNavigation.tsx (57 lines) - Tab buttons with unsaved changes indicator
+  - AppRouter.tsx (63 lines) - Routes generator/curator/benchmark/docs tabs, includes ConfigurationModal
+  - CuratorTab.tsx (830 lines) - Complete question curation interface
+- Created useTabManagement.ts hook (35 lines) - Tab switching with auto-save
+- Refactored App.tsx from 1,219 to 169 lines (-1,050 lines, 86% reduction)
+- Fixed lint errors in extracted components:
+  - Removed unused logger import from AppHeader.tsx
+  - Removed unused useRef import from useTabManagement.ts
+  - Replaced 'any' types with proper QuestionData/UnifiedCheckpoint interfaces
+- Type-check passes with no errors
