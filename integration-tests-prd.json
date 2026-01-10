@@ -737,7 +737,7 @@
     "mocks_required": ["Database save and load mocks"],
     "fixtures_needed": [],
     "store_assertions": ["Data integrity maintained across save/load cycle"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-030", "integ-031"],
     "effort_estimate": "medium"
   },

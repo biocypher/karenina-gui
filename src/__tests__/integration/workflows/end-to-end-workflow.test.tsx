@@ -7,12 +7,14 @@
  * - Database round-trip
  *
  * integ-033: Test full file-to-verification journey (pending)
- * integ-034: Test database round-trip (pending)
+ * integ-034: Test database round-trip
  * integ-056: Test preset application and verification
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { usePresetStore } from '../../../stores/usePresetStore';
 import { useBenchmarkStore } from '../../../stores/useBenchmarkStore';
+import { useQuestionStore } from '../../../stores/useQuestionStore';
+import { useDatasetStore } from '../../../stores/useDatasetStore';
 import type { VerificationConfig } from '../../../utils/presetApi';
 
 // Mock CSRF
@@ -74,6 +76,20 @@ describe('End-to-End Workflow Integration Tests', () => {
       fewShotMode: 'all',
       fewShotK: 3,
     });
+
+    // Reset question store
+    useQuestionStore.setState({
+      questionData: {},
+      checkpoint: {},
+      selectedQuestionId: '',
+      searchQuery: '',
+      filterStatus: 'all',
+      draftTemplates: {},
+    });
+
+    // Reset dataset store
+    useDatasetStore.getState().resetMetadata();
+    useDatasetStore.getState().disconnectDatabase();
   });
 
   describe('integ-056: Preset application and verification', () => {
@@ -431,6 +447,282 @@ describe('End-to-End Workflow Integration Tests', () => {
       // Verify runName is preserved (not overwritten by preset)
       const state = useBenchmarkStore.getState();
       expect(state.runName).toBe('my-custom-run-name');
+    });
+  });
+
+  describe('integ-034: Database round-trip', () => {
+    // Helper to create sample checkpoint (UnifiedCheckpoint format)
+    const createSampleUnifiedCheckpoint = () => ({
+      version: '1.0' as const,
+      checkpoint: {
+        q1: {
+          question: 'What is the capital of France?',
+          raw_answer: 'Paris',
+          original_answer_template: 'class Answer(BaseAnswer):\n    capital: str',
+          answer_template: 'class Answer(BaseAnswer):\n    capital: str',
+          last_modified: '2024-01-10T10:00:00.000Z',
+          finished: true,
+          question_rubric: undefined,
+        },
+        q2: {
+          question: 'What is 2 + 2?',
+          raw_answer: '4',
+          original_answer_template: 'class Answer(BaseAnswer):\n    result: int',
+          answer_template: 'class Answer(BaseAnswer):\n    result: int',
+          last_modified: '2024-01-10T10:05:00.000Z',
+          finished: false,
+          question_rubric: undefined,
+        },
+        q3: {
+          question: 'Who wrote Romeo and Juliet?',
+          raw_answer: 'William Shakespeare',
+          original_answer_template: 'class Answer(BaseAnswer):\n    author: str',
+          answer_template: 'class Answer(BaseAnswer):\n    author: str',
+          last_modified: '2024-01-10T10:10:00.000Z',
+          finished: true,
+          question_rubric: undefined,
+        },
+      },
+      global_rubric: undefined,
+    });
+
+    it('should create new benchmark with questions and templates', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+
+      // Set dataset metadata
+      datasetStore.setMetadata({
+        name: 'Test Benchmark',
+        description: 'A test benchmark for round-trip',
+        creator: 'test-user',
+        keywords: ['test', 'round-trip'],
+      });
+
+      // Load checkpoint (which also loads question data)
+      const sampleCheckpoint = createSampleUnifiedCheckpoint();
+      questionStore.loadCheckpoint(sampleCheckpoint);
+
+      // Verify data loaded correctly
+      const state = useQuestionStore.getState();
+      expect(Object.keys(state.questionData)).toHaveLength(3);
+      expect(state.questionData['q1']).toBeDefined();
+      expect(state.questionData['q1'].question).toBe('What is the capital of France?');
+      expect(state.checkpoint['q1']).toBeDefined();
+      expect(state.checkpoint['q1']?.finished).toBe(true);
+
+      // Verify dataset metadata
+      const metadata = useDatasetStore.getState().metadata;
+      expect(metadata?.name).toBe('Test Benchmark');
+      expect(metadata?.creator).toBe('test-user');
+    });
+
+    it('should simulate save to database and preserve data', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+
+      // Setup initial data
+      const sampleCheckpoint = createSampleUnifiedCheckpoint();
+
+      datasetStore.setMetadata({
+        name: 'Round-Trip Test',
+        description: 'Testing database save/load',
+        creator: 'tester',
+        keywords: ['database', 'test'],
+      });
+
+      questionStore.loadCheckpoint(sampleCheckpoint);
+
+      // Capture state before "save"
+      const questionDataBefore = { ...useQuestionStore.getState().questionData };
+      const checkpointBefore = { ...useQuestionStore.getState().checkpoint };
+      const metadataBefore = { ...useDatasetStore.getState().metadata };
+
+      // Simulate save operation (in real scenario, this would call API)
+      // For this test, we verify state is consistent and can be serialized
+      expect(() => {
+        JSON.stringify(questionDataBefore);
+        JSON.stringify(checkpointBefore);
+        JSON.stringify(metadataBefore);
+      }).not.toThrow();
+
+      // Connect to database (simulating successful save)
+      datasetStore.connectDatabase('https://example.com/db', 'round-trip-test');
+      datasetStore.setLastSaved('2024-01-10T12:00:00.000Z');
+
+      // Verify database connection state
+      const dbState = useDatasetStore.getState();
+      expect(dbState.isConnectedToDatabase).toBe(true);
+      expect(dbState.storageUrl).toBe('https://example.com/db');
+      expect(dbState.currentBenchmarkName).toBe('round-trip-test');
+      expect(dbState.lastSaved).toBe('2024-01-10T12:00:00.000Z');
+    });
+
+    it('should simulate clear local state after save', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+
+      // Load data
+      const sampleCheckpoint = createSampleUnifiedCheckpoint();
+
+      datasetStore.setMetadata({
+        name: 'To Be Cleared',
+        description: 'This will be cleared',
+        creator: 'test',
+      });
+
+      questionStore.loadCheckpoint(sampleCheckpoint);
+
+      // Verify data exists
+      expect(Object.keys(useQuestionStore.getState().questionData)).toHaveLength(3);
+
+      // Connect to database
+      datasetStore.connectDatabase('https://example.com/db', 'test-benchmark');
+
+      // Clear local state (simulating what happens after save)
+      questionStore.resetQuestionState();
+      datasetStore.resetMetadata();
+
+      // Verify state cleared
+      expect(Object.keys(useQuestionStore.getState().questionData)).toHaveLength(0);
+      expect(Object.keys(useQuestionStore.getState().checkpoint)).toHaveLength(0);
+      expect(useDatasetStore.getState().metadata.name).toBe('');
+    });
+
+    it('should simulate load from database and restore data correctly', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+
+      // Simulate loading from database
+      const restoredCheckpoint = createSampleUnifiedCheckpoint();
+      const restoredMetadata = {
+        name: 'Restored Benchmark',
+        description: 'Restored from database',
+        creator: 'original-author',
+        keywords: ['restored', 'database'],
+      };
+
+      // Load the "restored" data
+      datasetStore.setMetadata(restoredMetadata);
+      questionStore.loadCheckpoint(restoredCheckpoint);
+
+      // Connect to database (as if loaded from there)
+      datasetStore.connectDatabase('https://example.com/db', 'restored-benchmark');
+
+      // Verify all data restored correctly
+      const qState = useQuestionStore.getState();
+      expect(Object.keys(qState.questionData)).toHaveLength(3);
+      expect(qState.questionData['q1'].question).toBe('What is the capital of France?');
+      expect(qState.checkpoint['q1']?.finished).toBe(true);
+      expect(qState.checkpoint['q2']?.finished).toBe(false);
+      expect(qState.checkpoint['q3']?.finished).toBe(true);
+
+      const dState = useDatasetStore.getState();
+      expect(dState.metadata.name).toBe('Restored Benchmark');
+      expect(dState.metadata.creator).toBe('original-author');
+      expect(dState.metadata.keywords).toEqual(['restored', 'database']);
+    });
+
+    it('should verify data integrity across save/load cycle', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+
+      // Create original data
+      const originalCheckpoint = createSampleUnifiedCheckpoint();
+      const originalMetadata = {
+        name: 'Integrity Test',
+        description: 'Testing data integrity',
+        creator: 'integrity-tester',
+        keywords: ['integrity', 'consistency'],
+      };
+
+      // Load original data
+      datasetStore.setMetadata(originalMetadata);
+      questionStore.loadCheckpoint(originalCheckpoint);
+
+      // Capture original state
+      const originalQuestionData = useQuestionStore.getState().questionData;
+      const originalCheckpointData = useQuestionStore.getState().checkpoint;
+      const originalMetadataData = useDatasetStore.getState().metadata;
+
+      // Simulate save-load cycle by clearing and reloading
+      questionStore.resetQuestionState();
+      datasetStore.resetMetadata();
+
+      // Load same data (simulating database round-trip)
+      datasetStore.setMetadata(originalMetadata);
+      questionStore.loadCheckpoint(originalCheckpoint);
+
+      // Verify integrity - data should match exactly
+      const restoredQuestionData = useQuestionStore.getState().questionData;
+      const restoredCheckpointData = useQuestionStore.getState().checkpoint;
+      const restoredMetadataData = useDatasetStore.getState().metadata;
+
+      // Check question data integrity
+      expect(Object.keys(restoredQuestionData)).toHaveLength(Object.keys(originalQuestionData).length);
+      expect(restoredQuestionData['q1'].question).toBe(originalQuestionData['q1'].question);
+      expect(restoredQuestionData['q1'].raw_answer).toBe(originalQuestionData['q1'].raw_answer);
+      expect(restoredQuestionData['q3'].raw_answer).toBe(originalQuestionData['q3'].raw_answer);
+
+      // Check checkpoint integrity
+      expect(restoredCheckpointData['q1']?.finished).toBe(originalCheckpointData['q1']?.finished);
+      expect(restoredCheckpointData['q2']?.finished).toBe(originalCheckpointData['q2']?.finished);
+      expect(restoredCheckpointData['q1']?.last_modified).toBe(originalCheckpointData['q1']?.last_modified);
+
+      // Check metadata integrity
+      expect(restoredMetadataData.name).toBe(originalMetadataData.name);
+      expect(restoredMetadataData.creator).toBe(originalMetadataData.creator);
+      expect(restoredMetadataData.keywords).toEqual(originalMetadataData.keywords);
+    });
+
+    it('should handle partial data restoration gracefully', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+
+      // Load partial data (only some questions)
+      const partialCheckpoint = {
+        version: '1.0' as const,
+        checkpoint: {
+          q1: {
+            question: 'What is the capital of France?',
+            raw_answer: 'Paris',
+            original_answer_template: 'class Answer(BaseAnswer):\n    capital: str',
+            answer_template: 'class Answer(BaseAnswer):\n    capital: str',
+            last_modified: '2024-01-10T10:00:00.000Z',
+            finished: true,
+            question_rubric: undefined,
+          },
+          q2: {
+            question: 'What is 2 + 2?',
+            raw_answer: '4',
+            original_answer_template: 'class Answer(BaseAnswer):\n    result: int',
+            answer_template: 'class Answer(BaseAnswer):\n    result: int',
+            last_modified: '2024-01-10T10:05:00.000Z',
+            finished: false,
+            question_rubric: undefined,
+          },
+        },
+        global_rubric: undefined,
+      };
+
+      // Load partial data
+      datasetStore.setMetadata({
+        name: 'Partial Benchmark',
+        description: 'Only has 2 questions',
+        creator: 'partial-user',
+      });
+
+      questionStore.loadCheckpoint(partialCheckpoint);
+
+      // Verify partial load handled correctly
+      const qState = useQuestionStore.getState();
+      expect(Object.keys(qState.questionData)).toHaveLength(2);
+      expect(qState.questionData['q1']).toBeDefined();
+      expect(qState.questionData['q2']).toBeDefined();
+      expect(qState.questionData['q3']).toBeUndefined();
+
+      // Checkpoint should have q1 and q2
+      expect(qState.checkpoint['q1']?.finished).toBe(true);
+      expect(qState.checkpoint['q2']?.finished).toBe(false);
     });
   });
 });

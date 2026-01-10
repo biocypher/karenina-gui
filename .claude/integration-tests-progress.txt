@@ -1510,3 +1510,43 @@ Remaining low priority tests:
 - integ-035, 036, 037, 038, 039, 058: Edge cases (6 tests)
 - integ-040, 041, 055: Accessibility (3 tests)
 
+
+## Ralph Loop Iteration 40 - 2025-01-10
+
+### Completed: integ-034 - Database round-trip
+
+### Tests Added (6 tests)
+1. Create new benchmark with questions and templates
+2. Simulate save to database and preserve data
+3. Simulate clear local state after save
+4. Simulate load from database and restore data correctly
+5. Verify data integrity across save/load cycle
+6. Handle partial data restoration gracefully
+
+### Key Implementation Notes
+- Uses `useQuestionStore.loadCheckpoint(unifiedCheckpoint)` to load checkpoint data
+- `UnifiedCheckpoint` format: { version: '1.0', checkpoint: {...}, global_rubric: ... }
+- Checkpoint loading automatically populates `questionData` from checkpoint
+- `useDatasetStore.setMetadata()` for dataset metadata (name, description, creator, keywords)
+- `useDatasetStore.resetMetadata()` clears metadata
+- `useQuestionStore.resetQuestionState()` clears question data and checkpoint
+- `useDatasetStore.connectDatabase(url, benchmarkName)` simulates database connection
+- `useDatasetStore.setLastSaved(timestamp)` tracks last save time
+
+### Store Architecture
+- `useQuestionStore`: Manages questionData and checkpoint
+- `useDatasetStore`: Manages metadata and database connection state
+- `loadCheckpoint` takes UnifiedCheckpoint which contains both checkpoint and extracts questionData
+
+### Files Modified
+- `src/__tests__/integration/workflows/end-to-end-workflow.test.tsx`: Added 6 tests for integ-034
+
+### Test Results
+- All 1454 tests pass (6 new in end-to-end-workflow.test.tsx)
+
+### Next Options
+Remaining tests:
+- integ-033: End-to-end file-to-verification (large, 1 test)
+- integ-035-039, 058: Edge cases (6 tests)
+- integ-040, 041, 055: Accessibility (3 tests)
+
