@@ -538,4 +538,189 @@ describe('Question Navigation Integration Tests', () => {
       expect(saveButton).toBeInTheDocument();
     });
   });
+
+  describe('integ-013: Session draft persistence', () => {
+    it('should persist draft when switching tabs', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      const { unmount } = render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Edit the template for q1 (creating a draft via setSessionDraft)
+      const originalTemplate = useQuestionStore.getState().checkpoint['q1'].answer_template;
+      const modifiedTemplate = originalTemplate.replace('capital', 'city_name');
+
+      useQuestionStore.getState().setCurrentTemplate(modifiedTemplate);
+      useQuestionStore.getState().setSessionDraft('q1', modifiedTemplate);
+
+      // Verify session draft was set
+      expect(useQuestionStore.getState().sessionDrafts['q1']).toBe(modifiedTemplate);
+
+      // Simulate switching to another tab by unmounting and remounting
+      // In a real scenario, the user would navigate away and come back
+      unmount();
+
+      // Re-mount the component (simulating tab switch back)
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Verify the draft is still there after remounting
+      expect(useQuestionStore.getState().sessionDrafts['q1']).toBe(modifiedTemplate);
+      // When we navigate back to q1, it should load the draft
+      useQuestionStore.getState().navigateToQuestion('q1');
+      expect(useQuestionStore.getState().currentTemplate).toBe(modifiedTemplate);
+    });
+
+    it('should persist draft when switching questions', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Edit the template for q1 and set draft
+      const originalTemplate = useQuestionStore.getState().checkpoint['q1'].answer_template;
+      const modifiedTemplate = originalTemplate.replace('capital', 'city');
+
+      useQuestionStore.getState().setCurrentTemplate(modifiedTemplate);
+      useQuestionStore.getState().setSessionDraft('q1', modifiedTemplate);
+
+      // Verify session draft was set
+      expect(useQuestionStore.getState().hasSessionDraft('q1')).toBe(true);
+
+      // Navigate to q2
+      const nextButton = screen.getByText('Next');
+      await userEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 2 of 3/i)).toBeInTheDocument();
+      });
+
+      // Verify we're now on q2 with q2's template
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q2');
+      expect(useQuestionStore.getState().currentTemplate).toContain('result');
+
+      // Navigate back to q1
+      const previousButton = screen.getByText('Previous');
+      await userEvent.click(previousButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Verify the draft is preserved for q1 - navigateToQuestion prefers session draft
+      useQuestionStore.getState().navigateToQuestion('q1');
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q1');
+      expect(useQuestionStore.getState().currentTemplate).toContain('city');
+      expect(useQuestionStore.getState().hasSessionDraft('q1')).toBe(true);
+    });
+
+    it('should clear draft when saved', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Edit the template creating a draft
+      const originalTemplate = useQuestionStore.getState().checkpoint['q1'].answer_template;
+      const modifiedTemplate = originalTemplate.replace('capital', 'metro');
+
+      useQuestionStore.getState().setCurrentTemplate(modifiedTemplate);
+      useQuestionStore.getState().setSessionDraft('q1', modifiedTemplate);
+
+      // Verify session draft was set
+      expect(useQuestionStore.getState().hasSessionDraft('q1')).toBe(true);
+
+      // Find and click the Save button
+      const saveButton = screen.getAllByText('Save').find((el) => el.tagName === 'BUTTON');
+      expect(saveButton).toBeInTheDocument();
+      await userEvent.click(saveButton!);
+
+      // Verify draft was cleared after save
+      await waitFor(() => {
+        expect(useQuestionStore.getState().hasSessionDraft('q1')).toBe(false);
+      });
+
+      // Verify checkpoint was updated
+      expect(useQuestionStore.getState().checkpoint['q1'].answer_template).toContain('metro');
+    });
+
+    it('should handle multiple drafts for different questions', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Edit q1
+      const q1Template = useQuestionStore.getState().checkpoint['q1'].answer_template;
+      useQuestionStore.getState().setCurrentTemplate(q1Template.replace('capital', 'city'));
+      useQuestionStore.getState().setSessionDraft('q1', q1Template.replace('capital', 'city'));
+
+      // Navigate to q2
+      const nextButton = screen.getByText('Next');
+      await userEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 2 of 3/i)).toBeInTheDocument();
+      });
+
+      // Edit q2
+      const q2Template = useQuestionStore.getState().checkpoint['q2'].answer_template;
+      useQuestionStore.getState().setCurrentTemplate(q2Template.replace('result', 'answer'));
+      useQuestionStore.getState().setSessionDraft('q2', q2Template.replace('result', 'answer'));
+
+      // Navigate to q3
+      await userEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 3 of 3/i)).toBeInTheDocument();
+      });
+
+      // Edit q3
+      const q3Template = useQuestionStore.getState().checkpoint['q3'].answer_template;
+      useQuestionStore.getState().setCurrentTemplate(q3Template.replace('author', 'writer'));
+      useQuestionStore.getState().setSessionDraft('q3', q3Template.replace('author', 'writer'));
+
+      // Verify all drafts exist
+      const store = useQuestionStore.getState();
+      expect(store.hasSessionDraft('q1')).toBe(true);
+      expect(store.hasSessionDraft('q2')).toBe(true);
+      expect(store.hasSessionDraft('q3')).toBe(true);
+
+      // Navigate back to q1
+      const previousButton = screen.getAllByText('Previous').find((el) => el.tagName === 'BUTTON');
+      await userEvent.click(previousButton!);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 2 of 3/i)).toBeInTheDocument();
+      });
+
+      await userEvent.click(previousButton!);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Verify q1 draft is still there
+      expect(useQuestionStore.getState().currentTemplate).toContain('city');
+    });
+  });
 });

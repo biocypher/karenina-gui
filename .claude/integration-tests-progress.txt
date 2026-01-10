@@ -364,3 +364,35 @@ Each PRD item contains:
 - integ-014: Edit rubric in curator (medium priority, small effort, depends on integ-010)
 - integ-015: Add new question (medium priority, small effort, depends on integ-010)
 - integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
+
+## Iteration 12 - 2026-01-10
+
+### Completed
+- Implemented **integ-013**: Session draft persistence
+  - Added 4 new test cases to template-editing.test.tsx
+  - All tests passing (1233 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-013
+1. Persist draft when switching tabs (unmount/remount)
+2. Persist draft when switching questions
+3. Clear draft when saved
+4. Handle multiple drafts for different questions
+
+### Key Implementation Notes
+- Session drafts are stored in `useQuestionStore.sessionDrafts` (Record<string, string>)
+- Drafts are auto-saved by a `useEffect` in CuratorTab when `currentTemplate !== checkpointTemplate`
+- `setSessionDraft(qid, template)` directly sets a draft for a question
+- `hasSessionDraft(qid)` checks if a draft exists for a question
+- `navigateToQuestion(qid)` prefers session draft over checkpoint/question data
+- `saveCurrentTemplate()` clears the session draft for the saved question
+- Drafts persist across component unmount/remount (simulating tab switches)
+- Multiple drafts can exist simultaneously for different questions
+
+### Next Steps for Iteration 13
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-014: Revert to original and mark as finished (medium priority, small effort, depends on integ-012)
+- integ-015: Add new question (medium priority, small effort, depends on integ-010)
+- integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
