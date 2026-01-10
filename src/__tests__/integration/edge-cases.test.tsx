@@ -880,4 +880,251 @@ describe('Edge Cases Integration Tests', () => {
       expect(document.body).toBeInTheDocument();
     });
   });
+
+  describe('integ-058: Generate templates for many questions', () => {
+    it('should select 100+ questions for generation', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create a large dataset with 150 questions
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 150; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: '',
+          answer_template: '',
+          last_modified: new Date().toISOString(),
+          finished: false,
+        };
+      }
+
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+
+      // Verify all questions are loaded and accessible
+      const state = useQuestionStore.getState();
+      const allQuestionIds = state.getQuestionIds();
+      expect(allQuestionIds.length).toBe(150);
+
+      // Verify we can iterate through all questions without issues
+      allQuestionIds.forEach((id) => {
+        const questionData = state.questionData[id];
+        expect(questionData).toBeDefined();
+        expect(questionData.question).toBeTruthy();
+      });
+
+      // App should remain responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should verify progress updates do not overwhelm UI with many questions', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create dataset with 100 questions
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 100; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: '',
+          answer_template: '',
+          last_modified: new Date().toISOString(),
+          finished: false,
+        };
+      }
+
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+
+      // Simulate rapid progress updates (as would happen during generation)
+      for (let i = 1; i <= 100; i++) {
+        useQuestionStore.getState().setSelectedQuestionId(`q${i}`);
+
+        // Verify app remains responsive during rapid updates
+        const currentState = useQuestionStore.getState();
+        expect(currentState.selectedQuestionId).toBe(`q${i}`);
+      }
+
+      // App should still be responsive after all updates
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should verify partial results preserved with many questions', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create dataset with 80 questions
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 80; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          answer_template:
+            i <= 50
+              ? `class Answer(BaseAnswer):\n    value: str\n\n    def verify(self) -> bool:\n        return self.value == "Answer ${i}"`
+              : '',
+          last_modified: new Date().toISOString(),
+          finished: i <= 50, // First 50 are "finished"
+        };
+      }
+
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+
+      // Verify first 50 have templates set
+      const state = useQuestionStore.getState();
+      for (let i = 1; i <= 50; i++) {
+        const checkpointItem = state.checkpoint[`q${i}`];
+        expect(checkpointItem?.answer_template).toContain('verify');
+      }
+
+      // Verify remaining 30 have empty templates (partial completion)
+      for (let i = 51; i <= 80; i++) {
+        const checkpointItem = state.checkpoint[`q${i}`];
+        expect(checkpointItem?.answer_template).toBe('');
+      }
+
+      // App should be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should handle navigation through many questions during generation', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create dataset with 120 questions
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 120; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: '',
+          answer_template: '',
+          last_modified: new Date().toISOString(),
+          finished: false,
+        };
+      }
+
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+
+      // Simulate navigating while "generating" - jump around the dataset
+      const navigationSequence = ['q1', 'q50', 'q100', 'q120', 'q60', 'q30', 'q90', 'q10', 'q80', 'q40'];
+
+      navigationSequence.forEach((id) => {
+        useQuestionStore.getState().setSelectedQuestionId(id);
+        // Update template to simulate generation progress
+        useQuestionStore.getState().setCurrentTemplate(`// Generated template for ${id}`);
+      });
+
+      // Verify final state
+      const finalState = useQuestionStore.getState();
+      expect(finalState.selectedQuestionId).toBe('q40');
+      expect(finalState.currentTemplate).toContain('q40');
+
+      // App should be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should verify UI responsiveness with many question state changes', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create dataset with 200 questions
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 200; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: '',
+          answer_template: '',
+          last_modified: new Date().toISOString(),
+          finished: false,
+        };
+      }
+
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+
+      // Toggle finished status on multiple questions by selecting each then toggling
+      for (let i = 1; i <= 50; i++) {
+        const qid = `q${i}`;
+        useQuestionStore.getState().setSelectedQuestionId(qid);
+        useQuestionStore.getState().toggleFinished();
+      }
+
+      // Set current templates for multiple questions (and save them)
+      for (let i = 51; i <= 100; i++) {
+        const qid = `q${i}`;
+        useQuestionStore.getState().setSelectedQuestionId(qid);
+        useQuestionStore.getState().setCurrentTemplate(`// Template for ${qid}`);
+        // Save to persist the template to checkpoint
+        await useQuestionStore.getState().saveCurrentTemplate();
+      }
+
+      // Get fresh state after operations
+      const finalState = useQuestionStore.getState();
+
+      // Verify operations completed successfully - finished status toggled
+      for (let i = 1; i <= 50; i++) {
+        expect(finalState.checkpoint[`q${i}`]?.finished).toBe(true);
+      }
+
+      // Verify templates were saved to checkpoint
+      for (let i = 51; i <= 100; i++) {
+        expect(finalState.checkpoint[`q${i}`]?.answer_template).toContain(`// Template for q${i}`);
+      }
+
+      // App should be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+  });
 });

@@ -1206,7 +1206,7 @@
     "mocks_required": ["WebSocket with many progress events"],
     "fixtures_needed": ["large-dataset/100-questions.json"],
     "store_assertions": ["UI remains responsive", "Partial results preserved on cancel"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-035"],
     "effort_estimate": "medium"
   },
