@@ -528,3 +528,34 @@ Each PRD item contains:
 - integ-017: Load and save default settings (medium priority, small effort, no dependencies)
 - integ-046: Model system prompt and custom endpoint (medium priority, small effort, depends on integ-045)
 - integ-048: Deep judgment and abstention configuration (medium priority, small effort)
+
+## Iteration 17 - 2026-01-10
+
+### Completed
+- Implemented **integ-046**: Model system prompt and custom endpoint
+  - Added 5 new test cases to benchmark-config.test.tsx
+  - All tests passing (1256 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-046
+1. Save and retrieve system prompt for model
+2. Update system prompt for existing model
+3. Configure model with openai_endpoint interface and custom settings
+4. Update endpoint configuration for existing model
+5. Support models with different interfaces side by side
+
+### Key Implementation Notes
+- `system_prompt` is a required field on ModelConfiguration
+- `endpoint_base_url` and `endpoint_api_key` are optional fields for custom endpoints
+- When `interface` is set to `'openai_endpoint'`, the custom endpoint settings are used
+- `updateAnsweringModel(id, updates)` can update any field including system_prompt and endpoint settings
+- Multiple models with different interfaces (langchain, openrouter, openai_endpoint) can coexist
+- Each model maintains its own independent configuration including system prompts and endpoints
+- Tests verify that model configurations persist correctly through add and update operations
+
+### Next Steps for Iteration 18
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-017: Load and save default settings (medium priority, small effort, no dependencies)
+- integ-048: Deep judgment and abstention configuration (medium priority, small effort)

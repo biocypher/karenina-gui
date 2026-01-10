@@ -469,4 +469,158 @@ describe('Benchmark Configuration Integration Tests', () => {
       expect(afterRemovalState.answeringModels.some((m) => m.id === 'model-to-keep')).toBe(true);
     });
   });
+
+  describe('integ-046: Model system prompt and custom endpoint', () => {
+    it('should save and retrieve system prompt for model', () => {
+      const customPrompt = 'You are a specialized assistant for medical diagnosis. Be thorough and accurate.';
+
+      const modelWithPrompt: ModelConfiguration = {
+        id: 'model-with-prompt',
+        model_provider: 'anthropic',
+        model_name: 'claude-3-opus',
+        temperature: 0.3,
+        interface: 'langchain',
+        system_prompt: customPrompt,
+      };
+
+      useBenchmarkStore.getState().addAnsweringModel(modelWithPrompt);
+
+      // Verify system prompt is saved correctly
+      const savedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'model-with-prompt');
+
+      expect(savedModel).toBeDefined();
+      expect(savedModel?.system_prompt).toBe(customPrompt);
+    });
+
+    it('should update system prompt for existing model', () => {
+      const model: ModelConfiguration = {
+        id: 'prompt-update-test',
+        model_provider: 'openai',
+        model_name: 'gpt-4',
+        temperature: 0.5,
+        interface: 'langchain',
+        system_prompt: 'Original prompt',
+      };
+
+      useBenchmarkStore.getState().addAnsweringModel(model);
+
+      const newPrompt = 'You are now a creative writing assistant. Help users write compelling stories.';
+      useBenchmarkStore.getState().updateAnsweringModel('prompt-update-test', {
+        system_prompt: newPrompt,
+      });
+
+      // Verify system prompt was updated
+      const updatedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'prompt-update-test');
+
+      expect(updatedModel?.system_prompt).toBe(newPrompt);
+      // Other fields unchanged
+      expect(updatedModel?.model_name).toBe('gpt-4');
+    });
+
+    it('should configure model with openai_endpoint interface and custom settings', () => {
+      const customEndpointModel: ModelConfiguration = {
+        id: 'custom-endpoint-model',
+        model_provider: 'openai',
+        model_name: 'gpt-4',
+        temperature: 0.7,
+        interface: 'openai_endpoint',
+        system_prompt: 'You are a helpful assistant.',
+        endpoint_base_url: 'https://api.example.com/v1',
+        endpoint_api_key: 'sk-test-key-12345',
+      };
+
+      useBenchmarkStore.getState().addAnsweringModel(customEndpointModel);
+
+      // Verify custom endpoint settings are saved
+      const savedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'custom-endpoint-model');
+
+      expect(savedModel).toBeDefined();
+      expect(savedModel?.interface).toBe('openai_endpoint');
+      expect(savedModel?.endpoint_base_url).toBe('https://api.example.com/v1');
+      expect(savedModel?.endpoint_api_key).toBe('sk-test-key-12345');
+    });
+
+    it('should update endpoint configuration for existing model', () => {
+      const model: ModelConfiguration = {
+        id: 'endpoint-update-test',
+        model_provider: 'openai',
+        model_name: 'gpt-3.5-turbo',
+        temperature: 0.5,
+        interface: 'langchain',
+        system_prompt: 'Helpful assistant',
+      };
+
+      useBenchmarkStore.getState().addAnsweringModel(model);
+
+      // Update to use custom endpoint
+      useBenchmarkStore.getState().updateAnsweringModel('endpoint-update-test', {
+        interface: 'openai_endpoint',
+        endpoint_base_url: 'https://new-api.example.com/v1',
+        endpoint_api_key: 'sk-new-key-67890',
+      });
+
+      // Verify endpoint settings were updated
+      const updatedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'endpoint-update-test');
+
+      expect(updatedModel?.interface).toBe('openai_endpoint');
+      expect(updatedModel?.endpoint_base_url).toBe('https://new-api.example.com/v1');
+      expect(updatedModel?.endpoint_api_key).toBe('sk-new-key-67890');
+    });
+
+    it('should support models with different interfaces side by side', () => {
+      // Add langchain model
+      const langchainModel: ModelConfiguration = {
+        id: 'langchain-model',
+        model_provider: 'anthropic',
+        model_name: 'claude-3-haiku',
+        temperature: 0.2,
+        interface: 'langchain',
+        system_prompt: 'Langchain interface prompt',
+      };
+
+      // Add openrouter model
+      const openrouterModel: ModelConfiguration = {
+        id: 'openrouter-model',
+        model_provider: 'openrouter',
+        model_name: 'mistralai/mistral-large',
+        temperature: 0.6,
+        interface: 'openrouter',
+        system_prompt: 'OpenRouter interface prompt',
+      };
+
+      // Add custom endpoint model
+      const customEndpointModel: ModelConfiguration = {
+        id: 'custom-endpoint-model',
+        model_provider: 'openai',
+        model_name: 'gpt-4',
+        temperature: 0.8,
+        interface: 'openai_endpoint',
+        system_prompt: 'Custom endpoint prompt',
+        endpoint_base_url: 'https://custom.api.com/v1',
+        endpoint_api_key: 'sk-custom-key',
+      };
+
+      useBenchmarkStore.getState().addAnsweringModel(langchainModel);
+      useBenchmarkStore.getState().addAnsweringModel(openrouterModel);
+      useBenchmarkStore.getState().addAnsweringModel(customEndpointModel);
+
+      // Verify all models coexist with their respective configurations
+      const models = useBenchmarkStore.getState().answeringModels;
+
+      const langchain = models.find((m) => m.id === 'langchain-model');
+      const openrouter = models.find((m) => m.id === 'openrouter-model');
+      const customEndpoint = models.find((m) => m.id === 'custom-endpoint-model');
+
+      expect(langchain?.interface).toBe('langchain');
+      expect(langchain?.system_prompt).toBe('Langchain interface prompt');
+
+      expect(openrouter?.interface).toBe('openrouter');
+      expect(openrouter?.system_prompt).toBe('OpenRouter interface prompt');
+
+      expect(customEndpoint?.interface).toBe('openai_endpoint');
+      expect(customEndpoint?.system_prompt).toBe('Custom endpoint prompt');
+      expect(customEndpoint?.endpoint_base_url).toBe('https://custom.api.com/v1');
+      expect(customEndpoint?.endpoint_api_key).toBe('sk-custom-key');
+    });
+  });
 });

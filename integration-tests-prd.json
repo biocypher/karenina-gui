@@ -970,7 +970,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["Model config includes system_prompt and endpoint settings"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-045"],
     "effort_estimate": "small"
   },
