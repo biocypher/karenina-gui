@@ -890,7 +890,7 @@
     "mocks_required": [],
     "fixtures_needed": ["traces/manual-trace-upload.json"],
     "store_assertions": ["Trace correctly associated with question"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },

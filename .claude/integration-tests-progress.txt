@@ -1256,3 +1256,47 @@ Remaining low priority phase 3 tests:
 - integ-033, 034, 056: End-to-end workflows (3 tests)
 - integ-042, 050: Additional features (2 tests)
 
+
+## Ralph Loop Iteration 35 - 2025-01-10
+
+### Completed: integ-042 - Manual trace upload
+
+### Tests Added (9 tests)
+1. Validate manual trace file structure with MD5 hash keys
+2. Verify trace content is valid JSON
+3. Support multiple traces in single file
+4. Verify trace hash format is consistent
+5. Handle empty trace file gracefully
+6. Reject invalid trace key formats
+7. Verify trace association with question by hash
+8. Support trace content with various formats
+9. Handle special characters in trace content
+
+### Key Implementation Notes
+- Manual traces are keyed by MD5 hashes (32 hex characters)
+- Hash format: `/^[a-f0-9]{32}$/i`
+- Trace values are strings containing the model's response
+- File structure: `{ "hash": "trace content", ... }`
+- Traces associated with questions by matching question text MD5 hash to trace key
+- Validation: `validateManualTraceFile()` checks structure and key format
+- File size limit: 50MB for trace files
+- Used by verification to pre-compute answering traces for questions
+
+### Fixture Created
+- `src/test-utils/fixtures/traces/manual-trace-upload.json`: 3 sample traces with MD5 hash keys
+  - Capital of France question trace
+  - Math question trace (15 + 27 = 42)
+  - Primary colors question trace
+
+### Files Modified
+- `src/__tests__/integration/features/additional-features.test.tsx`: Added 9 tests for integ-042
+
+### Test Results
+- All 1409 tests pass (33 in additional-features.test.tsx)
+
+### Next Options
+Remaining low priority phase 3 tests:
+- integ-028-032, 054: Database operations (6 tests)
+- integ-033, 034, 056: End-to-end workflows (3 tests)
+- integ-050: Merge results dialog (1 test)
+

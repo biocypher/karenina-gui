@@ -1,0 +1,12 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T12:00:00.000Z",
+    "description": "Sample manual traces for integration testing",
+    "isMocked": true
+  },
+  "traces": {
+    "5d41402abc4b2a76b9719d911017c592": "The capital of France is Paris, located in the north-central part of the country.",
+    "098f6bcd4621d373cade4e832627b4f6": "15 + 27 = 42. The sum of these two numbers is forty-two.",
+    "ad0234829205b9033196ba818f7a872b": "The three primary colors in traditional color theory are red, blue, and yellow. These colors cannot be created by mixing other colors."
+  }
+}
