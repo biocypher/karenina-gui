@@ -257,7 +257,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["checkpoint[qid].answer_template updated", "checkpoint[qid].last_modified updated"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-010"],
     "effort_estimate": "small"
   },

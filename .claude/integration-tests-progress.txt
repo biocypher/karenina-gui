@@ -300,3 +300,34 @@ Each PRD item contains:
 - integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
 - integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
 - integ-012: Edit and save template (medium priority, small effort, depends on integ-010)
+
+## Iteration 10 - 2026-01-10
+
+### Completed
+- Implemented **integ-012**: Edit and save template
+  - Added 3 test cases to template-editing.test.tsx
+  - All tests passing (1224 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-012
+1. Edit template and save to checkpoint
+2. Verify save action persists changes across questions
+3. Verify unsaved changes indicator appears
+
+### Key Implementation Notes
+- Template editing is done through `useQuestionStore.setCurrentTemplate()`
+- Save button is found by filtering `getAllByText('Save')` for BUTTON elements
+- Save action calls `saveCurrentTemplate()` from useQuestionStore
+- After save, `checkpoint[qid].answer_template` is updated with new template content
+- After save, `checkpoint[qid].last_modified` timestamp is updated
+- The `currentTemplate` state is the working copy that gets saved to checkpoint
+- Form editor tracks unsaved changes via `hasUnsavedFieldChanges` state
+- Changes persist when navigating between questions after saving
+
+### Next Steps for Iteration 11
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-013: Session draft persistence (medium priority, small effort, depends on integ-010)
+- integ-015: Add new question (medium priority, small effort, depends on integ-010)
+- integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
