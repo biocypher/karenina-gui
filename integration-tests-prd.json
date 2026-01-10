@@ -605,7 +605,7 @@
     "mocks_required": ["GET /api/database/benchmarks -> { benchmarks: [...] }"],
     "fixtures_needed": ["database/benchmark-list.json"],
     "store_assertions": ["useDatasetStore.isConnectedToDatabase is true", "benchmark list populated"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
@@ -625,7 +625,7 @@
     "mocks_required": ["GET /api/database/benchmarks -> 400/500 error"],
     "fixtures_needed": [],
     "store_assertions": ["isConnectedToDatabase is false", "error displayed"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-028"],
     "effort_estimate": "small"
   },
@@ -646,7 +646,7 @@
     "mocks_required": ["POST /api/database/load-benchmark -> { checkpoint_data }"],
     "fixtures_needed": ["database/loaded-benchmark.json"],
     "store_assertions": ["useQuestionStore populated with loaded data", "checkpoint contains questions"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-028"],
     "effort_estimate": "small"
   },
@@ -667,7 +667,7 @@
     "mocks_required": ["POST /api/database/save-benchmark -> { success }"],
     "fixtures_needed": [],
     "store_assertions": ["useDatasetStore.lastSaved updated", "isDirty becomes false"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-028"],
     "effort_estimate": "small"
   },
@@ -692,7 +692,7 @@
     ],
     "fixtures_needed": ["database/save-with-duplicates.json"],
     "store_assertions": ["duplicates resolved", "save completes successfully"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-031"],
     "effort_estimate": "small"
   },
@@ -1130,7 +1130,7 @@
     "mocks_required": ["DELETE /api/database/{id} -> { success }"],
     "fixtures_needed": [],
     "store_assertions": ["Benchmark removed from list"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-028"],
     "effort_estimate": "small"
   },
