@@ -795,7 +795,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["Warning prevents data loss", "Session recovery works"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
