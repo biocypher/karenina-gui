@@ -17,7 +17,6 @@ export {
   v2ToJsonLd,
   jsonLdToV2,
   CheckpointConversionError,
-  ConversionOptions,
   DEFAULT_CONVERSION_OPTIONS,
   validateJsonLdCheckpoint,
   isJsonLdCheckpoint,
@@ -32,3 +31,5 @@ export {
   convertRatingToCallableTrait,
   convertRatingToMetricTrait,
 } from './checkpoint';
+
+export type { ConversionOptions } from './checkpoint';

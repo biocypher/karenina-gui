@@ -19,7 +19,7 @@ export function TabNavigation({ activeTab, onTabSwitch, unsavedCount }: TabNavig
   };
 
   return (
-    <div className="mt-6 flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-1 border border-white/30 dark:border-slate-700/30 shadow-sm w-fit">
+    <div className="mt-6 mb-8 flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-1 border border-white/30 dark:border-slate-700/30 shadow-sm w-fit">
       <button onClick={() => onTabSwitch('generator')} className={getTabClassName('generator')}>
         1. Template Generation
       </button>
