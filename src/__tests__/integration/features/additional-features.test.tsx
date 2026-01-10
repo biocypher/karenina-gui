@@ -4,13 +4,17 @@
  * Tests additional benchmark features including:
  * - Few-shot examples configuration
  * - Metadata editor
+ * - Trace highlighting configuration
  *
  * integ-049: Test few-shot examples configuration
  * integ-043: Test metadata editor
+ * integ-051: Test trace highlighting configuration
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useBenchmarkStore } from '../../../stores/useBenchmarkStore';
 import { useDatasetStore } from '../../../stores/useDatasetStore';
+import { useTraceHighlightingStore } from '../../../stores/useTraceHighlightingStore';
+import type { HighlightPattern } from '../../../stores/useTraceHighlightingStore';
 
 // Mock the preset store
 vi.mock('../../../stores/usePresetStore', () => ({
@@ -314,6 +318,222 @@ describe('Metadata Editor Integration Tests', () => {
       expect(metadata.version).toBe('3.0.0');
       expect(metadata.license).toBe('GPL-3.0');
       expect(metadata.keywords).toEqual(['replacement', 'test']);
+    });
+  });
+});
+
+describe('Trace Highlighting Integration Tests', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+
+    // Reset trace highlighting store to default state
+    useTraceHighlightingStore.getState().resetToDefaults();
+  });
+
+  describe('integ-051: Trace highlighting configuration', () => {
+    it('should toggle highlighting enabled state', () => {
+      const store = useTraceHighlightingStore.getState();
+
+      // Initially enabled by default
+      expect(store.highlightingEnabled).toBe(true);
+
+      // Disable highlighting
+      store.setHighlightingEnabled(false);
+      expect(useTraceHighlightingStore.getState().highlightingEnabled).toBe(false);
+
+      // Re-enable highlighting
+      store.setHighlightingEnabled(true);
+      expect(useTraceHighlightingStore.getState().highlightingEnabled).toBe(true);
+    });
+
+    it('should add highlight pattern with regex', () => {
+      const store = useTraceHighlightingStore.getState();
+
+      const initialCount = store.patterns.length;
+
+      // Add a new highlight pattern
+      const newPattern: Omit<HighlightPattern, 'id'> = {
+        name: 'Error Messages',
+        pattern: 'error|warning|failed',
+        colorId: 'red',
+        enabled: true,
+      };
+
+      store.addPattern(newPattern);
+
+      // Verify pattern was added
+      const patterns = useTraceHighlightingStore.getState().patterns;
+      expect(patterns.length).toBe(initialCount + 1);
+      expect(patterns.some((p) => p.name === 'Error Messages')).toBe(true);
+    });
+
+    it('should update existing highlight pattern', () => {
+      const store = useTraceHighlightingStore.getState();
+
+      // Add a pattern first
+      const pattern: Omit<HighlightPattern, 'id'> = {
+        name: 'Test Pattern',
+        pattern: 'test',
+        colorId: 'blue',
+        enabled: true,
+      };
+      store.addPattern(pattern);
+
+      // Get the added pattern's ID
+      const addedPattern = useTraceHighlightingStore.getState().patterns.find((p) => p.name === 'Test Pattern');
+      const patternId = addedPattern?.id;
+
+      if (patternId) {
+        // Update the pattern
+        store.updatePattern(patternId, {
+          name: 'Updated Pattern',
+          pattern: 'updated|test',
+          colorId: 'green',
+        });
+
+        // Verify updates
+        const updatedPattern = useTraceHighlightingStore.getState().patterns.find((p) => p.id === patternId);
+        expect(updatedPattern?.name).toBe('Updated Pattern');
+        expect(updatedPattern?.pattern).toBe('updated|test');
+        expect(updatedPattern?.colorId).toBe('green');
+        // enabled should remain unchanged
+        expect(updatedPattern?.enabled).toBe(true);
+      }
+    });
+
+    it('should remove highlight pattern', () => {
+      const store = useTraceHighlightingStore.getState();
+
+      // Add a pattern
+      const pattern: Omit<HighlightPattern, 'id'> = {
+        name: 'To Remove',
+        pattern: 'remove',
+        colorId: 'yellow',
+        enabled: true,
+      };
+      store.addPattern(pattern);
+
+      const beforeRemovalCount = useTraceHighlightingStore.getState().patterns.length;
+
+      // Get the pattern ID
+      const addedPattern = useTraceHighlightingStore.getState().patterns.find((p) => p.name === 'To Remove');
+      const patternId = addedPattern?.id;
+
+      if (patternId) {
+        // Remove the pattern
+        store.removePattern(patternId);
+
+        // Verify removal
+        const afterRemovalPatterns = useTraceHighlightingStore.getState().patterns;
+        expect(afterRemovalPatterns.length).toBe(beforeRemovalCount - 1);
+        expect(afterRemovalPatterns.some((p) => p.id === patternId)).toBe(false);
+      }
+    });
+
+    it('should toggle pattern enabled state', () => {
+      const store = useTraceHighlightingStore.getState();
+
+      // Add an enabled pattern
+      const pattern: Omit<HighlightPattern, 'id'> = {
+        name: 'Toggle Test',
+        pattern: 'toggle',
+        colorId: 'purple',
+        enabled: true,
+      };
+      store.addPattern(pattern);
+
+      // Get the pattern ID
+      const addedPattern = useTraceHighlightingStore.getState().patterns.find((p) => p.name === 'Toggle Test');
+      const patternId = addedPattern?.id;
+
+      if (patternId) {
+        // Disable the pattern
+        store.updatePattern(patternId, { enabled: false });
+        expect(useTraceHighlightingStore.getState().patterns.find((p) => p.id === patternId)?.enabled).toBe(false);
+
+        // Re-enable the pattern
+        store.updatePattern(patternId, { enabled: true });
+        expect(useTraceHighlightingStore.getState().patterns.find((p) => p.id === patternId)?.enabled).toBe(true);
+      }
+    });
+
+    it('should support multiple highlight patterns with different colors', () => {
+      const store = useTraceHighlightingStore.getState();
+
+      const initialCount = store.patterns.length;
+
+      // Add multiple patterns with different colors
+      const patternsToAdd: Omit<HighlightPattern, 'id'>[] = [
+        { name: 'Errors', pattern: '\\berror\\b', colorId: 'red', enabled: true },
+        { name: 'Warnings', pattern: '\\bwarning\\b', colorId: 'yellow', enabled: true },
+        { name: 'Success', pattern: '\\bsuccess\\b', colorId: 'green', enabled: true },
+        { name: 'Info', pattern: '\\binfo\\b', colorId: 'blue', enabled: true },
+      ];
+
+      patternsToAdd.forEach((p) => store.addPattern(p));
+
+      // Verify all patterns were added
+      const patterns = useTraceHighlightingStore.getState().patterns;
+      expect(patterns.length).toBe(initialCount + 4);
+
+      // Verify each pattern has correct color
+      expect(patterns.some((p) => p.name === 'Errors' && p.colorId === 'red')).toBe(true);
+      expect(patterns.some((p) => p.name === 'Warnings' && p.colorId === 'yellow')).toBe(true);
+      expect(patterns.some((p) => p.name === 'Success' && p.colorId === 'green')).toBe(true);
+      expect(patterns.some((p) => p.name === 'Info' && p.colorId === 'blue')).toBe(true);
+    });
+
+    it('should reset to default patterns', () => {
+      // Get default pattern count first
+      const defaultPatternCount = useTraceHighlightingStore.getState().patterns.length;
+
+      // Add custom patterns
+      useTraceHighlightingStore.getState().addPattern({
+        name: 'Custom 1',
+        pattern: 'custom1',
+        colorId: 'red',
+        enabled: true,
+      });
+      useTraceHighlightingStore.getState().addPattern({
+        name: 'Custom 2',
+        pattern: 'custom2',
+        colorId: 'blue',
+        enabled: true,
+      });
+
+      const beforeResetCount = useTraceHighlightingStore.getState().patterns.length;
+      expect(beforeResetCount).toBe(defaultPatternCount + 2);
+
+      // Reset to defaults
+      useTraceHighlightingStore.getState().resetToDefaults();
+
+      // Verify reset (patterns should be back to defaults)
+      const afterResetPatterns = useTraceHighlightingStore.getState().patterns;
+      expect(afterResetPatterns.length).toBe(defaultPatternCount);
+      // Check that custom patterns are gone
+      expect(afterResetPatterns.some((p) => p.name === 'Custom 1')).toBe(false);
+      expect(afterResetPatterns.some((p) => p.name === 'Custom 2')).toBe(false);
+    });
+
+    it('should support complex regex patterns', () => {
+      const store = useTraceHighlightingStore.getState();
+
+      // Add pattern with complex regex
+      const complexPattern: Omit<HighlightPattern, 'id'> = {
+        name: 'URLs',
+        pattern: "https?://[\\w\\-\\.]+(:\\d+)?([/#][\\w\\-\\._~:/?\\#\\[\\]@!$&'()*+,;=]*)?",
+        colorId: 'cyan',
+        enabled: true,
+      };
+
+      store.addPattern(complexPattern);
+
+      // Verify pattern was added
+      const patterns = useTraceHighlightingStore.getState().patterns;
+      expect(patterns.some((p) => p.name === 'URLs')).toBe(true);
+
+      const urlPattern = patterns.find((p) => p.name === 'URLs');
+      expect(urlPattern?.pattern).toContain('https?://');
     });
   });
 });

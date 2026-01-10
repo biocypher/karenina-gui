@@ -1071,7 +1071,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["Highlight rules stored correctly", "Trace display shows highlights"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
