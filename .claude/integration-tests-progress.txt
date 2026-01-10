@@ -626,3 +626,40 @@ Each PRD item contains:
 - integ-017: Load and save default settings (medium priority, small effort, no dependencies)
 - integ-019: Preset list and load (medium priority, small effort, no dependencies)
 - integ-049: Few-shot examples configuration (low priority, small effort, no dependencies, uses benchmark store)
+
+## Iteration 20 - 2026-01-10
+
+### Completed
+- Implemented **integ-049**: Few-shot examples configuration
+  - Created new test file: `src/__tests__/integration/features/additional-features.test.tsx`
+  - Added 8 test cases covering all scenarios from PRD
+  - All tests passing (1277 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-049
+1. Enable few-shot mode
+2. Set few-shot mode to 'all'
+3. Set few-shot mode to 'k-shot'
+4. Set few-shot mode to 'custom'
+5. Configure k value for k-shot mode
+6. Support full few-shot configuration (enabled + mode + k value)
+7. Switch between different few-shot modes
+8. Persist k value when switching modes
+
+### Key Implementation Notes
+- `fewShotEnabled`: boolean for enabling/disabling few-shot learning
+- `fewShotMode`: 'all' | 'k-shot' | 'custom' for selecting which examples to use
+- `fewShotK`: number for k-shot mode (default is 3)
+- `setFewShotEnabled(enabled)`, `setFewShotMode(mode)`, `setFewShotK(k)` are the store methods
+- All settings are independent and can be configured in any order
+- K value persists when switching between modes
+- Store operations are synchronous and don't require rendering
+- Tests are store-only (no UI interaction required for basic configuration testing)
+
+### Next Steps for Iteration 21
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-017: Load and save default settings (medium priority, small effort, no dependencies)
+- integ-019: Preset list and load (medium priority, small effort, no dependencies)
+- integ-043: Metadata editor (low priority, small effort, no dependencies, uses checkpoint store)

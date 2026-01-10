@@ -1030,7 +1030,7 @@
     "mocks_required": ["POST /api/start-verification with few_shot config"],
     "fixtures_needed": [],
     "store_assertions": ["useBenchmarkStore.fewShotEnabled is true", "fewShotMode and fewShotK set correctly"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
