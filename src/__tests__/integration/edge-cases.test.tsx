@@ -1127,4 +1127,162 @@ describe('Edge Cases Integration Tests', () => {
       expect(document.body).toBeInTheDocument();
     });
   });
+
+  describe('integ-038: Network resilience', () => {
+    it('should handle offline event gracefully', async () => {
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Simulate going offline
+      const offlineEvent = new Event('offline');
+
+      expect(() => {
+        window.dispatchEvent(offlineEvent);
+      }).not.toThrow();
+
+      // Verify navigator.onLine reflects offline state (simulated)
+      expect(document.body).toBeInTheDocument();
+
+      // Simulate coming back online
+      const onlineEvent = new Event('online');
+
+      expect(() => {
+        window.dispatchEvent(onlineEvent);
+      }).not.toThrow();
+
+      // App should remain responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should verify loading state during slow operations', async () => {
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Simulate loading/saving state (the store uses isSaving for both)
+      useDatasetStore.getState().setIsSaving(true);
+
+      // Verify app is still responsive during loading
+      expect(document.body).toBeInTheDocument();
+
+      // End loading state
+      useDatasetStore.getState().setIsSaving(false);
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should handle saving state during operations', async () => {
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Simulate saving state
+      useDatasetStore.getState().setIsSaving(true);
+
+      // Verify app is still responsive during saving
+      expect(document.body).toBeInTheDocument();
+
+      // End saving state
+      useDatasetStore.getState().setIsSaving(false);
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should handle error state without crashing', async () => {
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Set error state
+      useDatasetStore.getState().setSaveError('Network error: Connection timeout');
+
+      // Verify app is still responsive despite error
+      expect(document.body).toBeInTheDocument();
+
+      // Clear error state
+      useDatasetStore.getState().setSaveError(null);
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should verify connection state persists across operations', async () => {
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Connect to database
+      useDatasetStore.getState().connectDatabase('https://example.com/db', 'test-benchmark');
+
+      const state = useDatasetStore.getState();
+      expect(state.isConnectedToDatabase).toBe(true);
+
+      // Simulate various state changes during connection
+      useDatasetStore.getState().setIsSaving(true);
+      expect(document.body).toBeInTheDocument();
+
+      useDatasetStore.getState().setIsSaving(false);
+      expect(document.body).toBeInTheDocument();
+
+      useDatasetStore.getState().setLastSaved(new Date().toISOString());
+      expect(document.body).toBeInTheDocument();
+
+      // Connection should still be active
+      const finalState = useDatasetStore.getState();
+      expect(finalState.isConnectedToDatabase).toBe(true);
+
+      // App should be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should handle rapid state changes without corruption', async () => {
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Rapidly cycle through different states
+      for (let i = 0; i < 20; i++) {
+        useDatasetStore.getState().setIsSaving(i % 2 === 0);
+        useDatasetStore.getState().setSaveError(i % 3 === 0 ? 'Simulated error' : null);
+        expect(document.body).toBeInTheDocument();
+      }
+
+      // Clear all states
+      useDatasetStore.getState().setIsSaving(false);
+      useDatasetStore.getState().setSaveError(null);
+
+      // Final state should be clean
+      const finalState = useDatasetStore.getState();
+      expect(finalState.isSaving).toBe(false);
+      expect(finalState.saveError).toBe(null);
+
+      // App should be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+  });
 });

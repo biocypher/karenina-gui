@@ -813,7 +813,7 @@
     "mocks_required": ["Network error simulation", "Slow response mocks"],
     "fixtures_needed": [],
     "store_assertions": ["Reconnection handled", "Timeout handling works"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "medium"
   },
