@@ -363,7 +363,7 @@
     ],
     "fixtures_needed": ["configuration/defaults.json"],
     "store_assertions": ["config store updated on save"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
@@ -387,7 +387,7 @@
     ],
     "fixtures_needed": ["configuration/env-variables.json"],
     "store_assertions": [],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-017"],
     "effort_estimate": "small"
   },

@@ -771,3 +771,59 @@ Each PRD item contains:
 - integ-017: Load and save default settings (medium priority, small effort, no dependencies)
 - integ-019: Preset list and load (medium priority, small effort, no dependencies)
 - integ-052: Generation with different model configs (medium priority, small effort, depends on integ-007)
+
+## Iteration 24 - 2026-01-10
+
+### Completed
+- Implemented **integ-017**: Load and save default settings
+- Implemented **integ-018**: Environment variables management
+  - Created new test file: configuration.test.tsx
+  - Added 18 new test cases
+  - All tests passing (1314 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-017
+1. Load default configuration from API
+2. Update working default values (interface, provider, model, endpoint, async settings)
+3. Save defaults to backend
+4. Reset working values to original defaults
+5. Track unsaved changes with hasUnsavedDefaults
+6. Handle loading error gracefully
+7. Handle saving error gracefully
+8. Persist settings across save cycle
+9. Support all interface types (langchain, openrouter, openai_endpoint)
+
+### Test Coverage for integ-018
+1. Load environment variables from API
+2. Load unmasked environment variables for editing
+3. Update a single environment variable
+4. Update multiple environment variables in bulk
+5. Remove an environment variable
+6. Update .env file contents
+7. Handle environment variable update error
+8. Set loading state during loadConfiguration
+9. Set saving state during saveDefaults
+
+### Key Implementation Notes
+- `useConfigStore` manages configuration with "working vs saved" pattern
+- Working values (default*): Draft configuration being edited in modal
+- Saved values (saved*): Persisted configuration used by generation components
+- Original values: Baseline for reset functionality
+- `loadConfiguration()`: Fetches both defaults and env vars from API
+- `saveDefaults()`: PUT to /api/config/defaults with working values
+- `resetDefaults()`: Resets working values to original defaults (no API call)
+- `hasUnsavedDefaults()`: Computed property checking if working != original
+- Environment variables support: masked and unmasked variants
+- Loading states tracked: isLoading, isSaving, isSavingDefaults
+- Error handling: Errors stored in state.error, thrown for UI handling
+
+### Files Modified
+- `src/__tests__/integration/features/configuration.test.tsx`: Created new test file with 18 tests
+
+### Next Steps for Iteration 25
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-019: Preset list and load (medium priority, small effort, no dependencies)
+- integ-020: Preset CRUD operations (medium priority, small effort, depends on integ-019)
+- integ-052: Generation with different model configs (medium priority, small effort, depends on integ-007)
