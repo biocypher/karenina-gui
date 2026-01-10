@@ -239,3 +239,32 @@ Each PRD item contains:
 - integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
 - integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
 - integ-010: Question navigation in curator (medium priority, no dependencies)
+
+## Iteration 8 - 2026-01-10
+
+### Completed
+- Implemented **integ-010**: Question navigation in curator
+  - Created new test file: `src/__tests__/integration/features/template-editing.test.tsx`
+  - All tests passing (1215 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-010
+1. Load questions into store and display question list/selector
+2. Navigate questions using next/previous buttons
+3. Verify selected question updates in store
+4. Verify template code displays for selected question
+5. Disable previous button on first question and next button on last question
+
+### Key Implementation Notes
+- CuratorTab uses `useQuestionStore` for state management
+- Store state requires: `questionData`, `checkpoint`, `selectedQuestionId`, and `currentTemplate`
+- `getQuestionIds()` returns `Object.keys(questionData)`
+- `currentTemplate` is the `answer_template` from the checkpoint for the selected question
+- Navigation buttons use `handleNavigateToQuestion` which calls `navigateToQuestion` from the store
+- Navigation has a 50ms setTimeout delay for scroll restoration (needs to be awaited in tests)
+- Button disabled state is controlled by `currentIndex` position in filtered question list
+
+### Next Steps for Iteration 9
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)

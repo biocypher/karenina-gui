@@ -215,7 +215,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["useQuestionStore.selectedQuestionId updates on navigation"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
