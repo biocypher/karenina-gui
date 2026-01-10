@@ -885,3 +885,64 @@ Each PRD item contains:
 - integ-020: Preset CRUD operations (medium priority, small effort, depends on integ-019)
 - integ-021: Apply preset to current benchmark (medium priority, small effort, depends on integ-019)
 - integ-003: Template editing workflow (high priority, large effort, complex)
+
+## Iteration 26 - 2026-01-10
+
+### Completed
+- Implemented **integ-019**: Preset list and load
+- Implemented **integ-020**: Preset CRUD operations
+- Implemented **integ-021**: Apply preset to current benchmark (within preset-management tests)
+  - Created new test file: preset-management.test.tsx
+  - Added 17 new test cases
+  - All tests passing (1349 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-019 (6 tests)
+1. Load presets from API
+2. Get preset detail by ID
+3. Handle load error gracefully
+4. Set current preset selection
+5. Clear error message
+6. Load preset details before applying
+
+### Test Coverage for integ-020 (6 tests)
+1. Create a new preset
+2. Update an existing preset
+3. Delete a preset
+4. Handle create error gracefully
+5. Handle update error gracefully
+6. Handle delete error gracefully
+
+### Test Coverage for integ-021 (3 tests)
+1. Set current preset for application
+2. Change current preset
+3. Clear current preset selection
+
+### Additional Test Coverage (2 tests)
+1. Sort presets alphabetically by name after creation
+2. Set loading state during operations
+
+### Key Implementation Notes
+- `usePresetStore` manages preset list, current selection, and CRUD operations
+- Preset API returns `{ preset: {...} }` format for single preset endpoints
+- Preset list API returns `{ presets: [...] }` format
+- Preset config requires `answering_models` and `parsing_models` arrays with ModelConfig
+- ModelConfig requires: id, model_provider, model_name, system_prompt (minimum)
+- `loadPresets()`: Fetches all presets with summary info
+- `getPresetDetail(id)`: Fetches full preset with config
+- `createNewPreset(request)`: POST to /api/presets, returns created preset
+- `updateExistingPreset(id, request)`: PUT to /api/presets/{id}
+- `deleteExistingPreset(id)`: DELETE to /api/presets/{id}
+- Store methods throw on error, set error state, and return null/boolean
+- Presets are auto-sorted alphabetically by name after create/update
+- `currentPresetId` cleared when the selected preset is deleted
+- Mock fetch responses must wrap data correctly: `{ preset: {...} }` vs `{ presets: [...] }`
+
+### Files Modified
+- `src/__tests__/integration/features/preset-management.test.tsx`: Created new test file with 17 tests
+
+### Next Steps for Iteration 27
+- integ-002: Excel file upload with multiple sheets (high priority, requires sheet selector UI)
+- integ-021: Verification with multiple models (medium priority, medium effort, requires WebSocket)
+- integ-022: Verification with replicates (medium priority, small effort, depends on integ-021)
+- integ-023: Verification with rubric evaluation (medium priority, small effort, depends on integ-021)

@@ -407,7 +407,7 @@
     "mocks_required": ["GET /api/presets -> { presets: [...] }", "GET /api/presets/{id} -> { preset: {...} }"],
     "fixtures_needed": ["presets/preset-list.json", "presets/preset-detail.json"],
     "store_assertions": ["useBenchmarkStore updated with preset config"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
@@ -430,7 +430,7 @@
     ],
     "fixtures_needed": [],
     "store_assertions": ["preset list updates accordingly"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-019"],
     "effort_estimate": "small"
   },
