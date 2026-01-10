@@ -18,6 +18,7 @@ import failedVerificationFixture from './llm-responses/verification/mocked/faile
 import abstentionDetectedFixture from './llm-responses/verification/mocked/abstention-detected.json';
 import partialCompletionFixture from './llm-responses/verification/mocked/partial-completion.json';
 import withRubricSuccessFixture from './llm-responses/verification/mocked/with-rubric-success.json';
+import multiModelResultsFixture from './llm-responses/verification/mocked/multi-model-results.json';
 
 /**
  * Fixture metadata included in captured fixtures
@@ -58,7 +59,8 @@ export type MockedVerificationScenario =
   | 'failed-verification'
   | 'abstention-detected'
   | 'partial-completion'
-  | 'with-rubric-success';
+  | 'with-rubric-success'
+  | 'multi-model-results';
 
 /**
  * Available models with captured fixtures
@@ -81,6 +83,7 @@ const mockedVerificationFixtures: Record<MockedVerificationScenario, Verificatio
   'abstention-detected': abstentionDetectedFixture as VerificationFixture,
   'partial-completion': partialCompletionFixture as VerificationFixture,
   'with-rubric-success': withRubricSuccessFixture as VerificationFixture,
+  'multi-model-results': multiModelResultsFixture as VerificationFixture,
 };
 
 /**

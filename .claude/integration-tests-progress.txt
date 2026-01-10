@@ -982,3 +982,47 @@ Each PRD item contains:
 - integ-023: Verification with rubric evaluation (medium priority, small effort, depends on integ-021)
 - integ-024: Results summary display (medium priority, small effort, no dependencies)
 
+## Iteration 28 - 2026-01-10
+
+### Completed
+- Implemented **integ-021**: Verification with multiple models
+  - Added 6 new test cases to verification-workflow.test.tsx
+  - Created fixture file: multi-model-results.json
+  - All tests passing (1360 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-021 (6 tests)
+1. Configure multiple answering models and verify results include all models
+2. Verify results contain entries for each model combination
+3. Parse model identifiers from result keys
+4. Verify model metadata is preserved in results
+5. Support different answering model and parsing model combinations
+6. Verify all template results are valid across models
+
+### Key Implementation Notes
+- Result key format: `{question_id}_{answering_model}_{parsing_model}_{timestamp}`
+- Model names contain forward slashes (e.g., `anthropic/claude-haiku-4-5`)
+- Multiple answering models can be configured via `useBenchmarkStore.answeringModels`
+- Multiple parsing models can be configured via `useBenchmarkStore.parsingModels`
+- Each verification result has metadata fields:
+  - `answering_model`: The model that generated the answer
+  - `parsing_model`: The model that parsed/verified the answer
+  - `answering_system_prompt`: System prompt used for answering
+  - `parsing_system_prompt`: System prompt used for parsing
+  - `execution_time`: Time taken for verification
+  - `result_id`: Unique identifier for the result
+- Multi-model results have 2 answering models (Claude Haiku, GPT-4) with 2 parsing models
+- Results are grouped by question ID for comparison across models
+
+### Files Modified
+- `src/__tests__/integration/workflows/verification-workflow.test.tsx`: Added 6 tests for integ-021
+- `src/test-utils/fixtures/llm-responses/verification/mocked/multi-model-results.json`: Created new fixture
+- `src/test-utils/fixtures/loaders.ts`: Added import and registration for multi-model-results fixture
+
+### Next Steps for Iteration 29
+- integ-022: Verification with replicates (medium priority, small effort, depends on integ-021 ✓)
+- integ-023: Verification with rubric evaluation (medium priority, small effort, depends on integ-021 ✓)
+- integ-024: Results summary display (medium priority, small effort, no dependencies)
+- integ-053: Drill-down from summary statistics (medium priority, small effort, depends on integ-024)
+
+

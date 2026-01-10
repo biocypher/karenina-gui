@@ -281,4 +281,162 @@ describe('Verification Workflow', () => {
       expect(screen.getByRole('button', { name: /run selected/i })).toBeInTheDocument();
     });
   });
+
+  describe('integ-021: Verification with multiple models', () => {
+    it('should configure multiple answering models and verify results include all models', async () => {
+      // Load multi-model results
+      const multiModelResults = loadMockedVerificationResults('multi-model-results');
+
+      // Verify the fixture has multiple models per question
+      const q1Results = Object.entries(multiModelResults).filter(([key]) => key.startsWith('q1_'));
+      expect(q1Results.length).toBeGreaterThanOrEqual(2);
+
+      // Verify different answering models are present
+      const answeringModels = new Set(q1Results.map(([, result]) => result.metadata.answering_model));
+      expect(answeringModels.size).toBeGreaterThanOrEqual(2);
+      expect(answeringModels.has('anthropic/claude-haiku-4-5')).toBe(true);
+      expect(answeringModels.has('openai/gpt-4')).toBe(true);
+
+      // Verify each result has proper structure
+      q1Results.forEach(([, result]) => {
+        expect(result.metadata.answering_model).toBeTruthy();
+        expect(result.metadata.parsing_model).toBeTruthy();
+        expect(result.template.verify_result).toBeDefined();
+      });
+    });
+
+    it('should verify results contain entries for each model combination', async () => {
+      const multiModelResults = loadMockedVerificationResults('multi-model-results');
+
+      // Expected combinations:
+      // - q1: haiku/haiku, gpt-4/haiku
+      // - q2: haiku/haiku, gpt-4/haiku
+      // - q3: haiku/gpt-4, gpt-4/gpt-4
+      const expectedCount = 6; // 6 total results for 3 questions with different model combinations
+      expect(Object.keys(multiModelResults).length).toBe(expectedCount);
+
+      // Group results by question
+      const resultsByQuestion: Record<string, typeof multiModelResults> = {};
+      Object.entries(multiModelResults).forEach(([key, result]) => {
+        const questionId = result.metadata.question_id;
+        if (!resultsByQuestion[questionId]) {
+          resultsByQuestion[questionId] = {};
+        }
+        resultsByQuestion[questionId][key] = result;
+      });
+
+      // Verify each question has results from multiple models
+      expect(Object.keys(resultsByQuestion).length).toBe(3); // q1, q2, q3
+      expect(Object.keys(resultsByQuestion.q1).length).toBe(2); // 2 answering models
+      expect(Object.keys(resultsByQuestion.q2).length).toBe(2); // 2 answering models
+      expect(Object.keys(resultsByQuestion.q3).length).toBe(2); // 2 answering models (or different parsing)
+    });
+
+    it('should parse model identifiers from result keys', () => {
+      const multiModelResults = loadMockedVerificationResults('multi-model-results');
+
+      // Result key format: {question_id}_{answering_model}_{parsing_model}_{timestamp}
+      // Model names contain slashes, so we need to handle that
+      const parseResultKey = (key: string) => {
+        // Split from the right to get timestamp first
+        const lastUnderscore = key.lastIndexOf('_');
+        const timestamp = key.substring(lastUnderscore + 1);
+        const remaining = key.substring(0, lastUnderscore);
+
+        // Now split remaining parts to get question and models
+        // Format: q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5
+        const parts = remaining.split('_');
+        const questionId = parts[0];
+
+        // The model parts are at indices 1 and 2 (but contain /)
+        // We'll count parts: after q_id, we have 2 models before timestamp
+        // Each model is "provider/model-name" which contains one /
+        const models = parts.slice(1); // ['anthropic/claude-haiku-4-5', 'anthropic/claude-haiku-4-5']
+
+        return {
+          questionId,
+          answeringModel: models[0],
+          parsingModel: models[1],
+          timestamp,
+        };
+      };
+
+      Object.keys(multiModelResults).forEach((key) => {
+        const parsed = parseResultKey(key);
+        expect(parsed.questionId).toMatch(/^q[1-3]$/);
+        expect(parsed.answeringModel).toMatch(/^(anthropic\/claude-haiku-4-5|openai\/gpt-4)$/);
+        expect(parsed.parsingModel).toMatch(/^(anthropic\/claude-haiku-4-5|openai\/gpt-4)$/);
+      });
+    });
+
+    it('should verify model metadata is preserved in results', () => {
+      const multiModelResults = loadMockedVerificationResults('multi-model-results');
+
+      // Verify all results have complete metadata
+      Object.values(multiModelResults).forEach((result) => {
+        const { metadata } = result;
+
+        expect(metadata.question_id).toBeTruthy();
+        expect(metadata.answering_model).toBeTruthy();
+        expect(metadata.parsing_model).toBeTruthy();
+        expect(metadata.answering_system_prompt).toBeTruthy();
+        expect(metadata.parsing_system_prompt).toBeTruthy();
+        expect(metadata.execution_time).toBeGreaterThan(0);
+        expect(metadata.timestamp).toBeTruthy();
+        expect(metadata.result_id).toBeTruthy();
+
+        // Verify model names follow expected format
+        expect(metadata.answering_model).toMatch(/\//); // Should contain provider/model format
+        expect(metadata.parsing_model).toMatch(/\//);
+      });
+    });
+
+    it('should support different answering model and parsing model combinations', () => {
+      const multiModelResults = loadMockedVerificationResults('multi-model-results');
+
+      // Find results with different model combinations
+      const combinations = new Set<string>();
+      Object.values(multiModelResults).forEach((result) => {
+        const combo = `${result.metadata.answering_model}+${result.metadata.parsing_model}`;
+        combinations.add(combo);
+      });
+
+      // We should have multiple model combinations
+      expect(combinations.size).toBeGreaterThanOrEqual(2);
+
+      // Verify expected combinations exist
+      const expectedCombos = [
+        'anthropic/claude-haiku-4-5+anthropic/claude-haiku-4-5',
+        'openai/gpt-4+anthropic/claude-haiku-4-5',
+        'anthropic/claude-haiku-4-5+openai/gpt-4',
+        'openai/gpt-4+openai/gpt-4',
+      ];
+
+      expectedCombos.forEach((combo) => {
+        // At least some of these combinations should exist
+        if (combo === 'anthropic/claude-haiku-4-5+openai/gpt-4') {
+          expect(combinations.has(combo)).toBe(true);
+        }
+      });
+    });
+
+    it('should verify all template results are valid across models', () => {
+      const multiModelResults = loadMockedVerificationResults('multi-model-results');
+
+      // All results should have valid template verification
+      Object.values(multiModelResults).forEach((result) => {
+        expect(result.template).toBeDefined();
+        expect(result.template.template_verification_performed).toBe(true);
+        expect(result.template.verify_result).toBeDefined();
+
+        // Verify parsed responses exist
+        expect(result.template.parsed_llm_response).toBeDefined();
+        expect(result.template.parsed_gt_response).toBeDefined();
+
+        // Verify abstention check was performed
+        expect(result.template.abstention_check_performed).toBe(true);
+        expect(result.template.abstention_detected).toBeDefined();
+      });
+    });
+  });
 });

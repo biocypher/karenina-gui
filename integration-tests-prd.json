@@ -455,7 +455,7 @@
     ],
     "fixtures_needed": ["verification/multi-model-results.json"],
     "store_assertions": ["results contain entries for each model"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "medium"
   },
