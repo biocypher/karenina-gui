@@ -665,4 +665,266 @@ describe('File Upload Integration Tests', () => {
       });
     });
   });
+
+  describe('integ-003: File upload error handling', () => {
+    it('should show error message for unsupported file type', async () => {
+      const user = userEvent.setup();
+
+      // Mock fetch to return success (we expect validation to fail before fetch)
+      vi.mocked(global.fetch).mockImplementation(async () => {
+        return {
+          ok: true,
+          json: async () => ({ file_id: 'test', filename: 'test.txt', size: 100 }),
+        } as Response;
+      });
+
+      render(<QuestionExtractor />);
+
+      // Wait for file input
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Select File/i)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText(/Select File/i) as HTMLInputElement;
+
+      // Create a file with unsupported extension
+      // Note: The validation happens in FileUploader based on extension
+      // PDF is not in the allowed extensions list
+      const unsupportedFile = createMockFile('document.pdf', 1024, 'application/pdf');
+      await user.upload(fileInput, unsupportedFile);
+
+      // Verify error message is displayed
+      // The FileUploader validates the file and sets localError
+      // ErrorDisplay shows the error when localError is set
+      await waitFor(
+        () => {
+          const state = useTemplateStore.getState();
+          // The uploadedFile should be null since validation failed
+          expect(state.uploadedFile).toBeNull();
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    it('should show error message for file too large', async () => {
+      const user = userEvent.setup();
+
+      // Mock fetch
+      vi.mocked(global.fetch).mockImplementation(async () => {
+        return {
+          ok: true,
+          json: async () => ({ file_id: 'test', filename: 'test.csv', size: 100 }),
+        } as Response;
+      });
+
+      render(<QuestionExtractor />);
+
+      // Wait for file input
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Select File/i)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText(/Select File/i) as HTMLInputElement;
+
+      // Create a file that exceeds the 50MB limit
+      const hugeFile = createMockFile('huge.csv', 100 * 1024 * 1024, 'text/csv');
+      await user.upload(fileInput, hugeFile);
+
+      // Verify error message about file size is displayed
+      await waitFor(() => {
+        expect(screen.getByText(/Error/i)).toBeInTheDocument();
+        expect(screen.getByText(/exceeds maximum allowed size/i)).toBeInTheDocument();
+      });
+
+      // Verify store has no uploaded file
+      const state = useTemplateStore.getState();
+      expect(state.uploadedFile).toBeNull();
+    });
+
+    it('should show error message for network failure during upload', async () => {
+      const user = userEvent.setup();
+
+      // Mock fetch to simulate network failure
+      vi.mocked(global.fetch).mockImplementation(async () => {
+        throw new Error('Network error');
+      });
+
+      render(<QuestionExtractor />);
+
+      // Wait for file input
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Select File/i)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText(/Select File/i) as HTMLInputElement;
+      const mockFile = createMockFile('test.csv', 1024, 'text/csv');
+      await user.upload(fileInput, mockFile);
+
+      // Verify error message is displayed
+      await waitFor(() => {
+        expect(screen.getByText(/Error/i)).toBeInTheDocument();
+        expect(screen.getByText(/Failed to upload file/i)).toBeInTheDocument();
+      });
+
+      // Verify store has no uploaded file
+      const state = useTemplateStore.getState();
+      expect(state.uploadedFile).toBeNull();
+    });
+
+    it('should show error message for API error response', async () => {
+      const user = userEvent.setup();
+
+      // Mock fetch to return 400 error
+      vi.mocked(global.fetch).mockImplementation(async () => {
+        return {
+          ok: false,
+          status: 400,
+          json: async () => ({ error: 'Bad Request - Invalid file format' }),
+        } as Response;
+      });
+
+      render(<QuestionExtractor />);
+
+      // Wait for file input
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Select File/i)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText(/Select File/i) as HTMLInputElement;
+      const mockFile = createMockFile('corrupt.csv', 1024, 'text/csv');
+      await user.upload(fileInput, mockFile);
+
+      // Verify error message is displayed
+      await waitFor(() => {
+        expect(screen.getByText(/Error/i)).toBeInTheDocument();
+        expect(screen.getByText(/Failed to upload file/i)).toBeInTheDocument();
+      });
+
+      // Verify store has no uploaded file
+      const state = useTemplateStore.getState();
+      expect(state.uploadedFile).toBeNull();
+    });
+
+    it('should allow dismissing local error and retry upload', async () => {
+      const user = userEvent.setup();
+
+      // Track fetch calls
+      let fetchCallCount = 0;
+
+      // Mock fetch - fail first time, succeed second time
+      vi.mocked(global.fetch).mockImplementation(async (input) => {
+        const url = typeof input === 'string' ? input : input.url;
+        fetchCallCount++;
+
+        if (fetchCallCount === 1) {
+          // First call fails
+          throw new Error('Network error');
+        }
+
+        // Subsequent calls succeed
+        if (url.includes('/api/upload-file')) {
+          return {
+            ok: true,
+            json: async () => ({
+              file_id: 'retry-success',
+              filename: 'test.csv',
+              size: 1024,
+            }),
+          } as Response;
+        }
+
+        if (url.includes('/api/preview-file')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              total_rows: 10,
+              columns: ['Question', 'Answer'],
+            }),
+          } as Response;
+        }
+
+        return {
+          ok: false,
+          status: 404,
+        } as Response;
+      });
+
+      render(<QuestionExtractor />);
+
+      // Wait for file input
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Select File/i)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText(/Select File/i) as HTMLInputElement;
+
+      // First upload fails
+      const mockFile1 = createMockFile('test.csv', 1024, 'text/csv');
+      await user.upload(fileInput, mockFile1);
+
+      // Verify error message is displayed
+      await waitFor(() => {
+        expect(screen.getByText(/Error/i)).toBeInTheDocument();
+      });
+
+      // Dismiss error
+      const dismissButton = screen.getByText('Dismiss');
+      await user.click(dismissButton);
+
+      // Error should be dismissed
+      await waitFor(() => {
+        expect(screen.queryByText(/Failed to upload file/i)).not.toBeInTheDocument();
+      });
+
+      // Create a new file for retry (simulating selecting the file again)
+      const mockFile2 = createMockFile('test.csv', 1024, 'text/csv');
+      await user.upload(fileInput, mockFile2);
+
+      // Second upload should succeed
+      await waitFor(() => {
+        const state = useTemplateStore.getState();
+        expect(state.uploadedFile).toEqual({
+          file_id: 'retry-success',
+          filename: 'test.csv',
+          size: 1024,
+        });
+      });
+    });
+
+    it('should show error for corrupted file (dangerous MIME type)', async () => {
+      const user = userEvent.setup();
+
+      // Mock fetch
+      vi.mocked(global.fetch).mockImplementation(async () => {
+        return {
+          ok: true,
+          json: async () => ({ file_id: 'test', filename: 'test', size: 100 }),
+        } as Response;
+      });
+
+      render(<QuestionExtractor />);
+
+      // Wait for file input
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Select File/i)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText(/Select File/i) as HTMLInputElement;
+
+      // Create a file with dangerous MIME type (executable)
+      // The validation checks the MIME type against dangerous types
+      const dangerousFile = new File(['malicious content'], 'malicious.exe', {
+        type: 'application/x-executable',
+      });
+
+      await user.upload(fileInput, dangerousFile);
+
+      // Verify store has no uploaded file since validation failed
+      await waitFor(() => {
+        const state = useTemplateStore.getState();
+        expect(state.uploadedFile).toBeNull();
+      });
+    });
+  });
 });

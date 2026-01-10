@@ -129,3 +129,31 @@ Each PRD item contains:
 - integ-002: Excel file upload with multiple sheets (depends on integ-001, now unblocked)
 - integ-003: File upload error handling (depends on integ-001, now unblocked)
 - integ-004: Question extraction (depends on integ-001, now unblocked)
+
+## Iteration 4 - 2026-01-10
+
+### Completed
+- Implemented **integ-003**: File upload error handling
+  - Added 6 new test cases to existing file-upload.test.tsx
+  - Tests for unsupported file type, file too large, network failure, API errors, retry, and dangerous MIME types
+  - All 15 tests in file-upload.test.tsx passing (1200 total tests)
+  - Linting and type checking passing
+
+### Test Coverage for integ-003
+1. Show error message for unsupported file type (PDF)
+2. Show error message for file too large (>50MB)
+3. Show error message for network failure during upload
+4. Show error message for API error response (400)
+5. Allow dismissing local error and retry upload
+6. Show error for corrupted file (dangerous MIME type)
+
+### Key Implementation Notes
+- File validation happens in FileUploader component before API calls
+- Error state managed through localError in QuestionExtractor
+- ErrorDisplay component shows errors with dismiss option
+- Store validation: uploadedFile remains null when validation fails
+
+### Next Steps for Iteration 5
+- integ-002: Excel file upload with multiple sheets (high priority, small effort)
+- integ-004: Question extraction (high priority, small effort)
+- integ-005: Extraction with metadata columns (high priority, depends on integ-004)

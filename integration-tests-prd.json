@@ -61,7 +61,7 @@
     "mocks_required": ["POST /api/upload-file -> 400 error responses for each scenario"],
     "fixtures_needed": [],
     "store_assertions": ["useTemplateStore.error is set", "useTemplateStore.uploadedFile is null"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-001"],
     "effort_estimate": "small"
   },
