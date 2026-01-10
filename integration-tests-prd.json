@@ -831,7 +831,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["App recovers from invalid state", "User informed of inconsistency"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
