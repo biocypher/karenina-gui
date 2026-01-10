@@ -124,7 +124,7 @@
     "mocks_required": ["POST /api/extract-questions -> { success, questions_data, skipped_rows, warnings }"],
     "fixtures_needed": ["extraction/partial-extraction.json"],
     "store_assertions": ["extractedQuestions count matches non-skipped rows", "warnings displayed to user"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-004"],
     "effort_estimate": "small"
   },

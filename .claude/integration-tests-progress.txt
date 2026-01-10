@@ -213,3 +213,29 @@ Each PRD item contains:
 - integ-006: Partial extraction with invalid rows (high priority, small effort, depends on integ-004)
 - integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
 - integ-010: Question navigation in curator (medium priority, no dependencies)
+
+## Iteration 7 - 2026-01-10
+
+### Completed
+- Implemented **integ-006**: Partial extraction with invalid rows
+  - Added 2 new test cases to question-extraction.test.tsx
+  - Created fixture file: `src/test-utils/fixtures/extraction/partial-extraction.json`
+  - All tests passing (1210 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-006
+1. Upload file with some empty/invalid rows and extract questions
+2. Verify warning about skipped rows displayed
+
+### Key Implementation Notes
+- API response includes `skipped_rows` array with row indices and reasons
+- API response includes `warnings` array with user-facing messages
+- Extracted questions only include valid rows (skipped rows are not included)
+- Question indices in response use original row numbers (e.g., row 3 has index "3")
+- Current UI displays "Extraction Complete" and count of successfully extracted questions
+- Warnings are captured in extraction result but not prominently displayed in current UI
+
+### Next Steps for Iteration 8
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-010: Question navigation in curator (medium priority, no dependencies)

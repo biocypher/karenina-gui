@@ -1,0 +1,71 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T00:00:00.000Z",
+    "scenario": "partial-extraction-with-skipped-rows",
+    "description": "Extraction with some invalid rows that are skipped with warnings"
+  },
+  "uploadResponse": {
+    "file_id": "test-partial-123",
+    "filename": "questions-with-invalid-rows.csv",
+    "size": 3072
+  },
+  "previewResponse": {
+    "success": true,
+    "total_rows": 8,
+    "columns": ["Question", "Answer", "Category"],
+    "preview_rows": 8,
+    "data": [
+      {
+        "Question": "What is the capital of France?",
+        "Answer": "Paris",
+        "Category": "Geography"
+      },
+      {
+        "Question": "What is 2 + 2?",
+        "Answer": "4",
+        "Category": "Math"
+      },
+      {
+        "Question": "",
+        "Answer": "Empty answer",
+        "Category": "Invalid"
+      },
+      {
+        "Question": "Who wrote Romeo and Juliet?",
+        "Answer": "William Shakespeare",
+        "Category": "Literature"
+      },
+      {
+        "Question": "What is the chemical symbol for gold?",
+        "Answer": "",
+        "Category": "Invalid"
+      }
+    ]
+  },
+  "extractionResponse": {
+    "success": true,
+    "questions_data": {
+      "0": {
+        "question": "What is the capital of France?",
+        "raw_answer": "Paris",
+        "answer_template": "Paris"
+      },
+      "1": {
+        "question": "What is 2 + 2?",
+        "raw_answer": "4",
+        "answer_template": "4"
+      },
+      "3": {
+        "question": "Who wrote Romeo and Juliet?",
+        "raw_answer": "William Shakespeare",
+        "answer_template": "William Shakespeare"
+      }
+    },
+    "skipped_rows": [
+      { "row": 2, "reason": "Empty question field" },
+      { "row": 4, "reason": "Empty answer field" }
+    ],
+    "warnings": ["2 rows were skipped due to validation errors"],
+    "total_extracted": 3
+  }
+}
