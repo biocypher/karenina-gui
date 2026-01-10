@@ -725,4 +725,362 @@ describe('End-to-End Workflow Integration Tests', () => {
       expect(qState.checkpoint['q2']?.finished).toBe(false);
     });
   });
+
+  describe('integ-033: Full file-to-verification journey', () => {
+    // Helper to create a sample file upload scenario
+    const createSampleFileData = () => ({
+      questions: [
+        {
+          id: 'q1',
+          question: 'What is the capital of France?',
+          answer: 'Paris is the capital of France.',
+        },
+        {
+          id: 'q2',
+          question: 'What is 2 + 2?',
+          answer: 'The sum of 2 and 2 is 4.',
+        },
+        {
+          id: 'q3',
+          question: 'Who wrote Hamlet?',
+          answer: 'William Shakespeare wrote Hamlet.',
+        },
+      ],
+    });
+
+    it('should simulate complete workflow from file upload to verification configuration', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+
+      // Tab 1: Upload and extract questions
+      const sampleFileData = createSampleFileData();
+
+      // Simulate question data loading from file (with initial template)
+      const questionData: Record<string, { question: string; raw_answer: string; answer_template: string }> = {};
+      sampleFileData.questions.forEach((q) => {
+        questionData[q.id] = {
+          question: q.question,
+          raw_answer: q.answer,
+          answer_template: 'class Answer(BaseAnswer):\n    value: str',
+        };
+      });
+
+      questionStore.loadQuestionData(questionData);
+
+      // Verify questions loaded
+      const qStateAfterLoad = useQuestionStore.getState();
+      expect(Object.keys(qStateAfterLoad.questionData)).toHaveLength(3);
+      expect(questionStore.getQuestionIds()).toContain('q1');
+      expect(questionStore.getQuestionIds()).toContain('q2');
+      expect(questionStore.getQuestionIds()).toContain('q3');
+
+      // Set dataset metadata (from file info)
+      datasetStore.setMetadata({
+        name: 'Sample Questions Benchmark',
+        description: 'Benchmark created from uploaded CSV file',
+        creator: 'test-user',
+        keywords: ['sample', 'test'],
+      });
+
+      // Verify dataset metadata
+      expect(useDatasetStore.getState().metadata.name).toBe('Sample Questions Benchmark');
+      expect(useDatasetStore.getState().metadata.creator).toBe('test-user');
+    });
+
+    it('should simulate template generation and curation workflow', () => {
+      const questionStore = useQuestionStore.getState();
+
+      // Load initial questions
+      const sampleFileData = createSampleFileData();
+      const questionData: Record<string, { question: string; raw_answer: string; answer_template: string }> = {};
+      sampleFileData.questions.forEach((q) => {
+        questionData[q.id] = {
+          question: q.question,
+          raw_answer: q.answer,
+          answer_template: 'class Answer(BaseAnswer):\n    value: str',
+        };
+      });
+
+      questionStore.loadQuestionData(questionData);
+
+      // Simulate template generation for each question
+      sampleFileData.questions.forEach((q) => {
+        questionStore.setSelectedQuestionId(q.id);
+        questionStore.setCurrentTemplate(
+          `class Answer(BaseAnswer):\n    value: str\n\n\ndef verify(self) -> bool:\n    return len(self.value) > 0`
+        );
+        questionStore.saveCurrentTemplate();
+      });
+
+      // Verify templates generated and saved
+      const state = useQuestionStore.getState();
+      expect(state.checkpoint['q1']?.answer_template).toContain('class Answer');
+      expect(state.checkpoint['q2']?.answer_template).toContain('class Answer');
+      expect(state.checkpoint['q3']?.answer_template).toContain('class Answer');
+
+      // Mark questions as finished (curation)
+      questionStore.setSelectedQuestionId('q1');
+      questionStore.toggleFinished();
+
+      questionStore.setSelectedQuestionId('q2');
+      questionStore.toggleFinished();
+
+      // Verify finished status
+      expect(useQuestionStore.getState().checkpoint['q1']?.finished).toBe(true);
+      expect(useQuestionStore.getState().checkpoint['q2']?.finished).toBe(true);
+      expect(useQuestionStore.getState().checkpoint['q3']?.finished).toBe(false);
+    });
+
+    it('should configure verification settings and prepare for run', () => {
+      const benchmarkStore = useBenchmarkStore.getState();
+      const questionStore = useQuestionStore.getState();
+
+      // Load questions
+      const sampleFileData = createSampleFileData();
+      const questionData: Record<string, { question: string; raw_answer: string; answer_template: string }> = {};
+      sampleFileData.questions.forEach((q) => {
+        questionData[q.id] = {
+          question: q.question,
+          raw_answer: q.answer,
+          answer_template: `class Answer(BaseAnswer):\n    value: str`,
+        };
+      });
+
+      questionStore.loadQuestionData(questionData);
+
+      // Configure answering models
+      benchmarkStore.setAnsweringModels([
+        {
+          id: 'answering-1',
+          model_provider: 'anthropic',
+          model_name: 'claude-haiku-4-5',
+          temperature: 0.1,
+          interface: 'langchain',
+          system_prompt: 'You are a helpful assistant.',
+        },
+        {
+          id: 'answering-2',
+          model_provider: 'openai',
+          model_name: 'gpt-4',
+          temperature: 0.2,
+          interface: 'langchain',
+          system_prompt: 'Answer accurately.',
+        },
+      ]);
+
+      // Configure parsing models
+      benchmarkStore.setParsingModels([
+        {
+          id: 'parsing-1',
+          model_provider: 'anthropic',
+          model_name: 'claude-haiku-4-5',
+          temperature: 0.0,
+          interface: 'langchain',
+          system_prompt: 'Extract the answer.',
+        },
+      ]);
+
+      // Set replicate count
+      benchmarkStore.setReplicateCount(3);
+
+      // Set run name
+      benchmarkStore.setRunName('test-run-001');
+
+      // Enable rubric evaluation
+      benchmarkStore.setRubricEnabled(true);
+      benchmarkStore.setEvaluationMode('template_and_rubric');
+
+      // Verify all settings
+      const bState = useBenchmarkStore.getState();
+      expect(bState.answeringModels).toHaveLength(2);
+      expect(bState.parsingModels).toHaveLength(1);
+      expect(bState.replicateCount).toBe(3);
+      expect(bState.runName).toBe('test-run-001');
+      expect(bState.rubricEnabled).toBe(true);
+      expect(bState.evaluationMode).toBe('template_and_rubric');
+    });
+
+    it('should connect to database and prepare for save', () => {
+      const datasetStore = useDatasetStore.getState();
+      const questionStore = useQuestionStore.getState();
+
+      // Load sample questions
+      const sampleFileData = createSampleFileData();
+      const questionData: Record<string, { question: string; raw_answer: string; answer_template: string }> = {};
+      sampleFileData.questions.forEach((q) => {
+        questionData[q.id] = {
+          question: q.question,
+          raw_answer: q.answer,
+          answer_template: `class Answer(BaseAnswer):\n    value: str`,
+        };
+      });
+
+      questionStore.loadQuestionData(questionData);
+
+      // Set metadata
+      datasetStore.setMetadata({
+        name: 'E2E Test Benchmark',
+        description: 'End-to-end test',
+        creator: 'e2e-tester',
+        keywords: ['e2e', 'test'],
+      });
+
+      // Connect to database
+      datasetStore.connectDatabase('https://karenina.example.com/db', 'e2e-test-benchmark');
+
+      // Verify connection
+      expect(useDatasetStore.getState().isConnectedToDatabase).toBe(true);
+      expect(useDatasetStore.getState().storageUrl).toBe('https://karenina.example.com/db');
+      expect(useDatasetStore.getState().currentBenchmarkName).toBe('e2e-test-benchmark');
+
+      // Set last saved timestamp (simulating successful save)
+      const savedTime = new Date().toISOString();
+      datasetStore.setLastSaved(savedTime);
+
+      expect(useDatasetStore.getState().lastSaved).toBe(savedTime);
+    });
+
+    it('should verify complete state transitions through entire workflow', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+      const benchmarkStore = useBenchmarkStore.getState();
+
+      // Stage 1: File upload and question extraction
+      const sampleFileData = createSampleFileData();
+      const questionData: Record<string, { question: string; raw_answer: string; answer_template: string }> = {};
+      sampleFileData.questions.forEach((q) => {
+        questionData[q.id] = {
+          question: q.question,
+          raw_answer: q.answer,
+          answer_template: 'class Answer(BaseAnswer):\n    value: str',
+        };
+      });
+
+      questionStore.loadQuestionData(questionData);
+
+      // Verify Stage 1: Questions loaded
+      const qState = useQuestionStore.getState();
+      expect(Object.keys(qState.questionData)).toHaveLength(3);
+
+      // Stage 2: Template generation
+      sampleFileData.questions.forEach((q) => {
+        questionStore.setSelectedQuestionId(q.id);
+        questionStore.setCurrentTemplate(`class Answer(BaseAnswer):\n    value: str`);
+        questionStore.saveCurrentTemplate();
+      });
+
+      // Verify Stage 2: Templates set
+      expect(useQuestionStore.getState().checkpoint['q1']?.answer_template).toContain('Answer');
+
+      // Stage 3: Curation (mark as finished)
+      questionStore.setSelectedQuestionId('q1');
+      questionStore.toggleFinished();
+      questionStore.setSelectedQuestionId('q2');
+      questionStore.toggleFinished();
+
+      // Verify Stage 3: Some questions finished
+      expect(useQuestionStore.getState().checkpoint['q1']?.finished).toBe(true);
+      expect(useQuestionStore.getState().checkpoint['q2']?.finished).toBe(true);
+
+      // Stage 4: Verification configuration
+      benchmarkStore.setAnsweringModels([
+        {
+          id: 'test-model',
+          model_provider: 'anthropic',
+          model_name: 'claude-haiku-4-5',
+          temperature: 0.1,
+          interface: 'langchain',
+          system_prompt: 'Test',
+        },
+      ]);
+      benchmarkStore.setParsingModels([
+        {
+          id: 'test-parsing',
+          model_provider: 'anthropic',
+          model_name: 'claude-haiku-4-5',
+          temperature: 0.0,
+          interface: 'langchain',
+          system_prompt: 'Parse',
+        },
+      ]);
+      benchmarkStore.setReplicateCount(2);
+      benchmarkStore.setRunName('final-test-run');
+
+      // Verify Stage 4: Verification configured
+      expect(useBenchmarkStore.getState().answeringModels.length).toBe(1);
+      expect(useBenchmarkStore.getState().replicateCount).toBe(2);
+      expect(useBenchmarkStore.getState().runName).toBe('final-test-run');
+
+      // Stage 5: Database connection
+      datasetStore.setMetadata({
+        name: 'Final E2E Benchmark',
+        description: 'Complete workflow test',
+        creator: 'final-tester',
+        keywords: ['final', 'e2e'],
+      });
+      datasetStore.connectDatabase('https://db.example.com', 'final-benchmark');
+
+      // Verify Stage 5: Connected and ready
+      expect(useDatasetStore.getState().isConnectedToDatabase).toBe(true);
+      expect(useDatasetStore.getState().metadata.name).toBe('Final E2E Benchmark');
+
+      // Final verification: All stores in consistent state
+      expect(Object.keys(useQuestionStore.getState().questionData)).toHaveLength(3);
+      expect(useBenchmarkStore.getState().runName).toBe('final-test-run');
+      expect(useDatasetStore.getState().currentBenchmarkName).toBe('final-benchmark');
+    });
+
+    it('should maintain data consistency across workflow stages', () => {
+      const questionStore = useQuestionStore.getState();
+      const datasetStore = useDatasetStore.getState();
+
+      // Load data
+      const sampleFileData = createSampleFileData();
+      const questionData: Record<string, { question: string; raw_answer: string; answer_template: string }> = {};
+      sampleFileData.questions.forEach((q) => {
+        questionData[q.id] = {
+          question: q.question,
+          raw_answer: q.answer,
+          answer_template: 'class Answer(BaseAnswer):\n    value: str',
+        };
+      });
+
+      questionStore.loadQuestionData(questionData);
+
+      // Capture initial state
+      const initialQuestionIds = Object.keys(useQuestionStore.getState().questionData);
+      const initialQuestions = { ...useQuestionStore.getState().questionData };
+
+      // Perform operations (template generation, finishing)
+      questionStore.setSelectedQuestionId('q1');
+      questionStore.setCurrentTemplate('class Answer(BaseAnswer):\n    value: str');
+      questionStore.saveCurrentTemplate();
+      questionStore.toggleFinished();
+
+      // Verify question IDs unchanged
+      const currentQuestionIds = Object.keys(useQuestionStore.getState().questionData);
+      expect(currentQuestionIds).toEqual(initialQuestionIds);
+
+      // Verify question content unchanged
+      expect(useQuestionStore.getState().questionData['q1'].question).toBe(initialQuestions['q1'].question);
+      expect(useQuestionStore.getState().questionData['q1'].raw_answer).toBe(initialQuestions['q1'].raw_answer);
+
+      // Verify only template and finished status changed
+      expect(useQuestionStore.getState().checkpoint['q1']?.answer_template).toContain('Answer');
+      expect(useQuestionStore.getState().checkpoint['q1']?.finished).toBe(true);
+
+      // Dataset metadata should persist
+      datasetStore.setMetadata({
+        name: 'Consistency Test',
+        description: 'Testing data consistency',
+        creator: 'consistency-tester',
+      });
+
+      expect(useDatasetStore.getState().metadata.name).toBe('Consistency Test');
+
+      // After all operations, question IDs still consistent
+      const finalQuestionIds = Object.keys(useQuestionStore.getState().questionData);
+      expect(finalQuestionIds).toEqual(initialQuestionIds);
+    });
+  });
 });

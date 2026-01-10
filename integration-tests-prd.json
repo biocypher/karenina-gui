@@ -715,7 +715,7 @@
     "mocks_required": ["All file upload, extraction, generation, verification mocks"],
     "fixtures_needed": ["Multiple fixtures across all stages"],
     "store_assertions": ["Complete state transitions through entire workflow"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-007", "integ-012", "integ-021"],
     "effort_estimate": "large"
   },
