@@ -1009,7 +1009,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["Deep judgment and abstention settings saved correctly"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },

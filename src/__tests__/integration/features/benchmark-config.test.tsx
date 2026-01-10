@@ -624,3 +624,137 @@ describe('Benchmark Configuration Integration Tests', () => {
     });
   });
 });
+
+describe('integ-048: Deep judgment and abstention configuration', () => {
+  it('should enable deep judgment for templates', () => {
+    const store = useBenchmarkStore.getState();
+
+    // Initially disabled
+    expect(store.deepJudgmentTemplateEnabled).toBe(false);
+
+    // Enable deep judgment for templates
+    store.setDeepJudgmentTemplateEnabled(true);
+
+    // Verify setting is saved
+    expect(useBenchmarkStore.getState().deepJudgmentTemplateEnabled).toBe(true);
+
+    // Disable and verify
+    store.setDeepJudgmentTemplateEnabled(false);
+    expect(useBenchmarkStore.getState().deepJudgmentTemplateEnabled).toBe(false);
+  });
+
+  it('should enable deep judgment for rubrics', () => {
+    const store = useBenchmarkStore.getState();
+
+    // Initially disabled
+    expect(store.deepJudgmentRubricEnabled).toBe(false);
+
+    // Enable deep judgment for rubrics
+    store.setDeepJudgmentRubricEnabled(true);
+
+    // Verify setting is saved
+    expect(useBenchmarkStore.getState().deepJudgmentRubricEnabled).toBe(true);
+
+    // Disable and verify
+    store.setDeepJudgmentRubricEnabled(false);
+    expect(useBenchmarkStore.getState().deepJudgmentRubricEnabled).toBe(false);
+  });
+
+  it('should enable deep judgment search for template context', () => {
+    const store = useBenchmarkStore.getState();
+
+    // Initially disabled
+    expect(store.deepJudgmentSearchEnabled).toBe(false);
+
+    // Enable deep judgment search
+    store.setDeepJudgmentSearchEnabled(true);
+
+    // Verify setting is saved
+    expect(useBenchmarkStore.getState().deepJudgmentSearchEnabled).toBe(true);
+
+    // Disable and verify
+    store.setDeepJudgmentSearchEnabled(false);
+    expect(useBenchmarkStore.getState().deepJudgmentSearchEnabled).toBe(false);
+  });
+
+  it('should configure rubric mode (enable_all vs use_checkpoint)', () => {
+    const store = useBenchmarkStore.getState();
+
+    // Default mode is enable_all
+    expect(store.deepJudgmentRubricMode).toBe('enable_all');
+
+    // Switch to use_checkpoint mode
+    store.setDeepJudgmentRubricMode('use_checkpoint');
+    expect(useBenchmarkStore.getState().deepJudgmentRubricMode).toBe('use_checkpoint');
+
+    // Switch back to enable_all
+    store.setDeepJudgmentRubricMode('enable_all');
+    expect(useBenchmarkStore.getState().deepJudgmentRubricMode).toBe('enable_all');
+  });
+
+  it('should configure excerpt extraction for deep judgment rubrics', () => {
+    const store = useBenchmarkStore.getState();
+
+    // Initially enabled by default
+    expect(store.deepJudgmentRubricExtractExcerpts).toBe(true);
+
+    // Disable excerpt extraction
+    store.setDeepJudgmentRubricExtractExcerpts(false);
+    expect(useBenchmarkStore.getState().deepJudgmentRubricExtractExcerpts).toBe(false);
+
+    // Re-enable excerpt extraction
+    store.setDeepJudgmentRubricExtractExcerpts(true);
+    expect(useBenchmarkStore.getState().deepJudgmentRubricExtractExcerpts).toBe(true);
+  });
+
+  it('should enable abstention detection', () => {
+    const store = useBenchmarkStore.getState();
+
+    // Initially disabled
+    expect(store.abstentionEnabled).toBe(false);
+
+    // Enable abstention detection
+    store.setAbstentionEnabled(true);
+
+    // Verify setting is saved
+    expect(useBenchmarkStore.getState().abstentionEnabled).toBe(true);
+
+    // Disable and verify
+    store.setAbstentionEnabled(false);
+    expect(useBenchmarkStore.getState().abstentionEnabled).toBe(false);
+  });
+
+  it('should support multiple deep judgment settings simultaneously', () => {
+    const store = useBenchmarkStore.getState();
+
+    // Enable all deep judgment features
+    store.setDeepJudgmentTemplateEnabled(true);
+    store.setDeepJudgmentSearchEnabled(true);
+    store.setDeepJudgmentRubricEnabled(true);
+    store.setDeepJudgmentRubricMode('use_checkpoint');
+    store.setDeepJudgmentRubricExtractExcerpts(false);
+
+    // Verify all settings are saved correctly
+    const finalState = useBenchmarkStore.getState();
+    expect(finalState.deepJudgmentTemplateEnabled).toBe(true);
+    expect(finalState.deepJudgmentSearchEnabled).toBe(true);
+    expect(finalState.deepJudgmentRubricEnabled).toBe(true);
+    expect(finalState.deepJudgmentRubricMode).toBe('use_checkpoint');
+    expect(finalState.deepJudgmentRubricExtractExcerpts).toBe(false);
+  });
+
+  it('should support deep judgment and abstention together', () => {
+    const store = useBenchmarkStore.getState();
+
+    // Enable both deep judgment and abstention
+    store.setDeepJudgmentTemplateEnabled(true);
+    store.setDeepJudgmentRubricEnabled(true);
+    store.setAbstentionEnabled(true);
+
+    // Verify all settings coexist
+    const finalState = useBenchmarkStore.getState();
+    expect(finalState.deepJudgmentTemplateEnabled).toBe(true);
+    expect(finalState.deepJudgmentRubricEnabled).toBe(true);
+    expect(finalState.abstentionEnabled).toBe(true);
+  });
+});

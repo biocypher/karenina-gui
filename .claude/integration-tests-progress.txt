@@ -559,3 +559,39 @@ Each PRD item contains:
 - integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
 - integ-017: Load and save default settings (medium priority, small effort, no dependencies)
 - integ-048: Deep judgment and abstention configuration (medium priority, small effort)
+
+## Iteration 18 - 2026-01-10
+
+### Completed
+- Implemented **integ-048**: Deep judgment and abstention configuration
+  - Added 8 new test cases to benchmark-config.test.tsx
+  - All tests passing (1264 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-048
+1. Enable deep judgment for templates
+2. Enable deep judgment for rubrics
+3. Enable deep judgment search for template context
+4. Configure rubric mode (enable_all vs use_checkpoint)
+5. Configure excerpt extraction for deep judgment rubrics
+6. Enable abstention detection
+7. Support multiple deep judgment settings simultaneously
+8. Support deep judgment and abstention together
+
+### Key Implementation Notes
+- `deepJudgmentTemplateEnabled`: boolean for template deep judgment
+- `deepJudgmentSearchEnabled`: boolean for template context search
+- `deepJudgmentRubricEnabled`: boolean for rubric deep judgment
+- `deepJudgmentRubricMode`: 'enable_all' | 'use_checkpoint' for rubric mode
+- `deepJudgmentRubricExtractExcerpts`: boolean for excerpt extraction (default true)
+- `abstentionEnabled`: boolean for abstention/refusal detection
+- All settings have corresponding setter methods in useBenchmarkStore
+- Store operations are synchronous and don't require rendering
+- All deep judgment and abstention settings can coexist independently
+
+### Next Steps for Iteration 19
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-017: Load and save default settings (medium priority, small effort, no dependencies)
+- integ-019: Preset list and load (medium priority, small effort, no dependencies)
