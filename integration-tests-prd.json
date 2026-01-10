@@ -910,7 +910,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["datasetMetadata updated correctly"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },

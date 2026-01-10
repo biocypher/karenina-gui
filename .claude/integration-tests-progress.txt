@@ -663,3 +663,39 @@ Each PRD item contains:
 - integ-017: Load and save default settings (medium priority, small effort, no dependencies)
 - integ-019: Preset list and load (medium priority, small effort, no dependencies)
 - integ-043: Metadata editor (low priority, small effort, no dependencies, uses checkpoint store)
+
+## Iteration 21 - 2026-01-10
+
+### Completed
+- Implemented **integ-043**: Metadata editor
+  - Added 8 new test cases to additional-features.test.tsx
+  - All tests passing (1285 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-043
+1. Edit dataset name
+2. Edit dataset description
+3. Edit dataset version
+4. Edit dataset license
+5. Add keywords to dataset
+6. Remove keywords from dataset
+7. Support full metadata configuration
+8. Replace entire metadata object
+
+### Key Implementation Notes
+- `useDatasetStore` manages dataset metadata through `metadata` property
+- `updateField<K>(field: K, value)` updates a single metadata field
+- `setMetadata(metadata)` replaces the entire metadata object
+- `addKeyword(keyword)` adds a keyword to the keywords array (no duplicates)
+- `removeKeyword(keyword)` removes a keyword from the keywords array
+- `resetMetadata()` resets metadata to default values
+- Default metadata includes: name='', description='', version='1.0.0', license='', keywords=[]
+- Metadata fields conform to Schema.org Dataset specification
+- Store operations are synchronous and don't require rendering
+
+### Next Steps for Iteration 22
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-017: Load and save default settings (medium priority, small effort, no dependencies)
+- integ-019: Preset list and load (medium priority, small effort, no dependencies)

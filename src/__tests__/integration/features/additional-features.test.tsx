@@ -3,11 +3,14 @@
  *
  * Tests additional benchmark features including:
  * - Few-shot examples configuration
+ * - Metadata editor
  *
  * integ-049: Test few-shot examples configuration
+ * integ-043: Test metadata editor
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useBenchmarkStore } from '../../../stores/useBenchmarkStore';
+import { useDatasetStore } from '../../../stores/useDatasetStore';
 
 // Mock the preset store
 vi.mock('../../../stores/usePresetStore', () => ({
@@ -173,6 +176,144 @@ describe('Additional Features Integration Tests', () => {
       // Switch to custom - k should persist
       store.setFewShotMode('custom');
       expect(useBenchmarkStore.getState().fewShotK).toBe(4);
+    });
+  });
+});
+
+describe('Metadata Editor Integration Tests', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+
+    // Reset dataset store to default state
+    useDatasetStore.getState().resetMetadata();
+  });
+
+  describe('integ-043: Metadata editor', () => {
+    it('should edit dataset name', () => {
+      const store = useDatasetStore.getState();
+
+      // Set name
+      store.updateField('name', 'Test Dataset Name');
+
+      // Verify name is saved
+      expect(useDatasetStore.getState().metadata.name).toBe('Test Dataset Name');
+
+      // Update name
+      store.updateField('name', 'Updated Dataset Name');
+      expect(useDatasetStore.getState().metadata.name).toBe('Updated Dataset Name');
+    });
+
+    it('should edit dataset description', () => {
+      const store = useDatasetStore.getState();
+
+      const description = 'This is a comprehensive test dataset for benchmark evaluation.';
+
+      store.updateField('description', description);
+
+      expect(useDatasetStore.getState().metadata.description).toBe(description);
+    });
+
+    it('should edit dataset version', () => {
+      const store = useDatasetStore.getState();
+
+      // Default version is '1.0.0'
+      expect(useDatasetStore.getState().metadata.version).toBe('1.0.0');
+
+      // Update version
+      store.updateField('version', '2.1.0');
+      expect(useDatasetStore.getState().metadata.version).toBe('2.1.0');
+    });
+
+    it('should edit dataset license', () => {
+      const store = useDatasetStore.getState();
+
+      store.updateField('license', 'MIT');
+      expect(useDatasetStore.getState().metadata.license).toBe('MIT');
+
+      store.updateField('license', 'Apache-2.0');
+      expect(useDatasetStore.getState().metadata.license).toBe('Apache-2.0');
+    });
+
+    it('should add keywords to dataset', () => {
+      const store = useDatasetStore.getState();
+
+      // Add first keyword
+      store.addKeyword('benchmark');
+      expect(useDatasetStore.getState().metadata.keywords).toContain('benchmark');
+
+      // Add more keywords
+      store.addKeyword('evaluation');
+      store.addKeyword('llm');
+
+      const keywords = useDatasetStore.getState().metadata.keywords || [];
+      expect(keywords).toHaveLength(3);
+      expect(keywords).toContain('benchmark');
+      expect(keywords).toContain('evaluation');
+      expect(keywords).toContain('llm');
+    });
+
+    it('should remove keywords from dataset', () => {
+      const store = useDatasetStore.getState();
+
+      // Add keywords
+      store.addKeyword('benchmark');
+      store.addKeyword('test');
+      store.addKeyword('evaluation');
+
+      expect(useDatasetStore.getState().metadata.keywords).toHaveLength(3);
+
+      // Remove a keyword
+      store.removeKeyword('test');
+
+      const keywords = useDatasetStore.getState().metadata.keywords || [];
+      expect(keywords).toHaveLength(2);
+      expect(keywords).toContain('benchmark');
+      expect(keywords).toContain('evaluation');
+      expect(keywords).not.toContain('test');
+    });
+
+    it('should support full metadata configuration', () => {
+      const store = useDatasetStore.getState();
+
+      // Set all basic metadata fields
+      store.updateField('name', 'Comprehensive Benchmark Dataset');
+      store.updateField('description', 'A dataset for testing LLM capabilities across multiple domains.');
+      store.updateField('version', '1.5.0');
+      store.updateField('license', 'CC-BY-4.0');
+
+      // Add keywords
+      store.addKeyword('llm');
+      store.addKeyword('benchmark');
+      store.addKeyword('nlp');
+
+      // Verify all fields are saved
+      const metadata = useDatasetStore.getState().metadata;
+      expect(metadata.name).toBe('Comprehensive Benchmark Dataset');
+      expect(metadata.description).toBe('A dataset for testing LLM capabilities across multiple domains.');
+      expect(metadata.version).toBe('1.5.0');
+      expect(metadata.license).toBe('CC-BY-4.0');
+      expect(metadata.keywords).toHaveLength(3);
+    });
+
+    it('should replace entire metadata object', () => {
+      const store = useDatasetStore.getState();
+
+      const newMetadata = {
+        name: 'Replacement Dataset',
+        description: 'This replaces all metadata',
+        version: '3.0.0',
+        license: 'GPL-3.0',
+        keywords: ['replacement', 'test'],
+      };
+
+      store.setMetadata(newMetadata);
+
+      const metadata = useDatasetStore.getState().metadata;
+      expect(metadata.name).toBe('Replacement Dataset');
+      expect(metadata.description).toBe('This replaces all metadata');
+      expect(metadata.version).toBe('3.0.0');
+      expect(metadata.license).toBe('GPL-3.0');
+      expect(metadata.keywords).toEqual(['replacement', 'test']);
     });
   });
 });
