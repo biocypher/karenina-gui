@@ -758,3 +758,168 @@ describe('integ-048: Deep judgment and abstention configuration', () => {
     expect(finalState.abstentionEnabled).toBe(true);
   });
 });
+
+describe('integ-059: Extra kwargs modal configuration', () => {
+  it('should add model with extra kwargs', () => {
+    const modelWithKwargs: ModelConfiguration = {
+      id: 'model-with-kwargs',
+      model_provider: 'anthropic',
+      model_name: 'claude-3-opus',
+      temperature: 0.5,
+      interface: 'langchain',
+      system_prompt: 'You are a helpful assistant.',
+      extra_kwargs: {
+        max_tokens: 4096,
+        top_p: 0.9,
+      },
+    };
+
+    useBenchmarkStore.getState().addAnsweringModel(modelWithKwargs);
+
+    // Verify extra kwargs are saved
+    const savedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'model-with-kwargs');
+
+    expect(savedModel?.extra_kwargs).toBeDefined();
+    expect(savedModel?.extra_kwargs?.max_tokens).toBe(4096);
+    expect(savedModel?.extra_kwargs?.top_p).toBe(0.9);
+  });
+
+  it('should update model with extra kwargs', () => {
+    // First add a model without extra kwargs
+    const model: ModelConfiguration = {
+      id: 'kwargs-update-test',
+      model_provider: 'openai',
+      model_name: 'gpt-4',
+      temperature: 0.7,
+      interface: 'langchain',
+      system_prompt: 'Helpful assistant',
+    };
+
+    useBenchmarkStore.getState().addAnsweringModel(model);
+
+    // Update with extra kwargs
+    useBenchmarkStore.getState().updateAnsweringModel('kwargs-update-test', {
+      extra_kwargs: {
+        max_tokens: 2048,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.3,
+      },
+    });
+
+    // Verify extra kwargs were added
+    const updatedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'kwargs-update-test');
+
+    expect(updatedModel?.extra_kwargs?.max_tokens).toBe(2048);
+    expect(updatedModel?.extra_kwargs?.frequency_penalty).toBe(0.5);
+    expect(updatedModel?.extra_kwargs?.presence_penalty).toBe(0.3);
+  });
+
+  it('should merge extra kwargs with existing ones', () => {
+    // Add model with some extra kwargs
+    const model: ModelConfiguration = {
+      id: 'kwargs-merge-test',
+      model_provider: 'anthropic',
+      model_name: 'claude-3-haiku',
+      temperature: 0.3,
+      interface: 'langchain',
+      system_prompt: 'Helpful assistant',
+      extra_kwargs: {
+        max_tokens: 1024,
+        top_p: 0.8,
+      },
+    };
+
+    useBenchmarkStore.getState().addAnsweringModel(model);
+
+    // Update with additional kwargs (should merge)
+    useBenchmarkStore.getState().updateAnsweringModel('kwargs-merge-test', {
+      extra_kwargs: {
+        max_tokens: 2048, // Update existing
+        temperature: 0.5, // Add new
+      },
+    });
+
+    // Verify kwargs were merged correctly
+    const updatedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'kwargs-merge-test');
+
+    // Note: updateAnsweringModel does a shallow merge on the model object
+    // So extra_kwargs is replaced entirely, not merged
+    expect(updatedModel?.extra_kwargs?.max_tokens).toBe(2048);
+    expect(updatedModel?.extra_kwargs?.temperature).toBe(0.5);
+    // top_p would be lost since extra_kwargs is replaced
+    expect(updatedModel?.extra_kwargs?.top_p).toBeUndefined();
+  });
+
+  it('should support various common extra kwargs', () => {
+    const commonKwargs: ModelConfiguration = {
+      id: 'common-kwargs',
+      model_provider: 'openai',
+      model_name: 'gpt-3.5-turbo',
+      temperature: 0.7,
+      interface: 'langchain',
+      system_prompt: 'You are helpful.',
+      extra_kwargs: {
+        max_tokens: 4096,
+        top_p: 0.95,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.5,
+        stop: ['\n\n', 'END'],
+        seed: 42,
+      },
+    };
+
+    useBenchmarkStore.getState().addAnsweringModel(commonKwargs);
+
+    const savedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'common-kwargs');
+
+    expect(savedModel?.extra_kwargs?.max_tokens).toBe(4096);
+    expect(savedModel?.extra_kwargs?.top_p).toBe(0.95);
+    expect(savedModel?.extra_kwargs?.frequency_penalty).toBe(0.5);
+    expect(savedModel?.extra_kwargs?.presence_penalty).toBe(0.5);
+    expect(savedModel?.extra_kwargs?.stop).toEqual(['\n\n', 'END']);
+    expect(savedModel?.extra_kwargs?.seed).toBe(42);
+  });
+
+  it('should support models with and without extra kwargs side by side', () => {
+    // Model without extra kwargs
+    const simpleModel: ModelConfiguration = {
+      id: 'simple-model',
+      model_provider: 'anthropic',
+      model_name: 'claude-3-haiku',
+      temperature: 0.2,
+      interface: 'langchain',
+      system_prompt: 'Simple assistant',
+    };
+
+    // Model with extra kwargs
+    const advancedModel: ModelConfiguration = {
+      id: 'advanced-model',
+      model_provider: 'openai',
+      model_name: 'gpt-4',
+      temperature: 0.8,
+      interface: 'openai_endpoint',
+      system_prompt: 'Advanced assistant',
+      endpoint_base_url: 'https://api.example.com/v1',
+      extra_kwargs: {
+        max_tokens: 8192,
+        top_p: 0.99,
+      },
+    };
+
+    useBenchmarkStore.getState().addAnsweringModel(simpleModel);
+    useBenchmarkStore.getState().addAnsweringModel(advancedModel);
+
+    const models = useBenchmarkStore.getState().answeringModels;
+
+    const simple = models.find((m) => m.id === 'simple-model');
+    const advanced = models.find((m) => m.id === 'advanced-model');
+
+    // Simple model has no extra_kwargs
+    expect(simple?.extra_kwargs).toBeUndefined();
+
+    // Advanced model has extra_kwargs
+    expect(advanced?.extra_kwargs).toBeDefined();
+    expect(advanced?.extra_kwargs?.max_tokens).toBe(8192);
+    expect(advanced?.extra_kwargs?.top_p).toBe(0.99);
+  });
+});

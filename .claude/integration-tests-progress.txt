@@ -595,3 +595,34 @@ Each PRD item contains:
 - integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
 - integ-017: Load and save default settings (medium priority, small effort, no dependencies)
 - integ-019: Preset list and load (medium priority, small effort, no dependencies)
+
+## Iteration 19 - 2026-01-10
+
+### Completed
+- Implemented **integ-059**: Extra kwargs modal configuration
+  - Added 5 new test cases to benchmark-config.test.tsx
+  - All tests passing (1269 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-059
+1. Add model with extra kwargs
+2. Update model with extra kwargs
+3. Merge extra kwargs with existing ones (verifies replacement behavior)
+4. Support various common extra kwargs (max_tokens, top_p, frequency_penalty, presence_penalty, stop, seed)
+5. Support models with and without extra kwargs side by side
+
+### Key Implementation Notes
+- `extra_kwargs` is an optional `Record<string, unknown>` field on ModelConfiguration
+- Common extra kwargs include: max_tokens, top_p, frequency_penalty, presence_penalty, stop, seed
+- `updateAnsweringModel(id, updates)` replaces the entire extra_kwargs object (shallow merge on model, not deep merge on extra_kwargs)
+- Models can exist with or without extra_kwargs - it's completely optional
+- extra_kwargs can be combined with other model settings (endpoint_base_url, system_prompt, etc.)
+- Store operations are synchronous and don't require rendering
+
+### Next Steps for Iteration 20
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-017: Load and save default settings (medium priority, small effort, no dependencies)
+- integ-019: Preset list and load (medium priority, small effort, no dependencies)
+- integ-049: Few-shot examples configuration (low priority, small effort, no dependencies, uses benchmark store)
