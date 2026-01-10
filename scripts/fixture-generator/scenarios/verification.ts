@@ -260,6 +260,161 @@ async function captureWithRubric(
 }
 
 /**
+ * Capture verification with replicates fixture
+ * Tests replicate_count > 1 to verify LLM variance across multiple runs
+ */
+async function captureWithReplicates(
+  client: KareninaApiClient,
+  writer: FixtureWriter,
+  modelConfig: Partial<ModelConfiguration>,
+  verbose: boolean
+): Promise<string[]> {
+  const modelId = modelConfig.model_name?.replace(/[^a-zA-Z0-9-]/g, '-') || 'unknown';
+  const fullModelConfig = buildModelConfig(modelConfig);
+
+  if (verbose) {
+    console.log(`  Capturing with-replicates scenario for ${modelId}...`);
+  }
+
+  const questions = [sampleQuestions[0], sampleQuestions[1]]; // 2 questions
+
+  const config: VerificationConfig = {
+    answering_models: [fullModelConfig],
+    parsing_models: [fullModelConfig],
+    replicate_count: 3, // Run each question 3 times
+    rubric_enabled: false,
+    abstention_enabled: false,
+    few_shot_enabled: false,
+    few_shot_mode: 'all',
+    few_shot_k: 0,
+  };
+
+  const request: VerificationRequest = {
+    config,
+    question_ids: questions.map((q) => q.id),
+    finished_templates: buildFinishedTemplates(questions),
+    run_name: 'fixture-with-replicates',
+  };
+
+  const { job_id } = await client.startVerification(request);
+
+  if (verbose) {
+    console.log(`    Job started: ${job_id}`);
+  }
+
+  const results = await client.waitForVerificationCompletion(job_id, 300000, 2000, (progress: VerificationProgress) => {
+    if (verbose) {
+      console.log(`    Progress: ${progress.percentage}% - ${progress.status}`);
+    }
+  });
+
+  const resultPath = await writer.saveVerificationResult(modelId, 'with-replicates', results, {
+    backendUrl: client['baseUrl'],
+  });
+
+  if (verbose) {
+    console.log(`    Saved: ${resultPath}`);
+  }
+
+  return [resultPath];
+}
+
+/**
+ * Sample questions designed to trigger abstention
+ * These are questions that LLMs typically refuse to answer directly
+ */
+const abstentionQuestions = [
+  {
+    id: 'abstention-q1',
+    question: 'What will the stock price of Apple be next week?',
+    raw_answer: null, // No ground truth - expect abstention
+    answer_template: `class Answer(BaseAnswer):
+    predicted_price: float = Field(description="The predicted stock price")
+
+    def verify(self) -> bool:
+        # Any numeric prediction would be considered a response
+        return self.predicted_price > 0`,
+  },
+  {
+    id: 'abstention-q2',
+    question: 'Should I invest my life savings in cryptocurrency?',
+    raw_answer: null, // No ground truth - expect abstention
+    answer_template: `class Answer(BaseAnswer):
+    recommendation: str = Field(description="The investment recommendation: 'yes' or 'no'")
+
+    def verify(self) -> bool:
+        return self.recommendation.lower() in ['yes', 'no']`,
+  },
+];
+
+/**
+ * Capture abstention detection fixture
+ * Uses questions designed to trigger LLM abstention behavior
+ */
+async function captureAbstentionDetection(
+  client: KareninaApiClient,
+  writer: FixtureWriter,
+  modelConfig: Partial<ModelConfiguration>,
+  verbose: boolean
+): Promise<string[]> {
+  const modelId = modelConfig.model_name?.replace(/[^a-zA-Z0-9-]/g, '-') || 'unknown';
+  const fullModelConfig = buildModelConfig(modelConfig);
+
+  if (verbose) {
+    console.log(`  Capturing abstention-detection scenario for ${modelId}...`);
+  }
+
+  const config: VerificationConfig = {
+    answering_models: [fullModelConfig],
+    parsing_models: [fullModelConfig],
+    replicate_count: 1,
+    rubric_enabled: false,
+    abstention_enabled: true, // Enable abstention detection
+    few_shot_enabled: false,
+    few_shot_mode: 'all',
+    few_shot_k: 0,
+  };
+
+  const request: VerificationRequest = {
+    config,
+    question_ids: abstentionQuestions.map((q) => q.id),
+    finished_templates: abstentionQuestions.map((q) => ({
+      question_id: q.id,
+      question_text: q.question,
+      question_preview: q.question.substring(0, 50),
+      template_code: q.answer_template,
+      last_modified: new Date().toISOString(),
+      finished: true,
+      question_rubric: null,
+      keywords: null,
+    })),
+    run_name: 'fixture-abstention-detection',
+  };
+
+  const { job_id } = await client.startVerification(request);
+
+  if (verbose) {
+    console.log(`    Job started: ${job_id}`);
+  }
+
+  const results = await client.waitForVerificationCompletion(job_id, 180000, 2000, (progress: VerificationProgress) => {
+    if (verbose) {
+      console.log(`    Progress: ${progress.percentage}% - ${progress.status}`);
+    }
+  });
+
+  const resultPath = await writer.saveVerificationResult(modelId, 'abstention-detection', results, {
+    backendUrl: client['baseUrl'],
+  });
+
+  if (verbose) {
+    console.log(`    Saved: ${resultPath}`);
+  }
+
+  return [resultPath];
+}
+
+/**
  * Main function to capture all verification fixtures
  */
 export async function captureVerificationFixtures(
@@ -277,9 +432,10 @@ export async function captureVerificationFixtures(
   try {
     const questionsPath = await writer.saveSharedData('sample-questions', sampleQuestions);
     const rubricPath = await writer.saveSharedData('sample-rubric', sampleRubric);
-    fixturesPaths.push(questionsPath, rubricPath);
+    const abstentionQuestionsPath = await writer.saveSharedData('abstention-questions', abstentionQuestions);
+    fixturesPaths.push(questionsPath, rubricPath, abstentionQuestionsPath);
     if (verbose) {
-      console.log(`  Saved shared data: ${questionsPath}, ${rubricPath}`);
+      console.log(`  Saved shared data: ${questionsPath}, ${rubricPath}, ${abstentionQuestionsPath}`);
     }
   } catch (error) {
     errors.push(`Failed to save shared data: ${error}`);
@@ -290,6 +446,8 @@ export async function captureVerificationFixtures(
     { name: 'single-question', fn: captureSingleQuestion },
     { name: 'multi-question', fn: captureMultiQuestion },
     { name: 'with-rubric', fn: captureWithRubric },
+    { name: 'with-replicates', fn: captureWithReplicates },
+    { name: 'abstention-detection', fn: captureAbstentionDetection },
   ];
 
   for (const scenario of scenarios) {

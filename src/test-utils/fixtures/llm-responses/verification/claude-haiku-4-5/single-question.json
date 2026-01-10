@@ -1,12 +1,12 @@
 {
   "_metadata": {
-    "capturedAt": "2026-01-10T10:43:50.947Z",
+    "capturedAt": "2026-01-10T17:44:52.116Z",
     "model": "claude-haiku-4-5",
     "scenario": "single-question",
     "backendUrl": "http://localhost:5001"
   },
   "data": {
-    "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041830000": {
+    "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768067090000": {
       "metadata": {
         "question_id": "q1",
         "template_id": "fcb63001d642141a76ea74a28088cc3a",
@@ -19,9 +19,9 @@
         "parsing_model": "anthropic/claude-haiku-4-5",
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.00013899803161621094,
-        "timestamp": "2026-01-10 10:43:50",
-        "result_id": "fc231b38f14c2a23",
+        "execution_time": 0.00019097328186035156,
+        "timestamp": "2026-01-10 17:44:50",
+        "result_id": "44a486cbfbf216a6",
         "run_name": "fixture-single-question",
         "replicate": null
       },

@@ -11,6 +11,9 @@ import sampleRubricFixture from './llm-responses/shared/sample-rubric.json';
 import singleQuestionFixture from './llm-responses/verification/claude-haiku-4-5/single-question.json';
 import multiQuestionFixture from './llm-responses/verification/claude-haiku-4-5/multi-question.json';
 import withRubricFixture from './llm-responses/verification/claude-haiku-4-5/with-rubric.json';
+// New captured fixtures - run `npm run fixtures:capture` to generate these
+import withReplicatesFixture from './llm-responses/verification/claude-haiku-4-5/with-replicates.json';
+import abstentionDetectionFixture from './llm-responses/verification/claude-haiku-4-5/abstention-detection.json';
 
 // Import mocked fixtures for integration testing
 import successfulVerificationFixture from './llm-responses/verification/mocked/successful-verification.json';
@@ -50,7 +53,12 @@ export interface TemplateGenerationFixture {
 /**
  * Available verification fixture scenarios (captured from real API)
  */
-export type VerificationScenario = 'single-question' | 'multi-question' | 'with-rubric';
+export type VerificationScenario =
+  | 'single-question'
+  | 'multi-question'
+  | 'with-rubric'
+  | 'with-replicates'
+  | 'abstention-detection';
 
 /**
  * Available mocked verification scenarios (for integration testing)
@@ -75,6 +83,8 @@ const verificationFixtures: Record<'claude-haiku-4-5', Record<VerificationScenar
     'single-question': singleQuestionFixture as VerificationFixture,
     'multi-question': multiQuestionFixture as VerificationFixture,
     'with-rubric': withRubricFixture as VerificationFixture,
+    'with-replicates': withReplicatesFixture as VerificationFixture,
+    'abstention-detection': abstentionDetectionFixture as VerificationFixture,
   },
 };
 

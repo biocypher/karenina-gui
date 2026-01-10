@@ -1,12 +1,12 @@
 {
   "_metadata": {
-    "capturedAt": "2026-01-10T10:43:53.036Z",
+    "capturedAt": "2026-01-10T17:44:54.127Z",
     "model": "claude-haiku-4-5",
     "scenario": "multi-question",
     "backendUrl": "http://localhost:5001"
   },
   "data": {
-    "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041830000": {
+    "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768067092000": {
       "metadata": {
         "question_id": "q1",
         "template_id": "fcb63001d642141a76ea74a28088cc3a",
@@ -19,9 +19,9 @@
         "parsing_model": "anthropic/claude-haiku-4-5",
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.00006318092346191406,
-        "timestamp": "2026-01-10 10:43:50",
-        "result_id": "fc231b38f14c2a23",
+        "execution_time": 0.00010704994201660156,
+        "timestamp": "2026-01-10 17:44:52",
+        "result_id": "0f506eca5c877c6b",
         "run_name": "fixture-multi-question",
         "replicate": null
       },
@@ -57,7 +57,7 @@
       "used_full_trace": true,
       "trace_extraction_error": null
     },
-    "q2_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041830000": {
+    "q2_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768067092000": {
       "metadata": {
         "question_id": "q2",
         "template_id": "9fb7f87b18c8c14e2203e010aa6d05de",
@@ -70,9 +70,9 @@
         "parsing_model": "anthropic/claude-haiku-4-5",
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.0001380443572998047,
-        "timestamp": "2026-01-10 10:43:50",
-        "result_id": "2b6e41f5357a932c",
+        "execution_time": 0.00013494491577148438,
+        "timestamp": "2026-01-10 17:44:52",
+        "result_id": "70fd255b7c268d0c",
         "run_name": "fixture-multi-question",
         "replicate": null
       },
@@ -108,7 +108,7 @@
       "used_full_trace": true,
       "trace_extraction_error": null
     },
-    "q3_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041830000": {
+    "q3_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768067092000": {
       "metadata": {
         "question_id": "q3",
         "template_id": "0ece68c26113df796e88f7a1312bf830",
@@ -121,9 +121,9 @@
         "parsing_model": "anthropic/claude-haiku-4-5",
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.00009822845458984375,
-        "timestamp": "2026-01-10 10:43:50",
-        "result_id": "510a864e640fbc88",
+        "execution_time": 0.0002932548522949219,
+        "timestamp": "2026-01-10 17:44:52",
+        "result_id": "a6f3a4f646da9a61",
         "run_name": "fixture-multi-question",
         "replicate": null
       },

@@ -24,6 +24,7 @@
     "fixtures:capture": "tsx scripts/fixture-generator/index.ts capture",
     "fixtures:capture:verification": "tsx scripts/fixture-generator/index.ts capture --endpoint verification",
     "fixtures:capture:templates": "tsx scripts/fixture-generator/index.ts capture --endpoint template-generation",
+    "fixtures:list": "tsx scripts/fixture-generator/index.ts list",
     "prepare": "husky"
   },
   "dependencies": {

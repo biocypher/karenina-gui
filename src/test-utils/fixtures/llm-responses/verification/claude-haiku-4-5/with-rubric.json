@@ -1,12 +1,12 @@
 {
   "_metadata": {
-    "capturedAt": "2026-01-10T10:43:55.042Z",
+    "capturedAt": "2026-01-10T17:44:54.224Z",
     "model": "claude-haiku-4-5",
     "scenario": "with-rubric",
     "backendUrl": "http://localhost:5001"
   },
   "data": {
-    "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041833000": {
+    "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768067094000": {
       "metadata": {
         "question_id": "q1",
         "template_id": "fcb63001d642141a76ea74a28088cc3a",
@@ -19,9 +19,9 @@
         "parsing_model": "anthropic/claude-haiku-4-5",
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.00014019012451171875,
-        "timestamp": "2026-01-10 10:43:53",
-        "result_id": "acf75c43ac458a5f",
+        "execution_time": 0.0002491474151611328,
+        "timestamp": "2026-01-10 17:44:54",
+        "result_id": "b74054e9a8222d1d",
         "run_name": "fixture-with-rubric",
         "replicate": null
       },
@@ -57,7 +57,7 @@
       "used_full_trace": true,
       "trace_extraction_error": null
     },
-    "q2_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041833000": {
+    "q2_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768067094000": {
       "metadata": {
         "question_id": "q2",
         "template_id": "9fb7f87b18c8c14e2203e010aa6d05de",
@@ -70,9 +70,9 @@
         "parsing_model": "anthropic/claude-haiku-4-5",
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.00007295608520507812,
-        "timestamp": "2026-01-10 10:43:53",
-        "result_id": "f6d775bafa628d7a",
+        "execution_time": 0.00011897087097167969,
+        "timestamp": "2026-01-10 17:44:54",
+        "result_id": "8429fc9b986703dd",
         "run_name": "fixture-with-rubric",
         "replicate": null
       },
