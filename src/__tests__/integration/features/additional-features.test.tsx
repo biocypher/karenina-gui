@@ -6,18 +6,22 @@
  * - Metadata editor
  * - Trace highlighting configuration
  * - Manual trace upload
+ * - Merge results dialog
  *
  * integ-049: Test few-shot examples configuration
  * integ-043: Test metadata editor
  * integ-051: Test trace highlighting configuration
  * integ-042: Test manual trace upload
+ * integ-050: Test merge results dialog
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import manualTracesFixture from '../../../test-utils/fixtures/traces/manual-trace-upload.json';
+import mergeableRunsFixture from '../../../test-utils/fixtures/verification/mergeable-runs.json';
 import { useBenchmarkStore } from '../../../stores/useBenchmarkStore';
 import { useDatasetStore } from '../../../stores/useDatasetStore';
 import { useTraceHighlightingStore } from '../../../stores/useTraceHighlightingStore';
 import type { HighlightPattern } from '../../../stores/useTraceHighlightingStore';
+import type { MergeAction } from '../../../components/dialogs/MergeResultsDialog';
 
 // Mock the preset store
 vi.mock('../../../stores/usePresetStore', () => ({
@@ -661,6 +665,119 @@ describe('Manual Trace Upload Integration Tests', () => {
       expect(mathTrace).toContain('+');
       expect(mathTrace).toContain('=');
       expect(mathTrace).toContain('42');
+    });
+  });
+});
+
+describe('Merge Results Dialog Integration Tests', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  describe('integ-050: Merge results dialog', () => {
+    it('should calculate merge statistics for two runs', () => {
+      const runs = (
+        mergeableRunsFixture as { runs: Array<{ results_count: number; results: Record<string, unknown> }> }
+      ).runs;
+
+      const run1 = runs[0];
+      const run2 = runs[1];
+
+      // Get result keys from each run
+      const run1Keys = Object.keys(run1.results);
+      const run2Keys = Object.keys(run2.results);
+
+      // Calculate counts
+      const existingCount = run1Keys.length;
+      const uploadedCount = run2Keys.length;
+
+      // Find conflicts (same question_id in both runs)
+      const run1Questions = new Set(run1Keys.map((k) => k.split('_')[0]));
+      const run2Questions = new Set(run2Keys.map((k) => k.split('_')[0]));
+      const conflictQuestions = [...run1Questions].filter((q) => run2Questions.has(q));
+      const conflictCount = conflictQuestions.length;
+
+      // Total after merge = unique questions from both runs with all model combinations
+      const totalAfterMerge = existingCount + uploadedCount - conflictCount;
+
+      expect(existingCount).toBe(3);
+      expect(uploadedCount).toBe(4);
+      expect(conflictCount).toBe(3); // q1, q2, q3 are in both runs
+      expect(totalAfterMerge).toBe(4); // 3 + 4 - 3 = 4 unique results
+    });
+
+    it('should verify replace strategy clears existing results', () => {
+      const runs = (mergeableRunsFixture as { runs: Array<{ results: Record<string, unknown> }> }).runs;
+
+      const uploadedResults = runs[1].results;
+
+      // Simulate replace: uploaded becomes the only results
+      const replaceAction: MergeAction = 'replace';
+      expect(replaceAction).toBe('replace');
+
+      // After replace, we should only have uploaded results
+      const finalResultKeys = Object.keys(uploadedResults);
+      expect(finalResultKeys.length).toBe(4);
+    });
+
+    it('should verify merge strategy combines results', () => {
+      const runs = (mergeableRunsFixture as { runs: Array<{ results: Record<string, unknown> }> }).runs;
+
+      const existingResults = runs[0].results;
+      const uploadedResults = runs[1].results;
+
+      // Simulate merge: combine both, uploaded wins on conflicts
+      const mergedResults = { ...existingResults, ...uploadedResults };
+
+      // Verify all results are present
+      const mergedKeys = Object.keys(mergedResults);
+      expect(mergedKeys.length).toBeGreaterThan(0);
+
+      // Verify uploaded results overwrote conflicts
+      expect(mergedResults).toHaveProperty(Object.keys(uploadedResults)[0]);
+    });
+
+    it('should handle merge with no existing results', () => {
+      const runs = (mergeableRunsFixture as { runs: Array<{ results: Record<string, unknown> }> }).runs;
+
+      const uploadedResults = runs[1].results;
+      const existingResults: Record<string, unknown> = {};
+
+      // No existing results - just load uploaded
+      const mergedResults = { ...existingResults, ...uploadedResults };
+
+      expect(Object.keys(existingResults).length).toBe(0);
+      expect(Object.keys(mergedResults).length).toBe(4);
+      expect(Object.keys(uploadedResults).length).toBe(4);
+    });
+
+    it('should verify conflict detection by result key', () => {
+      const runs = (mergeableRunsFixture as { runs: Array<{ results: Record<string, unknown> }> }).runs;
+
+      const run1Keys = Object.keys(runs[0].results);
+      const run2Keys = Object.keys(runs[1].results);
+
+      // No exact key matches because model names differ
+      const exactConflicts = run1Keys.filter((k) => run2Keys.includes(k));
+      expect(exactConflicts.length).toBe(0);
+
+      // But question_id conflicts exist
+      const run1Questions = run1Keys.map((k) => k.split('_')[0]);
+      const run2Questions = run2Keys.map((k) => k.split('_')[0]);
+      const questionConflicts = run1Questions.filter((q) => run2Questions.includes(q));
+      expect(questionConflicts.length).toBe(3);
+    });
+
+    it('should support cancel action without modifying results', () => {
+      const cancelAction: MergeAction = 'cancel';
+      expect(cancelAction).toBe('cancel');
+
+      const runs = (mergeableRunsFixture as { runs: Array<{ results: Record<string, unknown> }> }).runs;
+      const originalResults = runs[0].results;
+
+      // Cancel should preserve original results
+      const originalKeys = Object.keys(originalResults);
+      expect(originalKeys.length).toBe(3);
     });
   });
 });

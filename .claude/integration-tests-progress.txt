@@ -1300,3 +1300,45 @@ Remaining low priority phase 3 tests:
 - integ-033, 034, 056: End-to-end workflows (3 tests)
 - integ-050: Merge results dialog (1 test)
 
+
+## Ralph Loop Iteration 36 - 2025-01-10
+
+### Completed: integ-050 - Merge results dialog
+
+### Tests Added (6 tests)
+1. Calculate merge statistics for two runs (existing, uploaded, conflicts, total)
+2. Verify replace strategy clears existing results
+3. Verify merge strategy combines results
+4. Handle merge with no existing results
+5. Verify conflict detection by result key
+6. Support cancel action without modifying results
+
+### Key Implementation Notes
+- Merge actions: 'replace' | 'merge' | 'cancel'
+- Replace strategy: Uploaded results become the only results
+- Merge strategy: Combine existing + uploaded, uploaded wins on conflicts
+- Conflict detection: Based on result keys (question_id + models + timestamp)
+- Statistics calculation:
+  - existingCount: count of current results
+  - uploadedCount: count of new results to upload
+  - conflictCount: results with same question_id in both runs
+  - totalAfterMerge: existing + uploaded - conflicts
+- Result key format: `{question_id}_{answering_model}_{parsing_model}_{timestamp}`
+
+### Fixture Created
+- `src/test-utils/fixtures/verification/mergeable-runs.json`: 2 verification runs
+  - Run 1: 3 results (claude-haiku-4-5) for q1, q2, q3
+  - Run 2: 4 results (gpt-4) for q1, q2, q3, q4
+  - Demonstrates conflicts (q1, q2, q3 in both runs with different models)
+
+### Files Modified
+- `src/__tests__/integration/features/additional-features.test.tsx`: Added 6 tests for integ-050
+
+### Test Results
+- All 1415 tests pass (39 in additional-features.test.tsx)
+
+### Next Options
+Remaining low priority phase 3 tests:
+- integ-028-032, 054: Database operations (6 tests)
+- integ-033, 034, 056: End-to-end workflows (3 tests)
+

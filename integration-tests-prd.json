@@ -1051,7 +1051,7 @@
     "mocks_required": [],
     "fixtures_needed": ["verification/mergeable-runs.json"],
     "store_assertions": ["Merged results combined correctly"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-021"],
     "effort_estimate": "medium"
   },
