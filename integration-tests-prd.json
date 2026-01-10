@@ -235,7 +235,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["filtered question list matches criteria"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-010"],
     "effort_estimate": "small"
   },

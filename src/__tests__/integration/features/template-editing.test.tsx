@@ -283,4 +283,160 @@ describe('Question Navigation Integration Tests', () => {
       expect(nextButtonNow).toBeDisabled();
     });
   });
+
+  describe('integ-011: Question search and filter by status', () => {
+    it('should search questions by question text', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      // Wait for the UI to load
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Find the search input
+      const searchInput = screen.getByPlaceholderText(/Search by question, answer, or ID/i);
+      expect(searchInput).toBeInTheDocument();
+
+      // Enter search term
+      await userEvent.type(searchInput, 'Shakespeare');
+
+      // Wait for filtered results - should only show q3
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 1/i)).toBeInTheDocument();
+      });
+
+      // Verify selected question changed to the matching one
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q3');
+    });
+
+    it('should search questions by answer text', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText(/Search by question, answer, or ID/i);
+
+      // Enter search term that matches answer
+      await userEvent.type(searchInput, '4');
+
+      // Should only show q2
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 1/i)).toBeInTheDocument();
+      });
+
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q2');
+    });
+
+    it('should clear search and show all questions', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText(/Search by question, answer, or ID/i);
+
+      // Enter search term
+      await userEvent.type(searchInput, 'Paris');
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 1/i)).toBeInTheDocument();
+      });
+
+      // Clear search
+      await userEvent.clear(searchInput);
+
+      // Should show all questions again
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should filter to show only finished questions', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Find the filter dropdown
+      const filterSelect = screen
+        .getAllByText(/Show All/i)
+        .find((el) => el.tagName === 'OPTION')
+        ?.closest('select') as HTMLSelectElement;
+
+      expect(filterSelect).toBeInTheDocument();
+
+      // Filter to finished only
+      await userEvent.selectOptions(filterSelect, 'finished');
+
+      // Should only show q2 (the only finished question)
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 1/i)).toBeInTheDocument();
+      });
+
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q2');
+    });
+
+    it('should filter to show only unfinished questions', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Find the filter dropdown
+      const filterSelect = screen
+        .getAllByText(/Show All/i)
+        .find((el) => el.tagName === 'OPTION')
+        ?.closest('select') as HTMLSelectElement;
+
+      // Filter to unfinished only
+      await userEvent.selectOptions(filterSelect, 'unfinished');
+
+      // Should show 2 unfinished questions (q1 and q3)
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 2/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should show no results message when search matches nothing', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText(/Search by question, answer, or ID/i);
+
+      // Enter search term that matches nothing
+      await userEvent.type(searchInput, 'nonexistent');
+
+      // Should show "No questions match your search" message
+      await waitFor(() => {
+        const messages = screen.getAllByText(/No questions match your search/i);
+        expect(messages.length).toBeGreaterThan(0);
+      });
+    });
+  });
 });

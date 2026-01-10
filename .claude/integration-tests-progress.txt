@@ -268,3 +268,35 @@ Each PRD item contains:
 - integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
 - integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
 - integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+
+## Iteration 9 - 2026-01-10
+
+### Completed
+- Implemented **integ-011**: Question search and filter by status
+  - Added 6 new test cases to template-editing.test.tsx
+  - All tests passing (1221 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-011
+1. Search questions by question text
+2. Search questions by answer text
+3. Clear search and show all questions
+4. Filter to show only finished questions
+5. Filter to show only unfinished questions
+6. Show no results message when search matches nothing
+
+### Key Implementation Notes
+- Search input placeholder: "Search by question, answer, or ID..."
+- Search filters against: question text, raw_answer, and question ID (case-insensitive)
+- Filter dropdown options: "All", "Finished", "Unfinished"
+- Filter dropdown is found by selecting option with "Show All" text
+- When filter/search changes, component auto-navigates to first matching question
+- When no matches, shows "No questions match your search" message (can be multiple elements)
+- Filter uses `checkpoint[id].finished` boolean to determine status
+- `questionIds` is computed from `allQuestionIds` filtered by search term and filter status
+
+### Next Steps for Iteration 10
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-012: Edit and save template (medium priority, small effort, depends on integ-010)
