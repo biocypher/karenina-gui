@@ -85,7 +85,7 @@
       "useTemplateStore.extractedQuestions has expected count",
       "useTemplateStore.currentStep is 'visualize'"
     ],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-001"],
     "effort_estimate": "small"
   },

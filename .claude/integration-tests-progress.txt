@@ -157,3 +157,34 @@ Each PRD item contains:
 - integ-002: Excel file upload with multiple sheets (high priority, small effort)
 - integ-004: Question extraction (high priority, small effort)
 - integ-005: Extraction with metadata columns (high priority, depends on integ-004)
+
+## Iteration 5 - 2026-01-10
+
+### Completed
+- Implemented **integ-004**: Question extraction from uploaded file
+  - Created new test file: `src/__tests__/integration/features/question-extraction.test.tsx`
+  - Created fixture file: `src/test-utils/fixtures/extraction/successful-extraction.json`
+  - Implemented 6 test cases covering all scenarios from PRD
+  - All tests passing (1206 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-004
+1. Configure column mappings and extract questions (full workflow)
+2. Handle column mapping change before extraction
+3. Show extraction error when API fails
+4. Disable extract button when columns not selected
+5. Verify extractedQuestions has expected count after extraction
+6. Verify currentStep transitions to 'visualize' after extraction
+
+### Key Implementation Notes
+- Column selection uses `<select>` elements with role="combobox"
+- Questions are stored with `question`, `raw_answer`, and `answer_template` fields (QuestionData interface)
+- Extraction API receives: file_id, question_column, answer_column, sheet_name, and optional metadata columns
+- Error state managed through extractionResult.error
+- Successful extraction transitions currentStep to 'visualize'
+
+### Next Steps for Iteration 6
+- integ-002: Excel file upload with multiple sheets (high priority, small effort)
+- integ-005: Extraction with metadata columns (high priority, depends on integ-004, now unblocked)
+- integ-006: Partial extraction with invalid rows (high priority, depends on integ-004, now unblocked)
+- integ-007: Template generation workflow (high priority, depends on integ-004, now unblocked)

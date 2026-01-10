@@ -1,0 +1,76 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T00:00:00.000Z",
+    "scenario": "successful-question-extraction",
+    "description": "Successful extraction of questions from uploaded CSV file"
+  },
+  "uploadResponse": {
+    "file_id": "test-extract-123",
+    "filename": "questions.csv",
+    "size": 2048
+  },
+  "previewResponse": {
+    "success": true,
+    "total_rows": 5,
+    "columns": ["Question", "Answer", "Category"],
+    "preview_rows": 5,
+    "data": [
+      {
+        "Question": "What is the capital of France?",
+        "Answer": "Paris",
+        "Category": "Geography"
+      },
+      {
+        "Question": "What is 2 + 2?",
+        "Answer": "4",
+        "Category": "Math"
+      },
+      {
+        "Question": "Who wrote Romeo and Juliet?",
+        "Answer": "William Shakespeare",
+        "Category": "Literature"
+      },
+      {
+        "Question": "What is the chemical symbol for gold?",
+        "Answer": "Au",
+        "Category": "Chemistry"
+      },
+      {
+        "Question": "In what year did World War II end?",
+        "Answer": "1945",
+        "Category": "History"
+      }
+    ]
+  },
+  "extractionResponse": {
+    "success": true,
+    "questions_data": {
+      "0": {
+        "question": "What is the capital of France?",
+        "raw_answer": "Paris",
+        "answer_template": "Paris"
+      },
+      "1": {
+        "question": "What is 2 + 2?",
+        "raw_answer": "4",
+        "answer_template": "4"
+      },
+      "2": {
+        "question": "Who wrote Romeo and Juliet?",
+        "raw_answer": "William Shakespeare",
+        "answer_template": "William Shakespeare"
+      },
+      "3": {
+        "question": "What is the chemical symbol for gold?",
+        "raw_answer": "Au",
+        "answer_template": "Au"
+      },
+      "4": {
+        "question": "In what year did World War II end?",
+        "raw_answer": "1945",
+        "answer_template": "1945"
+      }
+    },
+    "total_extracted": 5
+  }
+}
