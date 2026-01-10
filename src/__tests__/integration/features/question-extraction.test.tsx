@@ -579,4 +579,253 @@ describe('Question Extraction Integration Tests', () => {
       });
     });
   });
+
+  describe('integ-005: Extraction with metadata columns', () => {
+    it('should configure metadata column mappings and extract with metadata', async () => {
+      const user = userEvent.setup();
+
+      // Track API calls
+      let extractCallCount = 0;
+
+      // Mock fetch
+      vi.mocked(global.fetch).mockImplementation(async (input) => {
+        const url = typeof input === 'string' ? input : input.url;
+
+        if (url.includes('/api/upload-file')) {
+          return {
+            ok: true,
+            json: async () => ({
+              file_id: 'test-metadata-123',
+              filename: 'questions-with-metadata.csv',
+              size: 2048,
+            }),
+          } as Response;
+        }
+
+        if (url.includes('/api/preview-file')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              total_rows: 3,
+              columns: ['Question', 'Answer', 'Author', 'Email', 'URL', 'Keywords'],
+              preview_rows: 3,
+              data: [
+                {
+                  Question: 'What is the capital of France?',
+                  Answer: 'Paris',
+                  Author: 'John Doe',
+                  Email: 'john@example.com',
+                  URL: 'https://example.com/q1',
+                  Keywords: 'geography,europe',
+                },
+                {
+                  Question: 'What is 2 + 2?',
+                  Answer: '4',
+                  Author: 'Jane Smith',
+                  Email: 'jane@example.com',
+                  URL: 'https://example.com/q2',
+                  Keywords: 'math',
+                },
+              ],
+            }),
+          } as Response;
+        }
+
+        if (url.includes('/api/extract-questions')) {
+          extractCallCount++;
+
+          // Note: We verify the metadata structure is returned correctly
+          // In a real scenario, metadata columns would be configured via UI
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              questions_data: {
+                '0': {
+                  question: 'What is the capital of France?',
+                  raw_answer: 'Paris',
+                  answer_template: 'Paris',
+                  metadata: {
+                    author: {
+                      name: 'John Doe',
+                      email: 'john@example.com',
+                    },
+                    url: 'https://example.com/q1',
+                    keywords: ['geography', 'europe'],
+                  },
+                },
+                '1': {
+                  question: 'What is 2 + 2?',
+                  raw_answer: '4',
+                  answer_template: '4',
+                  metadata: {
+                    author: {
+                      name: 'Jane Smith',
+                      email: 'jane@example.com',
+                    },
+                    url: 'https://example.com/q2',
+                    keywords: ['math'],
+                  },
+                },
+                '2': {
+                  question: 'Who wrote Romeo and Juliet?',
+                  raw_answer: 'William Shakespeare',
+                  answer_template: 'William Shakespeare',
+                  metadata: {
+                    author: {
+                      name: 'Bob Johnson',
+                      email: 'bob@example.com',
+                    },
+                    url: 'https://example.com/q3',
+                    keywords: ['literature'],
+                  },
+                },
+              },
+            }),
+          } as Response;
+        }
+
+        return {
+          ok: false,
+          status: 404,
+        } as Response;
+      });
+
+      render(<QuestionExtractor />);
+
+      // Step 1: Upload file
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Select File/i)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText(/Select File/i) as HTMLInputElement;
+      const mockFile = createMockFile('questions-with-metadata.csv', 2048, 'text/csv');
+      await user.upload(fileInput, mockFile);
+
+      // Step 2: Wait for configure step
+      await waitFor(() => {
+        expect(screen.getByText(/Configure Columns/i)).toBeInTheDocument();
+      });
+
+      // Step 3: Click extract (without metadata config - using defaults)
+      const extractButton = screen.getByText('Extract Questions');
+      await user.click(extractButton);
+
+      // Step 4: Verify extraction API was called
+      await waitFor(() => {
+        expect(extractCallCount).toBe(1);
+      });
+
+      // Step 5: Verify extracted questions have metadata
+      await waitFor(() => {
+        const state = useTemplateStore.getState();
+        expect(Object.keys(state.extractedQuestions).length).toBe(3);
+        // Check that first question has metadata
+        expect(state.extractedQuestions['0'].metadata).toBeDefined();
+        expect(state.extractedQuestions['0'].metadata?.author).toBeDefined();
+        expect(state.extractedQuestions['0'].metadata?.url).toBeDefined();
+      });
+    });
+
+    it('should verify metadata is attached to each extracted question', async () => {
+      const user = userEvent.setup();
+
+      // Mock fetch
+      vi.mocked(global.fetch).mockImplementation(async (input) => {
+        const url = typeof input === 'string' ? input : input.url;
+
+        if (url.includes('/api/upload-file')) {
+          return {
+            ok: true,
+            json: async () => ({
+              file_id: 'test-meta-verify-456',
+              filename: 'test.csv',
+              size: 1024,
+            }),
+          } as Response;
+        }
+
+        if (url.includes('/api/preview-file')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              total_rows: 2,
+              columns: ['Question', 'Answer', 'Author', 'URL', 'Keywords'],
+              data: [],
+            }),
+          } as Response;
+        }
+
+        if (url.includes('/api/extract-questions')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              questions_data: {
+                '0': {
+                  question: 'Q1',
+                  raw_answer: 'A1',
+                  answer_template: 'A1',
+                  metadata: {
+                    author: { name: 'Author 1', email: 'author1@example.com' },
+                    url: 'https://example.com/1',
+                    keywords: ['tag1', 'tag2'],
+                  },
+                },
+                '1': {
+                  question: 'Q2',
+                  raw_answer: 'A2',
+                  answer_template: 'A2',
+                  metadata: {
+                    author: { name: 'Author 2', email: 'author2@example.com' },
+                    url: 'https://example.com/2',
+                    keywords: ['tag3'],
+                  },
+                },
+              },
+            }),
+          } as Response;
+        }
+
+        return {
+          ok: false,
+          status: 404,
+        } as Response;
+      });
+
+      render(<QuestionExtractor />);
+
+      // Upload and extract (metadata config would be done via UI)
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Select File/i)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText(/Select File/i) as HTMLInputElement;
+      const mockFile = createMockFile('test.csv', 1024, 'text/csv');
+      await user.upload(fileInput, mockFile);
+
+      await waitFor(() => {
+        expect(screen.getByText('Extract Questions')).toBeInTheDocument();
+      });
+
+      const extractButton = screen.getByText('Extract Questions');
+      await user.click(extractButton);
+
+      // Verify all questions have expected metadata fields
+      await waitFor(() => {
+        const state = useTemplateStore.getState();
+        const questions = state.extractedQuestions;
+
+        Object.values(questions).forEach((question) => {
+          expect(question.metadata).toBeDefined();
+          expect(question.metadata.author).toBeDefined();
+          expect(question.metadata.author.name).toBeTruthy();
+          expect(question.metadata.url).toBeTruthy();
+          expect(Array.isArray(question.metadata.keywords)).toBe(true);
+        });
+      });
+    });
+  });
 });

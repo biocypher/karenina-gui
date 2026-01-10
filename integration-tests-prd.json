@@ -104,7 +104,7 @@
     "mocks_required": ["POST /api/extract-questions -> { success, questions_data with metadata }"],
     "fixtures_needed": ["extraction/with-metadata.json"],
     "store_assertions": ["extractedQuestions[*].metadata contains expected fields"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-004"],
     "effort_estimate": "small"
   },

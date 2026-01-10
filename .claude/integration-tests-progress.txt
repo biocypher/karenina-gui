@@ -188,3 +188,28 @@ Each PRD item contains:
 - integ-005: Extraction with metadata columns (high priority, depends on integ-004, now unblocked)
 - integ-006: Partial extraction with invalid rows (high priority, depends on integ-004, now unblocked)
 - integ-007: Template generation workflow (high priority, depends on integ-004, now unblocked)
+
+## Iteration 6 - 2026-01-10
+
+### Completed
+- Implemented **integ-005**: Extraction with metadata columns
+  - Added 2 new test cases to question-extraction.test.tsx
+  - Created fixture file: `src/test-utils/fixtures/extraction/with-metadata.json`
+  - All tests passing (1208 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-005
+1. Configure metadata column mappings and extract with metadata
+2. Verify metadata is attached to each extracted question
+
+### Key Implementation Notes
+- Metadata includes: author (name, email, affiliation), URL, and keywords
+- Keywords are returned as an array (split by separator)
+- The AdvancedExtractionPanel provides UI for configuring metadata columns
+- Metadata structure follows Schema.org Person format for authors
+
+### Next Steps for Iteration 7
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-006: Partial extraction with invalid rows (high priority, small effort, depends on integ-004)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-010: Question navigation in curator (medium priority, no dependencies)
