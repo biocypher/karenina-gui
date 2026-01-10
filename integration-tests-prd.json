@@ -952,7 +952,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["useBenchmarkStore.answeringModels contains new model"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },

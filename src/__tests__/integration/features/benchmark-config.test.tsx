@@ -4,8 +4,10 @@
  * Tests the benchmark configuration settings in the Benchmark tab including:
  * - Evaluation mode configuration (template_only, template_and_rubric, rubric_only)
  * - Correctness and rubric toggle interactions
+ * - Adding and configuring answering models
  *
  * integ-047: Test evaluation mode configuration
+ * integ-045: Test add and configure answering model
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
@@ -15,6 +17,7 @@ import { useBenchmarkStore } from '../../../stores/useBenchmarkStore';
 import { useRubricStore } from '../../../stores/useRubricStore';
 import { useDatasetStore } from '../../../stores/useDatasetStore';
 import { Checkpoint } from '../../../types';
+import type { ModelConfiguration } from '../../../types';
 
 // Mock WebSocket
 class MockWebSocket {
@@ -303,6 +306,167 @@ describe('Benchmark Configuration Integration Tests', () => {
       await userEvent.click(correctnessCheckbox);
       expect(correctnessCheckbox.checked).toBe(true);
       expect(useBenchmarkStore.getState().correctnessEnabled).toBe(true);
+    });
+  });
+
+  describe('integ-045: Add and configure answering model', () => {
+    it('should add answering model and verify it appears in store', () => {
+      // Get the store state (beforeEach has already set up the store with default model)
+      const initialCount = useBenchmarkStore.getState().answeringModels.length;
+
+      // Add a new answering model
+      const newModel: ModelConfiguration = {
+        id: 'new-answering-model',
+        model_provider: 'openai',
+        model_name: 'gpt-4',
+        temperature: 0.7,
+        interface: 'langchain',
+        system_prompt: 'You are a helpful assistant.',
+      };
+
+      useBenchmarkStore.getState().addAnsweringModel(newModel);
+
+      // Verify the model was added to the store - get fresh state
+      const updatedModels = useBenchmarkStore.getState().answeringModels;
+      expect(updatedModels.length).toBe(initialCount + 1);
+      expect(updatedModels).toContainEqual(newModel);
+    });
+
+    it('should add multiple answering models with different providers', () => {
+      // Get initial count (includes default model from beforeEach)
+      const initialCount = useBenchmarkStore.getState().answeringModels.length;
+
+      // Add OpenAI model
+      const openaiModel: ModelConfiguration = {
+        id: 'openai-model',
+        model_provider: 'openai',
+        model_name: 'gpt-4',
+        temperature: 0.5,
+        interface: 'langchain',
+        system_prompt: 'OpenAI system prompt',
+      };
+      useBenchmarkStore.getState().addAnsweringModel(openaiModel);
+
+      // Add Anthropic model
+      const anthropicModel: ModelConfiguration = {
+        id: 'anthropic-model',
+        model_provider: 'anthropic',
+        model_name: 'claude-3-opus-20240229',
+        temperature: 0.3,
+        interface: 'langchain',
+        system_prompt: 'Anthropic system prompt',
+      };
+      useBenchmarkStore.getState().addAnsweringModel(anthropicModel);
+
+      // Add OpenRouter model
+      const openrouterModel: ModelConfiguration = {
+        id: 'openrouter-model',
+        model_provider: 'openrouter',
+        model_name: 'mistralai/mistral-large',
+        temperature: 0.6,
+        interface: 'openrouter',
+        system_prompt: 'OpenRouter system prompt',
+      };
+      useBenchmarkStore.getState().addAnsweringModel(openrouterModel);
+
+      // Verify all models are in the store (initial + 3 new models) - get fresh state
+      const models = useBenchmarkStore.getState().answeringModels;
+      expect(models.length).toBe(initialCount + 3);
+      expect(models.some((m) => m.id === 'openai-model')).toBe(true);
+      expect(models.some((m) => m.id === 'anthropic-model')).toBe(true);
+      expect(models.some((m) => m.id === 'openrouter-model')).toBe(true);
+    });
+
+    it('should configure model with different temperature values', () => {
+      // Add model with low temperature
+      const lowTempModel: ModelConfiguration = {
+        id: 'low-temp',
+        model_provider: 'anthropic',
+        model_name: 'claude-3-haiku',
+        temperature: 0.1,
+        interface: 'langchain',
+        system_prompt: 'Precise responses',
+      };
+      useBenchmarkStore.getState().addAnsweringModel(lowTempModel);
+
+      // Add model with high temperature
+      const highTempModel: ModelConfiguration = {
+        id: 'high-temp',
+        model_provider: 'anthropic',
+        model_name: 'claude-3-haiku',
+        temperature: 0.9,
+        interface: 'langchain',
+        system_prompt: 'Creative responses',
+      };
+      useBenchmarkStore.getState().addAnsweringModel(highTempModel);
+
+      // Verify temperature values are preserved - get fresh state
+      const models = useBenchmarkStore.getState().answeringModels;
+      const lowTemp = models.find((m) => m.id === 'low-temp');
+      const highTemp = models.find((m) => m.id === 'high-temp');
+
+      expect(lowTemp?.temperature).toBe(0.1);
+      expect(highTemp?.temperature).toBe(0.9);
+    });
+
+    it('should update existing model configuration', () => {
+      // Add a model
+      const model: ModelConfiguration = {
+        id: 'update-test',
+        model_provider: 'openai',
+        model_name: 'gpt-3.5-turbo',
+        temperature: 0.5,
+        interface: 'langchain',
+        system_prompt: 'Original prompt',
+      };
+      useBenchmarkStore.getState().addAnsweringModel(model);
+
+      // Update the model
+      useBenchmarkStore.getState().updateAnsweringModel('update-test', {
+        temperature: 0.8,
+        system_prompt: 'Updated prompt',
+      });
+
+      // Verify updates - get fresh state
+      const updatedModel = useBenchmarkStore.getState().answeringModels.find((m) => m.id === 'update-test');
+      expect(updatedModel?.temperature).toBe(0.8);
+      expect(updatedModel?.system_prompt).toBe('Updated prompt');
+      // Other fields remain unchanged
+      expect(updatedModel?.model_name).toBe('gpt-3.5-turbo');
+    });
+
+    it('should remove answering model from store', () => {
+      // Add two models
+      const model1: ModelConfiguration = {
+        id: 'model-to-remove',
+        model_provider: 'openai',
+        model_name: 'gpt-4',
+        temperature: 0.5,
+        interface: 'langchain',
+        system_prompt: 'Prompt 1',
+      };
+      useBenchmarkStore.getState().addAnsweringModel(model1);
+
+      const model2: ModelConfiguration = {
+        id: 'model-to-keep',
+        model_provider: 'anthropic',
+        model_name: 'claude-3',
+        temperature: 0.5,
+        interface: 'langchain',
+        system_prompt: 'Prompt 2',
+      };
+      useBenchmarkStore.getState().addAnsweringModel(model2);
+
+      const beforeRemovalCount = useBenchmarkStore.getState().answeringModels.length;
+
+      // Remove one model
+      useBenchmarkStore.getState().removeAnsweringModel('model-to-remove');
+
+      // Verify removal - get fresh state
+      const afterRemovalState = useBenchmarkStore.getState();
+      expect(afterRemovalState.answeringModels.length).toBe(beforeRemovalCount - 1);
+      expect(afterRemovalState.answeringModels.some((m) => m.id === 'model-to-remove')).toBe(false);
+      expect(afterRemovalState.answeringModels.some((m) => m.id === 'model-to-keep')).toBe(true);
     });
   });
 });

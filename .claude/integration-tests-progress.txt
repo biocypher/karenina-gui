@@ -495,3 +495,36 @@ Each PRD item contains:
 - integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
 - integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
 - integ-017: Load and save default settings (medium priority, small effort, no dependencies)
+
+## Iteration 16 - 2026-01-10
+
+### Completed
+- Implemented **integ-045**: Add and configure answering model
+  - Added 5 new test cases to benchmark-config.test.tsx
+  - All tests passing (1251 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-045
+1. Add answering model and verify it appears in store
+2. Add multiple answering models with different providers (OpenAI, Anthropic, OpenRouter)
+3. Configure model with different temperature values
+4. Update existing model configuration
+5. Remove answering model from store
+
+### Key Implementation Notes
+- `useBenchmarkStore` manages `answeringModels` array
+- `addAnsweringModel(model)` adds a new model to the store
+- `updateAnsweringModel(id, updates)` updates an existing model's properties
+- `removeAnsweringModel(id)` removes a model (with minimum count protection)
+- Models have properties: id, model_provider, model_name, temperature, interface, system_prompt
+- Tests directly interact with the store via `useBenchmarkStore.getState()`
+- Important: After store modifications, must call `getState()` again to get fresh state (Zustand's state is immutable, getState() returns a snapshot)
+- Store operations are synchronous and don't require rendering
+
+### Next Steps for Iteration 17
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-017: Load and save default settings (medium priority, small effort, no dependencies)
+- integ-046: Model system prompt and custom endpoint (medium priority, small effort, depends on integ-045)
+- integ-048: Deep judgment and abstention configuration (medium priority, small effort)
