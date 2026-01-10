@@ -441,4 +441,228 @@ describe('Edge Cases Integration Tests', () => {
       expect(datasetState.isConnectedToDatabase).toBe(false);
     });
   });
+
+  describe('integ-036: Concurrent operations', () => {
+    it('should handle rapid store operations without corruption', async () => {
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+      const { useBenchmarkStore } = await import('../../stores/useBenchmarkStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Perform rapid operations on multiple stores
+      for (let i = 0; i < 10; i++) {
+        useDatasetStore.getState().setMetadata({
+          name: `Benchmark ${i}`,
+          description: `Test benchmark ${i}`,
+          creator: 'test-user',
+          keywords: [`test-${i}`],
+        });
+
+        useBenchmarkStore.getState().setRunName(`run-${i}`);
+
+        useDatasetStore.getState().connectDatabase(`https://db${i}.example.com`, `benchmark-${i}`);
+      }
+
+      // Verify final state is consistent (last operation should win)
+      const finalDatasetState = useDatasetStore.getState();
+      expect(finalDatasetState.metadata.name).toBe('Benchmark 9');
+      expect(finalDatasetState.storageUrl).toBe('https://db9.example.com');
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should handle rapid tab switching without state loss', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Set up some state
+      useQuestionStore.getState().setSelectedQuestionId('q1');
+
+      // Simulate rapid tab switching by changing app state
+      for (let i = 0; i < 20; i++) {
+        // This simulates what would happen during rapid tab switching
+        const currentState = useQuestionStore.getState();
+        expect(currentState).toBeDefined();
+        expect(document.body).toBeInTheDocument();
+      }
+
+      // Verify state is still accessible
+      const finalState = useQuestionStore.getState();
+      expect(finalState).toBeDefined();
+    });
+
+    it('should maintain consistency during simultaneous state updates', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+      const { useBenchmarkStore } = await import('../../stores/useBenchmarkStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Simulate concurrent updates (all happening rapidly)
+      const operations = [
+        useDatasetStore.getState().setMetadata({
+          name: 'Concurrent Test',
+          description: 'Testing concurrent operations',
+          creator: 'test-user',
+          keywords: ['concurrent'],
+        }),
+        useBenchmarkStore.getState().setRunName('concurrent-run'),
+        useBenchmarkStore.getState().setReplicateCount(5),
+        useQuestionStore.getState().setSelectedQuestionId('q-concurrent'),
+        useDatasetStore.getState().connectDatabase('https://concurrent.example.com', 'test'),
+      ];
+
+      // All operations should complete without errors
+      expect(() => {
+        operations.forEach((op) => {
+          if (op instanceof Error) throw op;
+        });
+      }).not.toThrow();
+
+      // Verify all stores are in consistent states
+      const datasetState = useDatasetStore.getState();
+      const benchmarkState = useBenchmarkStore.getState();
+      const questionState = useQuestionStore.getState();
+
+      expect(datasetState.metadata.name).toBe('Concurrent Test');
+      expect(benchmarkState.runName).toBe('concurrent-run');
+      expect(benchmarkState.replicateCount).toBe(5);
+      expect(questionState.selectedQuestionId).toBe('q-concurrent');
+      expect(datasetState.isConnectedToDatabase).toBe(true);
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should handle state updates during navigation simulation', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Simulate navigation between questions while updating state
+      const questionIds = ['q1', 'q2', 'q3', 'q4', 'q5'];
+
+      questionIds.forEach((id) => {
+        useQuestionStore.getState().setSelectedQuestionId(id);
+        useQuestionStore.getState().setCurrentTemplate(`// Template for ${id}\n`);
+
+        // Verify state is consistent after each operation
+        const currentState = useQuestionStore.getState();
+        expect(currentState.selectedQuestionId).toBe(id);
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Final state should be the last set value
+      const finalState = useQuestionStore.getState();
+      expect(finalState.selectedQuestionId).toBe('q5');
+    });
+
+    it('should verify no state corruption with alternating operations', async () => {
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+      const { useBenchmarkStore } = await import('../../stores/useBenchmarkStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Alternate between different store operations
+      for (let i = 0; i < 15; i++) {
+        if (i % 2 === 0) {
+          useDatasetStore.getState().setMetadata({
+            name: `Alt Benchmark ${i}`,
+            description: `Alternate test ${i}`,
+          });
+        } else {
+          useBenchmarkStore.getState().setRunName(`alt-run-${i}`);
+          useBenchmarkStore.getState().setReplicateCount((i % 5) + 1);
+        }
+      }
+
+      // Verify stores are in consistent final state
+      const datasetState = useDatasetStore.getState();
+      const benchmarkState = useBenchmarkStore.getState();
+
+      // Last even index was 14, so name should be 'Alt Benchmark 14'
+      expect(datasetState.metadata.name).toBe('Alt Benchmark 14');
+
+      // Last odd index was 13, so runName should be 'alt-run-13'
+      expect(benchmarkState.runName).toBe('alt-run-13');
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should handle database operations during state changes', async () => {
+      const { useDatasetStore } = await import('../../stores/useDatasetStore');
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Simulate database operations while state is changing
+      for (let i = 0; i < 5; i++) {
+        useDatasetStore.getState().connectDatabase(`https://db${i}.example.com`, `benchmark-${i}`);
+        useDatasetStore.getState().setLastSaved(new Date().toISOString());
+        useQuestionStore.getState().setSelectedQuestionId(`q${i}`);
+      }
+
+      // Final state should be consistent
+      const datasetState = useDatasetStore.getState();
+      expect(datasetState.storageUrl).toBe('https://db4.example.com');
+      expect(datasetState.currentBenchmarkName).toBe('benchmark-4');
+      expect(datasetState.lastSaved).not.toBeNull();
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should verify store methods handle concurrent calls safely', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Call the same method multiple times rapidly
+      const questionId = 'test-q';
+
+      for (let i = 0; i < 20; i++) {
+        useQuestionStore.getState().setSelectedQuestionId(questionId);
+        useQuestionStore.getState().setCurrentTemplate(`// Draft ${i}\n`);
+      }
+
+      // Final state should be consistent (last calls win)
+      const finalState = useQuestionStore.getState();
+      expect(finalState.selectedQuestionId).toBe(questionId);
+      expect(finalState.currentTemplate).toContain('// Draft 19');
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+  });
 });

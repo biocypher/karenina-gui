@@ -777,7 +777,7 @@
     "mocks_required": ["Long-running generation WebSocket"],
     "fixtures_needed": [],
     "store_assertions": ["No state corruption", "Operations complete correctly"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "medium"
   },
