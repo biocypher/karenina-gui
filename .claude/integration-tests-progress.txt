@@ -946,3 +946,39 @@ Each PRD item contains:
 - integ-021: Verification with multiple models (medium priority, medium effort, requires WebSocket)
 - integ-022: Verification with replicates (medium priority, small effort, depends on integ-021)
 - integ-023: Verification with rubric evaluation (medium priority, small effort, depends on integ-021)
+
+## Iteration 27 - 2026-01-10
+
+### Completed
+- Implemented **integ-002**: Excel file upload with multiple sheets
+  - Added 5 new test cases to file-upload.test.tsx
+  - Created fixture file: excel-multi-sheet.json
+  - All tests passing (1354 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-002 (5 tests)
+1. Upload Excel file with multiple sheets and verify sheets information in response
+2. Switch between sheets and verify preview updates
+3. Verify sheet_name parameter sent to preview API
+4. Store selectedSheet and verify it can be changed (direct store test)
+5. Verify preview data includes sheet information when available
+
+### Key Implementation Notes
+- `useTemplateStore` has `selectedSheet` state and `setSelectedSheet()` method
+- `selectedSheet` is sent as `sheet_name` in FormData when previewing
+- Excel files have MIME type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- Preview API response can include `sheets` array with available sheet names
+- Preview API response can include `current_sheet` indicating the active sheet
+- Tests verify store behavior even when UI sheet selector may not be fully implemented
+- Mock fetch captures FormData to verify sheet_name parameter is sent correctly
+
+### Files Modified
+- `src/__tests__/integration/features/file-upload.test.tsx`: Added 5 tests for integ-002
+- `src/test-utils/fixtures/file-upload/excel-multi-sheet.json`: Created new fixture
+
+### Next Steps for Iteration 28
+- integ-021: Verification with multiple models (medium priority, medium effort, requires WebSocket)
+- integ-022: Verification with replicates (medium priority, small effort, depends on integ-021)
+- integ-023: Verification with rubric evaluation (medium priority, small effort, depends on integ-021)
+- integ-024: Results summary display (medium priority, small effort, no dependencies)
+

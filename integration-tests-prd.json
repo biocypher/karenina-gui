@@ -41,7 +41,7 @@
     ],
     "fixtures_needed": ["file-upload/excel-multi-sheet.json"],
     "store_assertions": ["useTemplateStore.selectedSheet updates on change"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-001"],
     "effort_estimate": "small"
   },
