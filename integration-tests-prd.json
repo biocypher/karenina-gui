@@ -338,7 +338,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["clone creates independent copy", "delete removes from questionData and checkpoint"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-010"],
     "effort_estimate": "small"
   },

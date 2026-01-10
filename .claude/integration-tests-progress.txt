@@ -458,3 +458,40 @@ Each PRD item contains:
 - integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
 - integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
 - integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
+
+## Iteration 15 - 2026-01-10
+
+### Completed
+- Implemented **integ-016**: Clone and delete question
+  - Added 5 new test cases to template-editing.test.tsx
+  - All tests passing (1246 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-016
+1. Clone question and verify independent editing
+2. Clone question and verify it is inserted after source
+3. Delete question and verify navigation to adjacent
+4. Delete last question and navigate to previous
+5. Delete only question and verify empty state
+
+### Key Implementation Notes
+- `cloneQuestion(questionId)` creates a copy of a question with:
+  - New UUID-generated ID
+  - `[CLONED]` prefix added to question text
+  - `finished` reset to `false` (clone needs review)
+  - New `date_created` and `last_modified` timestamps
+  - All other fields copied from source
+  - Inserted immediately after the source question in the list
+- Cloned question becomes the selected question after cloning
+- Clones can be edited independently from the source
+- `deleteQuestion(questionId)` removes a question:
+  - Removed from both `questionData` and `checkpoint`
+  - Session draft for the question is also cleared
+  - Navigates to next question, or previous if deleted the last
+  - If no questions remain, `selectedQuestionId` and `currentTemplate` are empty
+
+### Next Steps for Iteration 16
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-017: Load and save default settings (medium priority, small effort, no dependencies)

@@ -964,4 +964,190 @@ describe('Question Navigation Integration Tests', () => {
       expect(useQuestionStore.getState().checkpoint[newQuestionId].finished).toBe(false);
     });
   });
+
+  describe('integ-016: Clone and delete question', () => {
+    it('should clone question and verify independent editing', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Clone q1
+      const clonedId = useQuestionStore.getState().cloneQuestion('q1');
+
+      // Verify a new ID was generated
+      expect(clonedId).toBeTruthy();
+      expect(clonedId).not.toBe('q1');
+
+      // Verify the cloned question has [CLONED] prefix
+      expect(useQuestionStore.getState().questionData[clonedId].question).toBe(
+        '[CLONED] What is the capital of France?'
+      );
+
+      // Verify the cloned question is selected
+      expect(useQuestionStore.getState().selectedQuestionId).toBe(clonedId);
+
+      // Verify both questions exist independently
+      expect(useQuestionStore.getState().questionData['q1']).toBeDefined();
+      expect(useQuestionStore.getState().questionData[clonedId]).toBeDefined();
+
+      // Verify the original question text is unchanged
+      expect(useQuestionStore.getState().questionData['q1'].question).toBe('What is the capital of France?');
+
+      // Verify the clone has its own template (can be edited independently)
+      const originalTemplate = useQuestionStore.getState().checkpoint['q1'].answer_template;
+      const clonedTemplate = useQuestionStore.getState().checkpoint[clonedId].answer_template;
+      expect(clonedTemplate).toBe(originalTemplate);
+
+      // Edit the clone's template
+      useQuestionStore.getState().setCurrentTemplate(clonedTemplate.replace('capital', 'city'));
+
+      // Verify only the cloned template is modified
+      expect(useQuestionStore.getState().currentTemplate).toContain('city');
+      expect(useQuestionStore.getState().checkpoint['q1'].answer_template).toContain('capital');
+    });
+
+    it('should clone question and verify it is inserted after source', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Get initial question IDs order
+      const initialIds = useQuestionStore.getState().getQuestionIds();
+      expect(initialIds).toEqual(['q1', 'q2', 'q3']);
+
+      // Clone q2
+      const clonedId = useQuestionStore.getState().cloneQuestion('q2');
+
+      // Verify the clone was inserted after q2
+      const newIds = useQuestionStore.getState().getQuestionIds();
+      expect(newIds.length).toBe(4);
+      expect(newIds.indexOf('q2')).toBe(1);
+      expect(newIds.indexOf(clonedId)).toBe(2); // Clone should be at index 2, after q2
+      expect(newIds.indexOf('q3')).toBe(3); // q3 should be shifted to index 3
+    });
+
+    it('should delete question and verify navigation to adjacent', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Initially have 3 questions
+      expect(useQuestionStore.getState().getQuestionIds().length).toBe(3);
+
+      // Delete q2 (middle question)
+      useQuestionStore.getState().deleteQuestion('q2');
+
+      // Verify question count decreased
+      expect(useQuestionStore.getState().getQuestionIds().length).toBe(2);
+
+      // Verify q2 is removed from both questionData and checkpoint
+      expect(useQuestionStore.getState().questionData['q2']).toBeUndefined();
+      expect(useQuestionStore.getState().checkpoint['q2']).toBeUndefined();
+
+      // Verify q1 and q3 still exist
+      expect(useQuestionStore.getState().questionData['q1']).toBeDefined();
+      expect(useQuestionStore.getState().questionData['q3']).toBeDefined();
+
+      // Verify navigation - since we deleted q2 (index 1), it should navigate to next (q3 at new index 1)
+      // or if we deleted the last question, it would navigate to previous
+      const selectedId = useQuestionStore.getState().selectedQuestionId;
+      expect(selectedId).toBe('q3'); // Navigate to q3 (next question after deleted q2)
+    });
+
+    it('should delete last question and navigate to previous', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Navigate to q3 (last question) using the store method directly
+      useQuestionStore.getState().navigateToQuestion('q3');
+
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q3');
+
+      // Delete q3 (last question)
+      useQuestionStore.getState().deleteQuestion('q3');
+
+      // Verify question count decreased
+      expect(useQuestionStore.getState().getQuestionIds().length).toBe(2);
+
+      // Verify navigation to previous question (q2)
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q2');
+    });
+
+    it('should delete only question and verify empty state', async () => {
+      // Create a checkpoint with only one question
+      const singleQuestionCheckpoint: UnifiedCheckpoint = {
+        version: '2.0',
+        global_rubric: null,
+        checkpoint: {
+          q1: {
+            question: 'Single question?',
+            raw_answer: 'Single answer',
+            original_answer_template: 'class Answer(BaseModel):\n    result: str',
+            answer_template: 'class Answer(BaseModel):\n    result: str',
+            last_modified: new Date().toISOString(),
+            finished: false,
+            question_rubric: undefined,
+          },
+        },
+      };
+
+      // Setup with single question
+      const questionData = {
+        q1: {
+          question: 'Single question?',
+          raw_answer: 'Single answer',
+          answer_template: 'class Answer(BaseModel):\n    result: str',
+        },
+      };
+
+      useQuestionStore.setState({
+        questionData,
+        checkpoint: singleQuestionCheckpoint.checkpoint,
+        selectedQuestionId: 'q1',
+        currentTemplate: singleQuestionCheckpoint.checkpoint['q1'].answer_template,
+      });
+      useDatasetStore.setState({
+        isBenchmarkInitialized: true,
+      });
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 1/i)).toBeInTheDocument();
+      });
+
+      // Delete the only question
+      useQuestionStore.getState().deleteQuestion('q1');
+
+      // Verify no questions remain
+      expect(useQuestionStore.getState().getQuestionIds().length).toBe(0);
+
+      // Verify selectedQuestionId is empty
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('');
+
+      // Verify currentTemplate is empty
+      expect(useQuestionStore.getState().currentTemplate).toBe('');
+    });
+  });
 });
