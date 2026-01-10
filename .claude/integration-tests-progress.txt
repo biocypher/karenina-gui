@@ -1427,3 +1427,54 @@ Remaining low priority tests:
 - integ-040, 041, 055: Accessibility (3 tests)
 - integ-044, 045, 046, 047, 048, 057: Documentation (6 tests)
 
+
+## Ralph Loop Iteration 38 - 2025-01-10
+
+### Completed: integ-056 - Preset application and verification
+
+### Tests Added (6 tests)
+1. Load preset and apply config to benchmark store
+2. Verify benchmark settings match preset configuration
+3. Convert store state back to verification config (round-trip)
+4. Handle evaluation mode normalization when applying preset
+5. Apply preset with minimal configuration
+6. Preserve runName when applying preset
+
+### Key Implementation Notes
+- `useBenchmarkStore.applyVerificationConfig(config)` applies preset config to store
+- `useBenchmarkStore.getCurrentVerificationConfig()` converts store state back to config
+- Evaluation mode normalization:
+  - rubric_enabled=true + evaluation_mode=template_only → template_and_rubric
+  - rubric_enabled=false + evaluation_mode=template_and_rubric → template_only
+- Preset config includes:
+  - answering_models: Array of model configs with provider, name, temperature, interface, system_prompt
+  - parsing_models: Array of model configs for verification
+  - replicate_count: Number of replicates for each question
+  - rubric_enabled, evaluation_mode, rubric_evaluation_strategy
+  - abstention_enabled: Refusal detection
+  - deep_judgment_enabled, deep_judgment_search_enabled, deep_judgment_rubric_mode
+  - few_shot_config: { enabled, global_mode, global_k, question_configs, global_external_examples }
+- runName is preserved when applying preset (not overwritten)
+
+### Store Architecture
+- `usePresetStore.getPresetDetail(id)`: Fetches full preset with config from API
+- `useBenchmarkStore`: Stores current benchmark configuration
+- `verificationConfigToState()`: Converts VerificationConfig to store state
+- `stateToVerificationConfig()`: Converts store state to VerificationConfig
+
+### Files Created
+- `src/__tests__/integration/workflows/end-to-end-workflow.test.tsx`: 6 tests for integ-056
+
+### Files Modified
+- `integration-tests-prd.json`: Updated integ-056 to completed
+
+### Test Results
+- All 1444 tests pass (6 new in end-to-end-workflow.test.tsx)
+
+### Next Options
+Remaining low priority tests:
+- integ-033, 034: End-to-end workflows (2 tests, 1 large + 1 medium)
+- integ-035, 036, 037, 038, 039, 058: Edge cases (6 tests)
+- integ-040, 041, 055: Accessibility (3 tests)
+- integ-044, 045, 046, 047, 048, 057: Documentation (6 tests)
+

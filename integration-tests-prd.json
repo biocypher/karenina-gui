@@ -1170,7 +1170,7 @@
     "mocks_required": ["GET /api/presets/{id}", "POST /api/start-verification"],
     "fixtures_needed": ["presets/preset-detail.json"],
     "store_assertions": ["Preset config applied", "Verification uses preset settings"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-019", "integ-021"],
     "effort_estimate": "medium"
   },
