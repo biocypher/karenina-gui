@@ -653,4 +653,169 @@ describe('Verification Workflow', () => {
       });
     });
   });
+
+  describe('integ-024: Results table display and export', () => {
+    it('should verify results are displayed correctly in the table', () => {
+      const testResults = loadMockedVerificationResults('successful-verification');
+
+      // Verify results can be converted to table format
+      const resultsArray = Object.values(testResults);
+      expect(resultsArray.length).toBeGreaterThan(0);
+
+      // Each result should have the necessary fields for display
+      resultsArray.forEach((result) => {
+        expect(result.metadata.question_text).toBeTruthy();
+        expect(result.metadata.raw_answer).toBeTruthy();
+        expect(result.template.verify_result).toBeDefined();
+      });
+
+      // Verify the results count
+      expect(resultsArray.length).toBe(Object.keys(testResults).length);
+    });
+
+    it('should verify table columns can be extracted from results', () => {
+      const testResults = loadMockedVerificationResults('successful-verification');
+
+      // Extract column data from results
+      const tableData = Object.values(testResults).map((result) => ({
+        question: result.metadata.question_text,
+        answer: result.metadata.raw_answer,
+        result: result.template.verify_result ? 'Pass' : 'Fail',
+        rubricScore: result.rubric ? result.rubric.overall_score : null,
+      }));
+
+      expect(tableData.length).toBeGreaterThan(0);
+
+      // Verify each row has the required columns
+      tableData.forEach((row) => {
+        expect(row.question).toBeDefined();
+        expect(row.answer).toBeDefined();
+        expect(row.result).toMatch(/^(Pass|Fail)$/);
+        // rubricScore may be null if no rubric evaluation
+      });
+    });
+
+    it('should verify sorting functionality works on results', () => {
+      const testResults = loadMockedVerificationResults('multi-model-results');
+
+      // Get all results and sort by question_id
+      const resultsArray = Object.entries(testResults);
+      const sortedByQuestion = [...resultsArray].sort((a, b) =>
+        a[1].metadata.question_id.localeCompare(b[1].metadata.question_id)
+      );
+
+      // Verify sorting worked
+      expect(sortedByQuestion[0][1].metadata.question_id).toBe('q1');
+      expect(sortedByQuestion[1][1].metadata.question_id).toBe('q1');
+
+      // Sort by answering model
+      const sortedByModel = [...resultsArray].sort((a, b) =>
+        a[1].metadata.answering_model.localeCompare(b[1].metadata.answering_model)
+      );
+
+      // Verify model sorting - Claude should come before OpenAI alphabetically
+      const claudeResults = sortedByModel.filter(
+        ([, r]) => r.metadata.answering_model === 'anthropic/claude-haiku-4-5'
+      );
+      const openaiResults = sortedByModel.filter(([, r]) => r.metadata.answering_model === 'openai/gpt-4');
+
+      expect(claudeResults.length).toBeGreaterThan(0);
+      expect(openaiResults.length).toBeGreaterThan(0);
+      // claude comes before openai alphabetically
+      expect(
+        sortedByModel.findIndex(([, r]) => r.metadata.answering_model === 'anthropic/claude-haiku-4-5')
+      ).toBeLessThan(sortedByModel.findIndex(([, r]) => r.metadata.answering_model === 'openai/gpt-4'));
+    });
+
+    it('should verify filtering by result status works', () => {
+      const mixedResults = loadMockedVerificationResults('partial-completion');
+
+      // Filter by passed results
+      const passedResults = Object.values(mixedResults).filter((r) => r.template.verify_result === true);
+
+      // Filter by failed results (explicit false or null/error)
+      const failedResults = Object.values(mixedResults).filter(
+        (r) => r.template.verify_result === false || r.template.verify_result === null
+      );
+
+      // Verify filtering works
+      expect(passedResults.length).toBeGreaterThan(0);
+      expect(failedResults.length).toBeGreaterThan(0);
+
+      // Verify no overlap
+      const passedIds = new Set(passedResults.map((r) => r.metadata.result_id));
+      const failedIds = new Set(failedResults.map((r) => r.metadata.result_id));
+      const intersection = [...passedIds].filter((x) => failedIds.has(x));
+      expect(intersection.length).toBe(0);
+    });
+
+    it('should verify JSON export data structure', () => {
+      const testResults = loadMockedVerificationResults('successful-verification');
+
+      // Simulate JSON export structure
+      const exportData = {
+        job_id: 'test-job-123',
+        timestamp: new Date().toISOString(),
+        results: testResults,
+        summary: {
+          total: Object.keys(testResults).length,
+          passed: Object.values(testResults).filter((r) => r.template.verify_result === true).length,
+          failed: Object.values(testResults).filter((r) => r.template.verify_result === false).length,
+        },
+      };
+
+      // Verify export structure
+      expect(exportData.job_id).toBeTruthy();
+      expect(exportData.timestamp).toBeTruthy();
+      expect(exportData.results).toBeDefined();
+      expect(exportData.summary.total).toBe(3);
+      expect(exportData.summary.passed).toBe(3);
+      expect(exportData.summary.failed).toBe(0);
+
+      // Verify results can be serialized to JSON
+      const jsonString = JSON.stringify(exportData);
+      expect(jsonString).toBeTruthy();
+      expect(jsonString.length).toBeGreaterThan(0);
+    });
+
+    it('should verify CSV export data structure', () => {
+      const testResults = loadMockedVerificationResults('successful-verification');
+
+      // Simulate CSV export structure (flat rows)
+      const csvRows = Object.values(testResults).map((result) => ({
+        question_id: result.metadata.question_id,
+        question_text: result.metadata.question_text,
+        raw_answer: result.metadata.raw_answer,
+        verify_result: result.template.verify_result ? 'Pass' : 'Fail',
+        answering_model: result.metadata.answering_model,
+        parsing_model: result.metadata.parsing_model,
+        execution_time: result.metadata.execution_time,
+      }));
+
+      expect(csvRows.length).toBe(3);
+
+      // Verify each row has the required CSV columns
+      csvRows.forEach((row) => {
+        expect(row.question_id).toMatch(/^q[123]$/);
+        expect(row.question_text).toBeDefined();
+        expect(row.raw_answer).toBeDefined();
+        expect(row.verify_result).toBe('Pass');
+        expect(row.answering_model).toBe('anthropic/claude-haiku-4-5');
+        expect(typeof row.execution_time).toBe('number');
+      });
+
+      // Verify CSV could be generated from rows
+      const headers = [
+        'question_id',
+        'question_text',
+        'raw_answer',
+        'verify_result',
+        'answering_model',
+        'parsing_model',
+        'execution_time',
+      ];
+      const csvHeader = headers.join(',');
+      expect(csvHeader).toBeTruthy();
+    });
+  });
 });

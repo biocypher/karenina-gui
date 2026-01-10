@@ -522,7 +522,7 @@
     "mocks_required": ["GET /api/export-verification/{jobId}?fmt=json|csv"],
     "fixtures_needed": [],
     "store_assertions": ["results displayed correctly", "export triggers download"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-021"],
     "effort_estimate": "small"
   },

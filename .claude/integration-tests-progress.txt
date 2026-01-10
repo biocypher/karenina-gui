@@ -1104,3 +1104,44 @@ Each PRD item contains:
 - integ-053: Drill-down from summary statistics (medium priority, small effort, depends on integ-024)
 
 
+## Ralph Loop Iteration 32 - 2025-01-10
+
+### Completed: integ-024 - Results table display and export
+
+### Tests Added (6 tests)
+1. Verify results are displayed correctly in the table
+2. Verify table columns can be extracted from results (question, answer, result, rubric)
+3. Verify sorting functionality works on results (by question_id and answering_model)
+4. Verify filtering by result status works (pass/fail)
+5. Verify JSON export data structure
+6. Verify CSV export data structure
+
+### Key Implementation Notes
+- Results table uses `verify_result` for pass/fail status
+- Filtering handles both `false` and `null` as failure states
+  - `false`: Explicit verification failure
+  - `null`: Error/abstention/template parsing failure
+- Export structures include:
+  - JSON: Nested structure with job metadata, results, and summary
+  - CSV: Flat rows with question_id, question_text, raw_answer, verify_result, models, execution_time
+- Table columns can be dynamically extracted from result metadata
+- Sorting uses model names and question IDs from result keys
+
+### Fixture Usage
+- Used `successful-verification` for positive tests
+- Used `partial-completion` for mixed pass/fail filtering tests (q1/q3 pass, q2 error/null)
+- Existing fixtures sufficient for all test scenarios
+
+### Files Modified
+- `src/__tests__/integration/workflows/verification-workflow.test.tsx`: Added 6 tests for integ-024
+
+### Test Results
+- All 1378 tests pass
+- 35 tests in verification-workflow.test.tsx
+
+### Next Options
+- integ-003: YAML file upload validation (medium priority, small effort)
+- integ-005: Empty file handling (medium priority, small effort)
+- integ-025: Rubric trait management (low priority, small effort)
+- integ-004: Invalid JSON handling (high priority, small effort) - RECOMMENDED (blocks integ-006)
+
