@@ -331,3 +331,36 @@ Each PRD item contains:
 - integ-013: Session draft persistence (medium priority, small effort, depends on integ-010)
 - integ-015: Add new question (medium priority, small effort, depends on integ-010)
 - integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
+
+## Iteration 11 - 2026-01-10
+
+### Completed
+- Implemented **integ-047**: Evaluation mode configuration
+  - Created new test file: `src/__tests__/integration/features/benchmark-config.test.tsx`
+  - Implemented 5 test cases covering all scenarios from PRD
+  - All tests passing (1229 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-047
+1. Enable rubric and show evaluation mode options
+2. Select template and rubric mode
+3. Select rubric only mode
+4. Disable rubric and hide evaluation mode options
+5. Verify correctness checkbox toggles correctly
+
+### Key Implementation Notes
+- BenchmarkTab uses `useBenchmarkStore` for evaluation settings state
+- Evaluation modes: `template_only`, `template_and_rubric`, `rubric_only`
+- When rubric is enabled, evaluation mode radio buttons appear
+- The main rubric checkbox is distinguished from the Deep-Judgment "Rubrics" checkbox by its description text "(Qualitative evaluation using defined traits)"
+- Created helper function `findRubricCheckbox()` to find the correct checkbox by iterating through all checkboxes and checking label text content
+- Both correctness and rubric can be enabled simultaneously
+
+### Next Steps for Iteration 12
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-013: Session draft persistence (medium priority, small effort, depends on integ-010)
+- integ-014: Edit rubric in curator (medium priority, small effort, depends on integ-010)
+- integ-015: Add new question (medium priority, small effort, depends on integ-010)
+- integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
