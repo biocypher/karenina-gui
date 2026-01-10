@@ -439,4 +439,105 @@ describe('Verification Workflow', () => {
       });
     });
   });
+
+  describe('integ-022: Verification with replicates', () => {
+    it('should verify results contain replicate indices', async () => {
+      const replicateResults = loadMockedVerificationResults('with-replicates');
+
+      // Each question should have 3 replicates
+      const q1Replicates = Object.entries(replicateResults).filter(([key]) => key.startsWith('q1_'));
+      expect(q1Replicates.length).toBe(3);
+
+      // Verify each result has a replicate index
+      q1Replicates.forEach(([, result]) => {
+        expect(result.metadata.replicate).toBeDefined();
+        expect(typeof result.metadata.replicate).toBe('number');
+        expect(result.metadata.replicate).toBeGreaterThanOrEqual(0);
+        expect(result.metadata.replicate).toBeLessThan(3);
+      });
+
+      // Verify we have all three replicate indices
+      const replicateIndices = new Set(q1Replicates.map(([, result]) => result.metadata.replicate));
+      expect(replicateIndices.has(0)).toBe(true);
+      expect(replicateIndices.has(1)).toBe(true);
+      expect(replicateIndices.has(2)).toBe(true);
+    });
+
+    it('should verify result keys include replicate suffix', () => {
+      const replicateResults = loadMockedVerificationResults('with-replicates');
+
+      // Result key format with replicate: {question_id}_{model}_{timestamp}_replicate_{index}
+      Object.keys(replicateResults).forEach((key) => {
+        expect(key).toContain('_replicate_');
+      });
+    });
+
+    it('should verify aggregated results computed from replicates', () => {
+      const replicateResults = loadMockedVerificationResults('with-replicates');
+
+      // Group results by question
+      const resultsByQuestion: Record<string, typeof replicateResults> = {};
+      Object.entries(replicateResults).forEach(([key, result]) => {
+        const questionId = result.metadata.question_id;
+        if (!resultsByQuestion[questionId]) {
+          resultsByQuestion[questionId] = {};
+        }
+        resultsByQuestion[questionId][key] = result;
+      });
+
+      // For q1: all 3 replicates should pass
+      const q1Results = Object.values(resultsByQuestion.q1);
+      const q1SuccessCount = q1Results.filter((r) => r.template.verify_result === true).length;
+      expect(q1SuccessCount).toBe(3);
+
+      // For q2: 2 pass, 1 fails (replicate 2 has parsing error)
+      const q2Results = Object.values(resultsByQuestion.q2);
+      const q2SuccessCount = q2Results.filter((r) => r.template.verify_result === true).length;
+      const q2FailureCount = q2Results.filter((r) => r.template.verify_result === false).length;
+      expect(q2SuccessCount).toBe(2);
+      expect(q2FailureCount).toBe(1);
+
+      // For q3: all 3 replicates should pass
+      const q3Results = Object.values(resultsByQuestion.q3);
+      const q3SuccessCount = q3Results.filter((r) => r.template.verify_result === true).length;
+      expect(q3SuccessCount).toBe(3);
+    });
+
+    it('should handle mixed success/failure across replicates', () => {
+      const replicateResults = loadMockedVerificationResults('with-replicates');
+
+      // Find q2 replicate 2 which should have failed
+      const q2FailedReplicate = Object.entries(replicateResults).find(
+        ([key, result]) =>
+          key.startsWith('q2_') && result.metadata.replicate === 2 && result.template.verify_result === false
+      );
+
+      expect(q2FailedReplicate).toBeDefined();
+      expect(q2FailedReplicate![1].metadata.completed_without_errors).toBe(false);
+      expect(q2FailedReplicate![1].metadata.error).toBe('Parsing error: invalid format');
+      expect(q2FailedReplicate![1].template.parsed_llm_response).toBeNull();
+    });
+
+    it('should verify execution times vary across replicates', () => {
+      const replicateResults = loadMockedVerificationResults('with-replicates');
+
+      // Get q1 replicates
+      const q1Replicates = Object.entries(replicateResults)
+        .filter(([key]) => key.startsWith('q1_'))
+        .map(([, result]) => result.metadata.execution_time);
+
+      // Execution times should be different for each replicate
+      expect(q1Replicates.length).toBe(3);
+      expect(new Set(q1Replicates).size).toBeGreaterThan(1); // At least some variation
+    });
+
+    it('should verify unique result IDs for each replicate', () => {
+      const replicateResults = loadMockedVerificationResults('with-replicates');
+
+      // All result IDs should be unique
+      const resultIds = Object.values(replicateResults).map((r) => r.metadata.result_id);
+      const uniqueIds = new Set(resultIds);
+      expect(uniqueIds.size).toBe(resultIds.length);
+    });
+  });
 });

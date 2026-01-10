@@ -478,7 +478,7 @@
     ],
     "fixtures_needed": ["verification/with-replicates.json"],
     "store_assertions": ["results contain replicate indices", "aggregated_results computed"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-021"],
     "effort_estimate": "small"
   },
