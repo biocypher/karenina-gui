@@ -1,0 +1,131 @@
+# Integration Tests PRD Progress
+
+## Overview
+Creating a structured PRD from integration.md to guide implementation of integration tests for the karenina-gui webapp.
+
+## Iteration 1 - 2026-01-10
+
+### Completed
+- Read and analyzed integration.md document (4000+ lines)
+- Identified existing prd.json is for code refactoring, NOT integration tests
+- Created new integration-tests-prd.json with 48 test items
+
+### PRD Structure
+- **Total Items**: 48 integration test items
+- **Phase 1 (High Priority)**: 9 items (integ-001 to integ-009)
+  - File Upload: 3 items
+  - Question Extraction: 3 items
+  - Template Generation: 3 items
+- **Phase 2 (Medium Priority)**: 18 items (integ-010 to integ-024, integ-045 to integ-048)
+  - Template Editing: 7 items
+  - Configuration: 2 items
+  - Preset Management: 2 items
+  - Verification: 4 items
+  - Results Display: 1 item
+  - Benchmark Config: 4 items
+- **Phase 3 (Lower Priority)**: 12 items (integ-025 to integ-034, integ-042 to integ-043)
+  - Rubric Management: 3 items
+  - Database Workflow: 5 items
+  - End-to-End: 2 items
+  - Additional Features: 2 items
+- **Phase 4 (Edge Cases & Accessibility)**: 9 items (integ-035 to integ-041, integ-044)
+  - Edge Cases: 5 items
+  - Accessibility: 2 items
+  - Docs: 1 item (smoke test extension)
+
+### Item Schema
+Each PRD item contains:
+- `id`: Unique identifier (integ-XXX)
+- `category`: Feature area
+- `priority`: high/medium/low
+- `phase`: 1-4
+- `test_file`: Target test file path
+- `description`: What the test covers
+- `scenarios`: List of specific test scenarios
+- `mocks_required`: API mocks needed
+- `fixtures_needed`: Fixture files required
+- `store_assertions`: Zustand store state to verify
+- `status`: pending/in_progress/completed
+- `depends_on`: Dependencies on other items
+- `effort_estimate`: small/medium/large
+
+### Effort Distribution
+- Small: 32 items (~1-2 hours each)
+- Medium: 14 items (~2-4 hours each)
+- Large: 2 items (~4-8 hours each)
+
+### Next Steps for Iteration 2
+1. Review PRD items for completeness
+2. Cross-reference with integration.md to ensure no gaps
+3. Validate fixture requirements
+4. Consider adding more edge cases if needed
+
+## Iteration 2 - 2026-01-10
+
+### Completed
+- Cross-referenced PRD with integration.md using grep to find all scenarios
+- Identified 11 missing items from original PRD
+- Added 11 new items (integ-049 to integ-059)
+
+### Missing Items Added
+1. **integ-049**: Few-shot examples configuration (9.3 in integration.md)
+2. **integ-050**: Merge results dialog (9.4)
+3. **integ-051**: Trace highlighting configuration (9.5)
+4. **integ-052**: Generation with different model configs (1.3)
+5. **integ-053**: Drill-down from summary statistics (3.4)
+6. **integ-054**: Delete benchmark from database (6.2)
+7. **integ-055**: Screen reader compatibility (11.1)
+8. **integ-056**: Preset application and verification (8.3)
+9. **integ-057**: All docs sections accessible (4.1)
+10. **integ-058**: Generate templates for many questions (10.1)
+11. **integ-059**: Extra kwargs modal configuration (3.1)
+
+### Updated PRD Summary
+- **Total Items**: 59 integration test items (was 48)
+- **Phase 1 (High Priority)**: 9 items
+- **Phase 2 (Medium Priority)**: 21 items (was 18, +3)
+- **Phase 3 (Lower Priority)**: 17 items (was 12, +5)
+- **Phase 4 (Edge Cases)**: 12 items (was 9, +3)
+
+### Effort Distribution (Updated)
+- Small: 41 items (~1-2 hours each)
+- Medium: 16 items (~2-4 hours each)
+- Large: 2 items (~4-8 hours each)
+
+### Next Steps for Iteration 3
+1. Validate JSON structure is valid
+2. Review for any remaining gaps
+3. Add fixture file specifications where missing
+4. Consider splitting any "large" items into smaller ones
+
+## Notes
+- PRD file location: karenina-gui/integration-tests-prd.json
+- Source document: karenina-gui/integration.md
+- Each item represents roughly equal "effort" for implementation
+- Items are self-contained with clear dependencies
+
+## Iteration 3 - 2026-01-10
+
+### Completed
+- Implemented **integ-001**: CSV file upload and preview display
+  - Created integration test file: `src/__tests__/integration/features/file-upload.test.tsx`
+  - Created fixture file: `src/test-utils/fixtures/file-upload/csv-preview.json`
+  - Implemented 9 test cases covering all scenarios from PRD
+  - All tests passing (1194 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-001
+1. Upload CSV file via file input and display preview
+2. Upload CSV file via drag-and-drop and display preview
+3. Verify upload API called with FormData
+4. Display preview step with column options
+5. Display file name and row count correctly
+6. Auto-select columns based on common patterns
+7. Handle files with no auto-detectable column names
+8. Verify useTemplateStore.uploadedFile is set after upload
+9. Verify useTemplateStore.currentStep transitions through upload to configure
+
+### Next Steps for Iteration 4
+- integ-002: Excel file upload with multiple sheets (depends on integ-001, now unblocked)
+- integ-003: File upload error handling (depends on integ-001, now unblocked)
+- integ-004: Question extraction (depends on integ-001, now unblocked)

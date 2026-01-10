@@ -1,0 +1,1233 @@
+[
+  {
+    "id": "integ-001",
+    "category": "file-upload",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/features/file-upload.test.tsx",
+    "description": "Test successful CSV file upload and preview display",
+    "scenarios": [
+      "Upload CSV file via file input/drop",
+      "Verify upload API called with FormData",
+      "Verify preview step displays with column options",
+      "Verify file name and row count displayed"
+    ],
+    "mocks_required": [
+      "POST /api/upload-file -> { file_id, filename, size }",
+      "POST /api/preview-file -> { preview_rows, columns, total_rows }"
+    ],
+    "fixtures_needed": ["file-upload/csv-preview.json"],
+    "store_assertions": ["useTemplateStore.uploadedFile is set", "useTemplateStore.currentStep is 'preview'"],
+    "status": "completed",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-002",
+    "category": "file-upload",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/features/file-upload.test.tsx",
+    "description": "Test Excel file upload with multiple sheets",
+    "scenarios": [
+      "Upload Excel file with multiple sheets",
+      "Verify sheet selector appears",
+      "Switch between sheets",
+      "Verify preview updates for each sheet"
+    ],
+    "mocks_required": [
+      "POST /api/upload-file -> { file_id, filename, size }",
+      "POST /api/preview-file (with sheet_name param) -> sheet-specific data"
+    ],
+    "fixtures_needed": ["file-upload/excel-multi-sheet.json"],
+    "store_assertions": ["useTemplateStore.selectedSheet updates on change"],
+    "status": "pending",
+    "depends_on": ["integ-001"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-003",
+    "category": "file-upload",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/features/file-upload.test.tsx",
+    "description": "Test file upload error handling",
+    "scenarios": [
+      "Upload unsupported file type -> show error message",
+      "Upload corrupted file -> show error message",
+      "Network failure during upload -> show retry option",
+      "File too large -> show size limit error"
+    ],
+    "mocks_required": ["POST /api/upload-file -> 400 error responses for each scenario"],
+    "fixtures_needed": [],
+    "store_assertions": ["useTemplateStore.error is set", "useTemplateStore.uploadedFile is null"],
+    "status": "pending",
+    "depends_on": ["integ-001"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-004",
+    "category": "question-extraction",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/features/question-extraction.test.tsx",
+    "description": "Test successful question extraction from uploaded file",
+    "scenarios": [
+      "Configure column mappings (question, answer columns)",
+      "Click extract button",
+      "Verify extraction API called with correct config",
+      "Verify extracted questions appear in store",
+      "Verify transition to visualization step"
+    ],
+    "mocks_required": ["POST /api/extract-questions -> { success, questions_data }"],
+    "fixtures_needed": ["extraction/successful-extraction.json"],
+    "store_assertions": [
+      "useTemplateStore.extractedQuestions has expected count",
+      "useTemplateStore.currentStep is 'visualize'"
+    ],
+    "status": "pending",
+    "depends_on": ["integ-001"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-005",
+    "category": "question-extraction",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/features/question-extraction.test.tsx",
+    "description": "Test extraction with metadata columns",
+    "scenarios": [
+      "Configure metadata column mappings (keywords, URL, author)",
+      "Extract questions",
+      "Verify metadata is attached to each question"
+    ],
+    "mocks_required": ["POST /api/extract-questions -> { success, questions_data with metadata }"],
+    "fixtures_needed": ["extraction/with-metadata.json"],
+    "store_assertions": ["extractedQuestions[*].metadata contains expected fields"],
+    "status": "pending",
+    "depends_on": ["integ-004"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-006",
+    "category": "question-extraction",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/features/question-extraction.test.tsx",
+    "description": "Test partial extraction with invalid rows",
+    "scenarios": [
+      "Upload file with some empty/invalid rows",
+      "Extract questions",
+      "Verify warning about skipped rows displayed",
+      "Verify valid questions are still extracted"
+    ],
+    "mocks_required": ["POST /api/extract-questions -> { success, questions_data, skipped_rows, warnings }"],
+    "fixtures_needed": ["extraction/partial-extraction.json"],
+    "store_assertions": ["extractedQuestions count matches non-skipped rows", "warnings displayed to user"],
+    "status": "pending",
+    "depends_on": ["integ-004"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-007",
+    "category": "template-generation",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/workflows/template-generation-workflow.test.tsx",
+    "description": "Test successful template generation workflow",
+    "scenarios": [
+      "Select questions for generation",
+      "Configure LLM settings (model, provider)",
+      "Start generation",
+      "Verify WebSocket progress updates",
+      "Verify completed templates stored",
+      "Verify 'Add to Curator' action works"
+    ],
+    "mocks_required": [
+      "POST /api/generate-templates -> { job_id }",
+      "WebSocket /ws/template-generation/{job_id} -> progress events"
+    ],
+    "fixtures_needed": ["template-generation/successful-generation.json"],
+    "store_assertions": ["useTemplateStore.isGenerating transitions correctly", "generatedTemplates populated"],
+    "status": "pending",
+    "depends_on": ["integ-004"],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-008",
+    "category": "template-generation",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/workflows/template-generation-workflow.test.tsx",
+    "description": "Test template generation cancellation",
+    "scenarios": [
+      "Start generation",
+      "Click cancel while in progress",
+      "Verify cancellation API called",
+      "Verify UI returns to ready state",
+      "Verify partial results (if any) preserved"
+    ],
+    "mocks_required": [
+      "POST /api/generate-templates -> { job_id }",
+      "POST /api/cancel-generation -> { success }",
+      "WebSocket for partial progress"
+    ],
+    "fixtures_needed": [],
+    "store_assertions": ["isGenerating becomes false", "partial results preserved if any"],
+    "status": "pending",
+    "depends_on": ["integ-007"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-009",
+    "category": "template-generation",
+    "priority": "high",
+    "phase": 1,
+    "test_file": "src/__tests__/integration/workflows/template-generation-workflow.test.tsx",
+    "description": "Test template generation error handling",
+    "scenarios": [
+      "Model API quota exceeded -> show appropriate error",
+      "Model timeout -> show timeout message",
+      "Invalid model config -> show validation error",
+      "Partial failure (some questions fail) -> show results + errors"
+    ],
+    "mocks_required": ["POST /api/generate-templates with error responses", "WebSocket job_failed events"],
+    "fixtures_needed": ["template-generation/partial-failure.json"],
+    "store_assertions": ["error state set correctly", "successful templates still available"],
+    "status": "pending",
+    "depends_on": ["integ-007"],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-010",
+    "category": "template-editing",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/template-editing.test.tsx",
+    "description": "Test question navigation in curator",
+    "scenarios": [
+      "Load questions into store",
+      "Verify question list/selector displays",
+      "Click next/previous buttons",
+      "Verify selected question updates",
+      "Verify template code displays for selected question"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["useQuestionStore.selectedQuestionId updates on navigation"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-011",
+    "category": "template-editing",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/template-editing.test.tsx",
+    "description": "Test question search and filter by status",
+    "scenarios": [
+      "Enter search term -> verify filtered results",
+      "Clear search -> verify all questions shown",
+      "Filter to 'finished only' -> verify only finished shown",
+      "Filter to 'unfinished only' -> verify only unfinished shown"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["filtered question list matches criteria"],
+    "status": "pending",
+    "depends_on": ["integ-010"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-012",
+    "category": "template-editing",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/template-editing.test.tsx",
+    "description": "Test edit and save template",
+    "scenarios": [
+      "Select a question",
+      "Modify template code in editor",
+      "Verify 'unsaved changes' indicator appears",
+      "Save template",
+      "Verify changes persisted in store",
+      "Verify indicator clears"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["checkpoint[qid].answer_template updated", "checkpoint[qid].last_modified updated"],
+    "status": "pending",
+    "depends_on": ["integ-010"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-013",
+    "category": "template-editing",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/template-editing.test.tsx",
+    "description": "Test session draft persistence",
+    "scenarios": [
+      "Edit template (don't save)",
+      "Switch to another tab",
+      "Return to curator",
+      "Verify draft is still there",
+      "Switch questions and back",
+      "Verify draft is preserved"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["draft persists across tab switches and question changes"],
+    "status": "pending",
+    "depends_on": ["integ-012"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-014",
+    "category": "template-editing",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/template-editing.test.tsx",
+    "description": "Test revert to original and mark as finished",
+    "scenarios": [
+      "Edit template -> click revert/undo -> verify original restored",
+      "Toggle 'finished' checkbox -> verify status persists",
+      "Verify unsaved count in tab badge updates"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["checkpoint[qid].finished toggles correctly", "original_answer_template used for revert"],
+    "status": "pending",
+    "depends_on": ["integ-012"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-015",
+    "category": "template-editing",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/template-editing.test.tsx",
+    "description": "Test add new question",
+    "scenarios": [
+      "Click 'Add Question'",
+      "Fill in question text and answer",
+      "Optionally generate initial template",
+      "Save new question",
+      "Verify question appears in list",
+      "Verify navigation to new question"
+    ],
+    "mocks_required": ["POST /api/generate-single-template -> { success, template_code }"],
+    "fixtures_needed": [],
+    "store_assertions": ["questionData has new question", "checkpoint has new question entry"],
+    "status": "pending",
+    "depends_on": ["integ-010"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-016",
+    "category": "template-editing",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/template-editing.test.tsx",
+    "description": "Test clone and delete question",
+    "scenarios": [
+      "Clone question -> verify new question created with same content -> verify can edit independently",
+      "Delete question -> confirm deletion -> verify removed from list -> verify navigation to adjacent"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["clone creates independent copy", "delete removes from questionData and checkpoint"],
+    "status": "pending",
+    "depends_on": ["integ-010"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-017",
+    "category": "configuration",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/configuration.test.tsx",
+    "description": "Test load and save default settings",
+    "scenarios": [
+      "Open configuration modal",
+      "Verify defaults tab displays",
+      "Verify current settings populated from API",
+      "Change default model/provider",
+      "Save settings -> verify API called",
+      "Close and reopen -> verify settings persisted"
+    ],
+    "mocks_required": [
+      "GET /api/configuration/defaults -> { defaults }",
+      "POST /api/configuration/defaults -> { success }"
+    ],
+    "fixtures_needed": ["configuration/defaults.json"],
+    "store_assertions": ["config store updated on save"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-018",
+    "category": "configuration",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/configuration.test.tsx",
+    "description": "Test environment variables management",
+    "scenarios": [
+      "Open env vars tab",
+      "Verify API keys shown as masked",
+      "Click reveal on one key -> verify key shown temporarily",
+      "Enter new API key -> save -> verify API called",
+      "Verify key now shows as configured"
+    ],
+    "mocks_required": [
+      "GET /api/configuration/env-variables -> { variables (masked) }",
+      "POST /api/configuration/env-variables -> { success }"
+    ],
+    "fixtures_needed": ["configuration/env-variables.json"],
+    "store_assertions": [],
+    "status": "pending",
+    "depends_on": ["integ-017"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-019",
+    "category": "preset-management",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/preset-management.test.tsx",
+    "description": "Test preset list and load",
+    "scenarios": [
+      "Open preset manager -> verify list loads from API",
+      "Select preset -> click load",
+      "Verify benchmark store updated with preset config",
+      "Verify models, settings, evaluation options all applied"
+    ],
+    "mocks_required": ["GET /api/presets -> { presets: [...] }", "GET /api/presets/{id} -> { preset: {...} }"],
+    "fixtures_needed": ["presets/preset-list.json", "presets/preset-detail.json"],
+    "store_assertions": ["useBenchmarkStore updated with preset config"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-020",
+    "category": "preset-management",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/preset-management.test.tsx",
+    "description": "Test preset CRUD operations",
+    "scenarios": [
+      "Create preset: configure settings -> click 'Save as Preset' -> enter name -> save -> verify appears in list",
+      "Update preset: load preset -> make changes -> click 'Update Preset' -> verify PUT API called",
+      "Delete preset: select preset -> click delete -> confirm -> verify removed from list"
+    ],
+    "mocks_required": [
+      "POST /api/presets -> { preset }",
+      "PUT /api/presets/{id} -> { preset }",
+      "DELETE /api/presets/{id} -> { success }"
+    ],
+    "fixtures_needed": [],
+    "store_assertions": ["preset list updates accordingly"],
+    "status": "pending",
+    "depends_on": ["integ-019"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-021",
+    "category": "verification",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/workflows/verification-workflow.test.tsx",
+    "description": "Test verification with multiple models",
+    "scenarios": [
+      "Configure 2+ answering models",
+      "Select questions",
+      "Run verification",
+      "Verify results include all models",
+      "Verify model comparison view works"
+    ],
+    "mocks_required": [
+      "POST /api/start-verification -> { job_id }",
+      "WebSocket progress events",
+      "GET /api/verification-progress/{job_id} -> multi-model results"
+    ],
+    "fixtures_needed": ["verification/multi-model-results.json"],
+    "store_assertions": ["results contain entries for each model"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-022",
+    "category": "verification",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/workflows/verification-workflow.test.tsx",
+    "description": "Test verification with replicates",
+    "scenarios": [
+      "Set replicate count > 1",
+      "Run verification",
+      "Verify results show replicate data",
+      "Verify aggregation is correct"
+    ],
+    "mocks_required": [
+      "POST /api/start-verification with replicate_count",
+      "GET /api/verification-progress with replicate results"
+    ],
+    "fixtures_needed": ["verification/with-replicates.json"],
+    "store_assertions": ["results contain replicate indices", "aggregated_results computed"],
+    "status": "pending",
+    "depends_on": ["integ-021"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-023",
+    "category": "verification",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/workflows/verification-workflow.test.tsx",
+    "description": "Test verification with rubric evaluation",
+    "scenarios": [
+      "Enable rubric evaluation",
+      "Run verification",
+      "Verify rubric results in output",
+      "Verify trait-level breakdown displayed"
+    ],
+    "mocks_required": [
+      "POST /api/start-verification with rubric config",
+      "GET /api/verification-progress with rubric results"
+    ],
+    "fixtures_needed": ["verification/with-rubric-success.json"],
+    "store_assertions": ["results contain rubric field with trait scores"],
+    "status": "pending",
+    "depends_on": ["integ-021"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-024",
+    "category": "results-display",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/workflows/verification-workflow.test.tsx",
+    "description": "Test results table display and export",
+    "scenarios": [
+      "Complete verification -> verify results table displays",
+      "Verify columns (question, answer, result, rubric)",
+      "Test sorting and filtering",
+      "Export as JSON -> verify download",
+      "Export as CSV -> verify download"
+    ],
+    "mocks_required": ["GET /api/export-verification/{jobId}?fmt=json|csv"],
+    "fixtures_needed": [],
+    "store_assertions": ["results displayed correctly", "export triggers download"],
+    "status": "pending",
+    "depends_on": ["integ-021"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-025",
+    "category": "rubric-management",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/features/rubric-management.test.tsx",
+    "description": "Test add rubric trait to question",
+    "scenarios": [
+      "Select a question",
+      "Open rubric editor",
+      "Add an LLM rubric trait",
+      "Configure trait (prompt, name)",
+      "Save rubric",
+      "Verify trait persisted"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": ["rubric/sample-traits.json"],
+    "store_assertions": ["checkpoint[qid].question_rubric contains new trait"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-026",
+    "category": "rubric-management",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/features/rubric-management.test.tsx",
+    "description": "Test multiple trait types",
+    "scenarios": [
+      "Add LLMRubricTrait -> verify LLM config options",
+      "Add RegexTrait -> verify pattern input",
+      "Add CallableTrait -> verify code editor",
+      "Add MetricRubricTrait -> verify metric options"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["each trait type stored correctly with its specific fields"],
+    "status": "pending",
+    "depends_on": ["integ-025"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-027",
+    "category": "rubric-management",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/features/rubric-management.test.tsx",
+    "description": "Test global rubric inheritance",
+    "scenarios": [
+      "Set up global rubric with traits",
+      "Verify questions show inherited traits",
+      "Override trait on specific question",
+      "Verify override takes precedence"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["globalRubric traits visible on questions", "question-specific traits override global"],
+    "status": "pending",
+    "depends_on": ["integ-025"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-028",
+    "category": "database",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/database-workflow.test.tsx",
+    "description": "Test database connect and list benchmarks",
+    "scenarios": [
+      "Open database manager",
+      "Enter storage URL",
+      "Click connect",
+      "Verify connection status updates",
+      "Verify benchmark list loads"
+    ],
+    "mocks_required": ["GET /api/database/benchmarks -> { benchmarks: [...] }"],
+    "fixtures_needed": ["database/benchmark-list.json"],
+    "store_assertions": ["useDatasetStore.isConnectedToDatabase is true", "benchmark list populated"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-029",
+    "category": "database",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/database-workflow.test.tsx",
+    "description": "Test database connection error",
+    "scenarios": [
+      "Enter invalid URL",
+      "Click connect",
+      "Verify error message displayed",
+      "Verify retry option available"
+    ],
+    "mocks_required": ["GET /api/database/benchmarks -> 400/500 error"],
+    "fixtures_needed": [],
+    "store_assertions": ["isConnectedToDatabase is false", "error displayed"],
+    "status": "pending",
+    "depends_on": ["integ-028"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-030",
+    "category": "database",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/database-workflow.test.tsx",
+    "description": "Test load benchmark from database",
+    "scenarios": [
+      "Connect to database",
+      "Select benchmark",
+      "Click load",
+      "Verify benchmark data loaded into stores",
+      "Verify transition to curator tab (if applicable)"
+    ],
+    "mocks_required": ["POST /api/database/load-benchmark -> { checkpoint_data }"],
+    "fixtures_needed": ["database/loaded-benchmark.json"],
+    "store_assertions": ["useQuestionStore populated with loaded data", "checkpoint contains questions"],
+    "status": "pending",
+    "depends_on": ["integ-028"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-031",
+    "category": "database",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/database-workflow.test.tsx",
+    "description": "Test save benchmark to database",
+    "scenarios": [
+      "Make changes in curator",
+      "Click save to database",
+      "Verify save API called",
+      "Verify success message shown",
+      "Verify last saved timestamp updates"
+    ],
+    "mocks_required": ["POST /api/database/save-benchmark -> { success }"],
+    "fixtures_needed": [],
+    "store_assertions": ["useDatasetStore.lastSaved updated", "isDirty becomes false"],
+    "status": "pending",
+    "depends_on": ["integ-028"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-032",
+    "category": "database",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/database-workflow.test.tsx",
+    "description": "Test save with duplicate detection",
+    "scenarios": [
+      "Try to save benchmark",
+      "API returns duplicate warning",
+      "Verify duplicate resolution UI appears",
+      "Select resolution option (skip/overwrite/rename)",
+      "Verify resolution API called",
+      "Verify save completes"
+    ],
+    "mocks_required": [
+      "POST /api/database/save-benchmark -> { message: 'Duplicates detected', duplicates: [...] }",
+      "POST /api/database/resolve-duplicates -> { success }"
+    ],
+    "fixtures_needed": ["database/save-with-duplicates.json"],
+    "store_assertions": ["duplicates resolved", "save completes successfully"],
+    "status": "pending",
+    "depends_on": ["integ-031"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-033",
+    "category": "end-to-end",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/end-to-end-workflow.test.tsx",
+    "description": "Test full file-to-verification journey",
+    "scenarios": [
+      "Tab 1: Upload CSV file",
+      "Tab 1: Configure columns and extract questions",
+      "Tab 1: Generate templates for extracted questions",
+      "Tab 1: Add successful templates to curator",
+      "Tab 2: Review and mark templates as finished",
+      "Tab 3: Configure models and run verification",
+      "Tab 3: View results and export"
+    ],
+    "mocks_required": ["All file upload, extraction, generation, verification mocks"],
+    "fixtures_needed": ["Multiple fixtures across all stages"],
+    "store_assertions": ["Complete state transitions through entire workflow"],
+    "status": "pending",
+    "depends_on": ["integ-007", "integ-012", "integ-021"],
+    "effort_estimate": "large"
+  },
+  {
+    "id": "integ-034",
+    "category": "end-to-end",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/end-to-end-workflow.test.tsx",
+    "description": "Test database round-trip",
+    "scenarios": [
+      "Create new benchmark",
+      "Add questions and templates",
+      "Save to database",
+      "Clear local state",
+      "Load from database",
+      "Verify all data restored correctly"
+    ],
+    "mocks_required": ["Database save and load mocks"],
+    "fixtures_needed": [],
+    "store_assertions": ["Data integrity maintained across save/load cycle"],
+    "status": "pending",
+    "depends_on": ["integ-030", "integ-031"],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-035",
+    "category": "edge-cases",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/edge-cases.test.tsx",
+    "description": "Test large dataset handling (1000+ questions)",
+    "scenarios": [
+      "Load checkpoint with 1000 questions",
+      "Verify UI remains responsive",
+      "Verify pagination/virtualization works",
+      "Navigate between questions smoothly"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": ["large-dataset/1000-questions.json (generated)"],
+    "store_assertions": ["Performance acceptable (<3s initial render)"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-036",
+    "category": "edge-cases",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/edge-cases.test.tsx",
+    "description": "Test concurrent operations",
+    "scenarios": [
+      "Start template generation",
+      "While running, navigate to benchmark tab",
+      "Verify clear feedback about ongoing operations",
+      "Rapid tab switching during operation -> verify no state corruption"
+    ],
+    "mocks_required": ["Long-running generation WebSocket"],
+    "fixtures_needed": [],
+    "store_assertions": ["No state corruption", "Operations complete correctly"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-037",
+    "category": "edge-cases",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/edge-cases.test.tsx",
+    "description": "Test browser events (refresh, timeout)",
+    "scenarios": [
+      "Make edits (unsaved) -> simulate beforeunload -> verify warning dialog",
+      "Simulate session expiration -> verify graceful error message"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["Warning prevents data loss", "Session recovery works"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-038",
+    "category": "edge-cases",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/edge-cases.test.tsx",
+    "description": "Test network resilience",
+    "scenarios": [
+      "Start verification -> simulate network drop mid-progress -> verify reconnection attempt",
+      "Mock slow API responses (5+ seconds) -> verify loading indicators -> verify UI doesn't lock up"
+    ],
+    "mocks_required": ["Network error simulation", "Slow response mocks"],
+    "fixtures_needed": [],
+    "store_assertions": ["Reconnection handled", "Timeout handling works"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-039",
+    "category": "edge-cases",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/edge-cases.test.tsx",
+    "description": "Test invalid state recovery",
+    "scenarios": [
+      "Inject invalid state into Zustand store -> verify app doesn't crash -> verify recovery mechanism",
+      "Load checkpoint with missing question references -> verify graceful handling"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["App recovers from invalid state", "User informed of inconsistency"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-040",
+    "category": "accessibility",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/accessibility.test.tsx",
+    "description": "Test keyboard navigation",
+    "scenarios": [
+      "Tab through all interactive elements -> verify focus order logical",
+      "Verify focus visible on all elements",
+      "Use Enter/Space to activate buttons",
+      "Use Escape to close modals"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["All interactions work via keyboard"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-041",
+    "category": "accessibility",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/accessibility.test.tsx",
+    "description": "Test focus management",
+    "scenarios": [
+      "Open modal -> tab through -> verify focus wraps within modal -> close -> verify focus returns",
+      "Switch tabs -> verify focus moves to new tab content"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["Focus trap works in modals", "Focus management correct"],
+    "status": "pending",
+    "depends_on": ["integ-040"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-042",
+    "category": "additional-features",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/features/additional-features.test.tsx",
+    "description": "Test manual trace upload",
+    "scenarios": [
+      "Open manual trace upload",
+      "Paste or upload trace JSON",
+      "Verify trace validation",
+      "Verify trace associated with question",
+      "Upload invalid JSON -> verify error message -> verify no state corruption"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": ["traces/manual-trace-upload.json"],
+    "store_assertions": ["Trace correctly associated with question"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-043",
+    "category": "additional-features",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/features/additional-features.test.tsx",
+    "description": "Test metadata editor",
+    "scenarios": [
+      "Open metadata editor",
+      "Edit name, description, creator, keywords",
+      "Save metadata -> verify persisted in checkpoint",
+      "Enter empty required fields -> verify validation errors"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["datasetMetadata updated correctly"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-044",
+    "category": "docs",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/smoke.test.tsx",
+    "description": "Test docs tab expand/collapse sections",
+    "scenarios": [
+      "Render Docs tab",
+      "Verify all sections collapsed initially",
+      "Click to expand a section -> verify content displays",
+      "Click to collapse -> verify content hidden"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": [],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-045",
+    "category": "benchmark-config",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/benchmark-config.test.tsx",
+    "description": "Test add and configure answering model",
+    "scenarios": [
+      "Click 'Add Answering Model'",
+      "Select provider (Anthropic, OpenAI, etc.)",
+      "Enter model name",
+      "Configure temperature",
+      "Verify model appears in list",
+      "Verify model config saved to store"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["useBenchmarkStore.answeringModels contains new model"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-046",
+    "category": "benchmark-config",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/benchmark-config.test.tsx",
+    "description": "Test model system prompt and custom endpoint",
+    "scenarios": [
+      "Add model -> expand system prompt section -> enter custom prompt -> verify saved",
+      "Select 'openai_endpoint' interface -> enter base URL -> enter API key -> verify saved"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["Model config includes system_prompt and endpoint settings"],
+    "status": "pending",
+    "depends_on": ["integ-045"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-047",
+    "category": "benchmark-config",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/benchmark-config.test.tsx",
+    "description": "Test evaluation mode configuration",
+    "scenarios": [
+      "Select 'template only' -> verify rubric disabled",
+      "Select 'template + rubric' -> verify both enabled",
+      "Select 'rubric only' -> verify template disabled"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["evaluationMode updates correctly", "dependent options toggled"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-048",
+    "category": "benchmark-config",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/benchmark-config.test.tsx",
+    "description": "Test deep judgment and abstention configuration",
+    "scenarios": [
+      "Enable deep judgment for templates",
+      "Enable deep judgment for rubrics",
+      "Configure rubric mode (enable_all vs use_checkpoint)",
+      "Enable abstention detection -> run verification -> verify results display"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["Deep judgment and abstention settings saved correctly"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-049",
+    "category": "additional-features",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/features/additional-features.test.tsx",
+    "description": "Test few-shot examples configuration",
+    "scenarios": [
+      "Enable few-shot mode",
+      "Select mode (all, k-shot, custom)",
+      "Configure k value or select specific examples",
+      "Run verification",
+      "Verify few-shot config sent to API"
+    ],
+    "mocks_required": ["POST /api/start-verification with few_shot config"],
+    "fixtures_needed": [],
+    "store_assertions": ["useBenchmarkStore.fewShotEnabled is true", "fewShotMode and fewShotK set correctly"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-050",
+    "category": "additional-features",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/features/additional-features.test.tsx",
+    "description": "Test merge results dialog",
+    "scenarios": [
+      "Complete two verification runs",
+      "Open merge dialog",
+      "Select runs to merge",
+      "Configure merge strategy",
+      "Verify merged results displayed"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": ["verification/mergeable-runs.json"],
+    "store_assertions": ["Merged results combined correctly"],
+    "status": "pending",
+    "depends_on": ["integ-021"],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-051",
+    "category": "additional-features",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/features/additional-features.test.tsx",
+    "description": "Test trace highlighting configuration",
+    "scenarios": [
+      "Open trace highlighting config",
+      "Add highlight rules (regex patterns)",
+      "Assign colors to patterns",
+      "Verify highlights appear in trace display"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["Highlight rules stored correctly", "Trace display shows highlights"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-052",
+    "category": "template-generation",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/workflows/template-generation-workflow.test.tsx",
+    "description": "Test generation with different model configs",
+    "scenarios": [
+      "Generate with Anthropic Claude -> verify model-specific options sent",
+      "Generate with OpenAI GPT-4 -> verify model-specific options sent",
+      "Generate with custom endpoint -> verify base URL and API key used"
+    ],
+    "mocks_required": ["POST /api/generate-templates with different provider configs"],
+    "fixtures_needed": [],
+    "store_assertions": ["Generation uses correct model config"],
+    "status": "pending",
+    "depends_on": ["integ-007"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-053",
+    "category": "results-display",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/workflows/verification-workflow.test.tsx",
+    "description": "Test drill-down from summary statistics",
+    "scenarios": [
+      "View summary statistics panel",
+      "Click on a statistic (e.g., '3 failures')",
+      "Verify table filters to show those items"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["Table filter applied correctly from summary click"],
+    "status": "pending",
+    "depends_on": ["integ-024"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-054",
+    "category": "database",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/database-workflow.test.tsx",
+    "description": "Test delete benchmark from database",
+    "scenarios": [
+      "Select benchmark",
+      "Click delete",
+      "Confirm deletion dialog",
+      "Verify delete API called",
+      "Verify benchmark removed from list"
+    ],
+    "mocks_required": ["DELETE /api/database/{id} -> { success }"],
+    "fixtures_needed": [],
+    "store_assertions": ["Benchmark removed from list"],
+    "status": "pending",
+    "depends_on": ["integ-028"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-055",
+    "category": "accessibility",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/accessibility.test.tsx",
+    "description": "Test screen reader compatibility",
+    "scenarios": [
+      "Verify all interactive elements have accessible names",
+      "Verify form inputs have labels",
+      "Verify error messages announced (aria-live)",
+      "Verify status updates announced"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["All ARIA attributes present and correct"],
+    "status": "pending",
+    "depends_on": [],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-056",
+    "category": "end-to-end",
+    "priority": "low",
+    "phase": 3,
+    "test_file": "src/__tests__/integration/workflows/end-to-end-workflow.test.tsx",
+    "description": "Test preset application and verification",
+    "scenarios": [
+      "Load a preset",
+      "Verify all benchmark settings applied",
+      "Run verification",
+      "Verify results match expected configuration"
+    ],
+    "mocks_required": ["GET /api/presets/{id}", "POST /api/start-verification"],
+    "fixtures_needed": ["presets/preset-detail.json"],
+    "store_assertions": ["Preset config applied", "Verification uses preset settings"],
+    "status": "pending",
+    "depends_on": ["integ-019", "integ-021"],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-057",
+    "category": "docs",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/smoke.test.tsx",
+    "description": "Test all docs sections accessible",
+    "scenarios": ["Verify all 5 sections render", "Expand each section", "Verify content present in each"],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": [],
+    "status": "pending",
+    "depends_on": ["integ-044"],
+    "effort_estimate": "small"
+  },
+  {
+    "id": "integ-058",
+    "category": "edge-cases",
+    "priority": "low",
+    "phase": 4,
+    "test_file": "src/__tests__/integration/edge-cases.test.tsx",
+    "description": "Test generate templates for many questions",
+    "scenarios": [
+      "Select 100+ questions for generation",
+      "Start generation",
+      "Verify progress updates don't overwhelm UI",
+      "Verify can cancel mid-way",
+      "Verify partial results preserved"
+    ],
+    "mocks_required": ["WebSocket with many progress events"],
+    "fixtures_needed": ["large-dataset/100-questions.json"],
+    "store_assertions": ["UI remains responsive", "Partial results preserved on cancel"],
+    "status": "pending",
+    "depends_on": ["integ-035"],
+    "effort_estimate": "medium"
+  },
+  {
+    "id": "integ-059",
+    "category": "benchmark-config",
+    "priority": "medium",
+    "phase": 2,
+    "test_file": "src/__tests__/integration/features/benchmark-config.test.tsx",
+    "description": "Test extra kwargs modal configuration",
+    "scenarios": [
+      "Open Extra Kwargs modal",
+      "Add custom parameters (max_tokens, top_p, etc.)",
+      "Save and verify persisted",
+      "Verify passed to API on verification"
+    ],
+    "mocks_required": [],
+    "fixtures_needed": [],
+    "store_assertions": ["Model extra_kwargs stored correctly"],
+    "status": "pending",
+    "depends_on": ["integ-045"],
+    "effort_estimate": "small"
+  }
+]
