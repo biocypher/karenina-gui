@@ -1189,3 +1189,70 @@ All remaining tests are low priority (phase 3-4):
 - integ-040-041: Accessibility (2 tests)
 - integ-042, 050: Additional features (2 tests)
 
+
+## Ralph Loop Iteration 34 - 2025-01-10
+
+### Completed: integ-025, integ-026, integ-027 - Rubric Management
+
+Since all three rubric management tests are related and small effort, implemented all three:
+- integ-025: Add rubric trait to question (6 tests)
+- integ-026: Multiple trait types (4 tests)
+- integ-027: Global rubric inheritance (6 tests)
+
+### Tests Added (16 tests total)
+
+#### integ-025: Add rubric trait to question (6 tests)
+1. Add an LLM rubric trait to a question
+2. Verify rubric trait persisted in checkpoint
+3. Verify last_modified updates when rubric is added
+4. Support multiple traits on a single question
+5. Load sample traits from fixture and apply to question
+6. Replace existing rubric when setting new one
+
+#### integ-026: Multiple trait types (4 tests)
+1. Store LLM rubric trait with correct configuration (deep judgment options)
+2. Store regex trait with pattern configuration
+3. Store metric trait with evaluation mode (tp_only, full_matrix)
+4. Verify all trait types coexist in same rubric
+
+#### integ-027: Global rubric inheritance (6 tests)
+1. Verify global rubric is stored in checkpoint (loaded into useRubricStore)
+2. Verify question-specific rubric overrides global
+3. Verify questions without specific rubric inherit from global
+4. Support setting global rubric in useRubricStore
+5. Verify removing question rubric exposes global inheritance
+6. Verify multiple questions can inherit same global rubric
+
+### Key Implementation Notes
+- Rubric traits stored in `checkpoint[qid].question_rubric`
+- Global rubric loaded from `unifiedCheckpoint.global_rubric` into `useRubricStore.currentRubric`
+- Question rubric access via `useQuestionStore.getState().getQuestionRubric(questionId)`
+- Global rubric access via `useRubricStore.getState().currentRubric`
+- Rubric trait types:
+  - `LLMRubricTrait`: name, description, kind (boolean/score), min/max_score, deep_judgment options
+  - `RegexTrait`: name, pattern, case_sensitive, invert_result
+  - `CallableTrait`: name, callable_code (base64), kind
+  - `MetricRubricTrait`: name, evaluation_mode, metrics, tp_instructions, tn_instructions
+
+### Store Architecture
+- `useQuestionStore`: Manages question-specific rubrics in checkpoint
+- `useRubricStore`: Manages global rubric loaded from checkpoint
+- `loadCheckpoint()` automatically loads global_rubric into useRubricStore
+- Question rubrics override but don't affect global rubric
+
+### Files Created
+- `src/__tests__/integration/features/rubric-management.test.tsx`: 16 tests for integ-025/026/027
+- `src/test-utils/fixtures/rubric/sample-traits.json`: Sample traits fixture
+
+### Files Modified
+- `integration-tests-prd.json`: Updated integ-025, integ-026, integ-027 to completed
+
+### Test Results
+- All 1400 tests pass (16 new in rubric-management.test.tsx)
+
+### Next Options
+Remaining low priority phase 3 tests:
+- integ-028-032, 054: Database operations (6 tests)
+- integ-033, 034, 056: End-to-end workflows (3 tests)
+- integ-042, 050: Additional features (2 tests)
+

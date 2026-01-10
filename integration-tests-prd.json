@@ -544,7 +544,7 @@
     "mocks_required": [],
     "fixtures_needed": ["rubric/sample-traits.json"],
     "store_assertions": ["checkpoint[qid].question_rubric contains new trait"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
@@ -564,7 +564,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["each trait type stored correctly with its specific fields"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-025"],
     "effort_estimate": "small"
   },
@@ -584,7 +584,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["globalRubric traits visible on questions", "question-specific traits override global"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-025"],
     "effort_estimate": "small"
   },
