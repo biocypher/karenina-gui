@@ -930,7 +930,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": [],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "small"
   },
