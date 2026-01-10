@@ -1150,7 +1150,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["All ARIA attributes present and correct"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "medium"
   },
