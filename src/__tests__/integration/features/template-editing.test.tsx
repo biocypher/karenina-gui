@@ -835,4 +835,133 @@ describe('Question Navigation Integration Tests', () => {
       expect(useQuestionStore.getState().checkpoint['q2'].finished).toBe(true);
     });
   });
+
+  describe('integ-015: Add new question', () => {
+    it('should add new question and verify it appears in the list', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Initially have 3 questions
+      expect(useQuestionStore.getState().getQuestionIds().length).toBe(3);
+
+      // Add a new question using the store method
+      const newQuestionId = useQuestionStore
+        .getState()
+        .addNewQuestion('What is the largest planet?', 'Jupiter', 'Test Author', ['astronomy', 'planets']);
+
+      // Verify a new ID was generated
+      expect(newQuestionId).toBeTruthy();
+      expect(newQuestionId).not.toBe('q1');
+      expect(newQuestionId).not.toBe('q2');
+      expect(newQuestionId).not.toBe('q3');
+
+      // Verify questionData has the new question
+      expect(useQuestionStore.getState().questionData[newQuestionId]).toBeDefined();
+      expect(useQuestionStore.getState().questionData[newQuestionId].question).toBe('What is the largest planet?');
+      expect(useQuestionStore.getState().questionData[newQuestionId].raw_answer).toBe('Jupiter');
+
+      // Verify checkpoint has the new question
+      expect(useQuestionStore.getState().checkpoint[newQuestionId]).toBeDefined();
+      expect(useQuestionStore.getState().checkpoint[newQuestionId].question).toBe('What is the largest planet?');
+      expect(useQuestionStore.getState().checkpoint[newQuestionId].raw_answer).toBe('Jupiter');
+
+      // Verify the question count increased
+      expect(useQuestionStore.getState().getQuestionIds().length).toBe(4);
+
+      // Verify the new question is selected
+      expect(useQuestionStore.getState().selectedQuestionId).toBe(newQuestionId);
+    });
+
+    it('should add new question with generated template', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Add a new question with a generated template
+      const generatedTemplate = 'class Answer(BaseModel):\n    planet: str = Field(description="The largest planet")';
+      const newQuestionId = useQuestionStore
+        .getState()
+        .addNewQuestion('What is the largest planet?', 'Jupiter', undefined, undefined, generatedTemplate);
+
+      // Verify the generated template was used
+      expect(useQuestionStore.getState().checkpoint[newQuestionId].answer_template).toBe(generatedTemplate);
+      expect(useQuestionStore.getState().checkpoint[newQuestionId].original_answer_template).toBe(generatedTemplate);
+      expect(useQuestionStore.getState().currentTemplate).toBe(generatedTemplate);
+    });
+
+    it('should add new question with basic template when none generated', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Add a new question without a generated template
+      const newQuestionId = useQuestionStore
+        .getState()
+        .addNewQuestion('What is the speed of light?', '299,792,458 meters per second');
+
+      // Verify a basic template was generated
+      const checkpointItem = useQuestionStore.getState().checkpoint[newQuestionId];
+      expect(checkpointItem.answer_template).toContain('class Answer(BaseAnswer)');
+      expect(checkpointItem.answer_template).toBeTruthy();
+      expect(checkpointItem.answer_template.length).toBeGreaterThan(0);
+    });
+
+    it('should navigate to newly added question', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Start on q1
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q1');
+
+      // Add a new question
+      const newQuestionId = useQuestionStore.getState().addNewQuestion('What is the chemical symbol for gold?', 'Au');
+
+      // Verify we navigated to the new question
+      expect(useQuestionStore.getState().selectedQuestionId).toBe(newQuestionId);
+
+      // Verify the currentTemplate is set for the new question
+      expect(useQuestionStore.getState().currentTemplate).toBe(
+        useQuestionStore.getState().checkpoint[newQuestionId].answer_template
+      );
+    });
+
+    it('should verify new question defaults to unfinished', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Add a new question
+      const newQuestionId = useQuestionStore.getState().addNewQuestion('Test question?', 'Test answer');
+
+      // Verify new question defaults to unfinished
+      expect(useQuestionStore.getState().checkpoint[newQuestionId].finished).toBe(false);
+    });
+  });
 });

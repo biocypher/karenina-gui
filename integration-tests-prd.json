@@ -320,7 +320,7 @@
     "mocks_required": ["POST /api/generate-single-template -> { success, template_code }"],
     "fixtures_needed": [],
     "store_assertions": ["questionData has new question", "checkpoint has new question entry"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-010"],
     "effort_estimate": "small"
   },

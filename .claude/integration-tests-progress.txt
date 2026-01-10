@@ -425,3 +425,36 @@ Each PRD item contains:
 - integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
 - integ-015: Add new question (medium priority, small effort, depends on integ-010)
 - integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
+
+## Iteration 14 - 2026-01-10
+
+### Completed
+- Implemented **integ-015**: Add new question
+  - Added 5 new test cases to template-editing.test.tsx
+  - All tests passing (1241 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-015
+1. Add new question and verify it appears in the list
+2. Add new question with generated template
+3. Add new question with basic template when none generated
+4. Navigate to newly added question
+5. Verify new question defaults to unfinished
+
+### Key Implementation Notes
+- `addNewQuestion(question, rawAnswer, author?, keywords?, generatedTemplate?)` adds a new question
+- Returns a UUID-generated question ID (e.g., "550e8400-e29b-41d4-a716-446655440000")
+- New questions are added to both `questionData` and `checkpoint`
+- `selectedQuestionId` is automatically set to the new question after adding
+- `currentTemplate` is set to the new question's template
+- Basic template uses `BaseAnswer` class with import statements
+- If no generated template is provided, `generateBasicTemplate()` creates a default one
+- New questions default to `finished: false`
+- Metadata (author, keywords) are stored in the checkpoint item
+- `getQuestionIds()` returns all question IDs including newly added ones
+
+### Next Steps for Iteration 15
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
