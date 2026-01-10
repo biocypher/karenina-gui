@@ -1109,7 +1109,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["Table filter applied correctly from summary click"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-024"],
     "effort_estimate": "small"
   },

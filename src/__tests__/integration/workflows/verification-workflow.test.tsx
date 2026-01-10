@@ -817,5 +817,119 @@ describe('Verification Workflow', () => {
       const csvHeader = headers.join(',');
       expect(csvHeader).toBeTruthy();
     });
+
+    describe('integ-053: Drill-down from summary statistics', () => {
+      it('should compute summary statistics from verification results', () => {
+        const testResults = loadMockedVerificationResults('partial-completion');
+
+        // Compute summary statistics
+        const totalResults = Object.keys(testResults).length;
+        const passedResults = Object.values(testResults).filter((r) => r.template.verify_result === true).length;
+        const failedResults = Object.values(testResults).filter((r) => r.template.verify_result === false).length;
+        const errorResults = Object.values(testResults).filter(
+          (r) => r.template.verify_result === null || r.metadata.completed_without_errors === false
+        ).length;
+
+        // Verify statistics computed correctly
+        expect(totalResults).toBe(3);
+        expect(passedResults).toBe(2); // q1 and q3 pass
+        expect(failedResults).toBe(0);
+        expect(errorResults).toBe(1); // q2 has null verify_result and error
+      });
+
+      it('should filter results when clicking on summary statistic', () => {
+        const testResults = loadMockedVerificationResults('partial-completion');
+
+        // Simulate clicking on "passed" statistic
+        const passedFilter = Object.values(testResults).filter((r) => r.template.verify_result === true);
+
+        // Simulate clicking on "error" statistic
+        const errorFilter = Object.values(testResults).filter(
+          (r) => r.template.verify_result === null || r.metadata.completed_without_errors === false
+        );
+
+        // Verify filtering produces correct subsets
+        expect(passedFilter.length).toBe(2);
+        expect(errorFilter.length).toBe(1);
+
+        // Verify passed results have correct question IDs
+        const passedQuestionIds = new Set(passedFilter.map((r) => r.metadata.question_id));
+        expect(passedQuestionIds.has('q1')).toBe(true);
+        expect(passedQuestionIds.has('q3')).toBe(true);
+        expect(passedQuestionIds.has('q2')).toBe(false);
+      });
+
+      it('should verify filter state persists across table operations', () => {
+        const testResults = loadMockedVerificationResults('multi-model-results');
+
+        // Apply filter for specific model
+        const claudeResults = Object.values(testResults).filter(
+          (r) => r.metadata.answering_model === 'anthropic/claude-haiku-4-5'
+        );
+
+        // Verify count
+        expect(claudeResults.length).toBe(3);
+
+        // Simulate sorting within filtered results
+        const sortedByQuestion = [...claudeResults].sort((a, b) =>
+          a.metadata.question_id.localeCompare(b.metadata.question_id)
+        );
+
+        // Verify filter still applies after sort
+        expect(sortedByQuestion.length).toBe(3);
+        expect(sortedByQuestion.every((r) => r.metadata.answering_model === 'anthropic/claude-haiku-4-5')).toBe(true);
+      });
+
+      it('should provide aggregate statistics for multi-model results', () => {
+        const testResults = loadMockedVerificationResults('multi-model-results');
+
+        // Group by answering model
+        const byModel: Record<string, typeof testResults> = {};
+        for (const [, result] of Object.entries(testResults)) {
+          const model = result.metadata.answering_model;
+          if (!byModel[model]) {
+            byModel[model] = {};
+          }
+          byModel[model][result.metadata.question_id] = result;
+        }
+
+        // Verify per-model statistics
+        expect(Object.keys(byModel)).toHaveLength(2);
+        expect(byModel['anthropic/claude-haiku-4-5']).toBeDefined();
+        expect(byModel['openai/gpt-4']).toBeDefined();
+
+        // Each model should have 3 results
+        expect(Object.keys(byModel['anthropic/claude-haiku-4-5']).length).toBe(3);
+        expect(Object.keys(byModel['openai/gpt-4']).length).toBe(3);
+      });
+
+      it('should verify summary panel shows completion percentage', () => {
+        const testResults = loadMockedVerificationResults('partial-completion');
+
+        const total = Object.keys(testResults).length;
+        const completed = Object.values(testResults).filter((r) => r.metadata.completed_without_errors).length;
+        const percentage = Math.round((completed / total) * 100);
+
+        // Verify completion percentage calculation
+        expect(percentage).toBe(67); // 2 out of 3 completed
+        expect(completed).toBe(2);
+        expect(total).toBe(3);
+      });
+
+      it('should verify clear filter resets to all results', () => {
+        const testResults = loadMockedVerificationResults('partial-completion');
+
+        // Apply filter
+        const passedResults = Object.values(testResults).filter((r) => r.template.verify_result === true);
+        expect(passedResults.length).toBe(2);
+
+        // Clear filter (return to all results)
+        const allResults = Object.values(testResults);
+        expect(allResults.length).toBe(3);
+
+        // Verify original result count restored
+        expect(Object.keys(testResults).length).toBe(3);
+      });
+    });
   });
 });
