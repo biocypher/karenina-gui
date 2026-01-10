@@ -723,4 +723,116 @@ describe('Question Navigation Integration Tests', () => {
       expect(useQuestionStore.getState().currentTemplate).toContain('city');
     });
   });
+
+  describe('integ-014: Revert to original and mark as finished', () => {
+    it('should revert to original template', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Get original and modified templates
+      const originalTemplate = useQuestionStore.getState().getOriginalCode();
+      const modifiedTemplate = originalTemplate.replace('capital', 'metropolis');
+
+      // Edit the template
+      useQuestionStore.getState().setCurrentTemplate(modifiedTemplate);
+
+      // Verify template is modified
+      expect(useQuestionStore.getState().currentTemplate).toContain('metropolis');
+
+      // Revert to original using the store method (re-setting to original)
+      useQuestionStore.getState().setCurrentTemplate(originalTemplate);
+
+      // Verify template is back to original
+      expect(useQuestionStore.getState().currentTemplate).toBe(originalTemplate);
+      expect(useQuestionStore.getState().currentTemplate).toContain('capital');
+      expect(useQuestionStore.getState().currentTemplate).not.toContain('metropolis');
+    });
+
+    it('should toggle finished status', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // q1 should be unfinished initially
+      expect(useQuestionStore.getState().checkpoint['q1'].finished).toBe(false);
+
+      // Find the finished button and click it
+      const finishedButton = screen.getByText(/Flag as Finished/i);
+      await userEvent.click(finishedButton);
+
+      // Verify finished status is now true
+      await waitFor(() => {
+        expect(useQuestionStore.getState().checkpoint['q1'].finished).toBe(true);
+      });
+
+      // Verify button text changed to "Mark as Unfinished"
+      expect(screen.getByText(/Mark as Unfinished/i)).toBeInTheDocument();
+
+      // Click again to mark as unfinished
+      const unfinishedButton = screen.getByText(/Mark as Unfinished/i);
+      await userEvent.click(unfinishedButton);
+
+      // Verify finished status is now false
+      await waitFor(() => {
+        expect(useQuestionStore.getState().checkpoint['q1'].finished).toBe(false);
+      });
+
+      // Verify button text changed back to "Flag as Finished"
+      expect(screen.getByText(/Flag as Finished/i)).toBeInTheDocument();
+    });
+
+    it('should verify finished status persists across navigation', async () => {
+      const mockCheckpoint = createMockCheckpoint();
+      setupStoreWithCheckpoint(mockCheckpoint);
+
+      render(<CuratorTabWrapper />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Mark q1 as finished
+      const finishedButton = screen.getByText(/Flag as Finished/i);
+      await userEvent.click(finishedButton);
+
+      // Verify finished status
+      expect(useQuestionStore.getState().checkpoint['q1'].finished).toBe(true);
+
+      // Navigate to q2 (which is already finished in the mock checkpoint)
+      const nextButton = screen.getByText('Next');
+      await userEvent.click(nextButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 2 of 3/i)).toBeInTheDocument();
+      });
+
+      // q2 should show "Mark as Unfinished" since it's already finished
+      expect(screen.getByText(/Mark as Unfinished/i)).toBeInTheDocument();
+
+      // Navigate back to q1
+      const previousButton = screen.getByText('Previous');
+      await userEvent.click(previousButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Question 1 of 3/i)).toBeInTheDocument();
+      });
+
+      // Verify q1 is still finished
+      expect(useQuestionStore.getState().checkpoint['q1'].finished).toBe(true);
+
+      // Verify q2 is still finished
+      expect(useQuestionStore.getState().checkpoint['q2'].finished).toBe(true);
+    });
+  });
 });

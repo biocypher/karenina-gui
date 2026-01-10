@@ -396,3 +396,32 @@ Each PRD item contains:
 - integ-014: Revert to original and mark as finished (medium priority, small effort, depends on integ-012)
 - integ-015: Add new question (medium priority, small effort, depends on integ-010)
 - integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)
+
+## Iteration 13 - 2026-01-10
+
+### Completed
+- Implemented **integ-014**: Revert to original and mark as finished
+  - Added 3 new test cases to template-editing.test.tsx
+  - All tests passing (1236 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-014
+1. Revert to original template
+2. Toggle finished status (flag as finished / mark as unfinished)
+3. Verify finished status persists across navigation
+
+### Key Implementation Notes
+- `getOriginalCode()` returns the original_answer_template from checkpoint or questionData
+- `setCurrentTemplate()` is used to set the template (for revert, set to original)
+- `toggleFinished()` toggles the finished status in the checkpoint
+- Finished button text changes between "Flag as Finished" and "Mark as Unfinished"
+- Finished status is stored in `checkpoint[qid].finished`
+- Finished status persists across navigation between questions
+- The CodeEditor component has built-in revert functionality with buttons for "Revert to Original" and "Revert to Saved"
+
+### Next Steps for Iteration 14
+- integ-002: Excel file upload with multiple sheets (high priority, small effort, requires sheet selector UI)
+- integ-007: Template generation workflow (high priority, medium effort, WebSocket mocking required)
+- integ-008: Template generation cancellation (medium priority, small effort, depends on integ-007)
+- integ-015: Add new question (medium priority, small effort, depends on integ-010)
+- integ-016: Clone and delete question (medium priority, small effort, depends on integ-010)

@@ -298,7 +298,7 @@
     "mocks_required": [],
     "fixtures_needed": [],
     "store_assertions": ["checkpoint[qid].finished toggles correctly", "original_answer_template used for revert"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-012"],
     "effort_estimate": "small"
   },
