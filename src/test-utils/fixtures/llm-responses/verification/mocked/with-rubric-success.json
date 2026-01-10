@@ -1,0 +1,175 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T12:00:00.000Z",
+    "model": "mock",
+    "scenario": "with-rubric-success",
+    "backendUrl": "http://localhost:5001",
+    "isMocked": true
+  },
+  "data": {
+    "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041830000": {
+      "metadata": {
+        "question_id": "q1",
+        "template_id": "fcb63001d642141a76ea74a28088cc3a",
+        "completed_without_errors": true,
+        "error": null,
+        "question_text": "What is the capital of France?",
+        "raw_answer": "The capital of France is Paris.",
+        "keywords": null,
+        "answering_model": "anthropic/claude-haiku-4-5",
+        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering_system_prompt": "You are a helpful assistant.",
+        "parsing_system_prompt": "You are a helpful assistant.",
+        "execution_time": 2.156,
+        "timestamp": "2026-01-10 12:00:00",
+        "result_id": "mock-result-009",
+        "run_name": "mock-verification",
+        "replicate": null
+      },
+      "template": {
+        "raw_llm_response": "The capital of France is Paris. Paris has been the capital since the late 10th century and is the country's largest city with over 2 million inhabitants.",
+        "parsed_gt_response": { "capital": "Paris" },
+        "parsed_llm_response": { "capital": "Paris" },
+        "template_verification_performed": true,
+        "verify_result": true,
+        "verify_granular_result": { "capital_match": true },
+        "embedding_check_performed": false,
+        "embedding_similarity_score": null,
+        "embedding_override_applied": false,
+        "embedding_model_used": null,
+        "regex_validations_performed": false,
+        "regex_validation_results": null,
+        "regex_validation_details": null,
+        "regex_overall_success": null,
+        "regex_extraction_results": null,
+        "recursion_limit_reached": false,
+        "abstention_check_performed": true,
+        "abstention_detected": false,
+        "abstention_override_applied": false,
+        "abstention_reasoning": null,
+        "answering_mcp_servers": null,
+        "usage_metadata": {
+          "input_tokens": 45,
+          "output_tokens": 48,
+          "total_tokens": 93
+        },
+        "agent_metrics": null
+      },
+      "rubric": {
+        "evaluation_performed": true,
+        "traits": {
+          "is_concise": {
+            "trait_name": "is_concise",
+            "trait_type": "LLMRubricTrait",
+            "result": true,
+            "reasoning": "The response is direct and provides the answer in the first sentence.",
+            "execution_time": 0.342
+          },
+          "provides_context": {
+            "trait_name": "provides_context",
+            "trait_type": "LLMRubricTrait",
+            "result": true,
+            "reasoning": "The response provides additional context about Paris being the capital since the 10th century.",
+            "execution_time": 0.298
+          },
+          "has_citations": {
+            "trait_name": "has_citations",
+            "trait_type": "RegexTrait",
+            "result": false,
+            "reasoning": null,
+            "execution_time": 0.001
+          }
+        },
+        "overall_score": 2,
+        "max_score": 3
+      },
+      "deep_judgment": null,
+      "deep_judgment_rubric": null,
+      "evaluation_input": null,
+      "used_full_trace": true,
+      "trace_extraction_error": null
+    },
+    "q2_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041830000": {
+      "metadata": {
+        "question_id": "q2",
+        "template_id": "9fb7f87b18c8c14e2203e010aa6d05de",
+        "completed_without_errors": true,
+        "error": null,
+        "question_text": "Calculate 15 + 27.",
+        "raw_answer": "42",
+        "keywords": null,
+        "answering_model": "anthropic/claude-haiku-4-5",
+        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering_system_prompt": "You are a helpful assistant.",
+        "parsing_system_prompt": "You are a helpful assistant.",
+        "execution_time": 1.823,
+        "timestamp": "2026-01-10 12:00:02",
+        "result_id": "mock-result-010",
+        "run_name": "mock-verification",
+        "replicate": null
+      },
+      "template": {
+        "raw_llm_response": "15 + 27 = 42. This is a simple arithmetic addition.",
+        "parsed_gt_response": { "result": 42 },
+        "parsed_llm_response": { "result": 42 },
+        "template_verification_performed": true,
+        "verify_result": true,
+        "verify_granular_result": { "result_match": true },
+        "embedding_check_performed": false,
+        "embedding_similarity_score": null,
+        "embedding_override_applied": false,
+        "embedding_model_used": null,
+        "regex_validations_performed": false,
+        "regex_validation_results": null,
+        "regex_validation_details": null,
+        "regex_overall_success": null,
+        "regex_extraction_results": null,
+        "recursion_limit_reached": false,
+        "abstention_check_performed": true,
+        "abstention_detected": false,
+        "abstention_override_applied": false,
+        "abstention_reasoning": null,
+        "answering_mcp_servers": null,
+        "usage_metadata": {
+          "input_tokens": 28,
+          "output_tokens": 15,
+          "total_tokens": 43
+        },
+        "agent_metrics": null
+      },
+      "rubric": {
+        "evaluation_performed": true,
+        "traits": {
+          "is_concise": {
+            "trait_name": "is_concise",
+            "trait_type": "LLMRubricTrait",
+            "result": true,
+            "reasoning": "The response provides a direct answer with minimal unnecessary text.",
+            "execution_time": 0.312
+          },
+          "provides_context": {
+            "trait_name": "provides_context",
+            "trait_type": "LLMRubricTrait",
+            "result": true,
+            "reasoning": "The response briefly explains this is an arithmetic addition.",
+            "execution_time": 0.287
+          },
+          "has_citations": {
+            "trait_name": "has_citations",
+            "trait_type": "RegexTrait",
+            "result": false,
+            "reasoning": null,
+            "execution_time": 0.001
+          }
+        },
+        "overall_score": 2,
+        "max_score": 3
+      },
+      "deep_judgment": null,
+      "deep_judgment_rubric": null,
+      "evaluation_input": null,
+      "used_full_trace": true,
+      "trace_extraction_error": null
+    }
+  }
+}
