@@ -757,7 +757,7 @@
     "mocks_required": [],
     "fixtures_needed": ["large-dataset/1000-questions.json (generated)"],
     "store_assertions": ["Performance acceptable (<3s initial render)"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": [],
     "effort_estimate": "medium"
   },

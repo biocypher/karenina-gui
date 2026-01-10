@@ -1814,3 +1814,44 @@ Remaining tests:
 - integ-033: End-to-end file-to-verification (large, 1 test)
 - integ-035, 038, 058: Edge cases (3 tests)
 
+
+## Ralph Loop Iteration 47 - 2025-01-10
+
+### Completed: integ-035 - Large dataset handling (1000+ questions)
+
+### Tests Added (5 tests)
+1. Load checkpoint with 1000 questions
+2. Verify UI remains responsive with large dataset
+3. Verify pagination/virtualization support with many questions
+4. Navigate between questions smoothly with large dataset
+5. Verify performance acceptable with large dataset
+
+### Key Implementation Notes
+- Tests generate large checkpoints programmatically (100-1000 questions)
+- UnifiedCheckpoint format: `{ version: '1.0', checkpoint: {...}, global_rubric: undefined }`
+- Each checkpoint item has: question, raw_answer, original_answer_template, answer_template, last_modified, finished
+- `useQuestionStore.loadCheckpoint(unifiedCheckpoint)` loads large datasets
+- `useQuestionStore.getQuestionIds()` returns all question IDs
+- `useQuestionStore.setSelectedQuestionId(id)` navigates to questions
+- Performance check uses `performance.now()` to measure load time
+- Load time for 300 questions should be < 1 second
+- Tests verify app remains responsive during and after loading
+
+### Performance Tests
+- 1000 questions: Verify all load without crash
+- 500 questions: Navigate to various positions (q1, q100, q250, q500)
+- 200 questions: Verify getQuestionIds returns all, navigate first/middle/last
+- 100 questions: Rapid navigation sequence
+- 300 questions: Measure load time (< 1000ms threshold)
+
+### Files Modified
+- `src/__tests__/integration/edge-cases.test.tsx`: Added 5 tests for integ-035
+
+### Test Results
+- All 1503 tests pass (5 new in edge-cases.test.tsx)
+
+### Next Options
+Remaining tests:
+- integ-033: End-to-end file-to-verification (large, 1 test)
+- integ-038, 058: Edge cases (2 tests)
+

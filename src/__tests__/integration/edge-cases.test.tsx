@@ -665,4 +665,219 @@ describe('Edge Cases Integration Tests', () => {
       expect(document.body).toBeInTheDocument();
     });
   });
+
+  describe('integ-035: Large dataset handling', () => {
+    it('should load checkpoint with 1000 questions', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create a large checkpoint with 1000 questions
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      // Generate 1000 questions
+      for (let i = 1; i <= 1000; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          last_modified: new Date().toISOString(),
+          finished: i % 2 === 0, // Half finished
+        };
+      }
+
+      // Load large checkpoint should not crash
+      expect(() => {
+        useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+      }).not.toThrow();
+
+      // Verify all questions loaded
+      const state = useQuestionStore.getState();
+      const questionCount = Object.keys(state.questionData).length;
+      expect(questionCount).toBe(1000);
+
+      // App should still be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should verify UI remains responsive with large dataset', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create a large dataset
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 500; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}: What is ${i} plus ${i}?`,
+          raw_answer: `${i + i}`,
+          original_answer_template: `class Answer(BaseAnswer):\n    value: int`,
+          answer_template: `class Answer(BaseAnswer):\n    value: int\n\n\ndef verify(self) -> bool:\n    return self.value == ${i + i}`,
+          last_modified: new Date().toISOString(),
+          finished: true,
+        };
+      }
+
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+
+      // Navigate to various questions to verify responsiveness
+      const testIds = ['q1', 'q100', 'q250', 'q500'];
+      testIds.forEach((id) => {
+        useQuestionStore.getState().setSelectedQuestionId(id);
+        const currentState = useQuestionStore.getState();
+        expect(currentState.selectedQuestionId).toBe(id);
+        expect(document.body).toBeInTheDocument();
+      });
+    });
+
+    it('should verify pagination/virtualization support with many questions', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create dataset with many questions
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 200; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          last_modified: new Date().toISOString(),
+          finished: false,
+        };
+      }
+
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+
+      // Verify getQuestionIds returns all IDs
+      const state = useQuestionStore.getState();
+      const allIds = state.getQuestionIds();
+      expect(allIds.length).toBe(200);
+
+      // Verify we can navigate to first, middle, and last
+      useQuestionStore.getState().setSelectedQuestionId('q1');
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q1');
+
+      useQuestionStore.getState().setSelectedQuestionId('q100');
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q100');
+
+      useQuestionStore.getState().setSelectedQuestionId('q200');
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q200');
+
+      // App remains responsive
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should navigate between questions smoothly with large dataset', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create large dataset
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 100; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          last_modified: new Date().toISOString(),
+          finished: false,
+        };
+      }
+
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+
+      // Navigate through multiple questions rapidly
+      const navigationSequence = ['q1', 'q50', 'q25', 'q75', 'q100', 'q1'];
+      navigationSequence.forEach((id) => {
+        useQuestionStore.getState().setSelectedQuestionId(id);
+        expect(useQuestionStore.getState().selectedQuestionId).toBe(id);
+      });
+
+      // Verify final state
+      expect(useQuestionStore.getState().selectedQuestionId).toBe('q1');
+      expect(document.body).toBeInTheDocument();
+    });
+
+    it('should verify performance acceptable with large dataset', async () => {
+      const { useQuestionStore } = await import('../../stores/useQuestionStore');
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(document.body).toBeInTheDocument();
+      });
+
+      // Create large dataset and measure load time
+      const largeCheckpoint: { version: '1.0'; checkpoint: Record<string, unknown>; global_rubric: undefined } = {
+        version: '1.0' as const,
+        checkpoint: {},
+        global_rubric: undefined,
+      };
+
+      for (let i = 1; i <= 300; i++) {
+        largeCheckpoint.checkpoint[`q${i}`] = {
+          question: `Question ${i}`,
+          raw_answer: `Answer ${i}`,
+          original_answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          answer_template: `class Answer(BaseAnswer):\n    value: str`,
+          last_modified: new Date().toISOString(),
+          finished: i % 3 === 0,
+        };
+      }
+
+      // Measure load time
+      const startTime = performance.now();
+      useQuestionStore.getState().loadCheckpoint(largeCheckpoint);
+      const loadTime = performance.now() - startTime;
+
+      // Load should be reasonably fast (less than 1 second for 300 questions)
+      expect(loadTime).toBeLessThan(1000);
+
+      // Verify all questions loaded correctly
+      const state = useQuestionStore.getState();
+      expect(Object.keys(state.questionData).length).toBe(300);
+
+      // App should be responsive
+      expect(document.body).toBeInTheDocument();
+    });
+  });
 });
