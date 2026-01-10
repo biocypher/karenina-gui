@@ -149,7 +149,7 @@
     ],
     "fixtures_needed": ["template-generation/successful-generation.json"],
     "store_assertions": ["useTemplateStore.isGenerating transitions correctly", "generatedTemplates populated"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-004"],
     "effort_estimate": "medium"
   },
@@ -174,7 +174,7 @@
     ],
     "fixtures_needed": [],
     "store_assertions": ["isGenerating becomes false", "partial results preserved if any"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-007"],
     "effort_estimate": "small"
   },
@@ -194,7 +194,7 @@
     "mocks_required": ["POST /api/generate-templates with error responses", "WebSocket job_failed events"],
     "fixtures_needed": ["template-generation/partial-failure.json"],
     "store_assertions": ["error state set correctly", "successful templates still available"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-007"],
     "effort_estimate": "medium"
   },
@@ -1090,7 +1090,7 @@
     "mocks_required": ["POST /api/generate-templates with different provider configs"],
     "fixtures_needed": [],
     "store_assertions": ["Generation uses correct model config"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-007"],
     "effort_estimate": "small"
   },

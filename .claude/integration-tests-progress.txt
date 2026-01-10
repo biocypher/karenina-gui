@@ -827,3 +827,61 @@ Each PRD item contains:
 - integ-019: Preset list and load (medium priority, small effort, no dependencies)
 - integ-020: Preset CRUD operations (medium priority, small effort, depends on integ-019)
 - integ-052: Generation with different model configs (medium priority, small effort, depends on integ-007)
+
+## Iteration 25 - 2026-01-10
+
+### Completed
+- Implemented **integ-007**: Successful template generation workflow
+- Implemented **integ-008**: Template generation cancellation
+- Implemented **integ-009**: Template generation error handling
+- Implemented **integ-052**: Generation with different model configs
+  - Created new test file: template-generation-workflow.test.tsx
+  - Added 15 new test cases
+  - All tests passing (1332 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-007 (5 tests)
+1. Start generation and receive job_id
+2. Receive progress updates (via store method)
+3. Complete generation and store templates
+4. Add generated templates to Curator
+5. Verify all scenarios from integ-007 PRD (6 steps verified)
+
+### Test Coverage for integ-008 (3 tests)
+1. Cancel generation while in progress
+2. Return to ready state after cancellation
+3. Preserve store state after cancellation
+
+### Test Coverage for integ-009 (5 tests)
+1. Handle model API quota exceeded error (HTTP 429)
+2. Handle model timeout error (HTTP 504)
+3. Handle invalid model config error (HTTP 400)
+4. Handle partial failure (some questions fail)
+5. Display results + errors for partial failure
+
+### Test Coverage for integ-052 (3 tests)
+1. Generate with Anthropic Claude config
+2. Generate with OpenAI GPT-4 config
+3. Generate with custom endpoint config (ollama, openai_endpoint interface)
+
+### Key Implementation Notes
+- Tests use `useTemplateStore` for state management
+- WebSocket testing simplified by calling store methods directly
+  - `updateProgress()` for progress updates
+  - `completeGeneration()` for completion
+  - `cancelGeneration()` for cancellation
+- After async store operations, must call `getState()` again for fresh state
+- Error tests verify HTTP status codes are captured in store.error
+- Tests verify isGenerating, jobId, progress, and generatedTemplates state
+- Template configuration includes: model_provider, model_name, temperature, interface
+- `addToCuration()` method adds generated templates to curator workflow
+
+### Files Modified
+- `src/__tests__/integration/workflows/template-generation-workflow.test.tsx`: Created new test file with 15 tests
+
+### Next Steps for Iteration 26
+- integ-002: Excel file upload with multiple sheets (high priority, requires sheet selector UI)
+- integ-019: Preset list and load (medium priority, small effort, no dependencies)
+- integ-020: Preset CRUD operations (medium priority, small effort, depends on integ-019)
+- integ-021: Apply preset to current benchmark (medium priority, small effort, depends on integ-019)
+- integ-003: Template editing workflow (high priority, large effort, complex)
