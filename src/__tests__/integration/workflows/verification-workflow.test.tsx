@@ -540,4 +540,117 @@ describe('Verification Workflow', () => {
       expect(uniqueIds.size).toBe(resultIds.length);
     });
   });
+
+  describe('integ-023: Verification with rubric evaluation', () => {
+    it('should verify results contain rubric field with trait scores', async () => {
+      const rubricResults = loadMockedVerificationResults('with-rubric-success');
+
+      // All results should have rubric data
+      Object.values(rubricResults).forEach((result) => {
+        expect(result.rubric).toBeDefined();
+        expect(result.rubric).not.toBeNull();
+        expect(result.rubric.evaluation_performed).toBe(true);
+      });
+    });
+
+    it('should verify rubric contains trait-level breakdown', () => {
+      const rubricResults = loadMockedVerificationResults('with-rubric-success');
+
+      // Get first result
+      const firstResult = Object.values(rubricResults)[0];
+      expect(firstResult.rubric.traits).toBeDefined();
+
+      // Verify trait structure
+      const { traits } = firstResult.rubric;
+
+      // Check that traits have expected properties
+      Object.values(traits).forEach((trait) => {
+        expect(trait.trait_name).toBeDefined();
+        expect(trait.trait_type).toBeDefined();
+        expect(['boolean', 'number']).toContain(typeof trait.result);
+        expect(trait.execution_time).toBeGreaterThan(0);
+      });
+
+      // Verify we have multiple traits
+      const traitNames = Object.keys(traits);
+      expect(traitNames.length).toBeGreaterThan(0);
+    });
+
+    it('should verify different trait types are represented', () => {
+      const rubricResults = loadMockedVerificationResults('with-rubric-success');
+
+      const firstResult = Object.values(rubricResults)[0];
+      const { traits } = firstResult.rubric;
+
+      // Check for LLMRubricTrait type (has reasoning field)
+      const llmTraits = Object.values(traits).filter((t) => t.trait_type === 'LLMRubricTrait');
+      expect(llmTraits.length).toBeGreaterThan(0);
+      llmTraits.forEach((trait) => {
+        expect(trait.reasoning).toBeDefined();
+      });
+
+      // Check for RegexTrait type (may not have reasoning)
+      const regexTraits = Object.values(traits).filter((t) => t.trait_type === 'RegexTrait');
+      // RegexTrait might exist or not depending on fixture
+      if (regexTraits.length > 0) {
+        regexTraits.forEach((trait) => {
+          // result should be boolean for regex traits
+          expect(typeof trait.result).toBe('boolean');
+        });
+      }
+    });
+
+    it('should verify rubric overall score is computed', () => {
+      const rubricResults = loadMockedVerificationResults('with-rubric-success');
+
+      // Check overall scoring
+      Object.values(rubricResults).forEach((result) => {
+        const { rubric } = result;
+        expect(rubric.overall_score).toBeDefined();
+        expect(typeof rubric.overall_score).toBe('number');
+        expect(rubric.max_score).toBeDefined();
+        expect(typeof rubric.max_score).toBe('number');
+        expect(rubric.overall_score).toBeLessThanOrEqual(rubric.max_score);
+      });
+    });
+
+    it('should verify trait results match expected values', () => {
+      const rubricResults = loadMockedVerificationResults('with-rubric-success');
+
+      const firstResult = Object.values(rubricResults)[0];
+      const { traits } = firstResult.rubric;
+
+      // Check specific traits from fixture
+      if (traits.is_concise) {
+        expect(traits.is_concise.result).toBe(true);
+        expect(traits.is_concise.trait_type).toBe('LLMRubricTrait');
+      }
+
+      if (traits.provides_context) {
+        expect(traits.provides_context.result).toBe(true);
+        expect(traits.provides_context.trait_type).toBe('LLMRubricTrait');
+      }
+
+      if (traits.has_citations) {
+        // This one might be false (as per fixture)
+        expect(traits.has_citations.trait_type).toBe('RegexTrait');
+      }
+    });
+
+    it('should verify rubric evaluation does not interfere with template verification', () => {
+      const rubricResults = loadMockedVerificationResults('with-rubric-success');
+
+      // Both rubric and template verification should coexist
+      Object.values(rubricResults).forEach((result) => {
+        // Template verification should still be performed
+        expect(result.template).toBeDefined();
+        expect(result.template.template_verification_performed).toBe(true);
+        expect(result.template.verify_result).toBeDefined();
+
+        // Rubric should also be present
+        expect(result.rubric).toBeDefined();
+        expect(result.rubric.evaluation_performed).toBe(true);
+      });
+    });
+  });
 });

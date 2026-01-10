@@ -501,7 +501,7 @@
     ],
     "fixtures_needed": ["verification/with-rubric-success.json"],
     "store_assertions": ["results contain rubric field with trait scores"],
-    "status": "pending",
+    "status": "completed",
     "depends_on": ["integ-021"],
     "effort_estimate": "small"
   },

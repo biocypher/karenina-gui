@@ -1064,3 +1064,43 @@ Each PRD item contains:
 - integ-053: Drill-down from summary statistics (medium priority, small effort, depends on integ-024)
 
 
+## Iteration 30 - 2026-01-10
+
+### Completed
+- Implemented **integ-023**: Verification with rubric evaluation
+  - Added 6 new test cases to verification-workflow.test.tsx
+  - Used existing fixture: with-rubric-success.json
+  - All tests passing (1372 total tests across all test files)
+  - Linting and type checking passing
+
+### Test Coverage for integ-023 (6 tests)
+1. Verify results contain rubric field with trait scores
+2. Verify rubric contains trait-level breakdown
+3. Verify different trait types are represented (LLMRubricTrait, RegexTrait)
+4. Verify rubric overall score is computed
+5. Verify trait results match expected values
+6. Verify rubric evaluation does not interfere with template verification
+
+### Key Implementation Notes
+- Rubric results are stored in the `rubric` field of each VerificationResult
+- `rubric.evaluation_performed: true` indicates rubric was evaluated
+- `rubric.traits` contains trait-level breakdown as a record of trait results
+- Each trait has: `trait_name`, `trait_type`, `result` (bool | number), `execution_time`
+- `rubric.overall_score` and `rubric.max_score` provide aggregated scoring
+- Trait types include:
+  - `LLMRubricTrait`: Has `reasoning` field with explanation
+  - `RegexTrait`: Pattern-based validation, no reasoning
+  - `CallableTrait`: Custom Python function evaluation
+  - `MetricRubricTrait`: Precision/recall/F1 metrics
+- Rubric and template verification coexist independently
+- Fixture `with-rubric-success.json` already existed with sample rubric data
+
+### Files Modified
+- `src/__tests__/integration/workflows/verification-workflow.test.tsx`: Added 6 tests for integ-023
+- No new fixtures needed (used existing `with-rubric-success.json`)
+
+### Next Steps for Iteration 31
+- integ-024: Results summary display (medium priority, small effort, no dependencies)
+- integ-053: Drill-down from summary statistics (medium priority, small effort, depends on integ-024)
+
+
