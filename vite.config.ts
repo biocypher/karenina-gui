@@ -35,8 +35,15 @@ export default defineConfig({
       },
     },
     teardownTimeout: 5000,
-    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['node_modules/**', 'dist/**', 'tests/e2e/**', 'playwright/**', '**/*.e2e.{js,ts}', '**/*.e2e.{jsx,tsx}'],
+    include: [
+      // New three-tier test structure
+      'tests/unit/**/*.test.{ts,tsx}',
+      'tests/integration/**/*.test.{ts,tsx}',
+      // Legacy test locations (during migration)
+      'src/**/*.test.{ts,tsx}',
+      '__tests__/**/*.test.{ts,tsx}',
+    ],
+    exclude: ['node_modules/**', 'dist/**', 'tests/e2e/**', 'playwright/**', '**/*.e2e.test.{ts,tsx}'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [
