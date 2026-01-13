@@ -11,6 +11,7 @@ import { LLMUsageMetrics } from './verification/LLMUsageMetrics';
 import { ResultMetadata } from './verification/ResultMetadata';
 import { EmbeddingCheckResults } from './verification/EmbeddingCheckResults';
 import { AbstentionDetectionResults } from './verification/AbstentionDetectionResults';
+import { SufficiencyDetectionResults } from './verification/SufficiencyDetectionResults';
 
 interface VerificationResultDetailModalProps {
   result: VerificationResult | null;
@@ -256,6 +257,16 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                         Abstention Detection Results
                       </h4>
                       <AbstentionDetectionResults template={result.template} />
+                    </div>
+                  )}
+
+                  {/* Sufficiency Detection Results */}
+                  {result.template?.sufficiency_check_performed && (
+                    <div>
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+                        Sufficiency Detection Results
+                      </h4>
+                      <SufficiencyDetectionResults template={result.template} />
                     </div>
                   )}
 

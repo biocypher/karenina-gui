@@ -19,6 +19,7 @@ interface ConfigurationPanelProps {
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
+  sufficiencyEnabled: boolean;
   deepJudgmentTemplateEnabled: boolean;
   deepJudgmentSearchEnabled: boolean;
   deepJudgmentRubricEnabled: boolean;
@@ -39,6 +40,7 @@ interface ConfigurationPanelProps {
   onEvaluationModeChange: (mode: 'template_only' | 'template_and_rubric' | 'rubric_only') => void;
   onCorrectnessEnabledChange: (enabled: boolean) => void;
   onAbstentionEnabledChange: (enabled: boolean) => void;
+  onSufficiencyEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentTemplateEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentSearchEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentRubricEnabledChange: (enabled: boolean) => void;
@@ -63,6 +65,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   evaluationMode,
   correctnessEnabled,
   abstentionEnabled,
+  sufficiencyEnabled,
   deepJudgmentTemplateEnabled,
   deepJudgmentSearchEnabled,
   deepJudgmentRubricEnabled,
@@ -83,6 +86,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onEvaluationModeChange,
   onCorrectnessEnabledChange,
   onAbstentionEnabledChange,
+  onSufficiencyEnabledChange,
   onDeepJudgmentTemplateEnabledChange,
   onDeepJudgmentSearchEnabledChange,
   onDeepJudgmentRubricEnabledChange,
@@ -312,6 +316,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         rubricEvaluationStrategy={rubricEvaluationStrategy}
         evaluationMode={evaluationMode}
         abstentionEnabled={abstentionEnabled}
+        sufficiencyEnabled={sufficiencyEnabled}
         deepJudgmentTemplateEnabled={deepJudgmentTemplateEnabled}
         deepJudgmentSearchEnabled={deepJudgmentSearchEnabled}
         deepJudgmentRubricEnabled={deepJudgmentRubricEnabled}
@@ -325,6 +330,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         onRubricEvaluationStrategyChange={onRubricEvaluationStrategyChange}
         onEvaluationModeChange={onEvaluationModeChange}
         onAbstentionEnabledChange={onAbstentionEnabledChange}
+        onSufficiencyEnabledChange={onSufficiencyEnabledChange}
         onDeepJudgmentTemplateEnabledChange={onDeepJudgmentTemplateEnabledChange}
         onDeepJudgmentSearchEnabledChange={onDeepJudgmentSearchEnabledChange}
         onDeepJudgmentRubricEnabledChange={onDeepJudgmentRubricEnabledChange}

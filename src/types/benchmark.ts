@@ -35,6 +35,7 @@ export interface VerificationConfig {
   rubric_trait_names?: string[];
   rubric_evaluation_strategy?: 'batch' | 'sequential'; // Strategy for evaluating LLM rubric traits
   abstention_enabled?: boolean; // Enable abstention/refusal detection
+  sufficiency_enabled?: boolean; // Enable trace sufficiency detection
   few_shot_enabled?: boolean;
   few_shot_mode?: 'all' | 'k-shot' | 'custom';
   few_shot_k?: number;
