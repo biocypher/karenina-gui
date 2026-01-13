@@ -8,6 +8,7 @@ export interface EvaluationSettingsSectionProps {
   rubricEvaluationStrategy: 'batch' | 'sequential';
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   abstentionEnabled: boolean;
+  sufficiencyEnabled: boolean;
   deepJudgmentTemplateEnabled: boolean;
   deepJudgmentSearchEnabled: boolean;
   deepJudgmentRubricEnabled: boolean;
@@ -21,6 +22,7 @@ export interface EvaluationSettingsSectionProps {
   onRubricEvaluationStrategyChange: (strategy: 'batch' | 'sequential') => void;
   onEvaluationModeChange: (mode: 'template_only' | 'template_and_rubric' | 'rubric_only') => void;
   onAbstentionEnabledChange: (enabled: boolean) => void;
+  onSufficiencyEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentTemplateEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentSearchEnabledChange: (enabled: boolean) => void;
   onDeepJudgmentRubricEnabledChange: (enabled: boolean) => void;
@@ -38,6 +40,7 @@ export const EvaluationSettingsSection: React.FC<EvaluationSettingsSectionProps>
   rubricEvaluationStrategy,
   evaluationMode,
   abstentionEnabled,
+  sufficiencyEnabled,
   deepJudgmentTemplateEnabled,
   deepJudgmentSearchEnabled,
   deepJudgmentRubricEnabled,
@@ -51,6 +54,7 @@ export const EvaluationSettingsSection: React.FC<EvaluationSettingsSectionProps>
   onRubricEvaluationStrategyChange,
   onEvaluationModeChange,
   onAbstentionEnabledChange,
+  onSufficiencyEnabledChange,
   onDeepJudgmentTemplateEnabledChange,
   onDeepJudgmentSearchEnabledChange,
   onDeepJudgmentRubricEnabledChange,
@@ -179,6 +183,23 @@ export const EvaluationSettingsSection: React.FC<EvaluationSettingsSectionProps>
             />
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Abstention Detection</span>
             <span className="text-xs text-slate-500 dark:text-slate-400">(Detect refusals and mark as abstained)</span>
+          </label>
+
+          <label
+            className="flex items-center space-x-3"
+            title="Check if the model's response contains enough information to populate the answer template. When insufficient, marks the result as failed."
+          >
+            <input
+              type="checkbox"
+              checked={sufficiencyEnabled}
+              onChange={(e) => onSufficiencyEnabledChange(e.target.checked)}
+              disabled={isRunning}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+            />
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300"> Sufficiency Detection</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              (Check if response has enough info for template)
+            </span>
           </label>
 
           {/* Deep-Judgment Configuration */}

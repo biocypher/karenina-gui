@@ -13,6 +13,7 @@ export interface HeatmapCell {
   passed: boolean | null;
   score: number | null;
   abstained: boolean;
+  insufficient: boolean;
   error: boolean;
   execution_type?: string;
   input_tokens?: number;

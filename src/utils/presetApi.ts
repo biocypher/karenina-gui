@@ -15,6 +15,7 @@ export interface VerificationConfig {
   rubric_evaluation_strategy?: 'batch' | 'sequential';
   evaluation_mode?: 'template_only' | 'template_and_rubric' | 'rubric_only';
   abstention_enabled?: boolean;
+  sufficiency_enabled?: boolean;
   deep_judgment_enabled?: boolean;
   deep_judgment_max_excerpts_per_attribute?: number;
   deep_judgment_fuzzy_match_threshold?: number;

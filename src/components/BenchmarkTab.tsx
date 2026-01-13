@@ -60,6 +60,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     evaluationMode,
     correctnessEnabled,
     abstentionEnabled,
+    sufficiencyEnabled,
     deepJudgmentTemplateEnabled,
     deepJudgmentSearchEnabled,
     deepJudgmentRubricEnabled,
@@ -75,6 +76,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setEvaluationMode,
     setCorrectnessEnabled,
     setAbstentionEnabled,
+    setSufficiencyEnabled,
     setDeepJudgmentTemplateEnabled,
     setDeepJudgmentSearchEnabled,
     setDeepJudgmentRubricEnabled,
@@ -322,6 +324,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             evaluationMode={evaluationMode}
             correctnessEnabled={correctnessEnabled}
             abstentionEnabled={abstentionEnabled}
+            sufficiencyEnabled={sufficiencyEnabled}
             deepJudgmentTemplateEnabled={deepJudgmentTemplateEnabled}
             deepJudgmentSearchEnabled={deepJudgmentSearchEnabled}
             deepJudgmentRubricEnabled={deepJudgmentRubricEnabled}
@@ -342,6 +345,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             onEvaluationModeChange={setEvaluationMode}
             onCorrectnessEnabledChange={setCorrectnessEnabled}
             onAbstentionEnabledChange={setAbstentionEnabled}
+            onSufficiencyEnabledChange={setSufficiencyEnabled}
             onDeepJudgmentTemplateEnabledChange={setDeepJudgmentTemplateEnabled}
             onDeepJudgmentSearchEnabledChange={setDeepJudgmentSearchEnabled}
             onDeepJudgmentRubricEnabledChange={setDeepJudgmentRubricEnabled}

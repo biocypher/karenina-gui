@@ -18,6 +18,7 @@ export interface BenchmarkPresetState {
   rubricEvaluationStrategy: 'batch' | 'sequential';
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   abstentionEnabled: boolean;
+  sufficiencyEnabled: boolean;
   deepJudgmentTemplateEnabled: boolean;
   deepJudgmentSearchEnabled: boolean;
   deepJudgmentRubricEnabled: boolean;
@@ -39,6 +40,7 @@ export interface PresetApplyResult {
   rubricEvaluationStrategy: 'batch' | 'sequential';
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   abstentionEnabled: boolean;
+  sufficiencyEnabled: boolean;
   deepJudgmentTemplateEnabled: boolean;
   deepJudgmentSearchEnabled: boolean;
   deepJudgmentRubricEnabled: boolean;
@@ -76,6 +78,7 @@ export function stateToVerificationConfig(state: BenchmarkPresetState): Verifica
     rubric_evaluation_strategy: state.rubricEvaluationStrategy,
     evaluation_mode: state.evaluationMode,
     abstention_enabled: state.abstentionEnabled,
+    sufficiency_enabled: state.sufficiencyEnabled,
     deep_judgment_enabled: state.deepJudgmentTemplateEnabled,
     deep_judgment_search_enabled: state.deepJudgmentSearchEnabled,
     deep_judgment_rubric_mode: state.deepJudgmentRubricEnabled ? state.deepJudgmentRubricMode : 'disabled',
@@ -140,6 +143,7 @@ export function verificationConfigToState(config: VerificationConfig): PresetApp
     rubricEvaluationStrategy: config.rubric_evaluation_strategy ?? 'batch',
     evaluationMode,
     abstentionEnabled: config.abstention_enabled ?? false,
+    sufficiencyEnabled: config.sufficiency_enabled ?? false,
     deepJudgmentTemplateEnabled: config.deep_judgment_enabled ?? false,
     deepJudgmentSearchEnabled: config.deep_judgment_search_enabled ?? false,
     deepJudgmentRubricEnabled,

@@ -27,6 +27,7 @@ interface BenchmarkState {
   evaluationMode: 'template_only' | 'template_and_rubric' | 'rubric_only';
   correctnessEnabled: boolean;
   abstentionEnabled: boolean;
+  sufficiencyEnabled: boolean;
   deepJudgmentTemplateEnabled: boolean;
   deepJudgmentSearchEnabled: boolean;
   deepJudgmentRubricEnabled: boolean;
@@ -60,6 +61,7 @@ interface BenchmarkState {
   setEvaluationMode: (mode: 'template_only' | 'template_and_rubric' | 'rubric_only') => void;
   setCorrectnessEnabled: (enabled: boolean) => void;
   setAbstentionEnabled: (enabled: boolean) => void;
+  setSufficiencyEnabled: (enabled: boolean) => void;
   setDeepJudgmentTemplateEnabled: (enabled: boolean) => void;
   setDeepJudgmentSearchEnabled: (enabled: boolean) => void;
   setDeepJudgmentRubricEnabled: (enabled: boolean) => void;
@@ -111,6 +113,7 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   evaluationMode: 'template_only',
   correctnessEnabled: true,
   abstentionEnabled: false,
+  sufficiencyEnabled: false,
   deepJudgmentTemplateEnabled: false,
   deepJudgmentSearchEnabled: false,
   deepJudgmentRubricEnabled: false,
@@ -190,6 +193,7 @@ export const useBenchmarkStore = create<BenchmarkState>((set) => ({
   setEvaluationMode: (mode) => set({ evaluationMode: mode }),
   setCorrectnessEnabled: (enabled) => set({ correctnessEnabled: enabled }),
   setAbstentionEnabled: (enabled) => set({ abstentionEnabled: enabled }),
+  setSufficiencyEnabled: (enabled) => set({ sufficiencyEnabled: enabled }),
   setDeepJudgmentTemplateEnabled: (enabled) => set({ deepJudgmentTemplateEnabled: enabled }),
   setDeepJudgmentSearchEnabled: (enabled) => set({ deepJudgmentSearchEnabled: enabled }),
   setDeepJudgmentRubricEnabled: (enabled) => set({ deepJudgmentRubricEnabled: enabled }),

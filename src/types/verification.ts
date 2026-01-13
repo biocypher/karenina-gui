@@ -59,6 +59,11 @@ export interface VerificationResultTemplate {
   abstention_detected?: boolean | null;
   abstention_override_applied?: boolean;
   abstention_reasoning?: string | null;
+  // Sufficiency
+  sufficiency_check_performed?: boolean;
+  sufficiency_detected?: boolean | null; // true = sufficient, false = insufficient
+  sufficiency_override_applied?: boolean;
+  sufficiency_reasoning?: string | null;
   // MCP
   answering_mcp_servers?: string[];
   // Usage
