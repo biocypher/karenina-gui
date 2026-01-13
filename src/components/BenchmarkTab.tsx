@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Play,
   Square,
@@ -16,17 +16,21 @@ import {
   Search,
 } from 'lucide-react';
 import { ColumnFiltersState } from '@tanstack/react-table';
-import { Checkpoint, VerificationResult, VerificationProgress, VerificationConfig, Rubric } from '../types';
+import { Checkpoint, VerificationResult, VerificationProgress } from '../types';
 import { ErrorBoundary } from './shared/ErrorBoundary';
 import { Card } from './ui/Card';
-import { API_ENDPOINTS, HTTP_METHODS, HEADERS } from '../constants/api';
-import { exportFromServer, exportFilteredResults, ExportableResult } from '../utils/export';
 import { ConfigurationPanel } from './benchmark/ConfigurationPanel';
 import { PresetManager } from './presets/PresetManager';
 import { ProgressIndicator } from './benchmark/ProgressIndicator';
 import { VerificationResultDetailModal } from './benchmark/VerificationResultDetailModal';
 import { BenchmarkTable } from './BenchmarkTable';
 import { useBenchmarkConfiguration } from '../hooks/useBenchmarkConfiguration';
+import { useTestSelection } from '../hooks/useTestSelection';
+import { useVerificationWebSocket } from '../hooks/useVerificationWebSocket';
+import { useBenchmarkUpload } from '../hooks/useBenchmarkUpload';
+import { useVerificationRun } from '../hooks/useVerificationRun';
+import { useBenchmarkExport } from '../hooks/useBenchmarkExport';
+import { useBenchmarkResults } from '../hooks/useBenchmarkResults';
 import { useRubricStore } from '../stores/useRubricStore';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { CustomExportDialog } from './CustomExportDialog';
@@ -34,14 +38,6 @@ import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { SummaryStatisticsPanel } from './summary/SummaryStatisticsPanel';
 import { formatDuration } from '../utils/time';
 import { MergeResultsDialog, MergeAction } from './dialogs/MergeResultsDialog';
-import {
-  parseVerificationResultsJSON,
-  mergeVerificationResults,
-  calculateMergeStats,
-  ImportValidationError,
-  ParsedImportResult,
-} from '../utils/import';
-import { JobSummaryMetadata } from '../utils/export';
 
 // Interfaces now imported from types
 
@@ -103,19 +99,101 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
 
   // Verification state
   const [isRunning, setIsRunning] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- isUploading is used but setter not yet implemented
+  const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState<VerificationProgress | null>(null);
   const [selectedResult, setSelectedResult] = useState<VerificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
-  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
 
-  // Test selection state
-  const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
-  const [testSearchTerm, setTestSearchTerm] = useState('');
+  // Get finished templates from checkpoint
+  const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
 
-  // Few-shot custom selection state
-  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
-  const [customFewShotSelections, setCustomFewShotSelections] = useState<Record<string, Set<number>>>({});
+  // Test selection and filtering via custom hook
+  const {
+    selectedTests,
+    testSearchTerm,
+    setTestSearchTerm,
+    filteredTemplates,
+    expandedQuestions,
+    customFewShotSelections,
+    handleSelectAll,
+    handleSelectNone,
+    handleClearAllSelections,
+    handleToggleTest,
+    handleToggleQuestionExpansion,
+    handleToggleExampleSelection,
+  } = useTestSelection({
+    finishedTemplates,
+  });
+
+  // WebSocket management via custom hook
+  const { connectProgressWebSocket, disconnectProgressWebSocket } = useVerificationWebSocket({
+    onProgressUpdate: setProgress,
+    onJobCompleted: async (completedJobId, results) => {
+      setIsRunning(false);
+      // Accumulate results instead of replacing them
+      setBenchmarkResults((prev) => ({ ...prev, ...results }));
+      console.log('Results set successfully');
+
+      // Auto-save to database after verification completes
+      try {
+        await autoSaveToDatabase(checkpoint);
+        console.log('💾 Checkpoint auto-saved to database after verification');
+      } catch (saveError) {
+        console.warn('⚠️ Failed to auto-save to database after verification:', saveError);
+      }
+    },
+    onJobFailed: (errorMessage) => {
+      setIsRunning(false);
+      setError(errorMessage);
+    },
+    onJobCancelled: () => {
+      setProgress((prev) => ({
+        ...prev,
+        status: 'cancelled',
+        processed_count: prev?.processed_count || 0,
+        total_count: prev?.total_count || 0,
+      }));
+      setIsRunning(false);
+    },
+  });
+
+  // Verification run management via custom hook
+  const { handleStartVerification, handleCancelVerification: handleCancelVerificationBase } = useVerificationRun({
+    selectedTests,
+    finishedTemplates,
+    runName,
+    storageUrl,
+    benchmarkName: metadata?.name,
+    getVerificationConfig,
+    onSetIsRunning: setIsRunning,
+    onSetProgress: setProgress,
+    onSetError: setError,
+    onSetJobId: setJobId,
+    connectProgressWebSocket,
+  });
+
+  // Wrapper for cancel that also disconnects WebSocket
+  const handleCancelVerification = async () => {
+    await handleCancelVerificationBase(jobId);
+    disconnectProgressWebSocket();
+  };
+
+  // Export management via custom hook
+  const { handleExportResults, handleExportFilteredResults, handleCustomExport } = useBenchmarkExport({
+    benchmarkResults,
+    progress,
+    currentRubric,
+    jobId,
+    getVerificationConfig,
+    onSetError: setError,
+  });
+
+  // Results statistics via custom hook
+  const { getAllUnfilteredResults, stats } = useBenchmarkResults({
+    benchmarkResults,
+  });
 
   // Local state for replicate count input to allow clearing
   const [replicateInputValue, setReplicateInputValue] = useState<string>(replicateCount.toString());
@@ -130,26 +208,44 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
   // Preset modal state
   const [showPresetModal, setShowPresetModal] = useState(false);
 
-  // Upload state
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [parsedUpload, setParsedUpload] = useState<ParsedImportResult | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  // Upload success message
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get finished templates from checkpoint
-  const finishedTemplates = Object.entries(checkpoint).filter(([, item]) => item.finished);
+  // Upload/import management via custom hook
+  const {
+    isUploadDialogOpen,
+    parsedUpload,
+    fileInputRef,
+    setIsUploadDialogOpen,
+    handleFileSelect,
+    handleUploadConfirm: handleUploadConfirmBase,
+    uploadedCount,
+    existingCount,
+    conflictCount,
+    totalAfterMerge,
+  } = useBenchmarkUpload({
+    checkpoint,
+    benchmarkResults,
+    onSetBenchmarkResults: setBenchmarkResults,
+    onSetCurrentRubric: setCurrentRubric,
+    onSetError: setError,
+  });
 
-  // Filter templates based on search term
-  const filteredTemplates = useMemo(() => {
-    if (!testSearchTerm.trim()) {
-      return finishedTemplates;
+  // Wrapper to set success message after upload
+  const handleUploadConfirm = (action: MergeAction) => {
+    handleUploadConfirmBase(action);
+    if (action !== 'cancel' && parsedUpload) {
+      const message =
+        action === 'replace'
+          ? `Successfully loaded ${parsedUpload.stats.totalResults} results from ${parsedUpload.stats.questions.size} questions. Previous results were replaced.`
+          : `Successfully merged ${parsedUpload.stats.totalResults} results. Total results: ${totalAfterMerge}`;
+      setUploadSuccess(message);
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setUploadSuccess(null);
+      }, 5000);
     }
-    const searchLower = testSearchTerm.toLowerCase();
-    return finishedTemplates.filter(
-      ([id, item]) => item.question.toLowerCase().includes(searchLower) || id.toLowerCase().includes(searchLower)
-    );
-  }, [finishedTemplates, testSearchTerm]);
+  };
 
   const getQuestionPreview = (text: string) => {
     return text.length > 60 ? text.substring(0, 60) + '...' : text;
@@ -161,64 +257,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     setTotalCount(total);
   };
 
-  // Handle export filtered results - Fix the function to work with simple client-side export
-  const handleExportFilteredResults = async (format: 'json' | 'csv') => {
-    // No transformation needed - raw_answer is already in metadata
-    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
-
-    // Build job summary from current results
-    const jobSummary: JobSummaryMetadata = {
-      total_questions: new Set(filteredResults.map((r) => r.metadata.question_id)).size,
-      successful_count: filteredResults.filter((r) => r.metadata.completed_without_errors).length,
-      failed_count: filteredResults.filter((r) => !r.metadata.completed_without_errors).length,
-      start_time: progress?.start_time,
-      end_time: progress?.end_time,
-      total_duration: progress?.duration_seconds,
-    };
-
-    exportFilteredResults(
-      filteredResults,
-      format,
-      (error) => {
-        setError(error);
-      },
-      currentRubric,
-      undefined, // selectedFields
-      jobId || undefined,
-      getVerificationConfig(),
-      jobSummary
-    );
-  };
-
-  // Handle custom export with field selection
-  const handleCustomExport = (selectedFields: string[], format: 'json' | 'csv') => {
-    // No transformation needed - raw_answer is already in metadata
-    const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
-
-    // Build job summary from current results
-    const jobSummary: JobSummaryMetadata = {
-      total_questions: new Set(filteredResults.map((r) => r.metadata.question_id)).size,
-      successful_count: filteredResults.filter((r) => r.metadata.completed_without_errors).length,
-      failed_count: filteredResults.filter((r) => !r.metadata.completed_without_errors).length,
-      start_time: progress?.start_time,
-      end_time: progress?.end_time,
-      total_duration: progress?.duration_seconds,
-    };
-
-    exportFilteredResults(
-      filteredResults,
-      format,
-      (error) => {
-        setError(error);
-      },
-      currentRubric,
-      selectedFields,
-      jobId || undefined,
-      getVerificationConfig(),
-      jobSummary
-    );
-  };
-
   // WebSocket cleanup on unmount
   useEffect(() => {
     return () => {
@@ -227,510 +265,6 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Note: HTTP polling logic has been removed and replaced with WebSocket streaming.
-  // The WebSocket connection is established in handleStartVerification() after the job starts
-  // and provides real-time progress updates with <100ms latency (vs 1s polling delay).
-  // Progress events: snapshot, job_started, task_started, task_completed, job_completed, job_failed, job_cancelled
-
-  // WebSocket connection management
-  const connectProgressWebSocket = (jobId: string) => {
-    // Disconnect any existing connection
-    if (websocket) {
-      websocket.close();
-      setWebsocket(null);
-    }
-
-    try {
-      // Determine WebSocket protocol based on current page protocol
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/ws/verification-progress/${jobId}`;
-
-      const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log('WebSocket connected for verification job', jobId);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const eventData = JSON.parse(event.data);
-
-          // Handle different event types
-          switch (eventData.type) {
-            case 'snapshot':
-            case 'job_started':
-            case 'task_started':
-            case 'task_completed':
-              // Update progress
-              setProgress({
-                job_id: eventData.job_id,
-                status: eventData.status,
-                percentage: eventData.percentage,
-                processed_count: eventData.processed,
-                total_count: eventData.total,
-                current_question: eventData.current_question || '',
-                start_time: eventData.start_time, // Unix timestamp for live clock
-                duration_seconds: eventData.duration_seconds,
-                last_task_duration: eventData.last_task_duration,
-                in_progress_questions: eventData.in_progress_questions || [],
-                successful_count: 0,
-                failed_count: 0,
-              });
-              break;
-
-            case 'job_completed':
-              // Update progress to show completed status
-              setProgress((prev) => ({
-                ...prev,
-                job_id: jobId,
-                status: 'completed',
-                percentage: 100,
-                in_progress_questions: [],
-                current_question: '',
-                processed_count: prev?.processed_count || 0,
-                total_count: prev?.total_count || 0,
-                successful_count: 0,
-                failed_count: 0,
-              }));
-
-              // Fetch final results
-              fetch(`/api/verification-progress/${jobId}`)
-                .then((res) => res.json())
-                .then(async (data) => {
-                  setIsRunning(false);
-
-                  // Check for error in response
-                  if (data.error) {
-                    console.error('Verification failed with error:', data.error);
-                    setError(data.error);
-                    disconnectProgressWebSocket();
-                    return;
-                  }
-
-                  // Handle verification results - server now returns dict with backend-generated keys
-                  if (data.result_set) {
-                    const sanitizedResults: Record<string, VerificationResult> = {};
-
-                    // New format: dict with backend-generated keys (includes timestamp for uniqueness)
-                    // Keys like: {question_id}_{answering_model}_{parsing_model}_rep{N}_{timestamp_ms}
-                    if (typeof data.result_set === 'object' && !Array.isArray(data.result_set)) {
-                      console.log('Setting results from dict:', Object.keys(data.result_set).length, 'items');
-                      // Validate and filter results - skip malformed entries
-                      for (const [key, result] of Object.entries(data.result_set)) {
-                        if (result && typeof result === 'object' && 'metadata' in (result as object)) {
-                          sanitizedResults[key] = result as VerificationResult;
-                        } else {
-                          console.warn('Skipping malformed result entry:', key, result);
-                        }
-                      }
-                    }
-                    // Legacy format: VerificationResultSet with results array (backward compatibility)
-                    else if (Array.isArray(data.result_set.results)) {
-                      console.log('Setting results from array:', data.result_set.results.length, 'items');
-                      // Convert array to dict (legacy path)
-                      for (const result of data.result_set.results) {
-                        if (result && typeof result === 'object' && result.metadata) {
-                          // Generate key from result metadata
-                          const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
-                            result.metadata.replicate ? `_rep${result.metadata.replicate}` : ''
-                          }`;
-                          sanitizedResults[key] = result as VerificationResult;
-                        } else {
-                          console.warn('Skipping malformed result in array:', result);
-                        }
-                      }
-                    }
-
-                    // Only set results if we have valid entries
-                    if (Object.keys(sanitizedResults).length > 0) {
-                      // Accumulate results instead of replacing them
-                      setBenchmarkResults((prev) => ({ ...prev, ...sanitizedResults }));
-                      console.log('Results set successfully');
-                    } else {
-                      console.warn('No valid results found in response');
-                      setError(
-                        'Verification completed but no valid results were returned. The model may have failed to initialize - please check the model name and provider.'
-                      );
-                    }
-
-                    // Auto-save to database after verification completes
-                    try {
-                      await autoSaveToDatabase(checkpoint);
-                      console.log('💾 Checkpoint auto-saved to database after verification');
-                    } catch (saveError) {
-                      console.warn('⚠️ Failed to auto-save to database after verification:', saveError);
-                    }
-                  }
-                  disconnectProgressWebSocket();
-                })
-                .catch((err) => {
-                  console.error('Failed to fetch final results:', err);
-                  setIsRunning(false);
-                  disconnectProgressWebSocket();
-                });
-              break;
-
-            case 'job_failed':
-              setError(eventData.error || 'Verification failed');
-              setIsRunning(false);
-              disconnectProgressWebSocket();
-              break;
-
-            case 'job_cancelled':
-              setProgress((prev) => ({
-                ...prev,
-                job_id: jobId,
-                status: 'cancelled',
-                processed_count: prev?.processed_count || 0,
-                total_count: prev?.total_count || 0,
-                successful_count: 0,
-                failed_count: 0,
-              }));
-              setIsRunning(false);
-              disconnectProgressWebSocket();
-              break;
-
-            default:
-              console.warn('Unknown WebSocket event type:', eventData.type);
-          }
-        } catch (err) {
-          console.error('Failed to parse WebSocket message:', err);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-
-      ws.onclose = () => {
-        console.log('WebSocket connection closed');
-        setWebsocket(null);
-      };
-
-      setWebsocket(ws);
-    } catch (err) {
-      console.error('Failed to connect WebSocket:', err);
-    }
-  };
-
-  const disconnectProgressWebSocket = () => {
-    if (websocket) {
-      websocket.close();
-      setWebsocket(null);
-    }
-  };
-
-  const handleStartVerification = async (questionIds?: string[]) => {
-    const idsToRun = questionIds || Array.from(selectedTests);
-
-    if (idsToRun.length === 0) {
-      setError('No tests selected for verification.');
-      return;
-    }
-
-    setIsRunning(true);
-    setProgress(null);
-    // DON'T clear existing results - we want to accumulate them
-    setError(null);
-
-    try {
-      // Prepare verification config
-      const config: VerificationConfig = getVerificationConfig();
-
-      // Prepare finished templates data
-      const templatesData = finishedTemplates.map(([questionId, item]) => ({
-        question_id: questionId,
-        question_text: item.question,
-        question_preview: getQuestionPreview(item.question),
-        template_code: item.answer_template,
-        last_modified: item.last_modified,
-        finished: true,
-        question_rubric: item.question_rubric || null,
-        keywords: item.keywords || null,
-      }));
-
-      const requestPayload = {
-        config,
-        question_ids: idsToRun,
-        finished_templates: templatesData,
-        run_name: runName.trim() || undefined, // Send run name if provided
-        // Async control now via KARENINA_ASYNC_ENABLED env var on server
-        storage_url: storageUrl || undefined, // Include storage URL for database auto-save
-        benchmark_name: metadata?.name || undefined, // Include benchmark name for database auto-save
-      };
-
-      // DEBUG: Log verification request details
-      console.log('🔍 Verification Request Debug:');
-      console.log('  Config:', JSON.stringify(config, null, 2));
-      console.log('  Rubric Enabled?', config.rubric_enabled);
-
-      // Log first template's rubric (if any) to verify metric_traits are included
-      if (templatesData.length > 0 && templatesData[0].question_rubric) {
-        console.log('  Sample Question Rubric:', JSON.stringify(templatesData[0].question_rubric, null, 2));
-        console.log('  Has Metric Traits?', templatesData[0].question_rubric.metric_traits?.length > 0);
-      } else {
-        console.log('  No question rubrics found in templates');
-      }
-
-      console.log('  Complete Request Payload:', JSON.stringify(requestPayload, null, 2));
-
-      // Log database auto-save configuration
-      if (storageUrl && metadata?.name) {
-        console.log('🔗 Database auto-save enabled:', { storageUrl, benchmarkName: metadata.name });
-      } else {
-        console.warn('⚠️ Database auto-save disabled - missing:', {
-          storageUrl: storageUrl ? 'set' : 'NOT SET',
-          benchmarkName: metadata?.name ? metadata.name : 'NOT SET',
-        });
-      }
-
-      const response = await fetch(API_ENDPOINTS.START_VERIFICATION, {
-        method: HTTP_METHODS.POST,
-        headers: HEADERS.CONTENT_TYPE_JSON,
-        body: JSON.stringify(requestPayload),
-      });
-
-      if (!response.ok) {
-        // Try to get error detail from response body
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        try {
-          const errorData = await response.json();
-          if (errorData.detail) {
-            errorMessage = errorData.detail;
-          }
-        } catch {
-          // If parsing fails, use the default error message
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      setJobId(data.job_id);
-
-      // Connect to WebSocket for real-time progress updates
-      connectProgressWebSocket(data.job_id);
-    } catch (err) {
-      setIsRunning(false);
-      setError(err instanceof Error ? err.message : 'Failed to start verification');
-    }
-  };
-
-  const handleCancelVerification = async () => {
-    if (!jobId) return;
-
-    try {
-      await fetch(API_ENDPOINTS.CANCEL_VERIFICATION(jobId), {
-        method: HTTP_METHODS.POST,
-      });
-
-      // Disconnect WebSocket
-      disconnectProgressWebSocket();
-
-      setIsRunning(false);
-      setProgress(null);
-      setJobId(null);
-    } catch (err) {
-      console.error('Error cancelling verification:', err);
-    }
-  };
-
-  const handleExportResults = async (format: 'json' | 'csv') => {
-    if (!jobId) return;
-
-    try {
-      await exportFromServer(jobId, format);
-    } catch (err) {
-      console.error('Error exporting results:', err);
-      setError('Failed to export results. Please try again.');
-    }
-  };
-
-  // Upload handlers
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    setError(null);
-    setUploadSuccess(null);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const parsed = parseVerificationResultsJSON(content);
-
-        setParsedUpload(parsed);
-        setIsUploadDialogOpen(true);
-        setIsUploading(false);
-      } catch (err) {
-        console.error('Error parsing upload:', err);
-        if (err instanceof ImportValidationError) {
-          setError(`Upload validation failed: ${err.message}`);
-        } else {
-          setError('Failed to parse uploaded file. Please ensure it is a valid verification results JSON file.');
-        }
-        setIsUploading(false);
-      }
-    };
-
-    reader.onerror = () => {
-      setError('Failed to read file. Please try again.');
-      setIsUploading(false);
-    };
-
-    reader.readAsText(file);
-
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  // Helper to enrich results with raw_answer from checkpoint
-  const enrichResultsWithRawAnswer = (
-    results: Record<string, VerificationResult>
-  ): Record<string, VerificationResult> => {
-    const enriched: Record<string, VerificationResult> = {};
-    for (const [key, result] of Object.entries(results)) {
-      enriched[key] = {
-        ...result,
-        raw_answer: result.raw_answer || checkpoint[result.metadata.question_id]?.raw_answer,
-      };
-    }
-    return enriched;
-  };
-
-  const handleUploadConfirm = (action: MergeAction) => {
-    if (action === 'cancel' || !parsedUpload) {
-      setIsUploadDialogOpen(false);
-      setParsedUpload(null);
-      return;
-    }
-
-    try {
-      // Enrich uploaded results with raw_answer from checkpoint
-      const enrichedResults = enrichResultsWithRawAnswer(parsedUpload.results);
-
-      if (action === 'replace') {
-        // Replace existing results
-        setBenchmarkResults(enrichedResults);
-        setUploadSuccess(
-          `Successfully loaded ${parsedUpload.stats.totalResults} results from ${parsedUpload.stats.questions.size} questions. Previous results were replaced.`
-        );
-      } else if (action === 'merge') {
-        // Merge with existing results
-        const merged = mergeVerificationResults(benchmarkResults, enrichedResults, 'replace');
-        setBenchmarkResults(merged);
-        setUploadSuccess(
-          `Successfully merged ${parsedUpload.stats.totalResults} results. Total results: ${Object.keys(merged).length}`
-        );
-      }
-
-      // Update rubric from uploaded file if available (v2.0 format)
-      if (parsedUpload.sharedRubricDefinition) {
-        const rubricDef = parsedUpload.sharedRubricDefinition as Record<string, unknown>;
-        // Construct a proper Rubric object
-        const rubric: Rubric = {
-          llm_traits: (rubricDef.llm_traits as Rubric['llm_traits']) || [],
-          regex_traits: rubricDef.regex_traits as Rubric['regex_traits'],
-          callable_traits: rubricDef.callable_traits as Rubric['callable_traits'],
-          metric_traits: rubricDef.metric_traits as Rubric['metric_traits'],
-        };
-        console.log('📋 Applying shared rubric definition from uploaded file:', {
-          llm_traits: rubric.llm_traits?.length,
-          regex_traits: rubric.regex_traits?.length,
-          callable_traits: rubric.callable_traits?.length,
-          metric_traits: rubric.metric_traits?.length,
-        });
-        setCurrentRubric(rubric);
-      }
-
-      setIsUploadDialogOpen(false);
-      setParsedUpload(null);
-      setError(null);
-
-      // Clear success message after 5 seconds
-      setTimeout(() => {
-        setUploadSuccess(null);
-      }, 5000);
-    } catch (err) {
-      console.error('Error applying upload:', err);
-      setError(`Failed to load results: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      setIsUploadDialogOpen(false);
-      setParsedUpload(null);
-    }
-  };
-
-  // Test selection functions
-  const handleSelectAll = () => {
-    // Select all currently visible (filtered) tests
-    const newSelected = new Set(selectedTests);
-    filteredTemplates.forEach(([id]) => newSelected.add(id));
-    setSelectedTests(newSelected);
-  };
-
-  const handleSelectNone = () => {
-    // Deselect only the currently visible (filtered) tests
-    const newSelected = new Set(selectedTests);
-    filteredTemplates.forEach(([id]) => newSelected.delete(id));
-    setSelectedTests(newSelected);
-  };
-
-  const handleClearAllSelections = () => {
-    setSelectedTests(new Set());
-  };
-
-  const handleToggleTest = (questionId: string) => {
-    const newSelected = new Set(selectedTests);
-    if (newSelected.has(questionId)) {
-      newSelected.delete(questionId);
-    } else {
-      newSelected.add(questionId);
-    }
-    setSelectedTests(newSelected);
-  };
-
-  // Few-shot example selection handlers
-  const handleToggleQuestionExpansion = (questionId: string) => {
-    const newExpanded = new Set(expandedQuestions);
-    if (newExpanded.has(questionId)) {
-      newExpanded.delete(questionId);
-    } else {
-      newExpanded.add(questionId);
-    }
-    setExpandedQuestions(newExpanded);
-  };
-
-  const handleToggleExampleSelection = (questionId: string, exampleIndex: number) => {
-    const currentSelections = customFewShotSelections[questionId] || new Set<number>();
-    const newSelections = new Set(currentSelections);
-
-    if (newSelections.has(exampleIndex)) {
-      newSelections.delete(exampleIndex);
-    } else {
-      newSelections.add(exampleIndex);
-    }
-
-    setCustomFewShotSelections({
-      ...customFewShotSelections,
-      [questionId]: newSelections,
-    });
-  };
-
-  // Get all unfiltered results for statistics
-  const getAllUnfilteredResults = () => {
-    try {
-      if (!benchmarkResults) {
-        return [];
-      }
-      return Object.values(benchmarkResults);
-    } catch (e) {
-      console.error('Error in getAllUnfilteredResults:', e);
-      return [];
-    }
-  };
 
   // Don't load historical results on mount - we want a fresh start on page refresh
   // Results will only accumulate during the current page session
@@ -1202,24 +736,18 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             />
 
             {/* Aggregated Test Stats - Only show after verification completes */}
-            {!isRunning && getAllUnfilteredResults().length > 0 && (
+            {!isRunning && stats.hasResults && (
               <div className="grid grid-cols-6 gap-3 mb-4">
                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                    {getAllUnfilteredResults().length}
-                  </div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.totalResults}</div>
                   <div className="text-xs text-slate-600 dark:text-slate-300">Total Tests</div>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    {getAllUnfilteredResults().filter((r) => r.metadata.completed_without_errors).length}
-                  </div>
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.successfulCount}</div>
                   <div className="text-xs text-green-600 dark:text-green-400">Completed Without Errors</div>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-red-700 dark:text-red-300">
-                    {getAllUnfilteredResults().filter((r) => !r.metadata.completed_without_errors).length}
-                  </div>
+                  <div className="text-2xl font-bold text-red-700 dark:text-red-300">{stats.failedCount}</div>
                   <div className="text-xs text-red-600 dark:text-red-400">With Errors</div>
                 </div>
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-center">
@@ -1234,13 +762,13 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 </div>
                 <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                    {getAllUnfilteredResults().filter((r) => r.template?.verify_result === true).length}
+                    {stats.passedVerificationCount}
                   </div>
                   <div className="text-xs text-emerald-600 dark:text-emerald-400">Passed</div>
                 </div>
                 <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-3 text-center">
                   <div className="text-2xl font-bold text-rose-700 dark:text-rose-300">
-                    {getAllUnfilteredResults().filter((r) => r.template?.verify_result === false).length}
+                    {stats.failedVerificationCount}
                   </div>
                   <div className="text-xs text-rose-600 dark:text-rose-400">Failed</div>
                 </div>
@@ -1318,7 +846,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                {getAllUnfilteredResults().length > 0 && !isRunning && (
+                {stats.hasResults && !isRunning && (
                   <button
                     onClick={() => {
                       if (confirm('Are you sure you want to clear all test results? This action cannot be undone.')) {
@@ -1360,7 +888,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
             </div>
 
             {/* Filters help text */}
-            {getAllUnfilteredResults().length > 0 && (
+            {stats.hasResults && (
               <div className="mb-4 text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Filter className="w-4 h-4" />
@@ -1383,7 +911,7 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
           </Card>
 
           {/* Summary Statistics Panel */}
-          {Object.keys(benchmarkResults).length > 0 && (
+          {stats.hasResults && (
             <SummaryStatisticsPanel
               benchmarkResults={benchmarkResults}
               checkpoint={checkpoint}
@@ -1464,10 +992,10 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
         isOpen={isUploadDialogOpen}
         onClose={() => setIsUploadDialogOpen(false)}
         onConfirm={handleUploadConfirm}
-        uploadedCount={parsedUpload?.stats.totalResults || 0}
-        existingCount={Object.keys(benchmarkResults).length}
-        conflictCount={parsedUpload ? calculateMergeStats(benchmarkResults, parsedUpload.results).conflictCount : 0}
-        totalAfterMerge={parsedUpload ? calculateMergeStats(benchmarkResults, parsedUpload.results).totalAfterMerge : 0}
+        uploadedCount={uploadedCount}
+        existingCount={existingCount}
+        conflictCount={conflictCount}
+        totalAfterMerge={totalAfterMerge}
       />
     </ErrorBoundary>
   );

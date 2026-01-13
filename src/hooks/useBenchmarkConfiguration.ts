@@ -1,7 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ModelConfiguration } from '../types';
 import { useConfigStore } from '../stores/useConfigStore';
 import { useBenchmarkStore } from '../stores/useBenchmarkStore';
+import { isDefaultModelConfiguration } from '../constants/defaultModels';
+import {
+  processInterfaceSwitch,
+  processParsingInterfaceSwitch,
+  type InterfaceSwitchConfig,
+} from '../utils/modelInterfaceSwitcher';
 
 export interface BenchmarkConfiguration {
   answeringModels: ModelConfiguration[];
@@ -59,6 +65,7 @@ export const useBenchmarkConfiguration = () => {
     setReplicateCount,
     setRunName,
     togglePromptExpanded: storeTogglePromptExpanded,
+    resetExpandedPrompts,
     setRubricEnabled,
     setRubricEvaluationStrategy,
     setEvaluationMode,
@@ -77,24 +84,22 @@ export const useBenchmarkConfiguration = () => {
   // Update default models ONLY if they match the initial store defaults
   // This ensures user modifications persist across tab switches
   // but reset on page refresh (since Zustand store resets on page refresh)
-  useEffect(() => {
-    // Check if models are still at their initial defaults (haven't been modified by user)
-    const answeringIsDefault =
-      answeringModels.length === 1 &&
-      answeringModels[0].id === 'answering-1' &&
-      answeringModels[0].model_provider === 'anthropic' &&
-      answeringModels[0].model_name === 'claude-haiku-4-5' &&
-      answeringModels[0].interface === 'langchain';
+  //
+  // Note: We use a ref to track initialization because we want this effect to run
+  // only once on mount, even when saved config values change. If saved values change,
+  // we don't want to overwrite models that the user may have already configured.
+  const hasInitialized = useRef(false);
 
-    const parsingIsDefault =
-      parsingModels.length === 1 &&
-      parsingModels[0].id === 'parsing-1' &&
-      parsingModels[0].model_provider === 'anthropic' &&
-      parsingModels[0].model_name === 'claude-haiku-4-5' &&
-      parsingModels[0].interface === 'langchain';
+  useEffect(() => {
+    // Skip if already initialized (e.g., component re-rendered with new saved values)
+    if (hasInitialized.current) return;
+
+    // Check if models are still at their initial defaults (haven't been modified by user)
+    // Uses centralized default model detection from constants/defaultModels.ts
+    const isDefault = isDefaultModelConfiguration(answeringModels, parsingModels);
 
     // Only update if both models are still at defaults
-    if (answeringIsDefault && parsingIsDefault) {
+    if (isDefault) {
       setAnsweringModels([
         {
           ...answeringModels[0],
@@ -117,8 +122,19 @@ export const useBenchmarkConfiguration = () => {
         },
       ]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run on mount
+
+    hasInitialized.current = true;
+  }, [
+    answeringModels,
+    parsingModels,
+    savedInterface,
+    savedProvider,
+    savedModel,
+    savedEndpointBaseUrl,
+    savedEndpointApiKey,
+    setAnsweringModels,
+    setParsingModels,
+  ]);
 
   // Model management functions - wrap store functions with additional logic
   const addAnsweringModel = () => {
@@ -160,96 +176,25 @@ export const useBenchmarkConfiguration = () => {
 
   const updateAnsweringModel = (id: string, updates: Partial<ModelConfiguration>) => {
     // Handle interface switching - clear non-relevant fields and set defaults
-    const processedUpdates = { ...updates };
-    if (updates.interface) {
-      switch (updates.interface) {
-        case 'langchain':
-          // Ensure provider has a default value for langchain
-          if (!processedUpdates.model_provider) {
-            processedUpdates.model_provider = savedProvider;
-          }
-          // Clear endpoint fields for langchain
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-        case 'openrouter':
-          // Clear provider field for openrouter (not needed)
-          processedUpdates.model_provider = '';
-          // Clear endpoint fields for openrouter
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-        case 'openai_endpoint':
-          // Clear provider field for openai_endpoint (not needed)
-          processedUpdates.model_provider = '';
-          // Ensure endpoint fields have default values
-          if (!processedUpdates.endpoint_base_url) {
-            processedUpdates.endpoint_base_url = savedEndpointBaseUrl;
-          }
-          if (!processedUpdates.endpoint_api_key) {
-            processedUpdates.endpoint_api_key = savedEndpointApiKey;
-          }
-          break;
-        case 'manual':
-          // Clear both provider and model_name for manual
-          processedUpdates.model_provider = '';
-          processedUpdates.model_name = '';
-          // Clear endpoint fields for manual
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          // Clear MCP configuration for manual interface (not supported)
-          processedUpdates.mcp_urls_dict = undefined;
-          processedUpdates.mcp_tool_filter = undefined;
-          break;
-      }
-    }
-
+    const config: InterfaceSwitchConfig = {
+      savedProvider,
+      savedModel,
+      savedEndpointBaseUrl,
+      savedEndpointApiKey,
+    };
+    const processedUpdates = processInterfaceSwitch(updates, config);
     storeUpdateAnsweringModel(id, processedUpdates);
   };
 
   const updateParsingModel = (id: string, updates: Partial<ModelConfiguration>) => {
     // Handle interface switching - clear non-relevant fields and set defaults
-    const processedUpdates = { ...updates };
-    if (updates.interface) {
-      switch (updates.interface) {
-        case 'langchain':
-          // Ensure provider has a default value for langchain
-          if (!processedUpdates.model_provider) {
-            processedUpdates.model_provider = savedProvider;
-          }
-          // Clear endpoint fields for langchain
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-        case 'openrouter':
-          // Clear provider field for openrouter (not needed)
-          processedUpdates.model_provider = '';
-          // Clear endpoint fields for openrouter
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-        case 'openai_endpoint':
-          // Clear provider field for openai_endpoint (not needed)
-          processedUpdates.model_provider = '';
-          // Ensure endpoint fields have default values
-          if (!processedUpdates.endpoint_base_url) {
-            processedUpdates.endpoint_base_url = savedEndpointBaseUrl;
-          }
-          if (!processedUpdates.endpoint_api_key) {
-            processedUpdates.endpoint_api_key = savedEndpointApiKey;
-          }
-          break;
-        case 'manual':
-          // For parsing models, manual interface should behave like openrouter
-          // (parsing models don't support manual interface according to the UI)
-          processedUpdates.model_provider = '';
-          // Clear endpoint fields for manual
-          processedUpdates.endpoint_base_url = undefined;
-          processedUpdates.endpoint_api_key = undefined;
-          break;
-      }
-    }
-
+    const config: InterfaceSwitchConfig = {
+      savedProvider,
+      savedModel,
+      savedEndpointBaseUrl,
+      savedEndpointApiKey,
+    };
+    const processedUpdates = processParsingInterfaceSwitch(updates, config);
     storeUpdateParsingModel(id, processedUpdates);
   };
 
@@ -328,6 +273,7 @@ export const useBenchmarkConfiguration = () => {
     updateAnsweringModel,
     updateParsingModel,
     togglePromptExpanded,
+    resetExpandedPrompts,
 
     // Utility functions
     getVerificationConfig,

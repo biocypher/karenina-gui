@@ -1,0 +1,45 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T00:00:00.000Z",
+    "scenario": "csv-file-upload-preview",
+    "description": "Successful CSV file upload with preview data"
+  },
+  "uploadResponse": {
+    "file_id": "test-csv-file-123",
+    "filename": "test-questions.csv",
+    "size": 2048
+  },
+  "previewResponse": {
+    "success": true,
+    "total_rows": 100,
+    "columns": ["Question", "Answer", "Category"],
+    "preview_rows": 5,
+    "data": [
+      {
+        "Question": "What is the capital of France?",
+        "Answer": "Paris",
+        "Category": "Geography"
+      },
+      {
+        "Question": "What is 2 + 2?",
+        "Answer": "4",
+        "Category": "Math"
+      },
+      {
+        "Question": "Who wrote Romeo and Juliet?",
+        "Answer": "William Shakespeare",
+        "Category": "Literature"
+      },
+      {
+        "Question": "What is the chemical symbol for gold?",
+        "Answer": "Au",
+        "Category": "Chemistry"
+      },
+      {
+        "Question": "In what year did World War II end?",
+        "Answer": "1945",
+        "Category": "History"
+      }
+    ]
+  }
+}

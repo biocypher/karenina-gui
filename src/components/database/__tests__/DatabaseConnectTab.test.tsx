@@ -3,9 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DatabaseConnectTab } from '../DatabaseConnectTab';
 
-// Mock fetch globally
-global.fetch = vi.fn();
-
 describe('DatabaseConnectTab', () => {
   const mockOnConnect = vi.fn();
 
@@ -28,6 +25,8 @@ describe('DatabaseConnectTab', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset global fetch mock
+    (global.fetch as ReturnType<typeof vi.fn>).mockReset();
     (global.fetch as ReturnType<typeof vi.fn>).mockClear();
   });
 
@@ -84,7 +83,10 @@ describe('DatabaseConnectTab', () => {
     const db1Button = await screen.findByText('test1.db');
     await user.click(db1Button.closest('button')!);
 
-    expect(db1Button.closest('button')).toHaveClass('border-blue-500');
+    // The border-blue-500 class is on the parent div of the button
+    // Find the div containing the database name that has the border class
+    const containerDiv = db1Button.closest('button')?.parentElement;
+    expect(containerDiv).toHaveClass('border-blue-500');
   });
 
   it('enables Connect button only when database is selected', async () => {
@@ -232,8 +234,10 @@ describe('DatabaseConnectTab', () => {
     const typeSelect = screen.getByLabelText('Database Type');
     await user.selectOptions(typeSelect, 'postgresql');
 
-    // Fill in fields
-    await user.type(screen.getByLabelText('Host'), 'db.example.com');
+    // Fill in fields - need to clear the default 'localhost' value first
+    const hostInput = screen.getByLabelText('Host');
+    await user.clear(hostInput);
+    await user.type(hostInput, 'db.example.com');
     await user.type(screen.getByLabelText('Database Name'), 'mydb');
     await user.type(screen.getByLabelText('Username'), 'user');
     await user.type(screen.getByLabelText('Password'), 'pass123');
@@ -341,8 +345,10 @@ describe('DatabaseConnectTab', () => {
 
     render(<DatabaseConnectTab onConnect={mockOnConnect} />);
 
-    expect(await screen.findByText(/DB_PATH/)).toBeInTheDocument();
-    expect(screen.getByText(/environment variable to specify where databases are stored/)).toBeInTheDocument();
+    // DB_PATH appears in a <code> element - use that for more specific selection
+    expect(await screen.findByText(/environment variable to specify where databases are stored/)).toBeInTheDocument();
+    // Find the DB_PATH code element within the connection guide
+    expect(screen.getByText('DB_PATH', { selector: 'code' })).toBeInTheDocument();
   });
 
   it('shows plural/singular benchmark count correctly', async () => {

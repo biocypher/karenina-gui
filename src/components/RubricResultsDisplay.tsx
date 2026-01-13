@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rubric } from '../types';
+import { Rubric, LLMRubricTrait, RegexTrait, CallableTrait, MetricRubricTrait } from '../types';
 
 interface RubricResultsDisplayProps {
   rubricResults: Record<string, number | boolean> | undefined;
@@ -7,6 +7,88 @@ interface RubricResultsDisplayProps {
   currentRubric?: Rubric;
   evaluationRubric?: Rubric; // The merged rubric that was actually used for evaluation
   className?: string;
+}
+
+/**
+ * All possible trait types that can be found in a rubric
+ */
+type Trait = LLMRubricTrait | RegexTrait | CallableTrait | MetricRubricTrait;
+
+/**
+ * Trait result info returned by getTraitInfo
+ */
+interface TraitInfo {
+  description?: string;
+  isQuestionSpecific?: boolean;
+}
+
+/**
+ * Find a trait definition by name across all trait types in a rubric.
+ * Searches in order: llm_traits, regex_traits, callable_traits, metric_traits.
+ */
+function findTraitByName(traitName: string, rubric?: Rubric): Trait | undefined {
+  if (!rubric) return undefined;
+  return (
+    rubric.llm_traits?.find((t) => t.name === traitName) ||
+    rubric.regex_traits?.find((t) => t.name === traitName) ||
+    rubric.callable_traits?.find((t) => t.name === traitName) ||
+    rubric.metric_traits?.find((t) => t.name === traitName)
+  );
+}
+
+/**
+ * Check if a trait exists in the given rubric (used to determine if question-specific).
+ */
+function hasTraitInRubric(traitName: string, rubric?: Rubric): boolean {
+  if (!rubric) return false;
+  return (
+    rubric.llm_traits?.some((t) => t.name === traitName) ||
+    rubric.regex_traits?.some((t) => t.name === traitName) ||
+    rubric.callable_traits?.some((t) => t.name === traitName) ||
+    rubric.metric_traits?.some((t) => t.name === traitName)
+  );
+}
+
+/**
+ * Get the higher_is_better setting for a trait.
+ * Defaults to true for legacy/missing traits (MetricRubricTrait is always true).
+ */
+function getHigherIsBetter(trait?: Trait): boolean {
+  if (!trait) return true;
+  return 'higher_is_better' in trait ? trait.higher_is_better : true;
+}
+
+/**
+ * Calculate the midpoint of a score trait's range.
+ * Returns 3 as default if trait has no min/max.
+ */
+function getScoreMidpoint(trait?: Trait): number {
+  if (!trait || trait.kind !== 'score' || !('min_score' in trait) || !('max_score' in trait)) {
+    return 3;
+  }
+  const min = trait.min_score ?? 1;
+  const max = trait.max_score ?? 5;
+  return (min + max) / 2;
+}
+
+/**
+ * Determine if a trait value represents a "pass" based on directionality.
+ * - Boolean traits: true passes if higher_is_better, false passes if lower_is_better
+ * - Score traits: passes if value >= midpoint when higher_is_better, else <= midpoint
+ * - Default: >= 3 passes when higher_is_better, else <= 3
+ */
+function isTraitPassed(traitName: string, value: number | boolean, rubric?: Rubric): boolean {
+  const trait = findTraitByName(traitName, rubric);
+  const higherIsBetter = getHigherIsBetter(trait);
+
+  // Boolean traits: true = pass if higher_is_better
+  if (typeof value === 'boolean') {
+    return higherIsBetter ? value : !value;
+  }
+
+  // Score traits: compare against midpoint
+  const midpoint = getScoreMidpoint(trait);
+  return higherIsBetter ? value >= midpoint : value <= midpoint;
 }
 
 export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
@@ -19,6 +101,9 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
   const hasLLMTraits = rubricResults && Object.keys(rubricResults).length > 0;
   const hasMetricTraits = metricTraitMetrics && Object.keys(metricTraitMetrics).length > 0;
 
+  // Use the merged rubric for evaluation or fall back to current
+  const rubricForEvaluation = evaluationRubric || currentRubric;
+
   if (!hasLLMTraits && !hasMetricTraits) {
     return (
       <div className={`bg-slate-50 dark:bg-slate-700 rounded-lg p-3 ${className}`}>
@@ -30,35 +115,20 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
   const traits = hasLLMTraits ? Object.entries(rubricResults!) : [];
   const metricTraits = hasMetricTraits ? Object.entries(metricTraitMetrics!) : [];
 
-  const passedTraits = traits.filter(([, value]) => (typeof value === 'boolean' ? value : value && value >= 3)).length;
+  const passedTraits = traits.filter(([name, value]) => isTraitPassed(name, value, rubricForEvaluation)).length;
   const totalTraits = traits.length + metricTraits.length;
   const successRate = totalTraits > 0 ? passedTraits / totalTraits : 0;
 
   // Get trait descriptions and source info from the rubric that was actually used for evaluation
-  const getTraitInfo = (traitName: string): { description?: string; isQuestionSpecific?: boolean } => {
-    // Prioritize evaluationRubric (the merged rubric that was actually used)
+  const getTraitInfo = (traitName: string): TraitInfo => {
     const rubricToUse = evaluationRubric || currentRubric;
-    if (!rubricToUse) return {};
-
-    // Search across all trait types (use llm_traits, not traits)
-    let trait = rubricToUse.llm_traits?.find((t) => t.name === traitName);
-    if (!trait) trait = rubricToUse.regex_traits?.find((t) => t.name === traitName);
-    if (!trait) trait = rubricToUse.callable_traits?.find((t) => t.name === traitName);
-    if (!trait) trait = rubricToUse.metric_traits?.find((t) => t.name === traitName);
+    const trait = findTraitByName(traitName, rubricToUse);
 
     if (!trait) return {};
 
     // Determine if this trait is question-specific by checking if it exists in currentRubric
     // If evaluationRubric has it but currentRubric doesn't, it's question-specific
-    let isQuestionSpecific = false;
-    if (evaluationRubric && currentRubric) {
-      const existsInGlobal =
-        currentRubric.llm_traits?.some((t) => t.name === traitName) ||
-        currentRubric.regex_traits?.some((t) => t.name === traitName) ||
-        currentRubric.callable_traits?.some((t) => t.name === traitName) ||
-        currentRubric.metric_traits?.some((t) => t.name === traitName);
-      isQuestionSpecific = !existsInGlobal;
-    }
+    const isQuestionSpecific = evaluationRubric && currentRubric ? !hasTraitInRubric(traitName, currentRubric) : false;
 
     return {
       description: trait.description,
@@ -86,7 +156,7 @@ export const RubricResultsDisplay: React.FC<RubricResultsDisplayProps> = ({
       <div className="space-y-2">
         {/* LLM/Manual Trait Results */}
         {traits.map(([name, value]) => {
-          const isPassed = typeof value === 'boolean' ? value : value && value >= 3;
+          const isPassed = isTraitPassed(name, value, rubricForEvaluation);
           const { description, isQuestionSpecific } = getTraitInfo(name);
 
           return (

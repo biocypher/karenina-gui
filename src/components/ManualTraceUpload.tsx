@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { validateManualTraceFile } from '../utils/fileValidator';
+import { csrf } from '../utils/csrf';
 
 interface ManualTraceUploadProps {
   onUploadSuccess?: (traceCount: number) => void;
@@ -34,7 +36,7 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('/api/upload-manual-traces', {
+        const response = await csrf.fetchWithCsrf('/api/upload-manual-traces', {
           method: 'POST',
           body: formData,
         });
@@ -65,34 +67,48 @@ export const ManualTraceUpload: React.FC<ManualTraceUploadProps> = ({
   );
 
   const handleFileSelect = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (file) {
-        handleFileUpload(file);
-      }
-    },
-    [handleFileUpload]
-  );
-
-  const handleDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      setIsDragOver(false);
-
-      const file = event.dataTransfer.files[0];
-      if (file) {
-        // Validate file type
-        if (!file.name.toLowerCase().endsWith('.json')) {
+        // Validate file before upload
+        const validationResult = await validateManualTraceFile(file);
+        if (!validationResult.valid) {
           setUploadStatus({
             status: 'error',
-            message: 'Please upload a JSON file',
+            message: validationResult.error || 'Invalid file',
           });
+          onUploadError?.(validationResult.error || 'Invalid file');
+          // Reset input to allow re-selecting the same file
+          event.target.value = '';
           return;
         }
         handleFileUpload(file);
       }
     },
-    [handleFileUpload]
+    [handleFileUpload, onUploadError]
+  );
+
+  const handleDrop = useCallback(
+    async (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDragOver(false);
+
+      const file = event.dataTransfer.files[0];
+      if (file) {
+        // Validate file before upload
+        const validationResult = await validateManualTraceFile(file);
+        if (!validationResult.valid) {
+          setUploadStatus({
+            status: 'error',
+            message: validationResult.error || 'Invalid file',
+          });
+          onUploadError?.(validationResult.error || 'Invalid file');
+          return;
+        }
+        handleFileUpload(file);
+      }
+    },
+    [handleFileUpload, onUploadError]
   );
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {

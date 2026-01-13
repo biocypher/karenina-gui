@@ -15,6 +15,7 @@ import {
   isV2Checkpoint,
   CheckpointConversionError,
 } from '../utils/checkpoint-converter';
+import { logger } from '../utils/logger';
 
 interface FileManagerProps {
   onLoadCheckpoint: (checkpoint: UnifiedCheckpoint) => void;
@@ -58,14 +59,14 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
 
         // Check if it's a JSON-LD checkpoint
         if (isJsonLdCheckpoint(data)) {
-          console.log('📊 Detected JSON-LD checkpoint format');
+          logger.debugLog('FILE_MANAGER', 'Detected JSON-LD checkpoint format', 'FileManager');
           formatUsed = 'JSON-LD v3.0';
 
           try {
             unifiedCheckpoint = jsonLdToV2(data as JsonLdCheckpoint);
-            console.log('✅ Successfully converted JSON-LD to internal format');
+            logger.debugLog('FILE_MANAGER', 'Successfully converted JSON-LD to internal format', 'FileManager');
           } catch (conversionError) {
-            console.error('❌ JSON-LD conversion failed:', conversionError);
+            logger.error('FILE_MANAGER', 'JSON-LD conversion failed', 'FileManager', { error: conversionError });
             if (conversionError instanceof CheckpointConversionError) {
               alert(
                 `Failed to convert JSON-LD checkpoint:\n\n${conversionError.message}\n\nPlease check the file format and try again.`
@@ -78,7 +79,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         }
         // Check if it's a legacy v2.0 checkpoint
         else if (isV2Checkpoint(data)) {
-          console.log('📊 Detected legacy v2.0 checkpoint format');
+          logger.debugLog('FILE_MANAGER', 'Detected legacy v2.0 checkpoint format', 'FileManager');
           formatUsed = 'Legacy v2.0';
 
           // Show migration notice
@@ -137,7 +138,11 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         if (unifiedCheckpoint.dataset_metadata) {
           const { setMetadata } = useDatasetStore.getState();
           setMetadata(unifiedCheckpoint.dataset_metadata);
-          console.log('✅ Loaded dataset metadata:', unifiedCheckpoint.dataset_metadata.name || 'Unnamed dataset');
+          logger.debugLog(
+            'FILE_MANAGER',
+            `Loaded dataset metadata: ${unifiedCheckpoint.dataset_metadata.name || 'Unnamed dataset'}`,
+            'FileManager'
+          );
         }
 
         // Load global rubric into rubric store if present
@@ -152,16 +157,16 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
             (unifiedCheckpoint.global_rubric.callable_traits || []).length +
             (unifiedCheckpoint.global_rubric.metric_traits || []).length;
 
-          console.log('✅ Loaded global rubric with', totalTraits, 'traits');
+          logger.debugLog('FILE_MANAGER', `Loaded global rubric with ${totalTraits} traits`, 'FileManager');
 
           // Sync the rubric to the backend so verification can access it
-          console.log('🔄 Syncing global rubric to backend...');
+          logger.debugLog('FILE_MANAGER', 'Syncing global rubric to backend...', 'FileManager');
           saveRubric()
             .then(() => {
-              console.log('✅ Global rubric synced to backend successfully');
+              logger.debugLog('FILE_MANAGER', 'Global rubric synced to backend successfully', 'FileManager');
             })
             .catch((error) => {
-              console.error('❌ Failed to sync global rubric to backend:', error);
+              logger.error('FILE_MANAGER', 'Failed to sync global rubric to backend', 'FileManager', { error });
               alert(
                 'Warning: Global rubric loaded but failed to sync to backend. Verification may not use global rubric traits.'
               );
@@ -185,7 +190,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
             '📦 Your complete session has been restored!\n\n'
         );
       } catch (error) {
-        console.error('Error parsing checkpoint:', error);
+        logger.error('FILE_MANAGER', 'Error parsing checkpoint', 'FileManager', { error });
         alert('Error parsing checkpoint file. Please check the file format and ensure it is valid JSON.');
       }
     };
@@ -215,21 +220,21 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
       // Auto-save to database if connected (non-blocking)
       try {
         await autoSaveToDatabase(checkpoint);
-        console.log('💾 Checkpoint auto-saved to database');
+        logger.debugLog('FILE_MANAGER', 'Checkpoint auto-saved to database', 'FileManager');
       } catch (saveError) {
         // Log error but don't block the download
-        console.warn('⚠️ Failed to auto-save to database:', saveError);
+        logger.warning('FILE_MANAGER', 'Failed to auto-save to database', 'FileManager', { error: saveError });
       }
 
       // Convert to JSON-LD format
-      console.log('📊 Converting checkpoint to JSON-LD format...');
+      logger.debugLog('FILE_MANAGER', 'Converting checkpoint to JSON-LD format...', 'FileManager');
       const jsonLdCheckpoint = v2ToJsonLd(unifiedCheckpoint, {
         preserveIds: true,
         includeMetadata: true,
         validateOutput: true,
       });
 
-      console.log('✅ Successfully converted to JSON-LD format');
+      logger.debugLog('FILE_MANAGER', 'Successfully converted to JSON-LD format', 'FileManager');
 
       const dataStr = JSON.stringify(jsonLdCheckpoint, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/ld+json' });
@@ -267,7 +272,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
           dbSaveInfo
       );
     } catch (conversionError) {
-      console.error('❌ Failed to convert checkpoint to JSON-LD:', conversionError);
+      logger.error('FILE_MANAGER', 'Failed to convert checkpoint to JSON-LD', 'FileManager', {
+        error: conversionError,
+      });
 
       if (conversionError instanceof CheckpointConversionError) {
         alert(
@@ -310,14 +317,14 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         'You can now add questions, generate templates, and build your benchmark suite.'
     );
 
-    console.log('✨ Created new benchmark:', metadata.name);
+    logger.debugLog('FILE_MANAGER', `Created new benchmark: ${metadata.name}`, 'FileManager');
   };
 
   const handleDatabaseCheckpointLoad = (loadedCheckpoint: UnifiedCheckpoint, storageUrl?: string) => {
     // Store the storage URL if provided
     if (storageUrl) {
       setStorageUrl(storageUrl);
-      console.log('📁 Database storage URL set:', storageUrl);
+      logger.debugLog('FILE_MANAGER', `Database storage URL set: ${storageUrl}`, 'FileManager');
     }
 
     // Load the checkpoint
@@ -329,7 +336,11 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
     // Load dataset metadata into dataset store if present
     if (loadedCheckpoint.dataset_metadata) {
       setMetadata(loadedCheckpoint.dataset_metadata);
-      console.log('✅ Loaded dataset metadata:', loadedCheckpoint.dataset_metadata.name || 'Unnamed dataset');
+      logger.debugLog(
+        'FILE_MANAGER',
+        `Loaded dataset metadata: ${loadedCheckpoint.dataset_metadata.name || 'Unnamed dataset'}`,
+        'FileManager'
+      );
     }
 
     // Load global rubric into rubric store if present
@@ -344,16 +355,16 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         (loadedCheckpoint.global_rubric.callable_traits || []).length +
         (loadedCheckpoint.global_rubric.metric_traits || []).length;
 
-      console.log('✅ Loaded global rubric with', totalTraits, 'traits');
+      logger.debugLog('FILE_MANAGER', `Loaded global rubric with ${totalTraits} traits`, 'FileManager');
 
       // Sync the rubric to the backend so verification can access it
-      console.log('🔄 Syncing global rubric to backend...');
+      logger.debugLog('FILE_MANAGER', 'Syncing global rubric to backend...', 'FileManager');
       saveRubric()
         .then(() => {
-          console.log('✅ Global rubric synced to backend successfully');
+          logger.debugLog('FILE_MANAGER', 'Global rubric synced to backend successfully', 'FileManager');
         })
         .catch((error) => {
-          console.error('❌ Failed to sync global rubric to backend:', error);
+          logger.error('FILE_MANAGER', 'Failed to sync global rubric to backend', 'FileManager', { error });
         });
     }
   };
@@ -522,7 +533,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ onLoadCheckpoint, onRe
         onSave={() => {
           // The save is handled by the DatasetMetadataEditor component itself
           // We just need to close the modal
-          console.log('✅ Dataset metadata updated');
+          logger.debugLog('FILE_MANAGER', 'Dataset metadata updated', 'FileManager');
         }}
       />
 

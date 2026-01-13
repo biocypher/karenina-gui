@@ -11,6 +11,7 @@ import {
   CreatePresetRequest,
   UpdatePresetRequest,
 } from '../utils/presetApi';
+import { logger } from '../utils/logger';
 
 /**
  * Preset management store state interface
@@ -48,7 +49,7 @@ export const usePresetStore = create<PresetState>((set) => ({
     } catch (error) {
       const errorMessage = error instanceof PresetApiError ? error.message : 'Failed to load presets';
       set({ error: errorMessage, isLoading: false });
-      console.error('Error loading presets:', error);
+      logger.error('PRESET', 'Error loading presets', 'usePresetStore', { error });
     }
   },
 
@@ -61,7 +62,7 @@ export const usePresetStore = create<PresetState>((set) => ({
     } catch (error) {
       const errorMessage = error instanceof PresetApiError ? error.message : `Failed to load preset ${id}`;
       set({ error: errorMessage });
-      console.error('Error getting preset:', error);
+      logger.error('PRESET', 'Error getting preset', 'usePresetStore', { error });
       return null;
     }
   },
@@ -109,7 +110,7 @@ export const usePresetStore = create<PresetState>((set) => ({
     } catch (error) {
       const errorMessage = error instanceof PresetApiError ? error.message : 'Failed to create preset';
       set({ error: errorMessage, isLoading: false });
-      console.error('Error creating preset:', error);
+      logger.error('PRESET', 'Error creating preset', 'usePresetStore', { error });
       return null;
     }
   },
@@ -141,7 +142,7 @@ export const usePresetStore = create<PresetState>((set) => ({
     } catch (error) {
       const errorMessage = error instanceof PresetApiError ? error.message : `Failed to update preset ${id}`;
       set({ error: errorMessage, isLoading: false });
-      console.error('Error updating preset:', error);
+      logger.error('PRESET', 'Error updating preset', 'usePresetStore', { error });
       return null;
     }
   },
@@ -163,7 +164,7 @@ export const usePresetStore = create<PresetState>((set) => ({
     } catch (error) {
       const errorMessage = error instanceof PresetApiError ? error.message : `Failed to delete preset ${id}`;
       set({ error: errorMessage, isLoading: false });
-      console.error('Error deleting preset:', error);
+      logger.error('PRESET', 'Error deleting preset', 'usePresetStore', { error });
       return false;
     }
   },

@@ -1,7 +1,109 @@
 import { create } from 'zustand';
 import { QuestionData, Checkpoint, UnifiedCheckpoint, Rubric } from '../types';
-import { autoSaveToDatabase } from '../utils/databaseAutoSave';
 import { useRubricStore } from './useRubricStore';
+import { logger } from '../utils/logger';
+import { generateBasicTemplate } from '../constants/templates';
+import { validateLoadedQuestionData, validateKeywords, validateGeneratedTemplate } from '../utils/questionValidator';
+import { performAutoSave, performSilentAutoSave } from '../utils/autoSaveHelper';
+
+/**
+ * Options for building a complete checkpoint
+ */
+interface BuildCheckpointOptions {
+  /** Override template for the selected question */
+  currentTemplate?: string;
+  /** Toggle the finished status for the selected question */
+  toggleFinished?: boolean;
+  /** Create a fresh checkpoint (no existing data preserved) */
+  fresh?: boolean;
+}
+
+/**
+ * Helper function to build a complete checkpoint from question data.
+ * This consolidates the repeated checkpoint building pattern used across
+ * saveCurrentTemplate, toggleFinished, and loadQuestionData.
+ *
+ * @param questionData - The source question data
+ * @param existingCheckpoint - The existing checkpoint to preserve data from (ignored if fresh=true)
+ * @param selectedQuestionId - The currently selected question ID (can be empty string if no selection)
+ * @param options - Optional overrides for template, finished status, and fresh mode
+ * @returns A complete checkpoint object
+ */
+function buildCompleteCheckpoint(
+  questionData: QuestionData,
+  existingCheckpoint: Checkpoint,
+  selectedQuestionId: string,
+  options: BuildCheckpointOptions = {}
+): Checkpoint {
+  const now = new Date().toISOString();
+  const completeCheckpoint: Checkpoint = {};
+  const { fresh = false } = options;
+
+  Object.entries(questionData).forEach(([questionId, question]) => {
+    const existingCheckpointItem = existingCheckpoint[questionId];
+    const isCurrentQuestion = questionId === selectedQuestionId;
+
+    // In fresh mode, create all-new checkpoint items
+    if (fresh) {
+      completeCheckpoint[questionId] = {
+        question: question.question,
+        raw_answer: question.raw_answer,
+        original_answer_template: question.answer_template,
+        answer_template: question.answer_template,
+        last_modified: now,
+        finished: false,
+        question_rubric: undefined,
+        few_shot_examples: undefined,
+        author: question.metadata?.author,
+        keywords: question.metadata?.keywords,
+        custom_metadata: question.metadata?.url ? { url: question.metadata.url } : undefined,
+      };
+      return;
+    }
+
+    // Determine answer_template based on options
+    let answerTemplate: string;
+    if (options.currentTemplate !== undefined && isCurrentQuestion) {
+      answerTemplate = options.currentTemplate;
+    } else {
+      answerTemplate = existingCheckpointItem?.answer_template || question.answer_template;
+    }
+
+    // Determine last_modified (only update current question if template changed)
+    let lastModified: string;
+    if (isCurrentQuestion && (options.currentTemplate !== undefined || options.toggleFinished !== undefined)) {
+      lastModified = now;
+    } else {
+      lastModified = existingCheckpointItem?.last_modified || now;
+    }
+
+    // Determine finished status
+    let finished: boolean;
+    if (options.toggleFinished !== undefined && isCurrentQuestion) {
+      finished = !(existingCheckpointItem?.finished || false);
+    } else {
+      finished = existingCheckpointItem?.finished || false;
+    }
+
+    completeCheckpoint[questionId] = {
+      question: question.question,
+      raw_answer: question.raw_answer,
+      original_answer_template: question.answer_template,
+      answer_template: answerTemplate,
+      last_modified: lastModified,
+      finished: finished,
+      question_rubric: existingCheckpointItem?.question_rubric,
+      few_shot_examples: existingCheckpointItem?.few_shot_examples,
+      author: existingCheckpointItem?.author ?? question.metadata?.author,
+      keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
+      custom_metadata:
+        existingCheckpointItem?.custom_metadata ??
+        (question.metadata?.url ? { url: question.metadata.url } : undefined),
+    };
+  });
+
+  return completeCheckpoint;
+}
 
 // Define the question store state interface
 interface QuestionState {
@@ -12,6 +114,7 @@ interface QuestionState {
   currentTemplate: string;
   dataSource: 'default' | 'uploaded';
   sessionDrafts: Record<string, string>; // Session-only drafts (cleared on refresh)
+  error: string | null; // Last error message for UI display
 
   // Actions
   setQuestionData: (data: QuestionData) => void;
@@ -23,6 +126,8 @@ interface QuestionState {
   clearSessionDraft: (questionId: string) => void;
   hasSessionDraft: (questionId: string) => boolean;
   getAllQuestionsWithSessionDrafts: () => string[];
+  setError: (error: string | null) => void;
+  clearError: () => void;
 
   // Complex operations
   loadQuestionData: (data: QuestionData) => void;
@@ -68,6 +173,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   currentTemplate: '',
   dataSource: 'default',
   sessionDrafts: {},
+  error: null,
 
   // Basic setters
   setQuestionData: (questionData: QuestionData) => set(() => ({ questionData })),
@@ -75,6 +181,10 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   setSelectedQuestionId: (selectedQuestionId: string) => set(() => ({ selectedQuestionId })),
   setCurrentTemplate: (currentTemplate: string) => set(() => ({ currentTemplate })),
   setDataSource: (dataSource: 'default' | 'uploaded') => set(() => ({ dataSource })),
+
+  // Error management
+  setError: (error: string | null) => set(() => ({ error })),
+  clearError: () => set(() => ({ error: null })),
 
   // Session draft management
   setSessionDraft: (questionId: string, template: string) => {
@@ -109,22 +219,10 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   loadQuestionData: (data: QuestionData) => {
     const state = get();
 
-    // Validation - same as original logic
-    const firstQuestionId = Object.keys(data)[0];
-    if (firstQuestionId && data[firstQuestionId].answer_template) {
-      const isGenericTemplate = data[firstQuestionId].answer_template.includes('Answer to the question:');
-      if (isGenericTemplate) {
-        console.error('❌ ERROR: Detected placeholder templates! This should not happen.');
-        alert(
-          'Error: The loaded data contains placeholder templates. Please use the Template Generator to create proper templates.'
-        );
-        return;
-      } else {
-        console.log('✅ Loading questions with GENERATED templates (specific descriptions)');
-      }
-    } else {
-      console.error("❌ ERROR: Questions don't have answer templates!");
-      alert("Error: These questions don't have answer templates. Please use the Template Generator first.");
+    // Validate the loaded question data
+    const validationResult = validateLoadedQuestionData(data);
+    if (!validationResult.isValid) {
+      set(() => ({ error: validationResult.errorMessage }));
       return;
     }
 
@@ -139,34 +237,21 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     const matchingIds = checkpointQuestionIds.filter((id) => dataQuestionIds.includes(id));
 
     if (matchingIds.length > 0) {
-      console.log(`✅ Checkpoint matches ${matchingIds.length} questions - your progress will be restored!`);
+      logger.debugLog(
+        'CHECKPOINT',
+        `Checkpoint matches ${matchingIds.length} questions - progress will be restored`,
+        'useQuestionStore'
+      );
 
-      // Create a complete checkpoint with ALL questions
-      const completeCheckpoint: Checkpoint = {};
-
-      Object.entries(data).forEach(([questionId, question]) => {
-        const existingCheckpointItem = state.checkpoint[questionId];
-
-        completeCheckpoint[questionId] = {
-          question: question.question,
-          raw_answer: question.raw_answer,
-          original_answer_template: question.answer_template,
-          answer_template: existingCheckpointItem?.answer_template || question.answer_template,
-          last_modified: existingCheckpointItem?.last_modified || new Date().toISOString(),
-          finished: existingCheckpointItem?.finished || false,
-          question_rubric: existingCheckpointItem?.question_rubric,
-          // Map metadata from Question to CheckpointItem (preserve existing checkpoint metadata)
-          author: existingCheckpointItem?.author ?? question.metadata?.author,
-          keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
-          // Map URL to custom metadata (CheckpointItem doesn't have direct url field)
-          custom_metadata:
-            existingCheckpointItem?.custom_metadata ??
-            (question.metadata?.url ? { url: question.metadata.url } : undefined),
-        };
-      });
+      // Build complete checkpoint using helper function (preserve existing checkpoint data)
+      const completeCheckpoint = buildCompleteCheckpoint(data, state.checkpoint, '', {});
 
       set(() => ({ checkpoint: completeCheckpoint }));
-      console.log(`📝 Created complete checkpoint with ${Object.keys(completeCheckpoint).length} questions`);
+      logger.debugLog(
+        'CHECKPOINT',
+        `Created complete checkpoint with ${Object.keys(completeCheckpoint).length} questions`,
+        'useQuestionStore'
+      );
 
       // Select the first question that has checkpoint data
       const firstCheckpointId = matchingIds[0];
@@ -181,28 +266,14 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       }
     } else {
       // No checkpoint matches - create a fresh complete checkpoint
-      const freshCheckpoint: Checkpoint = {};
-      const now = new Date().toISOString();
-
-      Object.entries(data).forEach(([questionId, question]) => {
-        freshCheckpoint[questionId] = {
-          question: question.question,
-          raw_answer: question.raw_answer,
-          original_answer_template: question.answer_template,
-          answer_template: question.answer_template,
-          last_modified: now,
-          finished: false,
-          question_rubric: undefined,
-          // Map metadata from Question to CheckpointItem
-          author: question.metadata?.author,
-          keywords: question.metadata?.keywords,
-          // Map URL to custom metadata (CheckpointItem doesn't have direct url field)
-          custom_metadata: question.metadata?.url ? { url: question.metadata.url } : undefined,
-        };
-      });
+      const freshCheckpoint = buildCompleteCheckpoint(data, {}, '', { fresh: true });
 
       set(() => ({ checkpoint: freshCheckpoint }));
-      console.log(`📝 Created fresh checkpoint with ${Object.keys(freshCheckpoint).length} questions`);
+      logger.debugLog(
+        'CHECKPOINT',
+        `Created fresh checkpoint with ${Object.keys(freshCheckpoint).length} questions`,
+        'useQuestionStore'
+      );
 
       // Select first question if available
       const firstQuestionId = dataQuestionIds[0];
@@ -216,7 +287,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
   },
 
   loadCheckpoint: (unifiedCheckpoint: UnifiedCheckpoint) => {
-    console.log('🔄 Loading unified checkpoint...', {
+    logger.debugLog('CHECKPOINT', 'Loading unified checkpoint', 'useQuestionStore', {
       version: unifiedCheckpoint.version,
       itemCount: Object.keys(unifiedCheckpoint.checkpoint).length,
       hasGlobalRubric: !!unifiedCheckpoint.global_rubric,
@@ -253,7 +324,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
 
     // Load global rubric if present
     if (unifiedCheckpoint.global_rubric) {
-      console.log('🔄 Setting global rubric from checkpoint...', {
+      logger.debugLog('RUBRIC', 'Setting global rubric from checkpoint', 'useQuestionStore', {
         llm_traits: unifiedCheckpoint.global_rubric.llm_traits?.length ?? 0,
         regex_traits: unifiedCheckpoint.global_rubric.regex_traits?.length ?? 0,
         metric_traits: unifiedCheckpoint.global_rubric.metric_traits?.length ?? 0,
@@ -261,14 +332,18 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       useRubricStore.getState().setCurrentRubric(unifiedCheckpoint.global_rubric);
     }
 
-    console.log(`✅ Unified checkpoint loaded with ${Object.keys(checkpoint).length} questions!`);
+    logger.debugLog(
+      'CHECKPOINT',
+      `Unified checkpoint loaded with ${Object.keys(checkpoint).length} questions`,
+      'useQuestionStore'
+    );
   },
 
-  saveCurrentTemplate: () => {
+  saveCurrentTemplate: async () => {
     const state = get();
 
     // Debug logging to understand save flow
-    console.log('💾 saveCurrentTemplate called', {
+    logger.debugLog('CHECKPOINT', 'saveCurrentTemplate called', 'useQuestionStore', {
       selectedQuestionId: state.selectedQuestionId,
       hasQuestionData: !!state.questionData[state.selectedQuestionId],
       totalQuestions: Object.keys(state.questionData).length,
@@ -276,109 +351,56 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     });
 
     if (!state.selectedQuestionId || !state.questionData[state.selectedQuestionId]) {
-      console.error('❌ saveCurrentTemplate: Early return - missing selectedQuestionId or questionData', {
-        selectedQuestionId: state.selectedQuestionId,
-        hasQuestionInData: !!state.questionData[state.selectedQuestionId],
-      });
+      logger.error(
+        'CHECKPOINT',
+        'saveCurrentTemplate: Early return - missing selectedQuestionId or questionData',
+        'useQuestionStore',
+        {
+          selectedQuestionId: state.selectedQuestionId,
+          hasQuestionInData: !!state.questionData[state.selectedQuestionId],
+        }
+      );
       return;
     }
 
-    const now = new Date().toISOString();
-
-    // Create a complete checkpoint with ALL questions
-    const completeCheckpoint: Checkpoint = {};
-
-    Object.entries(state.questionData).forEach(([questionId, question]) => {
-      const existingCheckpointItem = state.checkpoint[questionId];
-      const isCurrentQuestion = questionId === state.selectedQuestionId;
-
-      completeCheckpoint[questionId] = {
-        question: question.question,
-        raw_answer: question.raw_answer,
-        original_answer_template: question.answer_template,
-        answer_template: isCurrentQuestion
-          ? state.currentTemplate
-          : existingCheckpointItem?.answer_template || question.answer_template,
-        last_modified: isCurrentQuestion ? now : existingCheckpointItem?.last_modified || now,
-        finished: existingCheckpointItem?.finished || false,
-        question_rubric: existingCheckpointItem?.question_rubric,
-        // Preserve few-shot examples from existing checkpoint
-        few_shot_examples: existingCheckpointItem?.few_shot_examples,
-        // Preserve metadata from existing checkpoint or map from Question
-        author: existingCheckpointItem?.author ?? question.metadata?.author,
-        keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
-        custom_metadata:
-          existingCheckpointItem?.custom_metadata ??
-          (question.metadata?.url ? { url: question.metadata.url } : undefined),
-      };
+    // Build complete checkpoint using helper function
+    const completeCheckpoint = buildCompleteCheckpoint(state.questionData, state.checkpoint, state.selectedQuestionId, {
+      currentTemplate: state.currentTemplate,
     });
 
     set(() => ({ checkpoint: completeCheckpoint }));
 
-    console.log('✅ Checkpoint updated in store', {
+    logger.debugLog('CHECKPOINT', 'Checkpoint updated in store', 'useQuestionStore', {
       totalItems: Object.keys(completeCheckpoint).length,
       currentQuestionId: state.selectedQuestionId,
     });
 
     // Clear session draft for the saved question (it's now permanently saved)
-    const updatedState = get();
     const remainingDrafts = Object.fromEntries(
-      Object.entries(updatedState.sessionDrafts).filter(([key]) => key !== state.selectedQuestionId)
+      Object.entries(state.sessionDrafts).filter(([key]) => key !== state.selectedQuestionId)
     );
     set(() => ({ sessionDrafts: remainingDrafts }));
 
     // Auto-save to database after saving template
-    console.log('🔄 Attempting to save to database...');
-    autoSaveToDatabase(completeCheckpoint)
-      .then(() => {
-        console.log('✅ Successfully saved to database');
-      })
-      .catch((err) => {
-        console.error('❌ Failed to save to database:', err);
-        alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      });
+    const error = await performAutoSave(completeCheckpoint, 'template save');
+    if (error) {
+      set(() => ({ error }));
+    }
   },
 
   toggleFinished: () => {
     const state = get();
     if (!state.selectedQuestionId || !state.questionData[state.selectedQuestionId]) return;
 
-    const now = new Date().toISOString();
-
-    // Create a complete checkpoint with ALL questions
-    const completeCheckpoint: Checkpoint = {};
-
-    Object.entries(state.questionData).forEach(([questionId, question]) => {
-      const existingCheckpointItem = state.checkpoint[questionId];
-      const isCurrentQuestion = questionId === state.selectedQuestionId;
-
-      completeCheckpoint[questionId] = {
-        question: question.question,
-        raw_answer: question.raw_answer,
-        original_answer_template: question.answer_template,
-        answer_template: existingCheckpointItem?.answer_template || question.answer_template,
-        last_modified: isCurrentQuestion ? now : existingCheckpointItem?.last_modified || now,
-        finished: isCurrentQuestion
-          ? !(existingCheckpointItem?.finished || false)
-          : existingCheckpointItem?.finished || false,
-        question_rubric: existingCheckpointItem?.question_rubric,
-        // Preserve few-shot examples
-        few_shot_examples: existingCheckpointItem?.few_shot_examples,
-        // Preserve metadata from existing checkpoint or map from Question
-        author: existingCheckpointItem?.author ?? question.metadata?.author,
-        keywords: existingCheckpointItem?.keywords ?? question.metadata?.keywords,
-        custom_metadata:
-          existingCheckpointItem?.custom_metadata ??
-          (question.metadata?.url ? { url: question.metadata.url } : undefined),
-      };
+    // Build complete checkpoint using helper function
+    const completeCheckpoint = buildCompleteCheckpoint(state.questionData, state.checkpoint, state.selectedQuestionId, {
+      toggleFinished: true,
     });
 
     set(() => ({ checkpoint: completeCheckpoint }));
 
-    // Auto-save to database after toggling finished status
-    autoSaveToDatabase(completeCheckpoint).catch((err) => {
-      console.warn('⚠️ Failed to auto-save to database after toggle finished:', err);
-    });
+    // Silent auto-save to database after toggling finished status
+    void performSilentAutoSave(completeCheckpoint, 'toggle finished');
   },
 
   navigateToQuestion: (questionId: string) => {
@@ -420,35 +442,20 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     // Generate UUID for the question
     const questionId = crypto.randomUUID();
 
-    // Validate and sanitize keywords
-    const validKeywords =
-      keywords && Array.isArray(keywords) && keywords.length > 0
-        ? keywords.filter((k) => typeof k === 'string' && k.trim().length > 0)
-        : undefined;
+    // Validate and sanitize keywords using extracted utility
+    const validKeywords = validateKeywords(keywords);
 
-    // Validate generated template is a non-empty string
-    const validGeneratedTemplate =
-      typeof generatedTemplate === 'string' && generatedTemplate.trim().length > 0
-        ? generatedTemplate.trim()
-        : undefined;
-
-    // Generate basic Pydantic template
-    const questionPreview = question.length > 50 ? question.substring(0, 50) + '...' : question;
-    const basicTemplate = `from karenina.schemas.answer_class import BaseAnswer
-from pydantic import Field
-
-class Answer(BaseAnswer):
-    """Answer to the question: ${questionPreview}"""
-    answer: str = Field(description="The answer to the question")`;
+    // Validate generated template using extracted utility
+    const validGeneratedTemplate = validateGeneratedTemplate(generatedTemplate);
 
     // Use generated template if provided, otherwise use basic template
-    const templateToUse = validGeneratedTemplate || basicTemplate;
+    const templateToUse = validGeneratedTemplate || generateBasicTemplate(question);
 
     // Log template source for debugging
     if (validGeneratedTemplate) {
-      console.log('📝 Using LLM-generated template for new question');
+      logger.debugLog('QUESTION', 'Using LLM-generated template for new question', 'useQuestionStore');
     } else if (generatedTemplate) {
-      console.warn('⚠️ LLM template was invalid, falling back to basic template');
+      logger.warning('QUESTION', 'LLM template was invalid, falling back to basic template', 'useQuestionStore');
     }
 
     const now = new Date().toISOString();
@@ -502,7 +509,7 @@ class Answer(BaseAnswer):
       dataSource: 'uploaded',
     }));
 
-    console.log(`✅ Added new question with ID: ${questionId}`);
+    logger.debugLog('QUESTION', `Added new question with ID: ${questionId}`, 'useQuestionStore');
     return questionId;
   },
 
@@ -575,10 +582,8 @@ class Answer(BaseAnswer):
 
       set(() => ({ checkpoint: updatedCheckpoint }));
 
-      // Auto-save to database after updating rubric
-      autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-        console.warn('⚠️ Failed to auto-save to database after rubric update:', err);
-      });
+      // Silent auto-save to database after updating rubric
+      void performSilentAutoSave(updatedCheckpoint, 'rubric update');
     }
   },
 
@@ -607,7 +612,7 @@ class Answer(BaseAnswer):
     const existingCheckpointItem = state.checkpoint[questionId];
 
     if (!existingQuestion || !existingCheckpointItem) {
-      console.error('❌ updateQuestionContent: Question not found', { questionId });
+      logger.error('QUESTION', 'updateQuestionContent: Question not found', 'useQuestionStore', { questionId });
       return;
     }
 
@@ -639,12 +644,13 @@ class Answer(BaseAnswer):
       checkpoint: updatedCheckpoint,
     }));
 
-    console.log('✅ Question content updated', { questionId });
+    logger.debugLog('QUESTION', `Question content updated: ${questionId}`, 'useQuestionStore');
 
-    // Auto-save to database
-    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      console.error('❌ Failed to auto-save to database after question update:', err);
-      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    // Auto-save to database with error handling
+    void performAutoSave(updatedCheckpoint, 'question update').then((error) => {
+      if (error) {
+        set(() => ({ error }));
+      }
     });
   },
 
@@ -652,7 +658,7 @@ class Answer(BaseAnswer):
     const state = get();
 
     if (!state.questionData[questionId] || !state.checkpoint[questionId]) {
-      console.error('❌ deleteQuestion: Question not found', { questionId });
+      logger.error('QUESTION', 'deleteQuestion: Question not found', 'useQuestionStore', { questionId });
       return;
     }
 
@@ -693,12 +699,13 @@ class Answer(BaseAnswer):
       currentTemplate: newCurrentTemplate,
     }));
 
-    console.log('✅ Question deleted', { questionId, newSelectedQuestionId });
+    logger.debugLog('QUESTION', `Question deleted: ${questionId}`, 'useQuestionStore', { newSelectedQuestionId });
 
-    // Auto-save to database
-    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      console.error('❌ Failed to auto-save to database after question deletion:', err);
-      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    // Auto-save to database with error handling
+    void performAutoSave(updatedCheckpoint, 'question deletion').then((error) => {
+      if (error) {
+        set(() => ({ error }));
+      }
     });
   },
 
@@ -708,7 +715,7 @@ class Answer(BaseAnswer):
     const sourceCheckpointItem = state.checkpoint[questionId];
 
     if (!sourceQuestion || !sourceCheckpointItem) {
-      console.error('❌ cloneQuestion: Source question not found', { questionId });
+      logger.error('QUESTION', 'cloneQuestion: Source question not found', 'useQuestionStore', { questionId });
       return '';
     }
 
@@ -761,12 +768,15 @@ class Answer(BaseAnswer):
       currentTemplate: clonedCheckpointItem.answer_template,
     }));
 
-    console.log('✅ Question cloned', { sourceId: questionId, newId: newQuestionId, insertedAfterIndex: sourceIndex });
+    logger.debugLog('QUESTION', `Question cloned from ${questionId} to ${newQuestionId}`, 'useQuestionStore', {
+      insertedAfterIndex: sourceIndex,
+    });
 
-    // Auto-save to database
-    autoSaveToDatabase(updatedCheckpoint).catch((err) => {
-      console.error('❌ Failed to auto-save to database after question clone:', err);
-      alert(`Failed to save to database: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    // Auto-save to database with error handling
+    void performAutoSave(updatedCheckpoint, 'question clone').then((error) => {
+      if (error) {
+        set(() => ({ error }));
+      }
     });
 
     return newQuestionId;

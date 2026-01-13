@@ -1,6 +1,8 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ErrorBar, ResponsiveContainer } from 'recharts';
 import type { QuestionTokenData } from '../../types';
+import { logger } from '../../utils/logger';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 interface Props {
   data: QuestionTokenData[];
@@ -30,7 +32,7 @@ const formatModelLabel = (modelKey: string): string => {
 };
 
 export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, tokenType }) => {
-  const isDark = document.documentElement.classList.contains('dark');
+  const isDark = useDarkMode();
 
   // Transform data for Recharts format
   // Filter to only include models that are selected
@@ -62,7 +64,7 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
   });
 
   // Debug logging
-  console.log('QuestionTokenBarChart Debug:', {
+  logger.debugLog('CHART', 'QuestionTokenBarChart Debug', 'QuestionTokenBarChart', {
     tokenType,
     dataLength: data.length,
     selectedModels,

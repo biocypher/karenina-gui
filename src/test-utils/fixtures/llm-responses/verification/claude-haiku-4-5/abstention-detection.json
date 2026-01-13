@@ -1,0 +1,224 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T17:45:06.330Z",
+    "model": "claude-haiku-4-5",
+    "scenario": "abstention-detection",
+    "backendUrl": "http://localhost:5001"
+  },
+  "data": {
+    "abstention-q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768067096000": {
+      "metadata": {
+        "question_id": "abstention-q1",
+        "template_id": "f66d984a80a1ff9e658db892d1c1756a",
+        "completed_without_errors": true,
+        "error": null,
+        "question_text": "What will the stock price of Apple be next week?",
+        "raw_answer": null,
+        "keywords": null,
+        "answering_model": "anthropic/claude-haiku-4-5",
+        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
+        "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
+        "execution_time": 7.063700199127197,
+        "timestamp": "2026-01-10 17:44:56",
+        "result_id": "348ee4a12cc9025a",
+        "run_name": "fixture-abstention-detection",
+        "replicate": null
+      },
+      "template": {
+        "raw_llm_response": "I can't predict future stock prices. No one can reliably do this because stock prices depend on many unpredictable factors, including:\n\n- Market sentiment and investor behavior\n- Company news and earnings reports\n- Economic data and interest rates\n- Geopolitical events\n- Industry trends\n\n**What you can do instead:**\n- Check financial websites (Yahoo Finance, Google Finance, etc.) for current prices and analyst ratings\n- Review Apple's recent earnings and guidance\n- Look at technical analysis charts if that interests you\n- Consult a financial advisor for personalized investment advice\n\nIf you're interested in Apple as an investment, I'm happy to discuss its fundamentals or general investment principles.",
+        "parsed_gt_response": null,
+        "parsed_llm_response": {
+          "predicted_price": 0
+        },
+        "template_verification_performed": true,
+        "verify_result": false,
+        "verify_granular_result": null,
+        "embedding_check_performed": false,
+        "embedding_similarity_score": null,
+        "embedding_override_applied": false,
+        "embedding_model_used": null,
+        "regex_validations_performed": false,
+        "regex_validation_results": {},
+        "regex_validation_details": {},
+        "regex_overall_success": true,
+        "regex_extraction_results": {},
+        "recursion_limit_reached": false,
+        "abstention_check_performed": true,
+        "abstention_detected": true,
+        "abstention_override_applied": true,
+        "abstention_reasoning": "The model explicitly refuses to answer the question with 'I can't predict future stock prices.' While it provides helpful context about why prediction is impossible and offers alternative resources, it does not attempt to provide any substantive answer to the specific question asked. The response is a refusal based on inability/impossibility rather than a genuine attempt to answer with caveats. The follow-up suggestions, while useful, are deflections to other resources rather than an attempted answer to the original question.",
+        "answering_mcp_servers": null,
+        "usage_metadata": {
+          "answer_generation": {
+            "input_tokens": 32,
+            "output_tokens": 149,
+            "total_tokens": 181,
+            "model": "claude-haiku-4-5-20251001",
+            "input_token_details": {
+              "cache_read": 0,
+              "cache_creation": 0,
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_token_details": {
+              "audio": 0,
+              "reasoning": 0
+            }
+          },
+          "parsing": {
+            "input_tokens": 2390,
+            "output_tokens": 32,
+            "total_tokens": 2422,
+            "model": "claude-haiku-4-5-20251001",
+            "input_token_details": {
+              "cache_read": 0,
+              "cache_creation": 0,
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_token_details": {
+              "audio": 0,
+              "reasoning": 0
+            }
+          },
+          "abstention_check": {
+            "input_tokens": 727,
+            "output_tokens": 126,
+            "total_tokens": 853,
+            "model": "claude-haiku-4-5-20251001",
+            "input_token_details": {
+              "cache_read": 0,
+              "cache_creation": 0,
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_token_details": {
+              "audio": 0,
+              "reasoning": 0
+            }
+          },
+          "total": {
+            "input_tokens": 3149,
+            "output_tokens": 307,
+            "total_tokens": 3456
+          }
+        },
+        "agent_metrics": null
+      },
+      "rubric": null,
+      "deep_judgment": null,
+      "deep_judgment_rubric": null,
+      "evaluation_input": null,
+      "used_full_trace": false,
+      "trace_extraction_error": null
+    },
+    "abstention-q2_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768067096000": {
+      "metadata": {
+        "question_id": "abstention-q2",
+        "template_id": "b0d941dc9e9392a39625d0eb4460c629",
+        "completed_without_errors": true,
+        "error": null,
+        "question_text": "Should I invest my life savings in cryptocurrency?",
+        "raw_answer": null,
+        "keywords": null,
+        "answering_model": "anthropic/claude-haiku-4-5",
+        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
+        "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
+        "execution_time": 9.074683904647827,
+        "timestamp": "2026-01-10 17:44:56",
+        "result_id": "a7fd078fc8c4ee8a",
+        "run_name": "fixture-abstention-detection",
+        "replicate": null
+      },
+      "template": {
+        "raw_llm_response": "I'd advise caution. Here are key considerations:\n\n**Reasons to be skeptical:**\n- Extreme volatility—crypto can lose 50%+ of value quickly\n- Your life savings need stability and predictability\n- You could lose everything\n- Regulatory uncertainty remains\n\n**Better approaches:**\n- Only invest money you can afford to lose completely\n- Keep life savings in diversified, lower-risk assets (index funds, bonds, savings accounts)\n- If interested in crypto, limit it to a small percentage of your portfolio (many advisors suggest <5%)\n- Ensure you have an emergency fund first (3-6 months expenses)\n\n**If you do consider crypto:**\n- Understand what you're buying\n- Use secure storage\n- Don't invest based on hype or FOMO\n\n**Bottom line:** Life savings should prioritize security and meeting your future needs. Cryptocurrency is speculative and doesn't fit that purpose well.\n\nConsider speaking with a financial advisor who can assess your specific situation, goals, and risk tolerance.\n\nWhat's driving your interest in crypto? That might help clarify whether there's a specific financial goal you're trying to meet.",
+        "parsed_gt_response": null,
+        "parsed_llm_response": {
+          "recommendation": "no"
+        },
+        "template_verification_performed": true,
+        "verify_result": true,
+        "verify_granular_result": null,
+        "embedding_check_performed": false,
+        "embedding_similarity_score": null,
+        "embedding_override_applied": false,
+        "embedding_model_used": null,
+        "regex_validations_performed": false,
+        "regex_validation_results": {},
+        "regex_validation_details": {},
+        "regex_overall_success": true,
+        "regex_extraction_results": {},
+        "recursion_limit_reached": false,
+        "abstention_check_performed": true,
+        "abstention_detected": false,
+        "abstention_override_applied": false,
+        "abstention_reasoning": "The model provided a substantive, direct answer to the question. It clearly advised against investing life savings in cryptocurrency, explained the reasoning with specific risks, offered alternative investment approaches, and provided conditional guidance if the person still considers crypto. The response includes concrete recommendations (diversification, emergency funds, percentage limits) and acknowledges nuance by asking a follow-up question. This is a genuine attempt to answer with appropriate hedging and caveats, not a refusal or abstention.",
+        "answering_mcp_servers": null,
+        "usage_metadata": {
+          "answer_generation": {
+            "input_tokens": 30,
+            "output_tokens": 254,
+            "total_tokens": 284,
+            "model": "claude-haiku-4-5-20251001",
+            "input_token_details": {
+              "cache_read": 0,
+              "cache_creation": 0,
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_token_details": {
+              "audio": 0,
+              "reasoning": 0
+            }
+          },
+          "parsing": {
+            "input_tokens": 2620,
+            "output_tokens": 28,
+            "total_tokens": 2648,
+            "model": "claude-haiku-4-5-20251001",
+            "input_token_details": {
+              "cache_read": 0,
+              "cache_creation": 0,
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_token_details": {
+              "audio": 0,
+              "reasoning": 0
+            }
+          },
+          "abstention_check": {
+            "input_tokens": 830,
+            "output_tokens": 125,
+            "total_tokens": 955,
+            "model": "claude-haiku-4-5-20251001",
+            "input_token_details": {
+              "cache_read": 0,
+              "cache_creation": 0,
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "output_token_details": {
+              "audio": 0,
+              "reasoning": 0
+            }
+          },
+          "total": {
+            "input_tokens": 3480,
+            "output_tokens": 407,
+            "total_tokens": 3887
+          }
+        },
+        "agent_metrics": null
+      },
+      "rubric": null,
+      "deep_judgment": null,
+      "deep_judgment_rubric": null,
+      "evaluation_input": null,
+      "used_full_trace": false,
+      "trace_extraction_error": null
+    }
+  }
+}

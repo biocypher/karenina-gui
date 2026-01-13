@@ -9,6 +9,8 @@ describe('VerificationResultDetailModal', () => {
       question: 'Test question',
       raw_answer: 'Expected raw answer',
       original_answer_template: 'template',
+      answer_template: 'class Answer(BaseAnswer): pass',
+      last_modified: '2024-01-01T00:00:00Z',
       finished: true,
     },
   };
@@ -21,25 +23,31 @@ describe('VerificationResultDetailModal', () => {
   const mockOnClose = vi.fn();
 
   const createMockResult = (overrides: Partial<VerificationResult> = {}): VerificationResult => ({
-    question_id: 'q1',
-    question_text: 'Test question',
-    parsed_gt_response: { answer: 'ground truth' },
-    parsed_llm_response: { answer: 'llm response' },
-    raw_llm_response: 'raw response text',
-    keywords: ['test', 'keyword'],
-    answering_model: 'gpt-4',
-    parsing_model: 'gpt-4',
-    answering_mcp_servers: [],
-    completed_without_errors: true,
-    verify_result: true,
-    verify_granular_result: {},
-    verify_rubric: null,
-    execution_time: 1.23,
-    timestamp: new Date().toISOString(),
-    run_name: 'test-run',
-    replicate: 1,
-    deep_judgment_enabled: false,
-    deep_judgment_performed: false,
+    metadata: {
+      question_id: 'q1',
+      template_id: 'q1-template',
+      completed_without_errors: true,
+      question_text: 'Test question',
+      raw_answer: 'Expected raw answer',
+      keywords: ['test', 'keyword'],
+      answering_model: 'gpt-4',
+      parsing_model: 'gpt-4',
+      execution_time: 1.23,
+      timestamp: new Date().toISOString(),
+      run_name: 'test-run',
+      replicate: 1,
+    },
+    template: {
+      raw_llm_response: 'raw response text',
+      parsed_gt_response: { answer: 'ground truth' },
+      parsed_llm_response: { answer: 'llm response' },
+      verify_result: true,
+      verify_granular_result: {},
+    },
+    deep_judgment: {
+      deep_judgment_enabled: false,
+      deep_judgment_performed: false,
+    },
     ...overrides,
   });
 
@@ -67,8 +75,9 @@ describe('VerificationResultDetailModal', () => {
     );
 
     expect(screen.getByText('Detailed Answering Trace')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
-    expect(screen.getByText('Success')).toBeInTheDocument();
+    expect(screen.getByText('Completed Without Errors')).toBeInTheDocument();
+    // "true" appears multiple times on page, check that at least one exists
+    expect(screen.getAllByText('true').length).toBeGreaterThan(0);
     expect(screen.getByText('Test question')).toBeInTheDocument();
   });
 
@@ -105,8 +114,11 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays error message when success is false', () => {
     const result = createMockResult({
-      completed_without_errors: false,
-      error: 'Test error message',
+      metadata: {
+        ...createMockResult().metadata,
+        completed_without_errors: false,
+        error: 'Test error message',
+      },
     });
     render(
       <VerificationResultDetailModal
@@ -117,7 +129,7 @@ describe('VerificationResultDetailModal', () => {
       />
     );
 
-    expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(screen.getByText('false')).toBeInTheDocument();
     expect(screen.getByText('Test error message')).toBeInTheDocument();
   });
 
@@ -138,8 +150,11 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays ground truth and LLM extraction when available', () => {
     const result = createMockResult({
-      parsed_gt_response: { answer: 'expected answer' },
-      parsed_llm_response: { answer: 'llm answer' },
+      template: {
+        ...createMockResult().template!,
+        parsed_gt_response: { answer: 'expected answer' },
+        parsed_llm_response: { answer: 'llm answer' },
+      },
     });
     render(
       <VerificationResultDetailModal
@@ -156,11 +171,14 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays regex validation details when available', () => {
     const result = createMockResult({
-      regex_validation_details: {
-        field1: {
-          pattern: 'test-pattern',
-          expected: 'test-value',
-          match_type: 'exact',
+      template: {
+        ...createMockResult().template!,
+        regex_validation_details: {
+          field1: {
+            pattern: 'test-pattern',
+            expected: 'test-value',
+            match_type: 'exact',
+          },
         },
       },
     });
@@ -178,9 +196,12 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays embedding check results when performed', () => {
     const result = createMockResult({
-      embedding_check_performed: true,
-      embedding_similarity_score: 0.95,
-      embedding_model_used: 'text-embedding-3-small',
+      template: {
+        ...createMockResult().template!,
+        embedding_check_performed: true,
+        embedding_similarity_score: 0.95,
+        embedding_model_used: 'text-embedding-3-small',
+      },
     });
     render(
       <VerificationResultDetailModal
@@ -199,9 +220,12 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays embedding override message when applied', () => {
     const result = createMockResult({
-      embedding_check_performed: true,
-      embedding_override_applied: true,
-      embedding_similarity_score: 0.85,
+      template: {
+        ...createMockResult().template!,
+        embedding_check_performed: true,
+        embedding_override_applied: true,
+        embedding_similarity_score: 0.85,
+      },
     });
     render(
       <VerificationResultDetailModal
@@ -217,10 +241,13 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays abstention detection results when performed', () => {
     const result = createMockResult({
-      abstention_check_performed: true,
-      abstention_detected: true,
-      abstention_override_applied: true,
-      abstention_reasoning: 'Model refused to answer',
+      template: {
+        ...createMockResult().template!,
+        abstention_check_performed: true,
+        abstention_detected: true,
+        abstention_override_applied: true,
+        abstention_reasoning: 'Model refused to answer',
+      },
     });
     render(
       <VerificationResultDetailModal
@@ -238,10 +265,13 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays deep-judgment summary statistics when performed', () => {
     const result = createMockResult({
-      deep_judgment_performed: true,
-      deep_judgment_stages_completed: ['excerpt_extraction', 'reasoning'],
-      deep_judgment_model_calls: 5,
-      deep_judgment_excerpt_retry_count: 2,
+      deep_judgment: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        deep_judgment_stages_completed: ['excerpt_extraction', 'reasoning'],
+        deep_judgment_model_calls: 5,
+        deep_judgment_excerpt_retry_count: 2,
+      },
     });
     render(
       <VerificationResultDetailModal
@@ -261,18 +291,21 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays extracted excerpts with hallucination risk', () => {
     const result = createMockResult({
-      deep_judgment_performed: true,
-      extracted_excerpts: {
-        attribute1: [
-          {
-            text: 'Test excerpt',
-            confidence: 'high',
-            similarity_score: 0.95,
-          },
-        ],
-      },
-      hallucination_risk_assessment: {
-        attribute1: 'low',
+      deep_judgment: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        extracted_excerpts: {
+          attribute1: [
+            {
+              text: 'Test excerpt',
+              confidence: 'high',
+              similarity_score: 0.95,
+            },
+          ],
+        },
+        hallucination_risk_assessment: {
+          attribute1: 'low',
+        },
       },
     });
     render(
@@ -292,13 +325,16 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays excerpts with missing explanation', () => {
     const result = createMockResult({
-      deep_judgment_performed: true,
-      extracted_excerpts: {
-        attribute1: [
-          {
-            explanation: 'No matching text found in response',
-          },
-        ],
+      deep_judgment: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        extracted_excerpts: {
+          attribute1: [
+            {
+              explanation: 'No matching text found in response',
+            },
+          ],
+        },
       },
     });
     render(
@@ -316,10 +352,13 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays attribute reasoning when available', () => {
     const result = createMockResult({
-      deep_judgment_performed: true,
-      attribute_reasoning: {
-        attribute1: 'This is the reasoning for attribute1',
-        attribute2: 'This is the reasoning for attribute2',
+      deep_judgment: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        attribute_reasoning: {
+          attribute1: 'This is the reasoning for attribute1',
+          attribute2: 'This is the reasoning for attribute2',
+        },
       },
     });
     render(
@@ -338,8 +377,11 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays attributes without excerpts warning', () => {
     const result = createMockResult({
-      deep_judgment_performed: true,
-      attributes_without_excerpts: ['attr1', 'attr2', 'attr3'],
+      deep_judgment: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        attributes_without_excerpts: ['attr1', 'attr2', 'attr3'],
+      },
     });
     render(
       <VerificationResultDetailModal
@@ -358,8 +400,11 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays system prompts when available', () => {
     const result = createMockResult({
-      answering_system_prompt: 'Answering system prompt text',
-      parsing_system_prompt: 'Parsing system prompt text',
+      metadata: {
+        ...createMockResult().metadata,
+        answering_system_prompt: 'Answering system prompt text',
+        parsing_system_prompt: 'Parsing system prompt text',
+      },
     });
     render(
       <VerificationResultDetailModal
@@ -379,11 +424,14 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays metadata section with all fields', () => {
     const result = createMockResult({
-      answering_model: 'gpt-4-turbo',
-      parsing_model: 'gpt-4-mini',
-      execution_time: 2.45,
-      timestamp: '2025-01-15T10:30:00Z',
-      answering_mcp_servers: ['filesystem', 'web-search'],
+      metadata: {
+        ...createMockResult().metadata,
+        answering_model: 'gpt-4-turbo',
+        parsing_model: 'gpt-4-mini',
+        execution_time: 2.45,
+        timestamp: '2025-01-15T10:30:00Z',
+      },
+      raw_answer: 'Expected raw answer',
     });
     render(
       <VerificationResultDetailModal
@@ -398,7 +446,6 @@ describe('VerificationResultDetailModal', () => {
     expect(screen.getByText('gpt-4-turbo')).toBeInTheDocument();
     expect(screen.getByText('gpt-4-mini')).toBeInTheDocument();
     expect(screen.getByText('2.45s')).toBeInTheDocument();
-    expect(screen.getByText('filesystem, web-search')).toBeInTheDocument();
   });
 
   it('renders without errors even with invalid data', () => {
@@ -406,9 +453,12 @@ describe('VerificationResultDetailModal', () => {
 
     // Create a result with potentially problematic data
     const result = createMockResult({
-      parsed_gt_response: undefined,
-      parsed_llm_response: null,
-      regex_validation_details: undefined,
+      template: {
+        raw_llm_response: 'raw response text',
+        parsed_gt_response: undefined,
+        parsed_llm_response: null,
+        regex_validation_details: undefined,
+      },
     });
 
     const { container } = render(
@@ -429,18 +479,21 @@ describe('VerificationResultDetailModal', () => {
 
   it('displays hallucination risk levels with correct styling', () => {
     const result = createMockResult({
-      deep_judgment_performed: true,
-      extracted_excerpts: {
-        high_risk: [{ text: 'excerpt', confidence: 'high', similarity_score: 1 }],
-        medium_risk: [{ text: 'excerpt', confidence: 'medium', similarity_score: 1 }],
-        low_risk: [{ text: 'excerpt', confidence: 'low', similarity_score: 1 }],
-        no_risk: [{ text: 'excerpt', confidence: 'high', similarity_score: 1 }],
-      },
-      hallucination_risk_assessment: {
-        high_risk: 'high',
-        medium_risk: 'medium',
-        low_risk: 'low',
-        no_risk: 'none',
+      deep_judgment: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        extracted_excerpts: {
+          high_risk: [{ text: 'excerpt', confidence: 'high', similarity_score: 1 }],
+          medium_risk: [{ text: 'excerpt', confidence: 'medium', similarity_score: 1 }],
+          low_risk: [{ text: 'excerpt', confidence: 'low', similarity_score: 1 }],
+          no_risk: [{ text: 'excerpt', confidence: 'high', similarity_score: 1 }],
+        },
+        hallucination_risk_assessment: {
+          high_risk: 'high',
+          medium_risk: 'medium',
+          low_risk: 'low',
+          no_risk: 'none',
+        },
       },
     });
     render(

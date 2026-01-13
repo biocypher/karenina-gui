@@ -8,6 +8,7 @@ import {
   generateVerifyGranularMethod,
 } from '../../utils/pydanticGenerator';
 import type { PydanticFieldDefinition, PydanticClassDefinition, PydanticMethod } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface PydanticFormEditorProps {
   code: string;
@@ -126,7 +127,7 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
         // Field updates trigger onChange which updates currentTemplate, which triggers
         // session draft auto-save via useEffect in App.tsx
       } catch (error) {
-        console.error('Error generating code:', error);
+        logger.error('PYDANTIC', 'Error generating code', 'PydanticFormEditor', { error });
       }
     };
 

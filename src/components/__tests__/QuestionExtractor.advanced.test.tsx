@@ -1,7 +1,9 @@
 import React from 'react';
 import { render, fireEvent, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QuestionExtractor } from '../QuestionExtractor';
+import { useTemplateStore } from '../../stores/useTemplateStore';
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -9,6 +11,8 @@ global.fetch = vi.fn();
 describe('QuestionExtractor - Advanced Extraction', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset the Zustand store state before each test
+    useTemplateStore.getState().resetExtractionWorkflow();
   });
 
   const mockFileUploadResponse = {
@@ -88,7 +92,9 @@ describe('QuestionExtractor - Advanced Extraction', () => {
     const file = new File(['test'], 'test.xlsx', {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    const input = screen.getByLabelText('Select File');
+    // Use querySelector to find the hidden file input
+    const input = document.querySelector('input[type="file"][aria-label="Select File"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
 
     Object.defineProperty(input, 'files', { value: [file] });
     fireEvent.change(input);
@@ -113,6 +119,7 @@ describe('QuestionExtractor - Advanced Extraction', () => {
   });
 
   it('includes metadata settings in extraction API call when advanced options are configured', async () => {
+    const user = userEvent.setup();
     // Mock the fetch calls
     (fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
@@ -130,11 +137,12 @@ describe('QuestionExtractor - Advanced Extraction', () => {
 
     render(<QuestionExtractor />);
 
-    // Upload file
+    // Upload file - the file input is hidden, so we need to use querySelector
     const file = new File(['test'], 'test.xlsx', {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    const input = screen.getByLabelText('Select File');
+    const input = document.querySelector('input[type="file"][aria-label="Select File"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
     Object.defineProperty(input, 'files', { value: [file] });
     fireEvent.change(input);
 
@@ -152,17 +160,22 @@ describe('QuestionExtractor - Advanced Extraction', () => {
 
     // Expand advanced options (text is now split, so find the button that contains "Advanced extraction")
     const toggleButton = screen.getByRole('button', { name: /advanced extraction/i });
-    fireEvent.click(toggleButton);
+    await user.click(toggleButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Author Information')).toBeInTheDocument();
-    });
+    // Wait for the advanced panel content to appear
+    const authorInfo = await screen.findByText('Author Information', {}, { timeout: 3000 });
+    expect(authorInfo).toBeInTheDocument();
 
     // Configure metadata columns
     const authorNameSelect = screen.getByLabelText('Author Name');
     const authorEmailSelect = screen.getByLabelText('Author Email');
-    const keywordsSelect = screen.getByLabelText('Keywords');
     const urlSelect = screen.getByLabelText('URL/Link');
+    // Keywords section has "Column" label - there are multiple "Column" labels in the document
+    // so we need to find the one for keywords (first one in the keywords section)
+    const keywordsSelects = screen.getAllByLabelText('Column');
+    const keywordsSelect =
+      keywordsSelects.find((select) => select.closest('.bg-purple-50\\/30, .dark\\:bg-purple-900\\/10')) ||
+      keywordsSelects[0];
 
     fireEvent.change(authorNameSelect, { target: { value: 'Author_Name' } });
     fireEvent.change(authorEmailSelect, { target: { value: 'Author_Email' } });
@@ -189,8 +202,7 @@ describe('QuestionExtractor - Advanced Extraction', () => {
           author_email_column: 'Author_Email',
           author_affiliation_column: null,
           url_column: 'URL',
-          keywords_column: 'Keywords',
-          keywords_separator: ',',
+          keywords_columns: [{ column: 'Keywords', separator: ',' }],
         }),
       });
     });
@@ -252,8 +264,7 @@ describe('QuestionExtractor - Advanced Extraction', () => {
           author_email_column: null,
           author_affiliation_column: null,
           url_column: null,
-          keywords_column: null,
-          keywords_separator: ',',
+          keywords_columns: null,
         }),
       });
     });

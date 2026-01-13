@@ -393,8 +393,14 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
 
             {/* Database Type Selector */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Database Type</label>
+              <label
+                htmlFor="db-type-select"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Database Type
+              </label>
               <select
+                id="db-type-select"
                 value={dbType}
                 onChange={(e) => setDbType(e.target.value as DatabaseType)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
@@ -410,8 +416,14 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
             {/* SQLite Fields */}
             {dbType === 'sqlite' && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Database Name</label>
+                <label
+                  htmlFor="sqlite-db-name"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Database Name
+                </label>
                 <input
+                  id="sqlite-db-name"
                   type="text"
                   value={newDbName}
                   onChange={(e) => setNewDbName(e.target.value)}
@@ -428,8 +440,14 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
               <div className="space-y-3 mb-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Host</label>
+                    <label
+                      htmlFor="pg-host"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Host
+                    </label>
                     <input
+                      id="pg-host"
                       type="text"
                       value={host}
                       onChange={(e) => setHost(e.target.value)}
@@ -440,8 +458,14 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Port</label>
+                    <label
+                      htmlFor="pg-port"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Port
+                    </label>
                     <input
+                      id="pg-port"
                       type="text"
                       value={port}
                       onChange={(e) => setPort(e.target.value)}
@@ -452,10 +476,14 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="pg-database"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
                     Database Name
                   </label>
                   <input
+                    id="pg-database"
                     type="text"
                     value={database}
                     onChange={(e) => setDatabase(e.target.value)}
@@ -467,8 +495,14 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                    <label
+                      htmlFor="pg-username"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Username
+                    </label>
                     <input
+                      id="pg-username"
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
@@ -479,8 +513,14 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <label
+                      htmlFor="pg-password"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Password
+                    </label>
                     <input
+                      id="pg-password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

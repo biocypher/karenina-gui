@@ -11,6 +11,9 @@
 
 import React from 'react';
 import { SummaryCharts } from './SummaryCharts';
+import { SummarySection } from './SummarySection';
+import { SummaryTable, type SummaryRow } from './SummaryTable';
+import { parseCombo, formatDuration, formatNumber } from '../../utils/summary';
 import type { SummaryStats } from '../../types';
 
 interface SummaryViewProps {
@@ -20,26 +23,6 @@ interface SummaryViewProps {
 }
 
 export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
-  const formatDuration = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (minutes > 0) return `${minutes}m ${secs.toFixed(1)}s`;
-    return `${secs.toFixed(1)}s`;
-  };
-
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString();
-  };
-
-  const parseCombo = (combo: string): { answering: string; parsing: string; mcp: string } => {
-    const parts = combo.split(',');
-    return {
-      answering: parts[0] || 'Unknown',
-      parsing: parts[1] || 'Unknown',
-      mcp: parts[2] === 'None' ? 'None' : parts.slice(2).join(','),
-    };
-  };
-
   const passRate = summary.template_pass_overall?.pass_pct ?? 0;
 
   // Calculate unique answering model configurations (model + MCP)
@@ -57,82 +40,67 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
   const numAnsweringConfigs = uniqueAnsweringConfigs.size;
   const numParsingModels = uniqueParsingModels.size;
 
-  // Common table row classes
-  const rowClass =
-    'border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors';
-  const labelClass = 'py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3';
-  const valueClass = 'py-2.5 px-4 text-slate-900 dark:text-slate-100 font-mono';
-  const sectionClass = 'bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4';
-  const headerClass =
-    'text-sm font-mono font-bold text-blue-600 dark:text-blue-400 mb-4 pb-2 border-b-2 border-blue-200 dark:border-blue-800';
+  // Check if we have token data
+  const hasTokenData = summary.tokens && (summary.tokens.total_input > 0 || summary.tokens.total_output > 0);
+
+  // Overview section rows
+  const overviewRows: SummaryRow[] = [
+    { label: 'Total Results:', value: summary.num_results },
+    { label: 'Questions:', value: summary.num_questions },
+    { label: 'Models:', value: `${numAnsweringConfigs} answering × ${numParsingModels} parsing` },
+    { label: 'Replicates:', value: summary.num_replicates },
+    {
+      label: 'Total Execution Time:',
+      value: formatDuration(summary.total_execution_time),
+    },
+    ...(hasTokenData
+      ? [
+          {
+            label: 'Total Tokens:',
+            value: (
+              <div>
+                <div className="font-mono">
+                  {formatNumber(summary.tokens.total_input)} input, {formatNumber(summary.tokens.total_output)} output
+                </div>
+                <div className="ml-4 mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1 font-normal">
+                  <div>
+                    └─ Templates: {formatNumber(summary.tokens.template_input)} input,{' '}
+                    {formatNumber(summary.tokens.template_output)} output
+                  </div>
+                  <div>
+                    └─ Rubrics: {formatNumber(summary.tokens.rubric_input)} input,{' '}
+                    {formatNumber(summary.tokens.rubric_output)} output
+                  </div>
+                  {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
+                    <div>
+                      └─ Deep Judgment: {formatNumber(summary.tokens.deep_judgment_input)} input,{' '}
+                      {formatNumber(summary.tokens.deep_judgment_output)} output
+                    </div>
+                  )}
+                </div>
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="space-y-6">
       {/* Overview Section */}
-      <div className={sectionClass}>
-        <h3 className={headerClass}>Overview</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <tbody>
-              <tr className={rowClass}>
-                <td className={labelClass}>Total Results:</td>
-                <td className={valueClass}>{summary.num_results}</td>
-              </tr>
-              <tr className={rowClass}>
-                <td className={labelClass}>Questions:</td>
-                <td className={valueClass}>{summary.num_questions}</td>
-              </tr>
-              <tr className={rowClass}>
-                <td className={labelClass}>Models:</td>
-                <td className={valueClass}>
-                  {numAnsweringConfigs} answering × {numParsingModels} parsing
-                </td>
-              </tr>
-              <tr className={rowClass}>
-                <td className={labelClass}>Replicates:</td>
-                <td className={valueClass}>{summary.num_replicates}</td>
-              </tr>
-              <tr className={rowClass}>
-                <td className={labelClass}>Total Execution Time:</td>
-                <td className={valueClass}>{formatDuration(summary.total_execution_time)}</td>
-              </tr>
-              <tr className={rowClass}>
-                <td className={labelClass}>Total Tokens:</td>
-                <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
-                  <div className="font-mono">
-                    {formatNumber(summary.tokens.total_input)} input, {formatNumber(summary.tokens.total_output)} output
-                  </div>
-                  <div className="ml-4 mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1 font-normal">
-                    <div>
-                      └─ Templates: {formatNumber(summary.tokens.template_input)} input,{' '}
-                      {formatNumber(summary.tokens.template_output)} output
-                    </div>
-                    <div>
-                      └─ Rubrics: {formatNumber(summary.tokens.rubric_input)} input,{' '}
-                      {formatNumber(summary.tokens.rubric_output)} output
-                    </div>
-                    {summary.tokens.deep_judgment_input && summary.tokens.deep_judgment_output && (
-                      <div>
-                        └─ Deep Judgment: {formatNumber(summary.tokens.deep_judgment_input)} input,{' '}
-                        {formatNumber(summary.tokens.deep_judgment_output)} output
-                      </div>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <SummarySection title="Overview">
+        <SummaryTable rows={overviewRows} />
+      </SummarySection>
 
       {/* Completion Status */}
-      <div className={sectionClass}>
-        <h3 className={headerClass}>Completion Status</h3>
+      <SummarySection title="Completion Status">
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <tbody>
-              <tr className={rowClass}>
-                <td className={labelClass}>By Model Combination:</td>
+              <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                <td className="py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3">
+                  By Model Combination:
+                </td>
                 <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
                   <div className="space-y-3">
                     {summary.completion_by_combo && typeof summary.completion_by_combo === 'object' ? (
@@ -167,9 +135,9 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                   </div>
                 </td>
               </tr>
-              <tr className={rowClass}>
-                <td className={labelClass}>Overall:</td>
-                <td className={valueClass}>
+              <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                <td className="py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3">Overall:</td>
+                <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100 font-mono">
                   <span
                     className="cursor-pointer text-green-600 dark:text-green-400 hover:underline font-semibold"
                     onClick={onDrillDown ? () => onDrillDown({ type: 'completed' }) : undefined}
@@ -182,20 +150,23 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
             </tbody>
           </table>
         </div>
-      </div>
+      </SummarySection>
 
       {/* Evaluation Types */}
-      <div className={sectionClass}>
-        <h3 className={headerClass}>Evaluation Types</h3>
+      <SummarySection title="Evaluation Types">
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <tbody>
-              <tr className={rowClass}>
-                <td className={labelClass}>Template Verification:</td>
-                <td className={valueClass}>{summary.num_with_template} results</td>
+              <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                <td className="py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3">
+                  Template Verification:
+                </td>
+                <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100 font-mono">
+                  {summary.num_with_template} results
+                </td>
               </tr>
-              <tr className={rowClass}>
-                <td className={labelClass}>Rubric Evaluation:</td>
+              <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                <td className="py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3">Rubric Evaluation:</td>
                 <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
                   <div className="font-mono">{summary.num_with_rubric} results</div>
                   {summary.rubric_traits &&
@@ -268,24 +239,27 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                 </td>
               </tr>
               {summary.num_with_judgment > 0 && (
-                <tr className={rowClass}>
-                  <td className={labelClass}>Deep Judgment:</td>
-                  <td className={valueClass}>{summary.num_with_judgment} results</td>
+                <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                  <td className="py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3">Deep Judgment:</td>
+                  <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100 font-mono">
+                    {summary.num_with_judgment} results
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
+      </SummarySection>
 
       {/* Template Pass Rates */}
-      <div className={sectionClass}>
-        <h3 className={headerClass}>Template Pass Rates</h3>
+      <SummarySection title="Template Pass Rates">
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <tbody>
-              <tr className={rowClass}>
-                <td className={labelClass}>By Model Combination (+ MCP if used):</td>
+              <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                <td className="py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3">
+                  By Model Combination (+ MCP if used):
+                </td>
                 <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
                   <div className="space-y-3">
                     {summary.template_pass_by_combo && typeof summary.template_pass_by_combo === 'object' ? (
@@ -326,9 +300,9 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
                   </div>
                 </td>
               </tr>
-              <tr className={rowClass}>
-                <td className={labelClass}>Overall:</td>
-                <td className={valueClass}>
+              <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                <td className="py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3">Overall:</td>
+                <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100 font-mono">
                   <span
                     className={`cursor-pointer hover:underline font-semibold ${
                       passRate >= 70 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -343,17 +317,18 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
             </tbody>
           </table>
         </div>
-      </div>
+      </SummarySection>
 
       {/* Replicate Statistics (if available) */}
       {summary.replicate_stats && summary.num_replicates > 1 && (
-        <div className={sectionClass}>
-          <h3 className={headerClass}>Replicate Statistics</h3>
+        <SummarySection title="Replicate Statistics">
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <tbody>
-                <tr className={rowClass}>
-                  <td className={labelClass}>Template Pass Rate by Replicate:</td>
+                <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                  <td className="py-2.5 px-4 font-medium text-slate-600 dark:text-slate-400 w-1/3">
+                    Template Pass Rate by Replicate:
+                  </td>
                   <td className="py-2.5 px-4 text-slate-900 dark:text-slate-100">
                     <div className="space-y-1">
                       {summary.replicate_stats?.replicate_pass_rates &&
@@ -390,14 +365,13 @@ export function SummaryView({ summary, onDrillDown }: SummaryViewProps) {
               </tbody>
             </table>
           </div>
-        </div>
+        </SummarySection>
       )}
 
       {/* Charts */}
-      <div className={sectionClass}>
-        <h3 className={headerClass}>Visualizations</h3>
+      <SummarySection title="Visualizations">
         <SummaryCharts summary={summary} />
-      </div>
+      </SummarySection>
     </div>
   );
 }

@@ -17,7 +17,7 @@ describe('RubricTraitEditor', () => {
 
   // Helper function to create a complete mock store
   const createMockStore = (overrides = {}) => ({
-    currentRubric: { traits: mockGeneratedTraits },
+    currentRubric: { llm_traits: mockGeneratedTraits },
     generatedSuggestions: mockGeneratedTraits,
     config: {
       model_provider: 'google_genai',
@@ -91,7 +91,7 @@ describe('RubricTraitEditor', () => {
     it('should show empty state with no traits', () => {
       mockUseRubricStore.mockReturnValue(
         createMockStore({
-          currentRubric: { traits: [] },
+          currentRubric: { llm_traits: [] },
           generatedSuggestions: [],
         })
       );
@@ -104,7 +104,7 @@ describe('RubricTraitEditor', () => {
 
     it('should load existing rubric when available', () => {
       const existingRubric = {
-        traits: [
+        llm_traits: [
           {
             name: 'clarity',
             description: 'Is the response clear?',
@@ -274,7 +274,7 @@ describe('RubricTraitEditor', () => {
       // Mock store with only one trait
       mockUseRubricStore.mockReturnValue(
         createMockStore({
-          currentRubric: { traits: [mockGeneratedTraits[0]] },
+          currentRubric: { llm_traits: [mockGeneratedTraits[0]] },
           generatedSuggestions: [],
         })
       );
@@ -310,7 +310,7 @@ describe('RubricTraitEditor', () => {
     it('should prevent saving without traits', async () => {
       mockUseRubricStore.mockReturnValue(
         createMockStore({
-          currentRubric: { traits: [] },
+          currentRubric: { llm_traits: [] },
           generatedSuggestions: [],
         })
       );

@@ -5,6 +5,29 @@ import { ManualTraceUpload } from '../../components/ManualTraceUpload';
 // Mock fetch globally
 global.fetch = vi.fn();
 
+// Mock the fileValidator to bypass FileReader issues in jsdom
+vi.mock('../../utils/fileValidator', () => ({
+  validateManualTraceFile: vi.fn((file: File) => {
+    // Simple validation: check if file name ends with .json and has content
+    const isValidJson = file.name.endsWith('.json') && file.size > 0;
+    return Promise.resolve({
+      valid: isValidJson,
+      error: isValidJson ? undefined : 'Invalid file format',
+    });
+  }),
+}));
+
+// Mock the CSRF module to bypass token validation in tests
+vi.mock('../../utils/csrf', () => ({
+  csrf: {
+    fetchWithCsrf: vi.fn((url: string, options: RequestInit = {}) => {
+      return fetch(url, options);
+    }),
+    initialize: vi.fn(() => Promise.resolve(true)),
+    getHeaders: vi.fn(() => ({})),
+  },
+}));
+
 describe('ManualTraceUpload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -55,7 +78,12 @@ describe('ManualTraceUpload', () => {
     render(<ManualTraceUpload onUploadSuccess={onUploadSuccess} />);
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
+    // Create valid test data with MD5 hash keys (32 hex characters)
+    const validTestData = JSON.stringify({
+      '1234567890abcdef1234567890abcdef': 'Answer trace 1 content',
+      abcdef1234567890abcdef1234567890: 'Answer trace 2 content',
+    });
+    const file = new File([validTestData], 'test.json', { type: 'application/json' });
 
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
@@ -83,7 +111,11 @@ describe('ManualTraceUpload', () => {
     render(<ManualTraceUpload onUploadError={onUploadError} />);
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(['invalid json'], 'test.json', { type: 'application/json' });
+    // Use valid JSON structure so validation passes, but server returns error
+    const validTestData = JSON.stringify({
+      '1234567890abcdef1234567890abcdef': 'Answer trace 1 content',
+    });
+    const file = new File([validTestData], 'test.json', { type: 'application/json' });
 
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
@@ -107,7 +139,11 @@ describe('ManualTraceUpload', () => {
     render(<ManualTraceUpload />);
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
+    // Use valid JSON structure with MD5 hash keys
+    const validTestData = JSON.stringify({
+      '1234567890abcdef1234567890abcdef': 'Answer trace content',
+    });
+    const file = new File([validTestData], 'test.json', { type: 'application/json' });
 
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
@@ -140,7 +176,11 @@ describe('ManualTraceUpload', () => {
     render(<ManualTraceUpload />);
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
+    // Use valid JSON structure with MD5 hash keys
+    const validTestData = JSON.stringify({
+      '1234567890abcdef1234567890abcdef': 'Answer trace content',
+    });
+    const file = new File([validTestData], 'test.json', { type: 'application/json' });
 
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
@@ -177,8 +217,11 @@ describe('ManualTraceUpload', () => {
       fireEvent.dragLeave(dropZone!);
     });
 
-    // Simulate drop
-    const file = new File(['{"test": "data"}'], 'test.json', { type: 'application/json' });
+    // Simulate drop with valid JSON structure
+    const validTestData = JSON.stringify({
+      '1234567890abcdef1234567890abcdef': 'Answer trace content',
+    });
+    const file = new File([validTestData], 'test.json', { type: 'application/json' });
     const dropEvent = new Event('drop') as DragEvent;
     dropEvent.dataTransfer = {
       files: [file],

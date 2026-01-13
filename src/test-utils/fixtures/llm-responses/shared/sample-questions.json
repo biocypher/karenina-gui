@@ -1,0 +1,20 @@
+[
+  {
+    "id": "q1",
+    "question": "What is the capital of France?",
+    "raw_answer": "Paris is the capital of France.",
+    "answer_template": "class Answer(BaseModel):\n    capital: str = Field(description=\"The capital city name\")\n\n    @model_validator(mode='after')\n    def check_answer(self):\n        self.correct = self.capital.lower() == 'paris'\n        return self"
+  },
+  {
+    "id": "q2",
+    "question": "Calculate 15 + 27.",
+    "raw_answer": "15 plus 27 equals 42.",
+    "answer_template": "class Answer(BaseModel):\n    result: int = Field(description=\"The sum of the two numbers\")\n\n    @model_validator(mode='after')\n    def check_answer(self):\n        self.correct = self.result == 42\n        return self"
+  },
+  {
+    "id": "q3",
+    "question": "Name three primary colors.",
+    "raw_answer": "The three primary colors are red, blue, and yellow.",
+    "answer_template": "class Answer(BaseModel):\n    colors: List[str] = Field(description=\"List of primary colors\")\n\n    @model_validator(mode='after')\n    def check_answer(self):\n        expected = {'red', 'blue', 'yellow'}\n        self.correct = set(c.lower() for c in self.colors) == expected\n        return self"
+  }
+]

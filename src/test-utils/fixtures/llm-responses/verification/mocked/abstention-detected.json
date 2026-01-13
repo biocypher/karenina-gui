@@ -1,0 +1,66 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T12:00:00.000Z",
+    "model": "mock",
+    "scenario": "abstention-detected",
+    "backendUrl": "http://localhost:5001",
+    "isMocked": true
+  },
+  "data": {
+    "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1768041830000": {
+      "metadata": {
+        "question_id": "q1",
+        "template_id": "fcb63001d642141a76ea74a28088cc3a",
+        "completed_without_errors": true,
+        "error": null,
+        "question_text": "What will the stock price be next week?",
+        "raw_answer": null,
+        "keywords": null,
+        "answering_model": "anthropic/claude-haiku-4-5",
+        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering_system_prompt": "You are a helpful assistant.",
+        "parsing_system_prompt": "You are a helpful assistant.",
+        "execution_time": 1.234,
+        "timestamp": "2026-01-10 12:00:00",
+        "result_id": "mock-result-005",
+        "run_name": "mock-verification",
+        "replicate": null
+      },
+      "template": {
+        "raw_llm_response": "I cannot predict future stock prices as they depend on many unpredictable factors. I would recommend consulting a financial advisor for investment decisions.",
+        "parsed_gt_response": null,
+        "parsed_llm_response": null,
+        "template_verification_performed": false,
+        "verify_result": null,
+        "verify_granular_result": null,
+        "embedding_check_performed": false,
+        "embedding_similarity_score": null,
+        "embedding_override_applied": false,
+        "embedding_model_used": null,
+        "regex_validations_performed": false,
+        "regex_validation_results": null,
+        "regex_validation_details": null,
+        "regex_overall_success": null,
+        "regex_extraction_results": null,
+        "recursion_limit_reached": false,
+        "abstention_check_performed": true,
+        "abstention_detected": true,
+        "abstention_override_applied": true,
+        "abstention_reasoning": "The model indicated inability to make predictions and declined to provide a direct answer to the question.",
+        "answering_mcp_servers": null,
+        "usage_metadata": {
+          "input_tokens": 55,
+          "output_tokens": 42,
+          "total_tokens": 97
+        },
+        "agent_metrics": null
+      },
+      "rubric": null,
+      "deep_judgment": null,
+      "deep_judgment_rubric": null,
+      "evaluation_input": null,
+      "used_full_trace": true,
+      "trace_extraction_error": null
+    }
+  }
+}

@@ -25,37 +25,46 @@ describe('BenchmarkTab - Deep-Judgment Modal Display', () => {
   };
 
   const createMockResult = (overrides: Partial<VerificationResult> = {}): VerificationResult => ({
-    question_id: 'q1',
-    question_text: 'Test question',
-    parsed_gt_response: { answer: 'ground truth' },
-    parsed_llm_response: { answer: 'llm response' },
-    raw_llm_response: 'raw response',
-    keywords: ['test'],
-    answering_model: 'gpt-4',
-    parsing_model: 'gpt-4',
-    answering_mcp_servers: [],
-    completed_without_errors: true,
-    verify_result: true,
-    verify_granular_result: {},
-    verify_rubric: null,
-    execution_time: 1.23,
-    timestamp: new Date().toISOString(),
-    run_name: 'test-run',
-    replicate: 1,
-    deep_judgment_enabled: false,
-    deep_judgment_performed: false,
+    metadata: {
+      question_id: 'q1',
+      question_text: 'Test question',
+      answering_model: 'gpt-4',
+      parsing_model: 'gpt-4',
+      answering_mcp_servers: [],
+      completed_without_errors: true,
+      execution_time: 1.23,
+      timestamp: new Date().toISOString(),
+      run_name: 'test-run',
+      replicate: 1,
+      deep_judgment_enabled: false,
+      deep_judgment_performed: false,
+      keywords: ['test'],
+    },
+    template: {
+      parsed_gt_response: { answer: 'ground truth' },
+      parsed_llm_response: { answer: 'llm response' },
+      raw_llm_response: 'raw response',
+      verify_result: true,
+      verify_granular_result: {},
+    },
+    rubric: null,
+    evaluations: [],
     ...overrides,
   });
 
   it('displays deep-judgment summary statistics in modal when performed', () => {
     const mockResult = createMockResult({
-      deep_judgment_enabled: true,
-      deep_judgment_performed: true,
-      deep_judgment_stages_completed: ['excerpts', 'reasoning', 'parameters'],
-      deep_judgment_model_calls: 3,
-      deep_judgment_excerpt_retry_count: 1,
-      extracted_excerpts: {
-        attr1: [{ text: 'excerpt 1', confidence: 'high', similarity_score: 0.95 }],
+      metadata: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        deep_judgment_stages_completed: ['excerpts', 'reasoning', 'parameters'],
+        deep_judgment_model_calls: 3,
+        deep_judgment_excerpt_retry_count: 1,
+      },
+      rubric: {
+        extracted_excerpts: {
+          attr1: [{ text: 'excerpt 1', confidence: 'high', similarity_score: 0.95 }],
+        },
       },
     });
 
@@ -75,43 +84,51 @@ describe('BenchmarkTab - Deep-Judgment Modal Display', () => {
 
   it('verifies deep-judgment result structure has all required fields', () => {
     const mockResult = createMockResult({
-      deep_judgment_enabled: true,
-      deep_judgment_performed: true,
-      deep_judgment_stages_completed: ['excerpts', 'reasoning'],
-      deep_judgment_model_calls: 2,
-      deep_judgment_excerpt_retry_count: 0,
-      extracted_excerpts: {
-        attr1: [{ text: 'excerpt text', confidence: 'high', similarity_score: 0.9 }],
+      metadata: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        deep_judgment_stages_completed: ['excerpts', 'reasoning'],
+        deep_judgment_model_calls: 2,
+        deep_judgment_excerpt_retry_count: 0,
       },
-      attribute_reasoning: {
-        attr1: 'reasoning text',
+      rubric: {
+        extracted_excerpts: {
+          attr1: [{ text: 'excerpt text', confidence: 'high', similarity_score: 0.9 }],
+        },
+        attribute_reasoning: {
+          attr1: 'reasoning text',
+        },
+        attributes_without_excerpts: ['attr2'],
       },
-      attributes_without_excerpts: ['attr2'],
     });
 
     // Verify structure
-    expect(mockResult.deep_judgment_performed).toBe(true);
-    expect(mockResult.extracted_excerpts).toHaveProperty('attr1');
-    expect(mockResult.attribute_reasoning).toHaveProperty('attr1');
-    expect(mockResult.attributes_without_excerpts).toContain('attr2');
-    expect(mockResult.deep_judgment_stages_completed).toContain('excerpts');
+    expect(mockResult.metadata.deep_judgment_performed).toBe(true);
+    expect(mockResult.rubric?.extracted_excerpts).toHaveProperty('attr1');
+    expect(mockResult.rubric?.attribute_reasoning).toHaveProperty('attr1');
+    expect(mockResult.rubric?.attributes_without_excerpts).toContain('attr2');
+    expect(mockResult.metadata.deep_judgment_stages_completed).toContain('excerpts');
   });
 
   it('handles empty deep-judgment data gracefully', () => {
     const mockResult = createMockResult({
-      deep_judgment_enabled: true,
-      deep_judgment_performed: true,
-      deep_judgment_stages_completed: [],
-      deep_judgment_model_calls: 0,
-      deep_judgment_excerpt_retry_count: 0,
-      extracted_excerpts: {},
-      attribute_reasoning: {},
-      attributes_without_excerpts: [],
+      metadata: {
+        deep_judgment_enabled: true,
+        deep_judgment_performed: true,
+        deep_judgment_stages_completed: [],
+        deep_judgment_model_calls: 0,
+        deep_judgment_excerpt_retry_count: 0,
+      },
+      rubric: {
+        extracted_excerpts: {},
+        attribute_reasoning: {},
+        attributes_without_excerpts: [],
+      },
     });
 
-    expect(mockResult.deep_judgment_performed).toBe(true);
-    expect(Object.keys(mockResult.extracted_excerpts || {})).toHaveLength(0);
-    expect(Object.keys(mockResult.attribute_reasoning || {})).toHaveLength(0);
-    expect(mockResult.attributes_without_excerpts).toHaveLength(0);
+    expect(mockResult.metadata.deep_judgment_performed).toBe(true);
+    expect(Object.keys(mockResult.rubric?.extracted_excerpts || {})).toHaveLength(0);
+    expect(Object.keys(mockResult.rubric?.attribute_reasoning || {})).toHaveLength(0);
+    expect(mockResult.rubric?.attributes_without_excerpts).toHaveLength(0);
   });
 });

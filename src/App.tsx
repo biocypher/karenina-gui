@@ -1,91 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  ChevronDown,
-  Save,
-  FileText,
-  Clock,
-  Database,
-  ChevronLeft,
-  ChevronRight,
-  Maximize2,
-  Settings,
-  Filter,
-  Search,
-  Plus,
-  Pencil,
-} from 'lucide-react';
 import { useAppStore } from './stores/useAppStore';
 import { useQuestionStore } from './stores/useQuestionStore';
 import { useConfigStore } from './stores/useConfigStore';
 import { useConfigModalStore } from './stores/useConfigModalStore';
 import { useDatasetStore } from './stores/useDatasetStore';
-import { useRubricStore } from './stores/useRubricStore';
-import { QuestionData, UnifiedCheckpoint, VerificationResult, CheckpointItem } from './types';
-import { CodeEditor, type CodeEditorRef } from './components/CodeEditor';
-import { ExpandedEditor } from './components/ExpandedEditor';
-import { StatusBadge } from './components/StatusBadge';
-import { MetadataEditor } from './components/MetadataEditor';
-import { FewShotExamplesEditor } from './components/FewShotExamplesEditor';
-import { QuestionContentEditor } from './components/QuestionContentEditor';
-import { QuestionActionsPanel } from './components/QuestionActionsPanel';
-import { FileManager } from './components/FileManager';
-import { AddQuestionModal } from './components/AddQuestionModal';
-import { TemplateGenerationTab } from './components/TemplateGenerationTab';
-import { BenchmarkTab } from './components/BenchmarkTab';
-import { DocsTab } from './components/DocsTab';
-import { ThemeToggle } from './components/ThemeToggle';
-import QuestionRubricEditor from './components/QuestionRubricEditor';
-import RubricTraitEditor from './components/RubricTraitEditor';
-import { ConfigurationModal } from './components/ConfigurationModal';
-import { formatTimestamp, forceResetAllData } from './utils/dataLoader';
-
-// VerificationResult interface now imported from types
+import { QuestionData, VerificationResult } from './types';
+import type { CodeEditorRef } from './components/CodeEditor';
+import { AppLayout } from './components/AppLayout';
+import { AppHeader } from './components/AppHeader';
+import { AppRouter } from './components/AppRouter';
+import { TabNavigation, TabValue } from './components/TabNavigation';
+import { CuratorTab } from './components/CuratorTab';
+import { forceResetAllData } from './utils/dataLoader';
+import { logger } from './utils/logger';
+import { useTabManagement } from './hooks/useTabManagement';
 
 function App() {
   // App store state
-  const { activeTab, isLoading, sessionId, setActiveTab, setIsLoading, resetAppState } = useAppStore();
+  const { isLoading, sessionId, setIsLoading, resetAppState } = useAppStore();
 
   // Configuration store
   const { loadConfiguration } = useConfigStore();
 
   // Dataset store
-  const {
-    metadata: datasetMetadata,
-    resetBenchmarkState,
-    isBenchmarkInitialized,
-    markBenchmarkAsInitialized,
-  } = useDatasetStore();
-
-  // Rubric store
-  const { currentRubric } = useRubricStore();
+  const { resetBenchmarkState, markBenchmarkAsInitialized } = useDatasetStore();
 
   // Question store state
-  const {
-    questionData,
-    checkpoint,
-    selectedQuestionId,
-    currentTemplate,
-    loadQuestionData,
-    loadCheckpoint,
-    setCheckpoint,
-    saveCurrentTemplate,
-    toggleFinished,
-    navigateToQuestion,
-    resetQuestionState,
-    addNewQuestion,
-    getQuestionIds,
-    getSelectedQuestion,
-    getCheckpointItem,
-    getIsModified,
-    getOriginalCode,
-    getSavedCode,
-    setCurrentTemplate,
-    setSessionDraft,
-    getAllQuestionsWithSessionDrafts,
-    updateQuestionContent,
-    deleteQuestion,
-    cloneQuestion,
-  } = useQuestionStore();
+  const { checkpoint, loadQuestionData, resetQuestionState, getAllQuestionsWithSessionDrafts } = useQuestionStore();
 
   // Config modal store
   const {
@@ -98,86 +39,30 @@ function App() {
   // Remaining local state - ephemeral data not managed by stores yet
   const [extractedQuestions, setExtractedQuestions] = useState<QuestionData>({});
   const [benchmarkResults, setBenchmarkResults] = useState<Record<string, VerificationResult>>({});
-  const [isExpandedMode, setIsExpandedMode] = useState(false);
-  const [isMetadataEditorOpen, setIsMetadataEditorOpen] = useState(false);
-  const [isFewShotEditorOpen, setIsFewShotEditorOpen] = useState(false);
-  const [questionFilter, setQuestionFilter] = useState<'all' | 'finished' | 'unfinished'>('all');
-  const [questionSearchTerm, setQuestionSearchTerm] = useState('');
-  const [hasUnsavedFieldChanges, setHasUnsavedFieldChanges] = useState(false);
-  const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
-  const [isQuestionEditorOpen, setIsQuestionEditorOpen] = useState(false);
 
   // Scroll management
-  const isNavigatingRef = useRef<boolean>(false);
-  const savedScrollPositionRef = useRef<number>(0);
   const codeEditorRef = useRef<CodeEditorRef>(null);
+
+  // Use custom hook for tab management
+  const { activeTab, handleTabSwitch } = useTabManagement({ codeEditorRef });
 
   // Simple data loading effect - no clearing needed since state starts empty
   useEffect(() => {
     // State starts clean on every refresh - no clearing needed
     setIsLoading(false);
-    console.log('🚀 App: Fresh state initialized with session:', sessionId);
+    logger.debugLog('APP', 'App: Fresh state initialized with session', 'App', { sessionId });
   }, [sessionId, setIsLoading]);
-
-  // Check for unsaved field changes periodically
-  useEffect(() => {
-    const checkInterval = setInterval(() => {
-      if (codeEditorRef.current) {
-        setHasUnsavedFieldChanges(codeEditorRef.current.hasUnsavedChanges());
-      }
-    }, 500); // Check every 500ms
-
-    return () => clearInterval(checkInterval);
-  }, []);
-
-  // Auto-save current template to session drafts when it changes
-  useEffect(() => {
-    if (!selectedQuestionId || !currentTemplate) return;
-
-    const checkpointTemplate = checkpoint[selectedQuestionId]?.answer_template;
-
-    // If current template differs from checkpoint, save to session drafts
-    if (currentTemplate !== checkpointTemplate) {
-      setSessionDraft(selectedQuestionId, currentTemplate);
-      console.log(`✅ Auto-saved session draft for question: ${selectedQuestionId}`);
-    }
-  }, [currentTemplate, selectedQuestionId, checkpoint, setSessionDraft]);
 
   // Load configuration defaults on app startup
   useEffect(() => {
     loadConfiguration().catch((error) => {
-      console.error('Failed to load configuration defaults:', error);
+      logger.error('CONFIG', 'Failed to load configuration defaults', 'App', { error });
       // Notify user of configuration loading failure
       alert(
         'Warning: Failed to load application configuration. Default settings will be used. Please check your network connection and refresh if needed.'
       );
     });
   }, [loadConfiguration]);
-
-  // Template selection is now handled by the question store
-
-  // Handle scroll restoration after navigation
-  useEffect(() => {
-    if (isNavigatingRef.current) {
-      // Prevent any scrolling during the update
-      const originalScrollBehavior = document.documentElement.style.scrollBehavior;
-      document.documentElement.style.scrollBehavior = 'auto';
-
-      // Force immediate scroll restoration
-      const restoreScroll = () => {
-        window.scrollTo(0, savedScrollPositionRef.current);
-        document.documentElement.style.scrollBehavior = originalScrollBehavior;
-        isNavigatingRef.current = false;
-      };
-
-      // Use multiple animation frames to ensure DOM is completely updated
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(restoreScroll);
-        });
-      });
-    }
-  }, [selectedQuestionId]);
 
   const handleLoadQuestionData = (data: QuestionData) => {
     // Delegate to the question store
@@ -194,17 +79,19 @@ function App() {
       // Mark benchmark as initialized so "Add Question" button becomes enabled
       markBenchmarkAsInitialized();
 
-      console.log(
-        `✅ Loaded ${Object.keys(combinedData).length} questions with successfully generated templates into curator`
+      logger.debugLog(
+        'APP',
+        `Loaded ${Object.keys(combinedData).length} questions with successfully generated templates into curator`,
+        'App'
       );
     } else {
-      console.warn('⚠️ No successfully generated templates to load into curator');
+      logger.warning('APP', 'No successfully generated templates to load into curator', 'App');
     }
   };
 
-  const handleLoadCheckpoint = (loadedCheckpoint: UnifiedCheckpoint) => {
-    // Delegate to the question store
-    loadCheckpoint(loadedCheckpoint);
+  const handleLoadCheckpoint = () => {
+    // Checkpoint loading is delegated to CuratorTab
+    logger.debugLog('APP', 'Checkpoint load requested', 'App');
   };
 
   const handleResetAllData = () => {
@@ -223,989 +110,51 @@ function App() {
       resetAppState();
       resetBenchmarkState();
 
-      console.log('🧹 All data has been reset');
+      logger.debugLog('APP', 'All data has been reset', 'App');
     }
   };
 
-  const handleNavigateToQuestion = (questionId: string) => {
-    // ALWAYS auto-save any pending field changes before navigation (safer approach)
-    // This ensures we never lose data due to timing/async issues
-    if (codeEditorRef.current) {
-      console.log('💾 Auto-saving any pending fields before navigation...');
-      codeEditorRef.current.saveAllUnsavedFields();
-
-      // Wait for state updates to propagate: field save → form update → template update → session draft save
-      setTimeout(() => {
-        performNavigation(questionId);
-      }, 400);
-    } else {
-      performNavigation(questionId);
-    }
-  };
-
-  const performNavigation = (questionId: string) => {
-    // Save current scroll position
-    savedScrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
-    isNavigatingRef.current = true;
-
-    // Immediately lock scroll position
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${savedScrollPositionRef.current}px`;
-    document.body.style.width = '100%';
-
-    // Use store navigation
-    navigateToQuestion(questionId);
-
-    // Restore scroll after a short delay
-    setTimeout(() => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, savedScrollPositionRef.current);
-      isNavigatingRef.current = false;
-    }, 50);
-  };
-
-  const handleTabSwitch = (newTab: string) => {
-    // Auto-save any pending field changes before switching tabs (only when leaving curator tab)
-    if (activeTab === 'curator' && codeEditorRef.current) {
-      console.log('💾 Auto-saving any pending fields before tab switch...');
-      codeEditorRef.current.saveAllUnsavedFields();
-
-      // Wait for state updates to propagate: field save → form update → template update → session draft save
-      setTimeout(() => {
-        setActiveTab(newTab);
-      }, 400);
-    } else {
-      setActiveTab(newTab);
-    }
-  };
-
-  const handleQuestionChange = (questionId: string) => {
-    handleNavigateToQuestion(questionId);
-  };
-
-  const handleSave = () => {
-    console.log('💾 Save button clicked');
-
-    // First save all unsaved fields if in form editor mode
-    if (codeEditorRef.current) {
-      console.log('📝 Saving unsaved fields from code editor...');
-      codeEditorRef.current.saveAllUnsavedFields();
-    }
-
-    // Then save the current template
-    console.log('🔄 Calling saveCurrentTemplate...');
-    saveCurrentTemplate();
-    console.log('✅ handleSave completed');
-  };
-
-  const handleToggleFinished = () => {
-    // Delegate to the question store
-    toggleFinished();
-  };
-
-  // Navigation functions using store getters with filtering
-  const allQuestionIds = getQuestionIds();
-  const questionIds = allQuestionIds.filter((id) => {
-    // First apply search filter
-    if (questionSearchTerm.trim()) {
-      const searchLower = questionSearchTerm.toLowerCase();
-      const question = questionData[id];
-      if (!question) return false;
-
-      const matchesSearch =
-        question.question.toLowerCase().includes(searchLower) ||
-        question.raw_answer.toLowerCase().includes(searchLower) ||
-        id.toLowerCase().includes(searchLower);
-
-      if (!matchesSearch) return false;
-    }
-
-    // Then apply status filter
-    if (questionFilter === 'all') return true;
-
-    const checkpointItem = checkpoint[id];
-    if (!checkpointItem) return questionFilter === 'unfinished'; // If no checkpoint, consider unfinished
-
-    if (questionFilter === 'finished') return checkpointItem.finished;
-    if (questionFilter === 'unfinished') return !checkpointItem.finished;
-
-    return true;
-  });
-
-  // Debug logging to understand filter state
-  console.log('🔍 Filter Debug:', {
-    questionFilter,
-    allQuestionIds: allQuestionIds.length,
-    filteredQuestionIds: questionIds.length,
-    selectedQuestionId,
-    selectedInFiltered: questionIds.includes(selectedQuestionId),
-  });
-
-  // Calculate current index based on filtered questions, not all questions
-  const currentIndex = questionIds.indexOf(selectedQuestionId);
-
-  // Auto-navigate when filter or search changes ONLY (removed status change logic to prevent infinite loops)
-  const prevFilterRef = useRef(questionFilter);
-  const prevSearchRef = useRef(questionSearchTerm);
-
-  useEffect(() => {
-    // Check if filter or search changed
-    const filterChanged = prevFilterRef.current !== questionFilter;
-    const searchChanged = prevSearchRef.current !== questionSearchTerm;
-    prevFilterRef.current = questionFilter;
-    prevSearchRef.current = questionSearchTerm;
-
-    // Only respond to deliberate filter/search changes, not data updates
-    if (filterChanged || searchChanged) {
-      console.log('🔄 Filter/Search changed - Filter:', questionFilter, 'Search:', questionSearchTerm);
-
-      // Get current question IDs from questionData directly (not from store function which isn't stable)
-      const allIds = Object.keys(questionData);
-      const currentFilteredIds = allIds.filter((id) => {
-        // Apply search filter
-        if (questionSearchTerm.trim()) {
-          const searchLower = questionSearchTerm.toLowerCase();
-          const question = questionData[id];
-          if (!question) return false;
-
-          const matchesSearch =
-            question.question.toLowerCase().includes(searchLower) ||
-            question.raw_answer.toLowerCase().includes(searchLower) ||
-            id.toLowerCase().includes(searchLower);
-
-          if (!matchesSearch) return false;
-        }
-
-        // Apply status filter
-        if (questionFilter === 'all') return true;
-
-        const checkpointItem = checkpoint[id];
-        if (!checkpointItem) return questionFilter === 'unfinished';
-
-        if (questionFilter === 'finished') return checkpointItem.finished;
-        if (questionFilter === 'unfinished') return !checkpointItem.finished;
-
-        return true;
-      });
-
-      // Navigate to first matching question or clear selection
-      // Note: Using direct store navigation here (not handleNavigateToQuestion) to avoid recursion
-      // This is automatic navigation from filter/search changes, not user-initiated
-      if (currentFilteredIds.length > 0) {
-        console.log('🎯 Auto-navigating to first filtered/searched question:', currentFilteredIds[0]);
-        navigateToQuestion(currentFilteredIds[0]);
-      } else {
-        console.log('🚫 No questions match filter/search, clearing selection');
-        navigateToQuestion('');
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questionFilter, questionSearchTerm]); // Only primitive filter/search values - store functions and data excluded to prevent loops!
-
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      handleNavigateToQuestion(questionIds[currentIndex - 1]);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < questionIds.length - 1) {
-      handleNavigateToQuestion(questionIds[currentIndex + 1]);
-    }
-  };
-
-  const handleOpenMetadataEditor = () => {
-    setIsMetadataEditorOpen(true);
-  };
-
-  const handleCloseMetadataEditor = () => {
-    setIsMetadataEditorOpen(false);
-  };
-
-  const handleOpenFewShotEditor = () => {
-    setIsFewShotEditorOpen(true);
-  };
-
-  const handleCloseFewShotEditor = () => {
-    setIsFewShotEditorOpen(false);
-  };
-
-  const handleSaveFewShotExamples = (examples: Array<{ question: string; answer: string }>) => {
-    if (selectedQuestionId) {
-      // Update the checkpoint with the new few-shot examples
-      const currentCheckpointItem = checkpoint[selectedQuestionId];
-      if (currentCheckpointItem) {
-        const updatedItem = {
-          ...currentCheckpointItem,
-          few_shot_examples: examples,
-        };
-
-        const updatedCheckpoint = {
-          ...checkpoint,
-          [selectedQuestionId]: updatedItem,
-        };
-
-        setCheckpoint(updatedCheckpoint);
-      }
-      // Don't close the modal - let user continue editing
-    }
-  };
-
-  const handleSaveMetadata = (questionId: string, updatedItem: CheckpointItem) => {
-    // Update the checkpoint with the new metadata
-    // Use direct checkpoint update to preserve all metadata
-    const updatedCheckpoint = {
-      ...checkpoint,
-      [questionId]: updatedItem,
-    };
-
-    // Use direct checkpoint setter to avoid full data reload
-    setCheckpoint(updatedCheckpoint);
-
-    console.log('💾 Saved metadata for question:', questionId, {
-      custom_metadata: updatedItem.custom_metadata,
-      finished: updatedItem.finished,
-      last_modified: updatedItem.last_modified,
-    });
-  };
-
-  const handleAddNewQuestion = (
-    question: string,
-    rawAnswer: string,
-    author?: string,
-    keywords?: string[],
-    generatedTemplate?: string
-  ) => {
-    const newQuestionId = addNewQuestion(question, rawAnswer, author, keywords, generatedTemplate);
-    setIsAddQuestionModalOpen(false);
-    console.log(
-      `✅ Successfully added new question: ${newQuestionId}${generatedTemplate ? ' with LLM-generated template' : ''}`
-    );
-  };
-
-  // Question content editing handlers
-  const handleOpenQuestionEditor = () => {
-    setIsQuestionEditorOpen(true);
-  };
-
-  const handleSaveQuestionContent = (questionId: string, question: string, rawAnswer: string) => {
-    updateQuestionContent(questionId, question, rawAnswer);
-    setIsQuestionEditorOpen(false);
-  };
-
-  const handleDeleteQuestion = () => {
-    if (!selectedQuestionId) return;
-    const questionText = selectedQuestion?.question?.slice(0, 50) || 'this question';
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${questionText}..."?\n\nThis action cannot be undone.`
-    );
-    if (confirmed) {
-      deleteQuestion(selectedQuestionId);
-    }
-  };
-
-  const handleCloneQuestion = () => {
-    if (!selectedQuestionId) return;
-    const questionText = selectedQuestion?.question?.slice(0, 50) || 'this question';
-    const confirmed = window.confirm(
-      `Clone "${questionText}..."?\n\nThis will create a duplicate with [CLONED] prefix.`
-    );
-    if (confirmed) {
-      const newId = cloneQuestion(selectedQuestionId);
-      console.log(`✅ Cloned question to: ${newId}`);
-    }
-  };
-
-  // Use store getters for computed values
-  const selectedQuestion = getSelectedQuestion();
-  const checkpointItem = getCheckpointItem();
-  const isModified = getIsModified();
-  const originalCode = getOriginalCode();
-  const savedCode = getSavedCode();
-
-  if (isLoading) {
-    return (
-      <div
-        className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 
-                      dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 
-                      flex items-center justify-center"
-      >
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-300 font-medium">Loading question data...</p>
-        </div>
-      </div>
-    );
-  }
+  // Calculate unsaved count for tab indicator
+  const unsavedCount = getAllQuestionsWithSessionDrafts().length;
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 
-                    dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900"
-    >
+    <AppLayout isLoading={isLoading}>
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0">
-                <img
-                  src="/favicon.svg"
-                  alt="Karenina Logo"
-                  className="w-16 h-16 transition-all duration-300 filter dark:invert dark:brightness-0 dark:contrast-100"
-                />
-              </div>
-              <div>
-                <h1
-                  className="text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-900 to-indigo-900 
-                             dark:from-slate-200 dark:via-blue-300 dark:to-indigo-300 
-                             bg-clip-text text-transparent mb-2"
-                >
-                  Karenina
-                </h1>
-                <p className="text-slate-600 dark:text-slate-300 text-lg font-medium">
-                  A tool for benchmarking LLMs through structured templates
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => openConfigModal()}
-                className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300
-                         hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                title="Configuration"
-              >
-                <Settings className="h-5 w-5" />
-              </button>
-              <ThemeToggle />
-            </div>
-          </div>
+        <AppHeader
+          sessionId={sessionId}
+          questionDataCount={Object.keys(useQuestionStore.getState().questionData).length}
+          checkpointCount={Object.keys(checkpoint).length}
+          extractedQuestionsCount={Object.keys(extractedQuestions).length}
+          onOpenConfig={openConfigModal}
+        />
 
-          {/* Development Session Status - Only show in development */}
-          {import.meta.env.DEV && (
-            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-              <div className="text-xs text-yellow-800 dark:text-yellow-300">
-                <strong>Dev Mode:</strong> Session ID: {sessionId.slice(-8)} | Data: {Object.keys(questionData).length}{' '}
-                questions, {Object.keys(checkpoint).length} checkpoint items, {Object.keys(extractedQuestions).length}{' '}
-                extracted
-                <button
-                  onClick={() => {
-                    forceResetAllData();
-                    window.location.reload();
-                  }}
-                  className="ml-2 px-2 py-1 bg-yellow-600 dark:bg-yellow-700 text-white rounded text-xs hover:bg-yellow-700 dark:hover:bg-yellow-600"
-                >
-                  Force Reset & Reload
-                </button>
-              </div>
-            </div>
+        {/* Tab Navigation */}
+        <TabNavigation activeTab={activeTab as TabValue} onTabSwitch={handleTabSwitch} unsavedCount={unsavedCount} />
+
+        {/* Tab Content Router */}
+        <AppRouter
+          activeTab={activeTab as TabValue}
+          onTabSwitch={handleTabSwitch}
+          onTemplatesGenerated={handleTemplatesGenerated}
+          checkpoint={checkpoint}
+          benchmarkResults={benchmarkResults}
+          onSetBenchmarkResults={setBenchmarkResults}
+          isConfigModalOpen={isConfigModalOpen}
+          configModalInitialTab={configModalInitialTab}
+          onCloseConfigModal={closeConfigModal}
+        >
+          {/* Curator Tab Content - rendered as children */}
+          {activeTab === 'curator' && (
+            <CuratorTab
+              codeEditorRef={codeEditorRef}
+              onLoadCheckpoint={handleLoadCheckpoint}
+              onResetAllData={handleResetAllData}
+            />
           )}
-
-          {/* Tab Navigation */}
-          <div className="mt-6 flex gap-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-1 border border-white/30 dark:border-slate-700/30 shadow-sm w-fit">
-            <button
-              onClick={() => handleTabSwitch('generator')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'generator'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              1. Template Generation
-            </button>
-            <button
-              onClick={() => handleTabSwitch('curator')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 relative ${
-                activeTab === 'curator'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              2. Template Curator
-              {getAllQuestionsWithSessionDrafts().length > 0 && (
-                <span
-                  className="absolute -top-1 -right-1 h-3 w-3 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse border-2 border-white dark:border-slate-800"
-                  title={`${getAllQuestionsWithSessionDrafts().length} question(s) with unsaved changes`}
-                ></span>
-              )}
-            </button>
-            <button
-              onClick={() => handleTabSwitch('benchmark')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'benchmark'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              3. Benchmark
-            </button>
-            <button
-              onClick={() => handleTabSwitch('docs')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'docs'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-indigo-300 shadow-md'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              4. Docs
-            </button>
-          </div>
-        </div>
-
-        {/* Tab Content */}
-        {/* Template Generation Tab - Combines Question Extraction and Template Generation */}
-        {activeTab === 'generator' && (
-          <TemplateGenerationTab
-            onTemplatesGenerated={handleTemplatesGenerated}
-            onSwitchToCurator={() => handleTabSwitch('curator')}
-          />
-        )}
-
-        {/* Template Curator Tab */}
-        {activeTab === 'curator' && (
-          <>
-            {/* Dataset Info Display */}
-            {datasetMetadata.name && (
-              <div className="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-xl border border-blue-200 dark:border-blue-700 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-300 mb-1">
-                      📊 {datasetMetadata.name}
-                    </h4>
-                    {datasetMetadata.description && (
-                      <p className="text-sm text-blue-700 dark:text-blue-400">{datasetMetadata.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-blue-600 dark:text-blue-400">
-                      {datasetMetadata.version && <span>Version: {datasetMetadata.version}</span>}
-                      {datasetMetadata.creator && <span>Creator: {datasetMetadata.creator.name}</span>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* File Management Section */}
-            <div className="mb-8">
-              <FileManager
-                onLoadCheckpoint={handleLoadCheckpoint}
-                onResetAllData={handleResetAllData}
-                checkpoint={checkpoint}
-              />
-            </div>
-
-            {/* Control Panel */}
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6 mb-8">
-              <div className="grid grid-cols-1 gap-6">
-                {/* Search Bar and Add Question Button */}
-                <div className="flex items-end gap-4">
-                  {/* Search Bar */}
-                  {allQuestionIds.length > 0 && (
-                    <div className="flex-1">
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                        <Search className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
-                        Search Questions
-                      </label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500 w-5 h-5" />
-                        <input
-                          type="text"
-                          placeholder="Search by question, answer, or ID..."
-                          value={questionSearchTerm}
-                          onChange={(e) => setQuestionSearchTerm(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium shadow-sm"
-                        />
-                      </div>
-                      {questionSearchTerm && (
-                        <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                          {questionIds.length === 0 ? (
-                            <span className="text-amber-600 dark:text-amber-400">No questions match your search</span>
-                          ) : (
-                            <span>
-                              Showing {questionIds.length} of {allQuestionIds.length} questions
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Add Question Button */}
-                  <div className={allQuestionIds.length > 0 ? '' : 'flex-1'}>
-                    {allQuestionIds.length > 0 && (
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 opacity-0 pointer-events-none">
-                        Spacer
-                      </label>
-                    )}
-                    <button
-                      onClick={() => setIsAddQuestionModalOpen(true)}
-                      disabled={!isBenchmarkInitialized}
-                      title={
-                        !isBenchmarkInitialized
-                          ? 'Please load a checkpoint or create a new benchmark before adding questions'
-                          : 'Add a new question manually'
-                      }
-                      className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-700 dark:to-teal-700 dark:hover:from-emerald-800 dark:hover:to-teal-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none disabled:opacity-50"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Question
-                    </button>
-                  </div>
-                </div>
-
-                {/* Question Selection Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {/* Question Dropdown */}
-                  <div className="lg:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                      <Database className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
-                      Select Question
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={selectedQuestionId}
-                        onChange={(e) => handleQuestionChange(e.target.value)}
-                        className="block w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 font-medium shadow-sm"
-                        disabled={questionIds.length === 0}
-                      >
-                        <option value="">
-                          {questionIds.length === 0
-                            ? allQuestionIds.length === 0
-                              ? 'No questions available - upload data first'
-                              : questionSearchTerm
-                                ? 'No questions match your search'
-                                : 'No questions match the current filter'
-                            : 'Choose a question...'}
-                        </option>
-                        {questionIds.map((id, index) => (
-                          <option key={id} value={id}>
-                            {index + 1}. {questionData[id].question.substring(0, 60)}
-                            {questionData[id].question.length > 60 ? '...' : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Filter Dropdown */}
-                  {Object.keys(checkpoint).length > 0 && (
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                        <Filter className="inline w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
-                        Filter
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={questionFilter}
-                          onChange={(e) => setQuestionFilter(e.target.value as 'all' | 'finished' | 'unfinished')}
-                          className="block w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white/90 dark:bg-slate-700/90 backdrop-blur-sm transition-all duration-200 text-slate-900 dark:text-slate-100 font-medium shadow-sm"
-                        >
-                          <option value="all">Show All</option>
-                          <option value="finished">Finished Only</option>
-                          <option value="unfinished">Unfinished Only</option>
-                        </select>
-                        <Filter className="absolute right-3 top-3.5 h-5 w-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Navigation Buttons */}
-                {questionIds.length > 0 && selectedQuestionId && (
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={handlePrevious}
-                      disabled={currentIndex <= 0}
-                      className="flex items-center gap-2 px-5 py-3 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:bg-slate-800 dark:hover:bg-slate-500 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      Previous
-                    </button>
-
-                    <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 bg-white/70 dark:bg-slate-700/70 backdrop-blur-sm px-5 py-3 rounded-xl border border-white/40 dark:border-slate-600/40 shadow-sm">
-                      <span className="font-semibold">
-                        Question {currentIndex + 1} of {questionIds.length}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={handleNext}
-                      disabled={currentIndex >= questionIds.length - 1}
-                      className="flex items-center gap-2 px-5 py-3 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:bg-slate-800 dark:hover:bg-slate-500 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
-                    >
-                      Next
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {selectedQuestion && (
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                {/* Left Column - Question Data (1/3 width) */}
-                <div className="space-y-6">
-                  {/* Raw Question */}
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      Raw Question
-                      <button
-                        onClick={handleOpenQuestionEditor}
-                        className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors"
-                        title="Edit question and answer"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    </h3>
-                    <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
-                      <p className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
-                        {selectedQuestion.question}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Raw Answer */}
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                      Raw Answer
-                      <button
-                        onClick={handleOpenQuestionEditor}
-                        className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400 transition-colors"
-                        title="Edit question and answer"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    </h3>
-                    <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
-                      <p
-                        key={`answer-${selectedQuestionId}-${selectedQuestion.raw_answer?.length || 0}`}
-                        className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium"
-                      >
-                        {selectedQuestion.raw_answer}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Status and Metadata */}
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-                    <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-                        Status & Metadata
-                      </h3>
-                      <StatusBadge
-                        finished={checkpointItem?.finished || false}
-                        modified={isModified || false}
-                        fewShotExamplesCount={checkpointItem?.few_shot_examples?.length || 0}
-                        onToggleFinished={handleToggleFinished}
-                        onEditMetadata={handleOpenMetadataEditor}
-                        onEditFewShotExamples={handleOpenFewShotEditor}
-                      />
-                    </div>
-
-                    {checkpointItem?.last_modified && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 mt-4 bg-slate-50/50 dark:bg-slate-700/50 rounded-lg p-3">
-                        <Clock className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                        <span className="font-medium">
-                          Last modified: {formatTimestamp(checkpointItem.last_modified)}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Unsaved Changes Indicator - Shows all questions with session drafts */}
-                    {(() => {
-                      const questionsWithDrafts = getAllQuestionsWithSessionDrafts();
-                      if (questionsWithDrafts.length === 0) return null;
-
-                      // Get question numbers for each question with drafts
-                      const questionNumbers = questionsWithDrafts
-                        .map((qId) => {
-                          const index = allQuestionIds.indexOf(qId);
-                          return index >= 0 ? index + 1 : null;
-                        })
-                        .filter((num): num is number => num !== null)
-                        .sort((a, b) => a - b);
-
-                      return (
-                        <div className="flex flex-col gap-2 text-sm text-amber-700 dark:text-amber-400 mt-4 bg-amber-50/80 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200/50 dark:border-amber-700/50">
-                          <div className="flex items-center gap-1.5 font-medium">
-                            <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
-                            Unsaved session changes
-                          </div>
-                          <div className="text-xs text-amber-600 dark:text-amber-500">
-                            Question{questionNumbers.length > 1 ? 's' : ''} with unsaved changes:{' '}
-                            <span className="font-semibold">{questionNumbers.join(', ')}</span>
-                          </div>
-                          <div className="text-xs text-amber-600 dark:text-amber-500">
-                            (Click Save to persist permanently)
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Question Actions Panel */}
-                  <QuestionActionsPanel
-                    onDelete={handleDeleteQuestion}
-                    onClone={handleCloneQuestion}
-                    disabled={!selectedQuestionId}
-                  />
-                </div>
-
-                {/* Right Column - Answer Template Editor (2/3 width) */}
-                <div className="xl:col-span-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Answer Template</h3>
-                      {getAllQuestionsWithSessionDrafts().length > 0 && (
-                        <span className="px-2.5 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
-                          Unsaved changes
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleToggleFinished}
-                        className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
-                          checkpointItem?.finished
-                            ? 'bg-slate-600 dark:bg-slate-500 text-white hover:bg-slate-700 dark:hover:bg-slate-400'
-                            : 'bg-emerald-600 dark:bg-emerald-700 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600'
-                        }`}
-                      >
-                        {checkpointItem?.finished ? 'Mark as Unfinished' : 'Flag as Finished'}
-                      </button>
-                      <button
-                        onClick={handleSave}
-                        className="px-5 py-2.5 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 relative"
-                      >
-                        <Save className="w-4 h-4" />
-                        Save
-                        {hasUnsavedFieldChanges && (
-                          <span
-                            className="absolute -top-1 -right-1 h-3 w-3 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse"
-                            title="Unsaved field changes"
-                          ></span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setIsExpandedMode(true)}
-                        className="px-5 py-2.5 bg-purple-600 dark:bg-purple-700 text-white rounded-xl hover:bg-purple-700 dark:hover:bg-purple-600 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                        title="Open in full-screen editor"
-                      >
-                        <Maximize2 className="w-4 h-4" />
-                        Expand
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Full-height editor */}
-                  <div className="h-[600px]">
-                    <CodeEditor
-                      ref={codeEditorRef}
-                      value={currentTemplate}
-                      onChange={setCurrentTemplate}
-                      onSave={handleSave}
-                      originalCode={originalCode}
-                      savedCode={savedCode}
-                      enableFormEditor={true}
-                    />
-                  </div>
-
-                  <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-inner">
-                    <p className="text-sm text-indigo-800 dark:text-indigo-300 font-medium">
-                      <strong>Tip:</strong> Edit the Pydantic class above to match the expected answer format. Use
-                      proper Python syntax with type hints and Field descriptions. Click "Form Editor" for a visual
-                      interface or "Show Diff" to compare changes.
-                    </p>
-                  </div>
-
-                  {/* Question Rubric Editor */}
-                  <div className="mt-8">
-                    <QuestionRubricEditor questionId={selectedQuestionId} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!selectedQuestion && !isLoading && (
-              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-12 text-center">
-                <FileText className="w-16 h-16 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  {allQuestionIds.length === 0
-                    ? 'No Questions with Generated Templates'
-                    : questionIds.length === 0
-                      ? `No ${questionFilter === 'finished' ? 'Finished' : questionFilter === 'unfinished' ? 'Unfinished' : ''} Questions Available`
-                      : 'No Question Selected'}
-                </h3>
-                <p className="text-slate-600 dark:text-slate-300 font-medium mb-4">
-                  {allQuestionIds.length === 0
-                    ? Object.keys(checkpoint).length > 0
-                      ? 'You have loaded a checkpoint, but no question data is available. To restore your previous session, please upload the corresponding Question Data JSON file using the File Management section above.'
-                      : 'The Template Curator works with questions that have generated answer templates. To get started: 1) Go to Template Generation tab, 2) Extract questions and generate templates, 3) Use "Add to Curation" to load them here.'
-                    : questionIds.length === 0
-                      ? `You have ${allQuestionIds.length} question${allQuestionIds.length === 1 ? '' : 's'} available, but none match the current "${questionFilter === 'finished' ? 'Finished Only' : questionFilter === 'unfinished' ? 'Unfinished Only' : 'Show All'}" filter. Try changing the filter to see more questions.`
-                      : 'Please select a question from the dropdown above to begin curating answer templates.'}
-                </p>
-                {allQuestionIds.length === 0 &&
-                  Object.keys(checkpoint).length === 0 &&
-                  Object.keys(extractedQuestions).length === 0 && (
-                    <button
-                      onClick={() => handleTabSwitch('generator')}
-                      className="px-6 py-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors font-medium mr-3"
-                    >
-                      1. Go to Template Generation
-                    </button>
-                  )}
-                {allQuestionIds.length === 0 &&
-                  Object.keys(checkpoint).length === 0 &&
-                  Object.keys(extractedQuestions).length > 0 && (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl">
-                        <p className="text-blue-800 dark:text-blue-300 text-sm font-medium">
-                          ✅ You have {Object.keys(extractedQuestions).length} extracted questions. Now generate answer
-                          templates for them.
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleTabSwitch('generator')}
-                        className="px-6 py-3 bg-emerald-600 dark:bg-emerald-700 text-white rounded-xl hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-colors font-medium"
-                      >
-                        1. Go to Template Generation
-                      </button>
-                    </div>
-                  )}
-                {allQuestionIds.length === 0 && Object.keys(checkpoint).length > 0 && (
-                  <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl">
-                    <p className="text-amber-800 dark:text-amber-300 text-sm font-medium">
-                      💡 <strong>Checkpoint Loaded:</strong> You have {Object.keys(checkpoint).length} items in your
-                      checkpoint. Upload the Question Data JSON file to continue working with your saved progress.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Global Rubric Management Section */}
-            {(Object.keys(questionData).length > 0 || currentRubric) && (
-              <div className="mt-8 space-y-8">
-                <div className="text-center mb-4">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-800 via-purple-900 to-indigo-900 dark:from-slate-200 dark:via-purple-300 dark:to-indigo-300 bg-clip-text text-transparent mb-2">
-                    Global Rubric Management
-                  </h2>
-                  <p className="text-slate-600 dark:text-slate-300 text-sm max-w-3xl mx-auto">
-                    Create and manage global evaluation rubrics for benchmarking. These traits will be used across all
-                    questions.
-                  </p>
-                </div>
-
-                {/* Rubric Trait Editor - Always show when section is visible */}
-                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Manual Trait Editor</h3>
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-300 mb-6">
-                    {currentRubric && currentRubric.llm_traits && currentRubric.llm_traits.length > 0
-                      ? `Editing ${currentRubric.llm_traits.length + (currentRubric.regex_traits?.length || 0) + (currentRubric.callable_traits?.length || 0)} global rubric traits. These traits are available for evaluation across all questions in your benchmark suite.`
-                      : 'Manually create, edit, and organize global rubric traits. These traits will be available for evaluation across all questions in your benchmark suite.'}
-                  </p>
-                  <RubricTraitEditor />
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Metadata Editor Modal */}
-        {selectedQuestion && checkpointItem && (
-          <MetadataEditor
-            isOpen={isMetadataEditorOpen}
-            onClose={handleCloseMetadataEditor}
-            checkpointItem={checkpointItem}
-            questionId={selectedQuestionId}
-            onSave={handleSaveMetadata}
-          />
-        )}
-
-        {/* Few-shot Examples Editor Modal */}
-        {selectedQuestion && checkpointItem && (
-          <FewShotExamplesEditor
-            isOpen={isFewShotEditorOpen}
-            examples={checkpointItem.few_shot_examples || []}
-            onSave={handleSaveFewShotExamples}
-            onClose={handleCloseFewShotEditor}
-          />
-        )}
-
-        {/* Question Content Editor Modal */}
-        {selectedQuestion && (
-          <QuestionContentEditor
-            isOpen={isQuestionEditorOpen}
-            onClose={() => setIsQuestionEditorOpen(false)}
-            questionId={selectedQuestionId}
-            currentQuestion={selectedQuestion.question}
-            currentAnswer={selectedQuestion.raw_answer}
-            onSave={handleSaveQuestionContent}
-          />
-        )}
-
-        {/* Add Question Modal */}
-        <AddQuestionModal
-          isOpen={isAddQuestionModalOpen}
-          onClose={() => setIsAddQuestionModalOpen(false)}
-          onAdd={handleAddNewQuestion}
-        />
-
-        {/* Benchmark Tab */}
-        {activeTab === 'benchmark' && (
-          <BenchmarkTab
-            checkpoint={checkpoint}
-            benchmarkResults={benchmarkResults}
-            setBenchmarkResults={setBenchmarkResults}
-          />
-        )}
-
-        {/* Docs Tab */}
-        {activeTab === 'docs' && <DocsTab />}
+        </AppRouter>
       </div>
-
-      {/* Expanded Editor Overlay */}
-      {isExpandedMode && selectedQuestion && (
-        <ExpandedEditor
-          value={currentTemplate}
-          onChange={setCurrentTemplate}
-          originalCode={originalCode}
-          savedCode={savedCode}
-          selectedQuestion={selectedQuestion}
-          questionIndex={currentIndex}
-          totalQuestions={questionIds.length}
-          onPrevious={handlePrevious}
-          onNext={handleNext}
-          canGoPrevious={currentIndex > 0}
-          canGoNext={currentIndex < questionIds.length - 1}
-          onClose={() => setIsExpandedMode(false)}
-          onSave={handleSave}
-          onToggleFinished={handleToggleFinished}
-          isFinished={checkpointItem?.finished || false}
-          questionFilter={questionFilter}
-          codeEditorRef={codeEditorRef}
-          hasUnsavedFieldChanges={hasUnsavedFieldChanges}
-          onFilterChange={setQuestionFilter}
-          hasCheckpointData={Object.keys(checkpoint).length > 0}
-          getAllQuestionsWithSessionDrafts={getAllQuestionsWithSessionDrafts}
-          allQuestionIds={allQuestionIds}
-        />
-      )}
-
-      {/* Configuration Modal */}
-      <ConfigurationModal isOpen={isConfigModalOpen} onClose={closeConfigModal} initialTab={configModalInitialTab} />
-    </div>
+    </AppLayout>
   );
 }
 

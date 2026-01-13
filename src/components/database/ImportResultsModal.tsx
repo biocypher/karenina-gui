@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { Modal } from '../ui/Modal';
 import { Upload, Loader, AlertCircle, CheckCircle, FileJson } from 'lucide-react';
+import { csrf } from '../../utils/csrf';
+import { validateJsonFile } from '../../utils/fileValidator';
 
 interface ImportResultsModalProps {
   isOpen: boolean;
@@ -23,11 +25,14 @@ export const ImportResultsModal: React.FC<ImportResultsModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [customRunName, setCustomRunName] = useState('');
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.name.endsWith('.json')) {
-        setError('Please select a JSON file');
+      // Use centralized file validation with proper MIME type checking
+      const validation = await validateJsonFile(file);
+      if (!validation.valid) {
+        setError(validation.error || 'Please select a valid JSON file');
+        setSelectedFile(null);
         return;
       }
       setSelectedFile(file);
@@ -36,12 +41,14 @@ export const ImportResultsModal: React.FC<ImportResultsModalProps> = ({
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file) {
-      if (!file.name.endsWith('.json')) {
-        setError('Please drop a JSON file');
+      // Use centralized file validation with proper MIME type checking
+      const validation = await validateJsonFile(file);
+      if (!validation.valid) {
+        setError(validation.error || 'Please drop a valid JSON file');
         return;
       }
       setSelectedFile(file);
@@ -76,7 +83,7 @@ export const ImportResultsModal: React.FC<ImportResultsModalProps> = ({
       }
 
       // Send to import endpoint
-      const response = await fetch('/api/database/import-results', {
+      const response = await csrf.fetchWithCsrf('/api/database/import-results', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

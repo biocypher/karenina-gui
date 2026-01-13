@@ -1,0 +1,22 @@
+{
+  "title": "Test Rubric",
+  "llm_traits": [
+    {
+      "name": "accuracy",
+      "description": "Is the response factually accurate?",
+      "kind": "boolean",
+      "min_score": null,
+      "max_score": null
+    },
+    {
+      "name": "completeness",
+      "description": "How complete is the response?",
+      "kind": "score",
+      "min_score": 1,
+      "max_score": 5
+    }
+  ],
+  "regex_traits": [],
+  "callable_traits": [],
+  "metric_traits": []
+}

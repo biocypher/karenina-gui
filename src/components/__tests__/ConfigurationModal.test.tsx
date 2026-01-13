@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ConfigurationModal } from '../ConfigurationModal';
 
-// Mock the useConfigStore hook
-const mockConfigStore = {
+// Mock the useConfigStore hook with a factory
+let mockConfigStoreState = {
   defaultInterface: 'langchain' as const,
   defaultProvider: 'google_genai',
   defaultModel: 'gemini-2.5-flash',
@@ -42,7 +42,7 @@ const mockConfigStore = {
 };
 
 vi.mock('../../stores/useConfigStore', () => ({
-  useConfigStore: () => mockConfigStore,
+  useConfigStore: () => mockConfigStoreState,
 }));
 
 // Mock fetch
@@ -51,6 +51,44 @@ global.fetch = vi.fn();
 describe('ConfigurationModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock state to default values
+    mockConfigStoreState = {
+      defaultInterface: 'langchain' as const,
+      defaultProvider: 'google_genai',
+      defaultModel: 'gemini-2.5-flash',
+      savedInterface: 'langchain' as const,
+      savedProvider: 'google_genai',
+      savedModel: 'gemini-2.5-flash',
+      originalDefaults: {
+        defaultInterface: 'langchain' as const,
+        defaultProvider: 'google_genai',
+        defaultModel: 'gemini-2.5-flash',
+      },
+      envVariables: {
+        OPENAI_API_KEY: '****************************5678',
+        GOOGLE_API_KEY: '****************************s_12',
+      },
+      unmaskedEnvVariables: {
+        OPENAI_API_KEY: 'sk-1234567890abcdef1234567890abcdef1234567890abcdef5678',
+        GOOGLE_API_KEY: 'AIzaSyDQVGlDuGIHUiAOgsl12340123456789ABCDE_s_12',
+      },
+      isLoading: false,
+      isSaving: false,
+      isSavingDefaults: false,
+      error: null,
+      loadConfiguration: vi.fn(),
+      updateDefaultInterface: vi.fn(),
+      updateDefaultProvider: vi.fn(),
+      updateDefaultModel: vi.fn(),
+      updateEnvVariable: vi.fn(),
+      updateEnvFileContents: vi.fn(),
+      removeEnvVariable: vi.fn(),
+      saveDefaults: vi.fn(),
+      resetDefaults: vi.fn(),
+      hasUnsavedDefaults: vi.fn(() => false),
+      toggleShowApiKeys: vi.fn(),
+      showApiKeys: false,
+    };
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ content: 'OPENAI_API_KEY=test\nGOOGLE_API_KEY=test' }),
@@ -75,7 +113,7 @@ describe('ConfigurationModal', () => {
     render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
     await waitFor(() => {
-      expect(mockConfigStore.loadConfiguration).toHaveBeenCalled();
+      expect(mockConfigStoreState.loadConfiguration).toHaveBeenCalled();
     });
   });
 
@@ -107,7 +145,7 @@ describe('ConfigurationModal', () => {
     const openrouterRadio = screen.getByDisplayValue('openrouter');
     fireEvent.click(openrouterRadio);
 
-    expect(mockConfigStore.updateDefaultInterface).toHaveBeenCalledWith('openrouter');
+    expect(mockConfigStoreState.updateDefaultInterface).toHaveBeenCalledWith('openrouter');
   });
 
   it('calls onClose when modal is closed', () => {
@@ -122,17 +160,8 @@ describe('ConfigurationModal', () => {
   });
 
   it('displays error messages', () => {
-    const originalMock = vi.fn(() => mockConfigStore);
-    vi.doMock('../../stores/useConfigStore', () => ({
-      useConfigStore: originalMock,
-    }));
-
-    const storeWithError = {
-      ...mockConfigStore,
-      error: 'Test error message',
-    };
-
-    originalMock.mockReturnValue(storeWithError);
+    // Update the mock state to have an error
+    mockConfigStoreState = { ...mockConfigStoreState, error: 'Test error message' };
 
     render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 
@@ -140,17 +169,8 @@ describe('ConfigurationModal', () => {
   });
 
   it('shows loading state', () => {
-    const originalMock = vi.fn(() => mockConfigStore);
-    vi.doMock('../../stores/useConfigStore', () => ({
-      useConfigStore: originalMock,
-    }));
-
-    const storeWithLoading = {
-      ...mockConfigStore,
-      isLoading: true,
-    };
-
-    originalMock.mockReturnValue(storeWithLoading);
+    // Update the mock state to be loading
+    mockConfigStoreState = { ...mockConfigStoreState, isLoading: true };
 
     render(<ConfigurationModal isOpen={true} onClose={() => {}} />);
 

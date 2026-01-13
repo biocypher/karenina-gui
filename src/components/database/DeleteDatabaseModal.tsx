@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Loader, Trash2, X } from 'lucide-react';
+import { csrf } from '../../utils/csrf';
 
 interface DatabaseInfo {
   name: string;
@@ -33,7 +34,7 @@ export const DeleteDatabaseModal: React.FC<DeleteDatabaseModalProps> = ({ databa
 
     try {
       const storageUrl = `sqlite:///${database.path}`;
-      const response = await fetch('/api/database/delete', {
+      const response = await csrf.fetchWithCsrf('/api/database/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ storage_url: storageUrl }),

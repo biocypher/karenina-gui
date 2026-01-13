@@ -28,9 +28,26 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     css: true,
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+      },
+    },
+    teardownTimeout: 5000,
+    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    exclude: ['node_modules/**', 'dist/**', 'tests/e2e/**', 'playwright/**', '**/*.e2e.{js,ts}', '**/*.e2e.{jsx,tsx}'],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'src/test-setup.ts', '**/*.d.ts', '**/*.config.*', 'dist/'],
+      exclude: [
+        'node_modules/',
+        'src/test-setup.ts',
+        '**/*.d.ts',
+        '**/*.config.*',
+        'dist/',
+        'tests/e2e/**',
+        'playwright/**',
+      ],
     },
   },
 });

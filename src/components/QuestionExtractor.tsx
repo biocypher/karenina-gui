@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Settings, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
 import { FilePreview } from './FilePreview';
 import { QuestionVisualizer } from './QuestionVisualizer';
-import { AdvancedExtractionPanel } from './AdvancedExtractionPanel';
 import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
+import { logger } from '../utils/logger';
+import { FileUploader, ColumnConfiguration, ExtractionResults, FileInfo, ErrorDisplay } from './extraction';
 
 interface ExtractedQuestions {
   success: boolean;
@@ -47,19 +47,15 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
   const [isExtracting, setIsExtracting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [extractionResult, setExtractionResult] = useState<ExtractedQuestions | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileSelect = (file: File) => {
-    if (!file) return;
-    uploadFile(file);
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
+  const handleFileSelect = async (fileOrError: File | { file: File; error: string }) => {
+    // Check if this is an error from FileUploader validation
+    if ('error' in fileOrError) {
+      setLocalError(fileOrError.error);
+      return;
     }
+    await uploadFile(fileOrError);
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -78,20 +74,12 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
 
     const files = event.dataTransfer.files;
     if (files.length > 0) {
-      const file = files[0];
-      // Validate file type
-      const validExtensions = ['.xlsx', '.xls', '.csv', '.tsv', '.txt'];
-      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-
-      if (validExtensions.includes(fileExtension)) {
-        handleFileSelect(file);
-      } else {
-        alert('Please upload a valid file format: Excel (.xlsx, .xls), CSV (.csv), or TSV (.tsv, .txt)');
-      }
+      handleFileSelect(files[0]);
     }
   };
 
   const uploadFile = async (file: File) => {
+    setLocalError(null);
     setIsUploading(true);
     try {
       const formData = new FormData();
@@ -113,8 +101,8 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
       // Auto-preview the file
       await handlePreviewFile(result.file_id);
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload file. Please try again.');
+      logger.error('EXTRACTOR', 'Upload error', 'QuestionExtractor', { error });
+      setLocalError('Failed to upload file. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -159,7 +147,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
         setCurrentStep('configure');
       }
     } catch (error) {
-      console.error('Preview error:', error);
+      logger.error('EXTRACTOR', 'Preview error', 'QuestionExtractor', { error });
       setPreviewData({ success: false, error: 'Failed to preview file' });
     } finally {
       setIsPreviewing(false);
@@ -212,7 +200,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
         }
       }
     } catch (error) {
-      console.error('Extraction error:', error);
+      logger.error('EXTRACTOR', 'Extraction error', 'QuestionExtractor', { error });
       setExtractionResult({ success: false, error: 'Failed to extract questions' });
     } finally {
       setIsExtracting(false);
@@ -222,171 +210,48 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
   const handleReset = () => {
     resetExtractionWorkflow();
     setExtractionResult(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setLocalError(null);
   };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Step 1: File Upload */}
       {currentStep === 'upload' && (
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-8">
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
-            <Upload className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-            Upload Question File
-          </h3>
-
-          <div
-            className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
-              isDragOver
-                ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500'
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls,.csv,.tsv,.txt"
-              onChange={handleFileUpload}
-              className="hidden"
-              id="file-upload"
-              aria-label="Select File"
-            />
-
-            <div className="flex flex-col items-center gap-4">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
-                  isDragOver ? 'bg-indigo-200 dark:bg-indigo-800' : 'bg-indigo-100 dark:bg-indigo-900/40'
-                }`}
-              >
-                <Upload
-                  className={`w-8 h-8 ${isDragOver ? 'text-indigo-700 dark:text-indigo-300' : 'text-indigo-600 dark:text-indigo-400'}`}
-                />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  {isDragOver ? 'Drop your file here' : 'Choose a file to upload'}
-                </p>
-                <p className="text-slate-600 dark:text-slate-300">
-                  Drag and drop or click to select • Supports Excel (.xlsx, .xls), CSV (.csv), and TSV (.tsv, .txt)
-                  files
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="px-6 py-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:bg-slate-400 dark:disabled:bg-slate-600 transition-colors font-medium"
-              >
-                {isUploading ? 'Uploading...' : 'Select File'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <FileUploader
+          isUploading={isUploading}
+          isDragOver={isDragOver}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onFileSelect={handleFileSelect}
+        />
       )}
 
       {/* Step 2 & 3: Preview and Configure */}
       {(currentStep === 'preview' || currentStep === 'configure') && previewData && (
         <div className="space-y-6">
           {/* File Info */}
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  {uploadedFile?.filename}
-                </h3>
-                <p className="text-slate-600 dark:text-slate-300">
-                  {previewData.total_rows?.toLocaleString()} rows •{' '}
-                  {uploadedFile?.size ? Math.round(uploadedFile.size / 1024) : 0} KB
-                </p>
-              </div>
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg transition-colors font-medium"
-              >
-                Start Over
-              </button>
-            </div>
-          </div>
+          <FileInfo
+            filename={uploadedFile?.filename || ''}
+            size={uploadedFile?.size}
+            totalRows={previewData.total_rows}
+            onReset={handleReset}
+          />
 
           {/* Column Configuration */}
           {currentStep === 'configure' && (
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                Configure Columns
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Question Column
-                  </label>
-                  <select
-                    value={selectedQuestionColumn}
-                    onChange={(e) => setSelectedQuestionColumn(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                  >
-                    <option value="">Select column...</option>
-                    {previewData.columns?.map((col) => (
-                      <option key={col} value={col}>
-                        {col}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Answer Column
-                  </label>
-                  <select
-                    value={selectedAnswerColumn}
-                    onChange={(e) => setSelectedAnswerColumn(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                  >
-                    <option value="">Select column...</option>
-                    {previewData.columns?.map((col) => (
-                      <option key={col} value={col}>
-                        {col}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Advanced Extraction Panel - Only show after basic columns are selected */}
-              {selectedQuestionColumn && selectedAnswerColumn && previewData.columns && (
-                <AdvancedExtractionPanel
-                  columns={previewData.columns}
-                  isVisible={advancedVisible}
-                  onToggle={() => setAdvancedVisible(!advancedVisible)}
-                  onSettingsChange={setMetadataSettings}
-                  previewData={previewData.data}
-                />
-              )}
-
-              <div className="flex items-center gap-4 mt-8">
-                <button
-                  onClick={handleExtractQuestions}
-                  disabled={!selectedQuestionColumn || !selectedAnswerColumn || isExtracting}
-                  className="px-6 py-3 bg-emerald-600 dark:bg-emerald-700 text-white rounded-xl hover:bg-emerald-700 dark:hover:bg-emerald-600 disabled:bg-slate-400 dark:disabled:bg-slate-600 transition-colors font-medium"
-                >
-                  {isExtracting ? 'Extracting...' : 'Extract Questions'}
-                </button>
-
-                {selectedQuestionColumn && selectedAnswerColumn && (
-                  <div className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" />
-                    Ready to extract
-                  </div>
-                )}
-              </div>
-            </div>
+            <ColumnConfiguration
+              previewData={previewData}
+              selectedQuestionColumn={selectedQuestionColumn}
+              selectedAnswerColumn={selectedAnswerColumn}
+              advancedVisible={advancedVisible}
+              isExtracting={isExtracting}
+              onQuestionColumnChange={setSelectedQuestionColumn}
+              onAnswerColumnChange={setSelectedAnswerColumn}
+              onAdvancedToggle={() => setAdvancedVisible(!advancedVisible)}
+              onMetadataSettingsChange={setMetadataSettings}
+              onExtract={handleExtractQuestions}
+            />
           )}
 
           {/* File Preview */}
@@ -398,43 +263,19 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
       {currentStep === 'visualize' && Object.keys(extractedQuestions).length > 0 && (
         <div className="space-y-6">
           {/* Results Summary */}
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  Extraction Complete
-                </h3>
-                <p className="text-slate-600 dark:text-slate-300">
-                  Successfully extracted {Object.keys(extractedQuestions).length} questions
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleReset}
-                  className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600 rounded-lg transition-colors font-medium"
-                >
-                  Start Over
-                </button>
-              </div>
-            </div>
-          </div>
+          <ExtractionResults extractedQuestions={extractedQuestions} onReset={handleReset} />
 
           {/* Question Visualizer */}
           <QuestionVisualizer questions={extractedQuestions} />
         </div>
       )}
 
-      {/* Error States */}
-      {(previewData?.error || extractionResult?.error) && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-red-800 dark:text-red-300">
-            <AlertCircle className="w-5 h-5" />
-            <span className="font-medium">Error</span>
-          </div>
-          <p className="text-red-700 dark:text-red-300 mt-1">{previewData?.error || extractionResult?.error}</p>
-        </div>
-      )}
+      {/* Error Display */}
+      <ErrorDisplay
+        error={localError || previewData?.error || extractionResult?.error}
+        localError={localError}
+        onDismiss={() => setLocalError(null)}
+      />
     </div>
   );
 };

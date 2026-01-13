@@ -3,15 +3,26 @@ import { autoSaveToDatabase } from '../databaseAutoSave';
 import { useDatasetStore } from '../../stores/useDatasetStore';
 import { useRubricStore } from '../../stores/useRubricStore';
 import type { Checkpoint } from '../../types';
+import { logger } from '../logger';
 
 // Mock the stores
 vi.mock('../../stores/useDatasetStore');
 vi.mock('../../stores/useRubricStore');
 
+// Mock logger
+vi.mock('../logger', () => ({
+  logger: {
+    debugLog: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+  },
+}));
+
 // Mock fetch globally
 global.fetch = vi.fn();
 
-// Mock console methods
+// Mock console methods (kept for backward compatibility but not used by implementation)
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -154,6 +165,7 @@ describe('databaseAutoSave', () => {
         questions: mockCheckpoint,
         global_rubric: null,
       },
+      detect_duplicates: false,
     });
   });
 
@@ -163,31 +175,38 @@ describe('databaseAutoSave', () => {
       json: async () => ({ detail: 'Database error' }),
     });
 
-    await autoSaveToDatabase(mockCheckpoint);
+    await expect(autoSaveToDatabase(mockCheckpoint)).rejects.toThrow('Database error');
 
     expect(mockSetSaveError).toHaveBeenCalledWith('Database error');
     expect(mockSetIsSaving).toHaveBeenCalledWith(false);
-    expect(mockConsoleError).toHaveBeenCalledWith(
-      '❌ Failed to auto-save to database:',
-      expect.stringContaining('Database error')
+    expect(logger.error).toHaveBeenCalledWith(
+      'DATABASE',
+      'Database save failed with HTTP error',
+      'databaseAutoSave',
+      expect.any(Object)
     );
   });
 
   it('handles network errors gracefully', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network failure'));
 
-    await autoSaveToDatabase(mockCheckpoint);
+    await expect(autoSaveToDatabase(mockCheckpoint)).rejects.toThrow('Network failure');
 
     expect(mockSetSaveError).toHaveBeenCalledWith('Network failure');
     expect(mockSetIsSaving).toHaveBeenCalledWith(false);
-    expect(mockConsoleError).toHaveBeenCalledWith('❌ Failed to auto-save to database:', expect.any(String));
+    expect(logger.error).toHaveBeenCalledWith(
+      'DATABASE',
+      'Failed to auto-save to database',
+      'databaseAutoSave',
+      expect.any(Object)
+    );
   });
 
   it('handles checkpoint with global rubric', async () => {
     const testRubric = {
       id: 'test-rubric',
       name: 'Test Rubric',
-      traits: [
+      llm_traits: [
         {
           name: 'Accuracy',
           description: 'Answer is accurate',
@@ -224,13 +243,18 @@ describe('databaseAutoSave', () => {
 
     await autoSaveToDatabase(mockCheckpoint);
 
-    expect(mockConsoleLog).toHaveBeenCalledWith('✅ Auto-saved to database successfully');
+    expect(logger.debugLog).toHaveBeenCalledWith(
+      'DATABASE',
+      'Auto-saved to database successfully',
+      'databaseAutoSave',
+      expect.any(Object)
+    );
   });
 
   it('resets saving state even on error', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Save failed'));
 
-    await autoSaveToDatabase(mockCheckpoint);
+    await expect(autoSaveToDatabase(mockCheckpoint)).rejects.toThrow('Save failed');
 
     expect(mockSetIsSaving).toHaveBeenNthCalledWith(1, true);
     expect(mockSetIsSaving).toHaveBeenNthCalledWith(2, false);
