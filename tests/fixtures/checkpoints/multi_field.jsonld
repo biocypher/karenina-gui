@@ -1,0 +1,50 @@
+{
+  "@context": "https://schema.org",
+  "@type": "DataFeed",
+  "name": "multi-field-test-benchmark",
+  "description": "Benchmark with complex multi-field templates for E2E extraction testing",
+  "version": "1.0.0",
+  "dateModified": "2026-01-13T00:00:00Z",
+  "dataFeedElement": [
+    {
+      "@type": "Question",
+      "identifier": "q001-gene-info",
+      "name": "What is the approved gene symbol, chromosome location, and primary function of the BCL2 gene?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "BCL2, located on chromosome 18q21.33, functions to inhibit apoptosis"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    gene_symbol: str = Field(description=\"The official gene symbol\")\n    chromosome: str = Field(description=\"The chromosome location\")\n    function: str = Field(description=\"The primary function of the gene\")\n\n    def model_post_init(self, __context):\n        self.correct = {\n            \"gene_symbol\": \"BCL2\",\n            \"chromosome\": \"18q21\",\n            \"function_keyword\": \"apoptosis\"\n        }\n\n    def verify(self) -> bool:\n        return (self.gene_symbol.upper() == self.correct[\"gene_symbol\"] and\n                self.correct[\"chromosome\"] in self.chromosome and\n                self.correct[\"function_keyword\"] in self.function.lower())"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q002-company-info",
+      "name": "Provide the name, founding year, headquarters location, and CEO of Apple Inc.",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Apple Inc., founded 1976, headquartered in Cupertino, California, CEO Tim Cook"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    company_name: str = Field(description=\"The company name\")\n    founding_year: int = Field(description=\"Year the company was founded\")\n    headquarters: str = Field(description=\"Location of headquarters\")\n    ceo: str = Field(description=\"Name of the current CEO\")\n\n    def model_post_init(self, __context):\n        self.correct = {\n            \"name\": \"apple\",\n            \"year\": 1976,\n            \"headquarters\": \"cupertino\",\n            \"ceo\": \"cook\"\n        }\n\n    def verify(self) -> bool:\n        return (self.correct[\"name\"] in self.company_name.lower() and\n                self.founding_year == self.correct[\"year\"] and\n                self.correct[\"headquarters\"] in self.headquarters.lower() and\n                self.correct[\"ceo\"] in self.ceo.lower())"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q003-optional-fields",
+      "name": "Describe the drug Aspirin including its generic name, brand names, and primary uses.",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Aspirin (acetylsalicylic acid), brands include Bayer, used for pain relief and blood thinning"
+      },
+      "answerTemplate": "from typing import Optional\n\nclass Answer(BaseAnswer):\n    generic_name: str = Field(description=\"The generic/chemical name\")\n    brand_names: list[str] = Field(description=\"List of brand names\")\n    primary_uses: list[str] = Field(description=\"Primary medical uses\")\n    side_effects: Optional[list[str]] = Field(default=None, description=\"Common side effects if mentioned\")\n\n    def model_post_init(self, __context):\n        self.correct = {\n            \"generic\": \"acetylsalicylic\",\n            \"brand\": \"bayer\",\n            \"use\": \"pain\"\n        }\n\n    def verify(self) -> bool:\n        return (self.correct[\"generic\"] in self.generic_name.lower() and\n                any(self.correct[\"brand\"] in b.lower() for b in self.brand_names) and\n                any(self.correct[\"use\"] in u.lower() for u in self.primary_uses))"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q004-nested-structure",
+      "name": "Provide details about Python programming language including version, creator, and type system.",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Python 3.x, created by Guido van Rossum, dynamically typed"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    language_name: str = Field(description=\"Name of the programming language\")\n    major_version: int = Field(description=\"Current major version number\")\n    creator: str = Field(description=\"Name of the creator\")\n    type_system: str = Field(description=\"Type of typing system (static/dynamic)\")\n    paradigms: list[str] = Field(description=\"Programming paradigms supported\")\n\n    def model_post_init(self, __context):\n        self.correct = {\n            \"name\": \"python\",\n            \"version\": 3,\n            \"creator\": \"guido\",\n            \"typing\": \"dynamic\"\n        }\n\n    def verify(self) -> bool:\n        return (self.correct[\"name\"] in self.language_name.lower() and\n                self.major_version == self.correct[\"version\"] and\n                self.correct[\"creator\"] in self.creator.lower() and\n                self.correct[\"typing\"] in self.type_system.lower())"
+    }
+  ]
+}
