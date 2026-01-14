@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "scenario": "e2e_rubric_sequential",
+    "model": "claude-haiku-4-5",
+    "timestamp": "2026-01-13T21:08:35.970067",
+    "prompt_hash": "80e105b15bdcf40f34cffe390703fb91a8f97d7e79c8d3c64f38015ac6dd49b6"
+  },
+  "request": {
+    "messages": [
+      {
+        "content": "You are evaluating responses for the trait: **helpfulness**\n\n**Criteria:** The response is helpful and addresses the user's need\n\n**RESPONSE FORMAT:**\nYou will receive a JSON Schema specifying the exact output structure. Your response MUST conform to this schema.\nReturn valid JSON: {\"score\": N} where N is an integer from 1 to 5\nKeep your response concise - the JSON is the primary output.\n\n**SCORING GUIDELINES:**\n- 1 = Poor - Does not meet criteria at all\n- 3 = Average - Partially meets criteria\n- 5 = Excellent - Fully meets or exceeds criteria\n\nWhen uncertain about borderline cases, choose conservatively based on the trait's nature:\n- For traits where higher is better (e.g., \"quality\"), lean toward lower scores\n- For traits where lower is better (e.g., \"error severity\"), lean toward higher scores\n- When completely uncertain, default to the middle value (3)\n\n**PARSING NOTES:**\n- Scores outside [1, 5] are automatically clamped to the nearest boundary\n- Use integers only (no decimals)\n- Avoid wrapping in markdown code blocks",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "system",
+        "name": null,
+        "id": null
+      },
+      {
+        "content": "**QUESTION:**\nHow do I make a good cup of coffee?\n\n**ANSWER TO EVALUATE:**\nTo make good coffee: 1) Use fresh, quality beans. 2) Grind just before brewing. 3) Use water at 195-205\u00b0F. 4) Use a ratio of 1:16 coffee to water. 5) Brew for 4-5 minutes.\n\n**TRAIT:** helpfulness\n**CRITERIA:** The response is helpful and addresses the user's need\n\n**JSON SCHEMA (your response MUST conform to this):**\n```json\n{\n  \"description\": \"Structured output for numeric trait evaluation.\\n\\nUsed for single-trait evaluation where the trait is a score\\nwithin a defined range (e.g., 1-5).\",\n  \"properties\": {\n    \"score\": {\n      \"description\": \"Numeric score within the valid range\",\n      \"title\": \"Score\",\n      \"type\": \"integer\"\n    }\n  },\n  \"required\": [\n    \"score\"\n  ],\n  \"title\": \"SingleNumericScore\",\n  \"type\": \"object\"\n}\n```\n\nEvaluate this answer for the trait above and return your assessment as JSON: {\"score\": N}",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+      }
+    ],
+    "kwargs": {}
+  },
+  "response": {
+    "content": "```json\n{\"score\": 5}\n```",
+    "id": "lc_run--09802dc9-dd7f-4cfb-ba2a-3f6134b62233-0",
+    "model": "claude-haiku-4-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0
+    }
+  }
+}
