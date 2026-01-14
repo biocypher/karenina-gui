@@ -35,16 +35,23 @@ interface CaptureOptions {
   force?: boolean;
   dryRun?: boolean;
   model?: string;
+  e2e?: boolean; // Use E2E-specific capture script
+  checkpoint?: string; // Path to checkpoint file for E2E capture
 }
 
 /**
  * Run the Python capture script in the karenina directory.
  */
 async function runPythonCapture(options: CaptureOptions): Promise<number> {
-  const args = ['run', 'python', 'scripts/capture_fixtures.py'];
+  // Choose between regular capture script and E2E-specific script
+  const scriptName = options.e2e ? 'scripts/capture_e2e_fixtures.py' : 'scripts/capture_fixtures.py';
+  const args = ['run', 'python', scriptName];
 
   if (options.list) {
     args.push('--list');
+  } else if (options.checkpoint) {
+    // E2E mode with checkpoint file
+    args.push('--checkpoint', options.checkpoint);
   } else if (options.all) {
     args.push('--all');
   } else if (options.scenario) {
@@ -152,10 +159,15 @@ Usage:
   npm run fixtures:capture -- [options]
 
 Options:
+  --checkpoint <path> Capture fixtures from a checkpoint file (recommended for E2E tests)
+                      Example: tests/fixtures/checkpoints/e2e_comprehensive.jsonld
   --scenario <name>   Capture fixtures for a specific scenario
-                      Available: template_parsing, rubric_evaluation, abstention, full_pipeline
+                      Regular: template_parsing, rubric_evaluation, abstention, full_pipeline
+                      E2E: e2e_template_simple, e2e_template_multifield, e2e_rubric_batch,
+                           e2e_rubric_sequential, e2e_abstention, e2e_deep_judgment, e2e_full_pipeline
   --all               Capture all scenarios
   --list              List available scenarios
+  --e2e               Use E2E-specific capture script (for full verification pipeline scenarios)
   --force             Overwrite existing fixtures
   --dry-run           Show what would be captured without actually capturing
   --model <name>      LLM model to use (default: claude-haiku-4-5)
@@ -164,14 +176,23 @@ Options:
   --help              Show this help message
 
 Examples:
+  # Capture fixtures from comprehensive E2E checkpoint (RECOMMENDED)
+  npm run fixtures:capture -- --checkpoint tests/fixtures/checkpoints/e2e_comprehensive.jsonld --force
+
   # List available scenarios
   npm run fixtures:capture -- --list
 
-  # Capture template parsing fixtures
+  # List E2E-specific scenarios
+  npm run fixtures:capture -- --e2e --list
+
+  # Capture template parsing fixtures (basic)
   npm run fixtures:capture -- --scenario template_parsing
 
-  # Capture all fixtures, overwriting existing ones
-  npm run fixtures:capture -- --all --force
+  # Capture E2E template simple fixtures
+  npm run fixtures:capture -- --e2e --scenario e2e_template_simple
+
+  # Capture all E2E fixtures
+  npm run fixtures:capture -- --e2e --all --force
 
   # Clean and recapture all fixtures
   npm run fixtures:capture -- --clean --all --force
@@ -228,6 +249,14 @@ async function main(): Promise<number> {
       case '--copy-only':
         options.copyOnly = true;
         break;
+      case '--e2e':
+        options.e2e = true;
+        break;
+      case '--checkpoint':
+      case '-c':
+        options.checkpoint = args[++i];
+        options.e2e = true; // Checkpoint mode implies E2E
+        break;
       case '--help':
       case '-h':
         options.help = true;
@@ -265,9 +294,9 @@ async function main(): Promise<number> {
   }
 
   // Validate options
-  if (!options.list && !options.all && !options.scenario) {
+  if (!options.list && !options.all && !options.scenario && !options.checkpoint) {
     showHelp();
-    console.error('\n❌ Must specify either --scenario, --all, or --list');
+    console.error('\n❌ Must specify either --checkpoint, --scenario, --all, or --list');
     return 1;
   }
 
