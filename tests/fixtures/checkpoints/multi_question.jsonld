@@ -1,0 +1,60 @@
+{
+  "@context": "https://schema.org",
+  "@type": "DataFeed",
+  "name": "multi-question-test-benchmark",
+  "description": "Benchmark with 5 diverse questions for E2E batch testing",
+  "version": "1.0.0",
+  "dateModified": "2026-01-13T00:00:00Z",
+  "dataFeedElement": [
+    {
+      "@type": "Question",
+      "identifier": "q001-arithmetic",
+      "name": "What is 15 multiplied by 7?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "105"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    result: int = Field(description=\"The numeric result of the multiplication\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"result\": 105}\n\n    def verify(self) -> bool:\n        return self.result == self.correct[\"result\"]"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q002-geography",
+      "name": "What is the capital of France?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Paris"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    capital: str = Field(description=\"The name of the capital city\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"capital\": \"paris\"}\n\n    def verify(self) -> bool:\n        return self.capital.strip().lower() == self.correct[\"capital\"]"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q003-science",
+      "name": "What is the chemical symbol for water and how many atoms does it contain?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "H2O, 3 atoms"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    symbol: str = Field(description=\"The chemical symbol for water\")\n    atom_count: int = Field(description=\"Total number of atoms in one molecule\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"symbol\": \"H2O\", \"atom_count\": 3}\n\n    def verify(self) -> bool:\n        return self.symbol.upper() == self.correct[\"symbol\"] and self.atom_count == self.correct[\"atom_count\"]"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q004-history",
+      "name": "In what year did World War II end?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "1945"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    year: int = Field(description=\"The year the war ended\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"year\": 1945}\n\n    def verify(self) -> bool:\n        return self.year == self.correct[\"year\"]"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q005-logic",
+      "name": "Is the statement 'All squares are rectangles' true or false?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "True"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    is_true: bool = Field(description=\"Whether the statement is true\")\n    reasoning: str = Field(description=\"Brief explanation\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"is_true\": True}\n\n    def verify(self) -> bool:\n        return self.is_true == self.correct[\"is_true\"]"
+    }
+  ]
+}

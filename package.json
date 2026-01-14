@@ -14,6 +14,10 @@
     "dead-code": "ts-prune",
     "preview": "vite preview",
     "test": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -25,6 +29,7 @@
     "fixtures:capture:verification": "tsx scripts/fixture-generator/index.ts capture --endpoint verification",
     "fixtures:capture:templates": "tsx scripts/fixture-generator/index.ts capture --endpoint template-generation",
     "fixtures:list": "tsx scripts/fixture-generator/index.ts list",
+    "fixtures:capture:e2e": "tsx scripts/capture-e2e-fixtures.ts",
     "prepare": "husky"
   },
   "dependencies": {
