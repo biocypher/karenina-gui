@@ -115,15 +115,14 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
 
     setIsPreviewing(true);
     try {
-      const formData = new FormData();
-      formData.append('file_id', id);
+      // V2 API: GET with fileId in path and optional sheet_name in query params
+      let url = API_ENDPOINTS.PREVIEW_FILE(id);
       if (selectedSheet) {
-        formData.append('sheet_name', selectedSheet);
+        url += `?sheet_name=${encodeURIComponent(selectedSheet)}`;
       }
 
-      const response = await fetch(API_ENDPOINTS.PREVIEW_FILE, {
-        method: 'POST',
-        body: formData,
+      const response = await fetch(url, {
+        method: 'GET',
       });
 
       if (!response.ok) {
@@ -160,13 +159,13 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
 
     setIsExtracting(true);
     try {
-      const response = await fetch(API_ENDPOINTS.EXTRACT_QUESTIONS, {
+      // V2 API: POST with fileId in URL path, other params in body
+      const response = await fetch(API_ENDPOINTS.EXTRACT_QUESTIONS(uploadedFile.file_id), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          file_id: uploadedFile.file_id,
           question_column: selectedQuestionColumn,
           answer_column: selectedAnswerColumn,
           sheet_name: selectedSheet || null,
