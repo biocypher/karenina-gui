@@ -133,12 +133,13 @@ describe('databaseAutoSave', () => {
     await autoSaveToDatabase(mockCheckpoint);
 
     expect(mockSetIsSaving).toHaveBeenCalledWith(true);
+    // V2 API: PUT /api/v2/benchmarks/{name} with name encoded in URL path
     expect(global.fetch).toHaveBeenCalledWith(
-      '/api/database/save-benchmark',
+      '/api/v2/benchmarks/Test%20Benchmark',
       expect.objectContaining({
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: expect.stringContaining('Test Benchmark'),
+        body: expect.stringContaining('sqlite:///test.db'),
       })
     );
     expect(mockSetLastSaved).toHaveBeenCalledWith('2025-01-01T00:00:00Z');
@@ -157,9 +158,9 @@ describe('databaseAutoSave', () => {
     const fetchCall = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const requestBody = JSON.parse(fetchCall[1].body);
 
+    // V2 API: benchmark_name is in URL path, not body
     expect(requestBody).toEqual({
       storage_url: 'sqlite:///test.db',
-      benchmark_name: 'Test Benchmark',
       checkpoint_data: {
         dataset_metadata: mockMetadata,
         questions: mockCheckpoint,

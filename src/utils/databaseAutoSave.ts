@@ -54,14 +54,14 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
 
     // Call the save-benchmark API with detect_duplicates=false
     // This allows updating existing questions without triggering duplicate detection
-    const response = await fetch(API_ENDPOINTS.DATABASE_SAVE, {
-      method: 'POST',
+    // V2 API: PUT /api/v2/benchmarks/{name} with name in URL path
+    const response = await fetch(API_ENDPOINTS.DATABASE_SAVE(currentBenchmarkName), {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         storage_url: storageUrl,
-        benchmark_name: currentBenchmarkName,
         checkpoint_data: checkpointData,
         detect_duplicates: false, // Skip duplicate detection for auto-save
       }),
