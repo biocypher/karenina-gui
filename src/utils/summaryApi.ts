@@ -3,6 +3,7 @@
  */
 
 import type { SummaryRequest, SummaryStats, ModelComparisonRequest, ModelComparisonResponse } from '../types';
+import { API_ENDPOINTS } from '../constants/api';
 
 /**
  * Error response from Summary API
@@ -29,7 +30,7 @@ export class SummaryApiError extends Error {
  */
 export async function fetchSummary(request: SummaryRequest): Promise<SummaryStats> {
   try {
-    const response = await fetch('/api/verification/summary', {
+    const response = await fetch(API_ENDPOINTS.VERIFICATION_SUMMARY, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -64,7 +65,7 @@ export async function fetchSummary(request: SummaryRequest): Promise<SummaryStat
  */
 export async function fetchModelComparison(request: ModelComparisonRequest): Promise<ModelComparisonResponse> {
   try {
-    const response = await fetch('/api/verification/compare-models', {
+    const response = await fetch(API_ENDPOINTS.VERIFICATION_COMPARE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
