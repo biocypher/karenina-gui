@@ -11,7 +11,7 @@ export const mockMcpTools = [
 
 export const mcpHandlers = [
   // Validate MCP server
-  http.post('/api/validate-mcp-server', async ({ request }) => {
+  http.post('/api/v2/mcp/servers/validation', async ({ request }) => {
     const body = (await request.json()) as { server_url?: string };
 
     // Simulate validation - fail for invalid URLs
@@ -25,18 +25,20 @@ export const mcpHandlers = [
     });
   }),
 
-  // Save MCP preset
-  http.post('/api/save-mcp-preset', async ({ request }) => {
+  // Save MCP preset (v2: PUT with name in path)
+  http.put('/api/v2/mcp/presets/:name', async ({ request, params }) => {
     const body = await request.json();
+    const { name } = params;
     return HttpResponse.json({
       success: true,
       preset_id: 'mcp-preset-1',
+      name,
       ...body,
     });
   }),
 
   // Get MCP presets
-  http.get('/api/get-mcp-preset-configs', () => {
+  http.get('/api/v2/mcp/presets', () => {
     return HttpResponse.json({
       presets: {
         'local-tools': {
