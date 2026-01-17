@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Rubric, RubricTrait, RegexTrait, MetricRubricTrait } from '../types';
+import { Rubric, RubricTrait, RegexTrait, MetricRubricTrait, TraitKind } from '../types';
 import { logger } from '../utils/logger';
 import { API_ENDPOINTS } from '../constants/api';
 
@@ -20,6 +20,12 @@ interface RubricState {
   updateTrait: (index: number, trait: RubricTrait) => void;
   removeTrait: (index: number) => void;
   reorderTraits: (startIndex: number, endIndex: number) => void;
+
+  // Literal kind class management actions
+  updateLLMTraitClasses: (index: number, classes: Record<string, string>) => void;
+  addClassToLLMTrait: (traitIndex: number, className?: string, classDescription?: string) => void;
+  removeClassFromLLMTrait: (traitIndex: number, className: string) => void;
+  changeLLMTraitKind: (index: number, newKind: TraitKind) => void;
 
   // Regex trait actions
   addRegexTrait: (trait: RegexTrait) => void;
@@ -150,6 +156,230 @@ export const useRubricStore = create<RubricState>((set, get) => ({
 
     set({
       currentRubric: { ...currentRubric, llm_traits: traits },
+      lastError: null,
+    });
+  },
+
+  // Literal kind class management actions
+  updateLLMTraitClasses: (index, classes) => {
+    const { currentRubric } = get();
+    if (!currentRubric || index < 0 || index >= currentRubric.llm_traits.length) {
+      set({ lastError: 'Invalid trait index' });
+      return;
+    }
+
+    const trait = currentRubric.llm_traits[index];
+    if (trait.kind !== 'literal') {
+      set({ lastError: 'Can only update classes for literal kind traits' });
+      return;
+    }
+
+    // Validate classes: 2-20 classes, non-empty names and descriptions
+    const classCount = Object.keys(classes).length;
+    if (classCount < 2) {
+      set({ lastError: 'Literal trait must have at least 2 classes' });
+      return;
+    }
+    if (classCount > 20) {
+      set({ lastError: 'Literal trait cannot have more than 20 classes' });
+      return;
+    }
+
+    // Check for empty names or descriptions, and case-insensitive duplicates
+    const seenNames = new Set<string>();
+    for (const [className, classDesc] of Object.entries(classes)) {
+      if (!className.trim()) {
+        set({ lastError: 'Class names cannot be empty' });
+        return;
+      }
+      if (!classDesc.trim()) {
+        set({ lastError: `Description for class "${className}" cannot be empty` });
+        return;
+      }
+      const lowerName = className.toLowerCase();
+      if (seenNames.has(lowerName)) {
+        set({ lastError: `Duplicate class name (case-insensitive): "${className}"` });
+        return;
+      }
+      seenNames.add(lowerName);
+    }
+
+    const updatedTraits = [...currentRubric.llm_traits];
+    updatedTraits[index] = {
+      ...trait,
+      classes,
+      // Auto-derive min_score and max_score from classes count
+      min_score: 0,
+      max_score: classCount - 1,
+    };
+
+    set({
+      currentRubric: { ...currentRubric, llm_traits: updatedTraits },
+      lastError: null,
+    });
+  },
+
+  addClassToLLMTrait: (traitIndex, className = '', classDescription = '') => {
+    const { currentRubric } = get();
+    if (!currentRubric || traitIndex < 0 || traitIndex >= currentRubric.llm_traits.length) {
+      set({ lastError: 'Invalid trait index' });
+      return;
+    }
+
+    const trait = currentRubric.llm_traits[traitIndex];
+    if (trait.kind !== 'literal') {
+      set({ lastError: 'Can only add classes to literal kind traits' });
+      return;
+    }
+
+    const currentClasses = trait.classes || {};
+    const classCount = Object.keys(currentClasses).length;
+
+    if (classCount >= 20) {
+      set({ lastError: 'Cannot add more than 20 classes' });
+      return;
+    }
+
+    // Generate a unique default class name if not provided
+    let newClassName = className;
+    if (!newClassName) {
+      let counter = classCount + 1;
+      newClassName = `Class ${counter}`;
+      while (currentClasses[newClassName] !== undefined) {
+        counter++;
+        newClassName = `Class ${counter}`;
+      }
+    }
+
+    // Check for case-insensitive duplicates
+    const lowerNewName = newClassName.toLowerCase();
+    for (const existingName of Object.keys(currentClasses)) {
+      if (existingName.toLowerCase() === lowerNewName) {
+        set({ lastError: `Class name "${newClassName}" already exists (case-insensitive)` });
+        return;
+      }
+    }
+
+    const updatedClasses = {
+      ...currentClasses,
+      [newClassName]: classDescription || 'Description for this class',
+    };
+
+    const updatedTraits = [...currentRubric.llm_traits];
+    updatedTraits[traitIndex] = {
+      ...trait,
+      classes: updatedClasses,
+      min_score: 0,
+      max_score: Object.keys(updatedClasses).length - 1,
+    };
+
+    set({
+      currentRubric: { ...currentRubric, llm_traits: updatedTraits },
+      lastError: null,
+    });
+  },
+
+  removeClassFromLLMTrait: (traitIndex, className) => {
+    const { currentRubric } = get();
+    if (!currentRubric || traitIndex < 0 || traitIndex >= currentRubric.llm_traits.length) {
+      set({ lastError: 'Invalid trait index' });
+      return;
+    }
+
+    const trait = currentRubric.llm_traits[traitIndex];
+    if (trait.kind !== 'literal') {
+      set({ lastError: 'Can only remove classes from literal kind traits' });
+      return;
+    }
+
+    const currentClasses = trait.classes || {};
+    const classCount = Object.keys(currentClasses).length;
+
+    if (classCount <= 2) {
+      set({ lastError: 'Cannot remove class: literal trait must have at least 2 classes' });
+      return;
+    }
+
+    if (!(className in currentClasses)) {
+      set({ lastError: `Class "${className}" not found` });
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { [className]: _, ...remainingClasses } = currentClasses;
+
+    const updatedTraits = [...currentRubric.llm_traits];
+    updatedTraits[traitIndex] = {
+      ...trait,
+      classes: remainingClasses,
+      min_score: 0,
+      max_score: Object.keys(remainingClasses).length - 1,
+    };
+
+    set({
+      currentRubric: { ...currentRubric, llm_traits: updatedTraits },
+      lastError: null,
+    });
+  },
+
+  changeLLMTraitKind: (index, newKind) => {
+    const { currentRubric } = get();
+    if (!currentRubric || index < 0 || index >= currentRubric.llm_traits.length) {
+      set({ lastError: 'Invalid trait index' });
+      return;
+    }
+
+    const trait = currentRubric.llm_traits[index];
+    const oldKind = trait.kind;
+
+    if (oldKind === newKind) {
+      return; // No change needed
+    }
+
+    const updatedTraits = [...currentRubric.llm_traits];
+    let updatedTrait = { ...trait, kind: newKind };
+
+    // Handle transitions between kinds
+    if (newKind === 'literal') {
+      // Transitioning TO literal: initialize default classes
+      const defaultClasses: Record<string, string> = {
+        'Class A': 'Description for class A',
+        'Class B': 'Description for class B',
+      };
+      updatedTrait = {
+        ...updatedTrait,
+        classes: defaultClasses,
+        min_score: 0,
+        max_score: 1,
+      };
+    } else if (oldKind === 'literal') {
+      // Transitioning FROM literal: clear classes and reset score range
+      updatedTrait = {
+        ...updatedTrait,
+        classes: undefined,
+        min_score: newKind === 'score' ? 1 : undefined,
+        max_score: newKind === 'score' ? 5 : undefined,
+      };
+    } else if (newKind === 'score' && oldKind === 'boolean') {
+      // Boolean -> Score: set default score range
+      updatedTrait = {
+        ...updatedTrait,
+        min_score: 1,
+        max_score: 5,
+      };
+    } else if (newKind === 'boolean' && oldKind === 'score') {
+      // Score -> Boolean: clear score range
+      updatedTrait = {
+        ...updatedTrait,
+        min_score: undefined,
+        max_score: undefined,
+      };
+    }
+
+    updatedTraits[index] = updatedTrait;
+
+    set({
+      currentRubric: { ...currentRubric, llm_traits: updatedTraits },
       lastError: null,
     });
   },
