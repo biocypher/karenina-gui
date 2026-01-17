@@ -272,7 +272,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
     try {
       await fetch(API_ENDPOINTS.CANCEL_GENERATION(state.jobId), {
-        method: 'POST',
+        method: 'DELETE',
       });
 
       // Disconnect WebSocket
