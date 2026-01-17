@@ -526,13 +526,12 @@ export const useMCPState = (props: UseMCPStateProps): UseMCPStateReturn => {
       try {
         const selectedTools = Array.from(configuration.selectedTools);
 
-        const response = await fetch(API_ENDPOINTS.MCP_SAVE_PRESET, {
-          method: 'POST',
+        const response = await fetch(API_ENDPOINTS.MCP_SAVE_PRESET(presetName), {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            name: presetName,
             url: server.url,
             tools: selectedTools.length > 0 ? selectedTools : undefined,
           }),
