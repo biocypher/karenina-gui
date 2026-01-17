@@ -82,7 +82,7 @@ export const mockSummaryStats: SummaryStats = {
 
 export const verificationHandlers = [
   // Start verification job
-  http.post('/api/start-verification', () => {
+  http.post('/api/v2/verifications', () => {
     return HttpResponse.json({
       job_id: 'job-123',
       run_name: 'test-run',
@@ -91,23 +91,23 @@ export const verificationHandlers = [
   }),
 
   // Get verification progress
-  http.get('/api/verification-progress/:jobId', ({ params }) => {
+  http.get('/api/v2/verifications/:id/progress', ({ params }) => {
     return HttpResponse.json({
       ...mockVerificationProgress,
-      job_id: params.jobId as string,
+      job_id: params.id as string,
       result_set: {
         'q1-claude-haiku-4-5-claude-haiku-4-5-1': mockVerificationResult,
       },
     });
   }),
 
-  // Cancel verification job
-  http.post('/api/cancel-verification/:jobId', () => {
+  // Cancel verification job (v2 uses DELETE method)
+  http.delete('/api/v2/verifications/:id', () => {
     return HttpResponse.json({ success: true, message: 'Verification cancelled' });
   }),
 
   // Export verification results
-  http.get('/api/export-verification/:jobId', ({ request }) => {
+  http.get('/api/v2/verifications/:id/export', ({ request }) => {
     const url = new URL(request.url);
     const format = url.searchParams.get('fmt') || 'json';
 
@@ -127,14 +127,14 @@ export const verificationHandlers = [
   }),
 
   // Get all verification results
-  http.get('/api/all-verification-results', () => {
+  http.get('/api/v2/verifications/results', () => {
     return HttpResponse.json({
       results: { 'q1-result': mockVerificationResult },
     });
   }),
 
   // Upload manual traces
-  http.post('/api/upload-manual-traces', () => {
+  http.post('/api/v2/traces', () => {
     return HttpResponse.json({
       success: true,
       traces_count: 1,
@@ -143,7 +143,7 @@ export const verificationHandlers = [
   }),
 
   // Verification summary - returns envelope with success and summary fields
-  http.post('/api/verification/summary', () => {
+  http.post('/api/v2/verifications/summary', () => {
     return HttpResponse.json({
       success: true,
       summary: mockSummaryStats,
@@ -151,7 +151,7 @@ export const verificationHandlers = [
   }),
 
   // Compare models - returns envelope with success field
-  http.post('/api/verification/compare-models', () => {
+  http.post('/api/v2/verifications/compare', () => {
     return HttpResponse.json({
       success: true,
       model_summaries: {
