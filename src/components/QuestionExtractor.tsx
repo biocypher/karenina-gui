@@ -5,6 +5,7 @@ import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
 import { logger } from '../utils/logger';
 import { FileUploader, ColumnConfiguration, ExtractionResults, FileInfo, ErrorDisplay } from './extraction';
+import { API_ENDPOINTS } from '../constants/api';
 
 interface ExtractedQuestions {
   success: boolean;
@@ -85,7 +86,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/upload-file', {
+      const response = await fetch(API_ENDPOINTS.UPLOAD_FILE, {
         method: 'POST',
         body: formData,
       });
@@ -120,7 +121,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
         formData.append('sheet_name', selectedSheet);
       }
 
-      const response = await fetch('/api/preview-file', {
+      const response = await fetch(API_ENDPOINTS.PREVIEW_FILE, {
         method: 'POST',
         body: formData,
       });
@@ -159,7 +160,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
 
     setIsExtracting(true);
     try {
-      const response = await fetch('/api/extract-questions', {
+      const response = await fetch(API_ENDPOINTS.EXTRACT_QUESTIONS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
