@@ -37,13 +37,8 @@ export const DeleteBenchmarkModal: React.FC<DeleteBenchmarkModalProps> = ({
     setError(null);
 
     try {
-      const response = await csrf.fetchWithCsrf(API_ENDPOINTS.DATABASE_DELETE, {
+      const response = await csrf.fetchWithCsrf(API_ENDPOINTS.DATABASE_DELETE(benchmark.name, storageUrl), {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storage_url: storageUrl,
-          benchmark_name: benchmark.name,
-        }),
       });
 
       if (!response.ok) {
