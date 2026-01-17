@@ -5,11 +5,15 @@
  * The server runs in E2E mode with LLM calls mocked via FixtureBackedLLMClient.
  */
 
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execSync } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// File to store PID for cross-process cleanup
+const PID_FILE = path.join(__dirname, '.e2e-server.pid');
 
 export interface ServerManagerConfig {
   port: number;
@@ -66,6 +70,7 @@ export class E2EServerManager {
     const serverDir = path.resolve(__dirname, '../../../../karenina-server');
 
     // Start the server using uv
+    // Use detached: true to create a new process group so we can kill the entire tree
     this.serverProcess = spawn(
       'uv',
       ['run', 'karenina-server', 'serve', '--port', String(this.config.port), '--host', this.config.host],
@@ -73,7 +78,7 @@ export class E2EServerManager {
         cwd: serverDir,
         env,
         stdio: ['ignore', 'pipe', 'pipe'],
-        detached: false,
+        detached: true,
       }
     );
 
@@ -105,6 +110,12 @@ export class E2EServerManager {
     // Wait for server to be ready
     await this.waitForReady();
     this.isRunning = true;
+
+    // Write PID to file for cross-process cleanup
+    if (this.serverProcess.pid) {
+      fs.writeFileSync(PID_FILE, String(this.serverProcess.pid));
+    }
+
     console.log(`[E2E] Server ready at ${this.baseUrl}`);
   }
 
@@ -115,6 +126,7 @@ export class E2EServerManager {
     }
 
     console.log('[E2E] Stopping server...');
+    const pid = this.serverProcess.pid;
 
     return new Promise((resolve) => {
       if (!this.serverProcess) {
@@ -130,6 +142,12 @@ export class E2EServerManager {
           resolved = true;
           this.isRunning = false;
           this.serverProcess = null;
+          // Remove PID file
+          try {
+            fs.unlinkSync(PID_FILE);
+          } catch {
+            // Ignore if file doesn't exist
+          }
           console.log('[E2E] Server stopped');
           resolve();
         }
@@ -138,17 +156,27 @@ export class E2EServerManager {
       proc.on('exit', cleanup);
       proc.on('error', cleanup);
 
-      // Send SIGTERM for graceful shutdown
-      proc.kill('SIGTERM');
+      // Kill the entire process group (negative PID) since we used detached: true
+      // This ensures both the uv wrapper and the Python server are killed
+      if (pid) {
+        try {
+          // Send SIGTERM to the entire process group for graceful shutdown
+          process.kill(-pid, 'SIGTERM');
+        } catch {
+          // Process group may not exist, try killing just the process
+          proc.kill('SIGTERM');
+        }
+      } else {
+        proc.kill('SIGTERM');
+      }
 
       // Force kill after 2 seconds if not stopped
       setTimeout(() => {
-        if (!resolved && proc.pid) {
-          console.log('[E2E] Force killing server...');
+        if (!resolved && pid) {
+          console.log('[E2E] Force killing server process group...');
           try {
-            proc.kill('SIGKILL');
-            // Also try killing the process group
-            process.kill(-proc.pid, 'SIGKILL');
+            // Kill the entire process group with SIGKILL
+            process.kill(-pid, 'SIGKILL');
           } catch {
             // Process may already be dead
           }
@@ -205,4 +233,76 @@ export async function stopServer(): Promise<void> {
     await serverInstance.stop();
     serverInstance = null;
   }
+
+  // Final safety: kill using PID file if it exists (handles cross-process scenarios)
+  try {
+    if (fs.existsSync(PID_FILE)) {
+      const pid = parseInt(fs.readFileSync(PID_FILE, 'utf-8').trim(), 10);
+      if (pid && !isNaN(pid)) {
+        console.log(`[E2E] Killing server process group from PID file: ${pid}`);
+        try {
+          // Kill the entire process group
+          process.kill(-pid, 'SIGKILL');
+        } catch {
+          // Try killing just the process if group kill fails
+          try {
+            process.kill(pid, 'SIGKILL');
+          } catch {
+            // Process may already be dead
+          }
+        }
+      }
+      fs.unlinkSync(PID_FILE);
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  // Final fallback: kill any remaining processes on the E2E port
+  try {
+    const port = DEFAULT_CONFIG.port;
+    execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch {
+    // Ignore errors - this is just a safety fallback
+  }
+}
+
+/**
+ * Synchronous cleanup for use in process exit handlers.
+ * This function blocks and ensures the server is killed before returning.
+ */
+export function stopServerSync(): void {
+  console.log('[E2E] Synchronous server cleanup...');
+
+  // Kill using PID file
+  try {
+    if (fs.existsSync(PID_FILE)) {
+      const pid = parseInt(fs.readFileSync(PID_FILE, 'utf-8').trim(), 10);
+      if (pid && !isNaN(pid)) {
+        try {
+          process.kill(-pid, 'SIGKILL');
+        } catch {
+          try {
+            process.kill(pid, 'SIGKILL');
+          } catch {
+            // Process may already be dead
+          }
+        }
+      }
+      fs.unlinkSync(PID_FILE);
+    }
+  } catch {
+    // Ignore
+  }
+
+  // Final fallback: kill by port
+  try {
+    const port = DEFAULT_CONFIG.port;
+    execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch {
+    // Ignore
+  }
+
+  serverInstance = null;
+  console.log('[E2E] Synchronous cleanup complete');
 }
