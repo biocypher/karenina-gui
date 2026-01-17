@@ -45,7 +45,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           uploadCallCount++;
           // Verify FormData was sent
           if (init?.body instanceof FormData) {
@@ -62,7 +62,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           previewCallCount++;
           return {
             ok: true,
@@ -79,14 +79,14 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           extractCallCount++;
 
           // Parse the request body to verify correct config
           const body = init?.body ? JSON.parse(init.body as string) : {};
 
-          // Verify the extraction config
-          expect(body.file_id).toBe('test-extract-123');
+          // Verify the extraction config (file_id is now in URL path, not body)
+          expect(url).toContain('test-extract-123');
           expect(body.question_column).toBe('Question');
           expect(body.answer_column).toBe('Answer');
           expect(body.sheet_name).toBeNull();
@@ -185,7 +185,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -196,7 +196,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -208,7 +208,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           const body = init?.body ? JSON.parse(init.body as string) : {};
 
           // Verify the changed column mappings
@@ -288,7 +288,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -299,7 +299,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -311,7 +311,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           return {
             ok: false,
             status: 500,
@@ -363,7 +363,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -374,7 +374,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -438,7 +438,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -449,7 +449,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -461,7 +461,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -513,7 +513,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -524,7 +524,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -536,7 +536,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -591,7 +591,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -602,7 +602,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -632,7 +632,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           extractCallCount++;
 
           // Note: We verify the metadata structure is returned correctly
@@ -735,7 +735,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -746,7 +746,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -758,7 +758,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -840,7 +840,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -851,7 +851,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -870,12 +870,12 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           extractCallCount++;
 
-          // Verify the extraction config
+          // Verify the extraction config (file_id is now in URL path, not body)
           const body = init?.body ? JSON.parse(init.body as string) : {};
-          expect(body.file_id).toBe('test-partial-123');
+          expect(url).toContain('test-partial-123');
           expect(body.question_column).toBe('Question');
           expect(body.answer_column).toBe('Answer');
 
@@ -971,7 +971,7 @@ describe('Question Extraction Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview') && !url.includes('/questions')) {
           return {
             ok: true,
             json: async () => ({
@@ -982,7 +982,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -994,7 +994,7 @@ describe('Question Extraction Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/extract-questions')) {
+        if (url.includes('/api/v2/files') && url.includes('/questions')) {
           // Return extraction result with warnings
           return {
             ok: true,
