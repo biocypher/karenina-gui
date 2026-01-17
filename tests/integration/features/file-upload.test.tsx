@@ -59,7 +59,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           callCount++;
           // Verify FormData was sent
           if (init?.body instanceof FormData) {
@@ -72,7 +72,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => mockPreviewResponse,
@@ -166,14 +166,14 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => mockUploadResponse,
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => mockPreviewResponse,
@@ -234,7 +234,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           // Capture FormData
           if (init?.body instanceof FormData) {
             capturedFormData = init.body;
@@ -249,7 +249,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -296,7 +296,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -307,7 +307,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -369,7 +369,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -380,7 +380,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -437,7 +437,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -448,7 +448,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -496,7 +496,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -507,7 +507,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -554,7 +554,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -565,7 +565,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -614,7 +614,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -625,7 +625,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -822,7 +822,7 @@ describe('File Upload Integration Tests', () => {
         }
 
         // Subsequent calls succeed
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -833,7 +833,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => ({
@@ -958,7 +958,7 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           // Capture FormData
           if (init?.body instanceof FormData) {
             capturedFormData = init.body;
@@ -969,7 +969,7 @@ describe('File Upload Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => mockPreviewResponse,
@@ -1054,21 +1054,20 @@ describe('File Upload Integration Tests', () => {
 
       let _capturedSheetName: string | null = null;
 
-      vi.mocked(global.fetch).mockImplementation(async (input, init) => {
+      vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => mockUploadResponse,
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
-          // Capture the sheet_name from FormData
-          if (init?.body instanceof FormData) {
-            _capturedSheetName = init.body.get('sheet_name') as string;
-          }
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
+          // Capture the sheet_name from URL query params (v2 uses GET with query params)
+          const urlObj = new URL(url, 'http://localhost');
+          _capturedSheetName = urlObj.searchParams.get('sheet_name');
 
           // Return different data based on sheet_name
           if (_capturedSheetName === 'Sheet2') {
@@ -1156,14 +1155,14 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => mockUploadResponse,
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           previewCallCount++;
           return {
             ok: true,
@@ -1251,14 +1250,14 @@ describe('File Upload Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/upload-file')) {
+        if (url.includes('/api/v2/files') && !url.includes('/preview')) {
           return {
             ok: true,
             json: async () => mockUploadResponse,
           } as Response;
         }
 
-        if (url.includes('/api/preview-file')) {
+        if (url.includes('/api/v2/files') && url.includes('/preview')) {
           return {
             ok: true,
             json: async () => mockPreviewWithSheets,
