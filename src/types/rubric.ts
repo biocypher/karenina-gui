@@ -3,14 +3,15 @@
  * Data structures for rubric trait definitions and evaluation
  */
 
-export type TraitKind = 'boolean' | 'score';
+export type TraitKind = 'boolean' | 'score' | 'literal';
 
 export interface LLMRubricTrait {
   name: string;
   description?: string;
   kind: TraitKind;
-  min_score?: number; // For score traits
-  max_score?: number; // For score traits
+  min_score?: number; // For score traits (auto-derived for literal: 0)
+  max_score?: number; // For score traits (auto-derived for literal: len(classes)-1)
+  classes?: Record<string, string>; // For literal traits: mapping of class name to description (2-20 classes)
   higher_is_better: boolean; // Whether higher values indicate better performance
   // Deep Judgment fields
   deep_judgment_enabled?: boolean; // Enable deep judgment for this trait (default: false)
@@ -60,4 +61,5 @@ export interface Rubric {
 
 export interface RubricEvaluation {
   trait_scores: Record<string, number | boolean>;
+  llm_trait_labels?: Record<string, string>; // For literal traits: mapping of trait name to class label
 }
