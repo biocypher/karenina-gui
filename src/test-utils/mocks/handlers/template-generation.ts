@@ -6,16 +6,16 @@ import type { TemplateGenerationProgress, TemplateGenerationResult } from '../..
 
 export const templateGenerationHandlers = [
   // Start template generation
-  http.post('/api/generate-answer-templates', () => {
+  http.post('/api/v2/templates/generation', () => {
     return HttpResponse.json({
       job_id: 'job-123',
     });
   }),
 
   // Get generation progress
-  http.get('/api/generation-progress/:jobId', ({ params }) => {
+  http.get('/api/v2/templates/generation/:id/progress', ({ params }) => {
     const progress: TemplateGenerationProgress = {
-      job_id: params.jobId as string,
+      job_id: params.id as string,
       status: 'completed',
       percentage: 100,
       current_question: 'q2',
@@ -52,7 +52,7 @@ export const templateGenerationHandlers = [
   }),
 
   // Cancel generation
-  http.post('/api/cancel-generation/:jobId', () => {
+  http.delete('/api/v2/templates/generation/:id', () => {
     return HttpResponse.json({ success: true });
   }),
 ];
