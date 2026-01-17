@@ -367,7 +367,7 @@ describe('useTemplateStore', () => {
 
       // Check that generation was started with force regenerate
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/generate-answer-templates',
+        '/api/v2/templates/generation',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
