@@ -220,19 +220,11 @@ export class DatabaseApiService {
    * Load a specific benchmark
    */
   async loadBenchmark(benchmarkName: string): Promise<LoadBenchmarkResponse> {
-    const url = API_ENDPOINTS.DATABASE_LOAD;
-    const body = {
-      storage_url: this.storageUrl,
-      benchmark_name: benchmarkName,
-    };
+    const url = API_ENDPOINTS.DATABASE_LOAD(benchmarkName, this.storageUrl);
 
     try {
       const response = await fetchWithRetry(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+        method: 'GET',
       });
 
       if (!response.ok) {
@@ -260,17 +252,19 @@ export class DatabaseApiService {
     checkpointData: CheckpointData,
     detectDuplicates: boolean = false
   ): Promise<SaveBenchmarkResponse> {
-    const url = API_ENDPOINTS.DATABASE_SAVE;
+    if (!this.benchmarkName) {
+      throw new DatabaseApiError('Benchmark name is required for save operation', undefined, 'saveBenchmark');
+    }
+    const url = API_ENDPOINTS.DATABASE_SAVE(this.benchmarkName);
     const body = {
       storage_url: this.storageUrl,
-      benchmark_name: this.benchmarkName,
       checkpoint_data: checkpointData,
       detect_duplicates: detectDuplicates,
     };
 
     try {
       const response = await fetchWithRetry(url, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -302,10 +296,16 @@ export class DatabaseApiService {
     checkpointData: CheckpointData,
     resolutions: DuplicateResolutions
   ): Promise<ResolveDuplicatesResponse> {
-    const url = API_ENDPOINTS.DATABASE_RESOLVE_DUPLICATES;
+    if (!this.benchmarkName) {
+      throw new DatabaseApiError(
+        'Benchmark name is required for resolve duplicates operation',
+        undefined,
+        'resolveDuplicates'
+      );
+    }
+    const url = API_ENDPOINTS.DATABASE_RESOLVE_DUPLICATES(this.benchmarkName);
     const body = {
       storage_url: this.storageUrl,
-      benchmark_name: this.benchmarkName,
       checkpoint_data: checkpointData,
       resolutions: resolutions,
     };
@@ -341,19 +341,11 @@ export class DatabaseApiService {
    * Delete a benchmark
    */
   async deleteBenchmark(benchmarkName: string): Promise<void> {
-    const url = API_ENDPOINTS.DATABASE_DELETE;
-    const body = {
-      storage_url: this.storageUrl,
-      benchmark_name: benchmarkName,
-    };
+    const url = API_ENDPOINTS.DATABASE_DELETE(benchmarkName, this.storageUrl);
 
     try {
       const response = await fetchWithRetry(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+        method: 'DELETE',
       });
 
       if (!response.ok) {
