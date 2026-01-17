@@ -36,18 +36,18 @@ export const mockPreviewData = {
 };
 
 export const fileUploadHandlers = [
-  // File upload endpoint
-  http.post('/api/upload-file', () => {
+  // File upload endpoint (v2)
+  http.post('/api/v2/files', () => {
     return HttpResponse.json(mockFileInfo);
   }),
 
-  // File preview endpoint
-  http.post('/api/preview-file', () => {
+  // File preview endpoint (v2) - method changed from POST to GET
+  http.get('/api/v2/files/:id/preview', () => {
     return HttpResponse.json(mockPreviewData);
   }),
 
-  // Question extraction endpoint
-  http.post('/api/extract-questions', () => {
+  // Question extraction endpoint (v2)
+  http.post('/api/v2/files/:id/questions', () => {
     return HttpResponse.json({
       success: true,
       questions_count: Object.keys(mockQuestionData).length,
@@ -55,8 +55,8 @@ export const fileUploadHandlers = [
     });
   }),
 
-  // Python export endpoint
-  http.post('/api/export-questions-python', () => {
+  // Python export endpoint (v2)
+  http.post('/api/v2/questions/export', () => {
     return new HttpResponse('# Generated Python file\nprint("Hello World")', {
       headers: {
         'Content-Type': 'text/plain',
