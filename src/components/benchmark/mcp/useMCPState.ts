@@ -7,6 +7,7 @@ import {
   MCPValidationResponse,
   MCPPresetConfig,
 } from '../../../types';
+import { API_ENDPOINTS } from '../../../constants/api';
 
 // ============================================================================
 // Types
@@ -115,7 +116,7 @@ export const useMCPState = (props: UseMCPStateProps): UseMCPStateReturn => {
   const fetchPresetConfigs = useCallback(async () => {
     try {
       setPresetError(null);
-      const response = await fetch('/api/get-mcp-preset-configs');
+      const response = await fetch(API_ENDPOINTS.MCP_PRESETS);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -222,7 +223,7 @@ export const useMCPState = (props: UseMCPStateProps): UseMCPStateReturn => {
           server_url: server.url,
         };
 
-        const response = await fetch('/api/validate-mcp-server', {
+        const response = await fetch(API_ENDPOINTS.MCP_VALIDATE, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -525,7 +526,7 @@ export const useMCPState = (props: UseMCPStateProps): UseMCPStateReturn => {
       try {
         const selectedTools = Array.from(configuration.selectedTools);
 
-        const response = await fetch('/api/save-mcp-preset', {
+        const response = await fetch(API_ENDPOINTS.MCP_SAVE_PRESET, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
