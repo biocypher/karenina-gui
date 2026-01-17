@@ -85,14 +85,14 @@ describe('Verification Workflow', () => {
 
       // Mock the start verification endpoint
       server.use(
-        http.post('/api/start-verification', () => {
+        http.post('/api/v2/verifications', () => {
           return HttpResponse.json({ job_id: mockJobId });
         })
       );
 
       // Mock the progress endpoint
       server.use(
-        http.get(`/api/verification-progress/${mockJobId}`, () => {
+        http.get(`/api/v2/verifications/${mockJobId}/progress`, () => {
           return HttpResponse.json({
             status: 'completed',
             result_set: loadMockedVerificationResults('successful-verification'),
@@ -134,10 +134,10 @@ describe('Verification Workflow', () => {
 
       // Mock endpoints
       server.use(
-        http.post('/api/start-verification', () => {
+        http.post('/api/v2/verifications', () => {
           return HttpResponse.json({ job_id: mockJobId });
         }),
-        http.get(`/api/verification-progress/${mockJobId}`, () => {
+        http.get(`/api/v2/verifications/${mockJobId}/progress`, () => {
           return HttpResponse.json({
             status: 'running',
             percentage: 50,
@@ -233,7 +233,7 @@ describe('Verification Workflow', () => {
 
       // Mock error response
       server.use(
-        http.post('/api/start-verification', () => {
+        http.post('/api/v2/verifications', () => {
           return HttpResponse.json({ error: 'Internal server error' }, { status: 500 });
         })
       );
@@ -258,7 +258,7 @@ describe('Verification Workflow', () => {
       const mockJobId = 'ws-disconnect-test';
 
       server.use(
-        http.post('/api/start-verification', () => {
+        http.post('/api/v2/verifications', () => {
           return HttpResponse.json({ job_id: mockJobId });
         })
       );
