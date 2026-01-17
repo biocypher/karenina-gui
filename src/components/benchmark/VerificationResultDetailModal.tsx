@@ -222,6 +222,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                           }
                         }
                         metricTraitMetrics={result.rubric.metric_trait_scores}
+                        llmTraitLabels={result.rubric.llm_trait_labels}
                         currentRubric={currentRubric}
                         evaluationRubric={result.rubric.evaluation_rubric}
                       />
