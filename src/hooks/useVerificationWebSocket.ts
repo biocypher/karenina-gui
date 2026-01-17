@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { VerificationProgress, VerificationResult } from '../types';
+import { API_ENDPOINTS } from '../constants/api';
 
 export interface VerificationWebSocketOptions {
   onProgressUpdate: (progress: VerificationProgress) => void;
@@ -93,7 +94,7 @@ export function useVerificationWebSocket({
                 });
 
                 // Fetch final results
-                fetch(`/api/verification-progress/${jobId}`)
+                fetch(API_ENDPOINTS.VERIFICATION_PROGRESS(jobId))
                   .then((res) => res.json())
                   .then(async (data) => {
                     // Check for error in response
