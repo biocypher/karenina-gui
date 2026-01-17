@@ -97,6 +97,8 @@ export interface SchemaOrgRating {
   additionalType:
     | 'GlobalRubricTrait'
     | 'QuestionSpecificRubricTrait'
+    | 'GlobalLLMRubricTrait' // For literal kind traits
+    | 'QuestionSpecificLLMRubricTrait' // For literal kind traits
     | 'GlobalRegexTrait'
     | 'QuestionSpecificRegexTrait'
     | 'GlobalCallableTrait'
