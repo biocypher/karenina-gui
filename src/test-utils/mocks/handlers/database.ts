@@ -65,7 +65,7 @@ export const databaseHandlers = [
   }),
 
   // Delete benchmark
-  http.post('/api/database/delete-benchmark', () => {
+  http.delete('/api/database/delete-benchmark', () => {
     return HttpResponse.json({
       success: true,
       message: 'Benchmark deleted',

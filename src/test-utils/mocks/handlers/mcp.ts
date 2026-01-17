@@ -36,7 +36,7 @@ export const mcpHandlers = [
   }),
 
   // Get MCP presets
-  http.get('/api/mcp-presets', () => {
+  http.get('/api/get-mcp-preset-configs', () => {
     return HttpResponse.json({
       presets: {
         'local-tools': {
