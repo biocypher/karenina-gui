@@ -515,7 +515,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       const replicates = new Set(
         allResults.map((r) => {
           const replicateValue = r.metadata.replicate;
-          return replicateValue ? replicateValue.toString() : 'Single';
+          return replicateValue != null ? replicateValue.toString() : 'Single';
         })
       );
       // Extract unique MCP servers

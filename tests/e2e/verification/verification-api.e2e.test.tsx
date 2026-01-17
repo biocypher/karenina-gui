@@ -339,3 +339,210 @@ describe('E2E: WebSocket Progress', () => {
     // Full WebSocket testing should be done with Playwright or similar
   });
 });
+
+describe('E2E: Result Set Format (WebSocket fetch target)', () => {
+  /**
+   * These tests verify the /api/verification-progress/{jobId} endpoint
+   * returns result_set in the VerificationResultSet format that the
+   * WebSocket handler (useVerificationWebSocket) expects to parse.
+   *
+   * Bug context: The WebSocket hook fetches this endpoint after job_completed
+   * and parses result_set. If the format is wrong, results won't display.
+   *
+   * Expected format: { result_set: { results: [...] } } (VerificationResultSet)
+   * Each result should have a metadata object with question_id, answering_model,
+   * parsing_model, and optionally replicate.
+   */
+
+  const serverUrl = getServerUrl();
+  let activeJobIds: string[] = [];
+
+  afterEach(async () => {
+    for (const jobId of activeJobIds) {
+      try {
+        await fetch(`${serverUrl}/api/cancel-verification/${jobId}`, {
+          method: 'POST',
+        });
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    activeJobIds = [];
+  });
+
+  // Helper to wait for job completion via polling
+  const waitForJobCompletion = async (
+    jobId: string,
+    timeout = 30000
+  ): Promise<{ status: string; result_set?: unknown; error?: string }> => {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const response = await fetch(`${serverUrl}/api/verification-progress/${jobId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to get progress: ${response.status}`);
+      }
+      const data = await response.json();
+
+      if (data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled') {
+        return data;
+      }
+
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    throw new Error(`Job ${jobId} did not complete within ${timeout}ms`);
+  };
+
+  it('should return result_set with results array in VerificationResultSet format', async () => {
+    const checkpoint = loadCheckpoint('minimal');
+
+    const finishedTemplates = checkpoint.dataFeedElement.map(
+      (q: { identifier: string; name: string; answerTemplate: string }) => ({
+        question_id: q.identifier,
+        question_text: q.name,
+        question_preview: q.name.substring(0, 60),
+        template_code: q.answerTemplate,
+        finished: true,
+        question_rubric: null,
+        keywords: null,
+      })
+    );
+
+    const config = {
+      answering_model: {
+        id: 'e2e-test-answering',
+        model_provider: 'anthropic',
+        model_name: 'claude-haiku-4-5',
+        temperature: 0,
+        interface: 'langchain',
+      },
+      parsing_model: {
+        id: 'e2e-test-parsing',
+        model_provider: 'anthropic',
+        model_name: 'claude-haiku-4-5',
+        temperature: 0,
+        interface: 'langchain',
+      },
+      replicates: 1,
+    };
+
+    const startResponse = await fetch(`${serverUrl}/api/start-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        config,
+        question_ids: [checkpoint.dataFeedElement[0].identifier],
+        finished_templates: finishedTemplates,
+        run_name: 'e2e-result-set-format-test',
+      }),
+    });
+
+    if (!startResponse.ok) {
+      console.log('Verification start failed (likely missing fixtures), skipping test');
+      return;
+    }
+
+    const { job_id } = await startResponse.json();
+    activeJobIds.push(job_id);
+
+    // Wait for completion and get the response
+    const completedData = await waitForJobCompletion(job_id);
+
+    // Verify the job completed successfully
+    expect(completedData.status).toBe('completed');
+
+    // Verify result_set is present (this is what the WebSocket handler fetches)
+    expect(completedData.result_set).toBeDefined();
+
+    // Verify it's in VerificationResultSet format with results array
+    const resultSet = completedData.result_set as { results?: unknown[] };
+    expect(resultSet.results).toBeDefined();
+    expect(Array.isArray(resultSet.results)).toBe(true);
+
+    // Verify each result has the expected metadata structure
+    for (const result of resultSet.results!) {
+      const r = result as { metadata?: { question_id?: string; answering_model?: string; parsing_model?: string } };
+      expect(r.metadata).toBeDefined();
+      expect(r.metadata!.question_id).toBeDefined();
+      expect(r.metadata!.answering_model).toBeDefined();
+      expect(r.metadata!.parsing_model).toBeDefined();
+    }
+  });
+
+  it('should include replicate in metadata when replicates > 1', async () => {
+    const checkpoint = loadCheckpoint('minimal');
+
+    const finishedTemplates = checkpoint.dataFeedElement.map(
+      (q: { identifier: string; name: string; answerTemplate: string }) => ({
+        question_id: q.identifier,
+        question_text: q.name,
+        question_preview: q.name.substring(0, 60),
+        template_code: q.answerTemplate,
+        finished: true,
+        question_rubric: null,
+        keywords: null,
+      })
+    );
+
+    const config = {
+      answering_model: {
+        id: 'e2e-test-answering',
+        model_provider: 'anthropic',
+        model_name: 'claude-haiku-4-5',
+        temperature: 0,
+        interface: 'langchain',
+      },
+      parsing_model: {
+        id: 'e2e-test-parsing',
+        model_provider: 'anthropic',
+        model_name: 'claude-haiku-4-5',
+        temperature: 0,
+        interface: 'langchain',
+      },
+      replicates: 2, // Multiple replicates
+    };
+
+    const startResponse = await fetch(`${serverUrl}/api/start-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        config,
+        question_ids: [checkpoint.dataFeedElement[0].identifier],
+        finished_templates: finishedTemplates,
+        run_name: 'e2e-replicate-metadata-test',
+      }),
+    });
+
+    if (!startResponse.ok) {
+      console.log('Verification start failed (likely missing fixtures), skipping test');
+      return;
+    }
+
+    const { job_id } = await startResponse.json();
+    activeJobIds.push(job_id);
+
+    const completedData = await waitForJobCompletion(job_id, 60000); // Longer timeout for multiple replicates
+
+    expect(completedData.status).toBe('completed');
+    expect(completedData.result_set).toBeDefined();
+
+    const resultSet = completedData.result_set as { results?: unknown[] };
+    expect(Array.isArray(resultSet.results)).toBe(true);
+
+    // Should have 2 results (1 question × 2 replicates)
+    expect(resultSet.results!.length).toBe(2);
+
+    // Each result should have replicate in metadata
+    for (const result of resultSet.results!) {
+      const r = result as { metadata?: { replicate?: number } };
+      expect(r.metadata).toBeDefined();
+      // replicate should be defined (can be 0 or 1)
+      expect(r.metadata!.replicate).toBeDefined();
+      expect(typeof r.metadata!.replicate).toBe('number');
+    }
+
+    // Verify we have replicate 0 and replicate 1
+    const replicates = resultSet.results!.map((r) => (r as { metadata: { replicate: number } }).metadata.replicate);
+    expect(replicates).toContain(0);
+    expect(replicates).toContain(1);
+  });
+});

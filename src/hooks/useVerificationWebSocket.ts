@@ -104,32 +104,33 @@ export function useVerificationWebSocket({
                       return;
                     }
 
-                    // Handle verification results - server now returns dict with backend-generated keys
+                    // Handle verification results - server returns VerificationResultSet with results array
                     if (data.result_set) {
                       const sanitizedResults: Record<string, VerificationResult> = {};
 
-                      // New format: dict with backend-generated keys (includes timestamp for uniqueness)
-                      if (typeof data.result_set === 'object' && !Array.isArray(data.result_set)) {
+                      // Primary format: VerificationResultSet with results array
+                      // Check this FIRST because { results: [...] } is also an object
+                      if (data.result_set.results && Array.isArray(data.result_set.results)) {
+                        console.log('Setting results from array:', data.result_set.results.length, 'items');
+                        for (const result of data.result_set.results) {
+                          if (result && typeof result === 'object' && result.metadata) {
+                            const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
+                              result.metadata.replicate != null ? `_rep${result.metadata.replicate}` : ''
+                            }`;
+                            sanitizedResults[key] = result as VerificationResult;
+                          } else {
+                            console.warn('Skipping malformed result in array:', result);
+                          }
+                        }
+                      }
+                      // Fallback format: flat dict with backend-generated keys
+                      else if (typeof data.result_set === 'object' && !Array.isArray(data.result_set)) {
                         console.log('Setting results from dict:', Object.keys(data.result_set).length, 'items');
                         for (const [key, result] of Object.entries(data.result_set)) {
                           if (result && typeof result === 'object' && 'metadata' in (result as object)) {
                             sanitizedResults[key] = result as VerificationResult;
                           } else {
                             console.warn('Skipping malformed result entry:', key, result);
-                          }
-                        }
-                      }
-                      // Legacy format: VerificationResultSet with results array (backward compatibility)
-                      else if (Array.isArray(data.result_set.results)) {
-                        console.log('Setting results from array:', data.result_set.results.length, 'items');
-                        for (const result of data.result_set.results) {
-                          if (result && typeof result === 'object' && result.metadata) {
-                            const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
-                              result.metadata.replicate ? `_rep${result.metadata.replicate}` : ''
-                            }`;
-                            sanitizedResults[key] = result as VerificationResult;
-                          } else {
-                            console.warn('Skipping malformed result in array:', result);
                           }
                         }
                       }
