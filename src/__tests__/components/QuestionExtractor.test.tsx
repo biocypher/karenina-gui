@@ -84,7 +84,7 @@ describe('QuestionExtractor Component', () => {
         await waitFor(() => {
           // Should show upload progress or success
           expect(global.fetch).toHaveBeenCalledWith(
-            '/api/upload-file',
+            '/api/v2/files',
             expect.objectContaining({
               method: 'POST',
               body: expect.any(FormData),
@@ -187,7 +187,7 @@ describe('QuestionExtractor Component', () => {
 
         // Should call fetch for upload
         expect(global.fetch).toHaveBeenCalledWith(
-          '/api/upload-file',
+          '/api/v2/files',
           expect.objectContaining({
             method: 'POST',
             body: expect.any(FormData),

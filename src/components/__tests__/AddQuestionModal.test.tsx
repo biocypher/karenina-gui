@@ -306,7 +306,7 @@ describe('AddQuestionModal', () => {
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          '/api/generate-answer-templates',
+          '/api/v2/templates/generation',
           expect.objectContaining({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
