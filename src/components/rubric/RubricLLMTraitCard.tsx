@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { LLMRubricTrait } from '../../types';
 
-type TraitType = 'boolean' | 'score' | 'manual' | 'metric';
+type TraitType = 'boolean' | 'score' | 'literal' | 'manual' | 'metric';
 
 interface RubricLLMTraitCardProps {
   trait: LLMRubricTrait;
@@ -10,6 +10,10 @@ interface RubricLLMTraitCardProps {
   onTraitChange: (index: number, field: keyof LLMRubricTrait, value: string | number | boolean) => void;
   onRemove: (index: number) => void;
   onTypeChange: (index: number, newType: TraitType) => void;
+  // Literal kind class management (optional - if not provided, internal state is used)
+  onClassesChange?: (index: number, classes: Record<string, string>) => void;
+  onAddClass?: (traitIndex: number, className?: string, classDescription?: string) => void;
+  onRemoveClass?: (traitIndex: number, className: string) => void;
 }
 
 export const RubricLLMTraitCard: React.FC<RubricLLMTraitCardProps> = ({
@@ -18,8 +22,48 @@ export const RubricLLMTraitCard: React.FC<RubricLLMTraitCardProps> = ({
   onTraitChange,
   onRemove,
   onTypeChange,
+  onClassesChange,
+  onAddClass,
+  onRemoveClass,
 }) => {
   const [showDeepJudgmentDetails, setShowDeepJudgmentDetails] = useState(false);
+
+  // Handlers for literal kind class management
+  const handleClassNameChange = (oldName: string, newName: string) => {
+    if (!trait.classes || !onClassesChange) return;
+    if (oldName === newName) return;
+
+    // Build new classes object preserving order
+    const newClasses: Record<string, string> = {};
+    for (const [key, value] of Object.entries(trait.classes)) {
+      if (key === oldName) {
+        newClasses[newName] = value;
+      } else {
+        newClasses[key] = value;
+      }
+    }
+    onClassesChange(index, newClasses);
+  };
+
+  const handleClassDescriptionChange = (className: string, newDescription: string) => {
+    if (!trait.classes || !onClassesChange) return;
+    const newClasses = { ...trait.classes, [className]: newDescription };
+    onClassesChange(index, newClasses);
+  };
+
+  const handleAddClass = () => {
+    if (onAddClass) {
+      onAddClass(index);
+    }
+  };
+
+  const handleRemoveClass = (className: string) => {
+    if (onRemoveClass) {
+      onRemoveClass(index, className);
+    }
+  };
+
+  const classCount = trait.classes ? Object.keys(trait.classes).length : 0;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -67,6 +111,7 @@ export const RubricLLMTraitCard: React.FC<RubricLLMTraitCardProps> = ({
             >
               <option value="boolean">Binary</option>
               <option value="score">Score</option>
+              <option value="literal">Literal (Categorical)</option>
               <option value="manual">Regex</option>
               <option value="metric">Metric (Confusion Matrix)</option>
             </select>
@@ -111,6 +156,19 @@ export const RubricLLMTraitCard: React.FC<RubricLLMTraitCardProps> = ({
                   aria-label="Maximum score"
                   title="Maximum score"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Literal kind score range (read-only, derived from classes) */}
+          {trait.kind === 'literal' && trait.classes && (
+            <div className="mt-2">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Score Range</label>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                  0 to {classCount - 1}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">(derived from {classCount} classes)</span>
               </div>
             </div>
           )}
@@ -164,9 +222,109 @@ export const RubricLLMTraitCard: React.FC<RubricLLMTraitCardProps> = ({
             </label>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Affects how scores are interpreted for optimization and visualization
+            {trait.kind === 'literal'
+              ? 'For literal traits: higher class indices are better if enabled'
+              : 'Affects how scores are interpreted for optimization and visualization'}
           </p>
         </div>
+
+        {/* Class Editor for Literal Kind */}
+        {trait.kind === 'literal' && (
+          <div className="col-span-12">
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  Classes ({classCount}/20)
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAddClass}
+                  disabled={classCount >= 20 || !onAddClass}
+                  className="flex items-center px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400
+                             hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <PlusIcon className="h-3.5 w-3.5 mr-1" />
+                  Add Class
+                </button>
+              </div>
+
+              {trait.classes && Object.keys(trait.classes).length > 0 ? (
+                <div className="space-y-2">
+                  {Object.entries(trait.classes).map(([className, classDesc], classIndex) => (
+                    <div
+                      key={`${className}-${classIndex}`}
+                      className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700"
+                    >
+                      {/* Class Index Badge */}
+                      <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-slate-200 dark:bg-slate-600 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300">
+                        {classIndex}
+                      </div>
+
+                      {/* Class Name Input */}
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="text"
+                          value={className}
+                          onChange={(e) => handleClassNameChange(className, e.target.value)}
+                          className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                                     bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100
+                                     focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                     hover:border-slate-400 dark:hover:border-slate-500"
+                          placeholder="Class name"
+                          aria-label={`Class ${classIndex} name`}
+                        />
+                      </div>
+
+                      {/* Class Description Input */}
+                      <div className="flex-[2] min-w-0">
+                        <input
+                          type="text"
+                          value={classDesc}
+                          onChange={(e) => handleClassDescriptionChange(className, e.target.value)}
+                          className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md
+                                     bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100
+                                     focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+                                     hover:border-slate-400 dark:hover:border-slate-500"
+                          placeholder="Description for this class"
+                          aria-label={`Class ${classIndex} description`}
+                        />
+                      </div>
+
+                      {/* Remove Class Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveClass(className)}
+                        disabled={classCount <= 2 || !onRemoveClass}
+                        className="flex-shrink-0 p-1.5 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
+                                   hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors
+                                   disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={
+                          classCount <= 2 ? 'Cannot remove: minimum 2 classes required' : `Remove class "${className}"`
+                        }
+                        aria-label={`Remove class ${className}`}
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-slate-500 dark:text-slate-400 text-center py-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-md">
+                  No classes defined. Add at least 2 classes.
+                </div>
+              )}
+
+              {/* Class Editor Help Text */}
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                Classes are indexed 0 to N-1. The LLM will classify responses into exactly one of these categories.
+                {trait.higher_is_better !== false
+                  ? ' Higher indices indicate better responses.'
+                  : ' Lower indices indicate better responses.'}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Deep Judgment Configuration */}
         <div className="col-span-11">

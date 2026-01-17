@@ -7,7 +7,7 @@ import { RubricRegexTraitCard } from './rubric/RubricRegexTraitCard';
 import { RubricMetricTraitCard } from './rubric/RubricMetricTraitCard';
 import { RubricCallableTraitCard } from './rubric/RubricCallableTraitCard';
 
-type TraitType = 'boolean' | 'score' | 'manual' | 'metric';
+type TraitType = 'boolean' | 'score' | 'literal' | 'manual' | 'metric';
 
 // Valid metrics for each evaluation mode
 const VALID_METRICS_TP_ONLY = ['precision', 'recall', 'f1'] as const;
@@ -43,6 +43,11 @@ export default function RubricTraitEditor() {
     saveRubric,
     clearError,
     setCurrentRubric,
+    // Literal kind class management
+    updateLLMTraitClasses,
+    addClassToLLMTrait,
+    removeClassFromLLMTrait,
+    changeLLMTraitKind,
   } = useRubricStore();
 
   // Initialize with default rubric if none exists
@@ -206,14 +211,9 @@ export default function RubricTraitEditor() {
           metric_traits: [...(currentRubric.metric_traits || []), convertedTrait],
         });
       } else {
-        // Change LLM trait type (boolean <-> score)
-        const updatedTrait: LLMRubricTrait = {
-          ...llmTrait,
-          kind: newType as TraitKind,
-          ...(newType === 'score' && { min_score: 1, max_score: 5 }),
-          ...(newType === 'boolean' && { min_score: undefined, max_score: undefined }),
-        };
-        updateTrait(index, updatedTrait);
+        // Change LLM trait type (boolean <-> score <-> literal)
+        // Use the dedicated store action that handles all kind transitions properly
+        changeLLMTraitKind(index, newType as TraitKind);
       }
     }
   };
@@ -358,6 +358,9 @@ export default function RubricTraitEditor() {
             onTraitChange={handleTraitChange}
             onRemove={removeTrait}
             onTypeChange={(index, newType) => handleTraitTypeChange(index, newType, 'llm')}
+            onClassesChange={updateLLMTraitClasses}
+            onAddClass={addClassToLLMTrait}
+            onRemoveClass={removeClassFromLLMTrait}
           />
         ))}
 
@@ -490,6 +493,13 @@ export default function RubricTraitEditor() {
                     {currentRubric.llm_traits.filter((t) => t.kind === 'score').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full mr-1"></span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {currentRubric.llm_traits.filter((t) => t.kind === 'literal').length}
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">literal</span>
                 </span>
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-amber-500 rounded-full mr-1"></span>
