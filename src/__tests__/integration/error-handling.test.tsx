@@ -79,7 +79,7 @@ describe('Error Handling', () => {
   describe('API Error Responses', () => {
     it('should handle validation errors', async () => {
       server.use(
-        http.post('/api/start-verification', () => {
+        http.post('/api/v2/verifications', () => {
           return HttpResponse.json({ error: 'Validation failed: Missing required fields' }, { status: 400 });
         })
       );
