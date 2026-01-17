@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useRef, useState } from 'react';
+import { PlusIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
 import { LLMRubricTrait, TraitKind, RegexTrait, MetricRubricTrait } from '../types';
 import { RubricLLMTraitCard } from './rubric/RubricLLMTraitCard';
@@ -28,6 +28,14 @@ const getAvailableMetrics = (evaluationMode: 'tp_only' | 'full_matrix'): readonl
   return evaluationMode === 'tp_only' ? VALID_METRICS_TP_ONLY : VALID_METRICS_FULL_MATRIX;
 };
 
+// JSON import schema for literal trait definitions
+interface LiteralTraitImport {
+  trait_name: string;
+  trait_description?: string;
+  higher_is_better?: boolean;
+  classes: Record<string, string>;
+}
+
 export default function RubricTraitEditor() {
   const {
     currentRubric,
@@ -49,6 +57,12 @@ export default function RubricTraitEditor() {
     removeClassFromLLMTrait,
     changeLLMTraitKind,
   } = useRubricStore();
+
+  // Ref for hidden file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State for import error messages
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Initialize with default rubric if none exists
   useEffect(() => {
@@ -75,6 +89,91 @@ export default function RubricTraitEditor() {
       higher_is_better: true, // Default to higher is better
     };
     addTrait(newTrait);
+  };
+
+  // Handle JSON file import for literal traits
+  const handleJsonImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Clear any previous import error
+    setImportError(null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content) as LiteralTraitImport;
+
+        // Validate required fields
+        if (!data.trait_name || typeof data.trait_name !== 'string') {
+          setImportError('Invalid JSON: "trait_name" is required and must be a string');
+          return;
+        }
+
+        if (!data.classes || typeof data.classes !== 'object') {
+          setImportError('Invalid JSON: "classes" is required and must be an object');
+          return;
+        }
+
+        // Validate classes count (2-20)
+        const classNames = Object.keys(data.classes);
+        if (classNames.length < 2) {
+          setImportError('Invalid JSON: "classes" must have at least 2 entries');
+          return;
+        }
+        if (classNames.length > 20) {
+          setImportError('Invalid JSON: "classes" cannot have more than 20 entries');
+          return;
+        }
+
+        // Validate class names and descriptions are non-empty
+        for (const [name, description] of Object.entries(data.classes)) {
+          if (!name.trim()) {
+            setImportError('Invalid JSON: Class names cannot be empty');
+            return;
+          }
+          if (typeof description !== 'string' || !description.trim()) {
+            setImportError(`Invalid JSON: Description for class "${name}" must be a non-empty string`);
+            return;
+          }
+        }
+
+        // Validate case-insensitive uniqueness of class names
+        const lowerNames = new Set<string>();
+        for (const name of classNames) {
+          const lowerName = name.toLowerCase();
+          if (lowerNames.has(lowerName)) {
+            setImportError(`Invalid JSON: Duplicate class name (case-insensitive): "${name}"`);
+            return;
+          }
+          lowerNames.add(lowerName);
+        }
+
+        // Create the LLMRubricTrait with kind='literal'
+        const newTrait: LLMRubricTrait = {
+          name: data.trait_name.trim(),
+          description: data.trait_description?.trim() || '',
+          kind: 'literal',
+          classes: data.classes,
+          higher_is_better: data.higher_is_better ?? true,
+          // min_score and max_score will be auto-derived by the backend
+        };
+
+        addTrait(newTrait);
+      } catch (err) {
+        setImportError(`Failed to parse JSON: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+    };
+
+    reader.onerror = () => {
+      setImportError('Failed to read file');
+    };
+
+    reader.readAsText(file);
+
+    // Reset file input so the same file can be imported again
+    event.target.value = '';
   };
 
   const handleTraitTypeChange = (index: number, newType: TraitType, source: 'llm' | 'regex' | 'metric' | 'trait') => {
@@ -399,17 +498,54 @@ export default function RubricTraitEditor() {
           <RubricCallableTraitCard key={`callable-${trait.name}-${index}`} trait={trait} />
         ))}
 
-        {/* Add Trait Button */}
-        <button
-          onClick={handleAddTrait}
-          className="flex items-center justify-center w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-600
-                     rounded-lg text-slate-600 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500
-                     hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add trait
-        </button>
+        {/* Add Trait Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleAddTrait}
+            className="flex items-center justify-center flex-1 py-4 border-2 border-dashed border-slate-300 dark:border-slate-600
+                       rounded-lg text-slate-600 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500
+                       hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add trait
+          </button>
+
+          {/* Hidden file input for JSON import */}
+          <input ref={fileInputRef} type="file" accept=".json" onChange={handleJsonImport} className="hidden" />
+
+          {/* Import Literal Trait from JSON Button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center justify-center px-4 py-4 border-2 border-dashed border-indigo-300 dark:border-indigo-600
+                       rounded-lg text-indigo-600 dark:text-indigo-400 hover:border-indigo-400 dark:hover:border-indigo-500
+                       hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all duration-200"
+            title="Import literal trait definition from JSON file"
+          >
+            <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+            Import Literal from JSON
+          </button>
+        </div>
       </div>
+
+      {/* Import Error Display */}
+      {importError && (
+        <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <XMarkIcon className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-amber-800 dark:text-amber-200">{importError}</p>
+              <button
+                onClick={() => setImportError(null)}
+                className="text-xs text-amber-600 dark:text-amber-400 hover:underline mt-1"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Display */}
       {lastError && (
