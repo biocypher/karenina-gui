@@ -96,7 +96,8 @@ export interface VerificationResultRubric {
   // Legacy flat rubric scores (deprecated, use split trait scores below)
   verify_rubric?: Record<string, number | boolean>;
   // Split trait scores by type
-  llm_trait_scores?: Record<string, number>; // 1-5 scale
+  llm_trait_scores?: Record<string, number>; // 1-5 scale (or 0 to N-1 for literal kind)
+  llm_trait_labels?: Record<string, string>; // For literal kind traits: mapping of trait name to class label
   regex_trait_scores?: Record<string, boolean>; // regex-based
   callable_trait_scores?: Record<string, boolean | number>; // boolean or score (1-5)
   metric_trait_scores?: Record<string, Record<string, number>>; // nested metrics dict
