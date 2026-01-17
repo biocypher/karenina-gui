@@ -81,7 +81,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
@@ -117,7 +117,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
@@ -160,7 +160,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
@@ -213,7 +213,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
@@ -289,7 +289,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
@@ -362,17 +362,17 @@ describe('Template Generation Workflow Integration Tests', () => {
       const mockJobId = 'test-job-cancel';
 
       // Mock fetch for start and cancel
-      vi.mocked(global.fetch).mockImplementation(async (input) => {
+      vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress') && init?.method !== 'DELETE') {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
           } as Response;
         }
 
-        if (url.includes('/api/cancel-generation')) {
+        if (url.includes('/api/v2/templates/generation') && init?.method === 'DELETE') {
           return {
             ok: true,
             json: async () => ({ success: true }),
@@ -418,17 +418,17 @@ describe('Template Generation Workflow Integration Tests', () => {
     it('should return to ready state after cancellation', async () => {
       const mockJobId = 'test-job-cancel-state';
 
-      vi.mocked(global.fetch).mockImplementation(async (input) => {
+      vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress') && init?.method !== 'DELETE') {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
           } as Response;
         }
 
-        if (url.includes('/api/cancel-generation')) {
+        if (url.includes('/api/v2/templates/generation') && init?.method === 'DELETE') {
           return {
             ok: true,
             json: async () => ({ success: true }),
@@ -459,17 +459,17 @@ describe('Template Generation Workflow Integration Tests', () => {
     it('should preserve store state after cancellation', async () => {
       const mockJobId = 'test-job-partial';
 
-      vi.mocked(global.fetch).mockImplementation(async (input) => {
+      vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress') && init?.method !== 'DELETE') {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
           } as Response;
         }
 
-        if (url.includes('/api/cancel-generation')) {
+        if (url.includes('/api/v2/templates/generation') && init?.method === 'DELETE') {
           return {
             ok: true,
             json: async () => ({ success: true }),
@@ -595,7 +595,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
@@ -657,14 +657,14 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
           } as Response;
         }
 
-        if (url.includes('/api/generation-progress')) {
+        if (url.includes('/api/v2/templates/generation') && url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({
@@ -742,7 +742,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           const body = JSON.parse((init?.body as string) ?? '{}');
           capturedConfig = body.config;
           return {
@@ -785,7 +785,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           const body = JSON.parse((init?.body as string) ?? '{}');
           capturedConfig = body.config;
           return {
@@ -826,7 +826,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           const body = JSON.parse((init?.body as string) ?? '{}');
           capturedConfig = body.config;
           return {
@@ -868,7 +868,7 @@ describe('Template Generation Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/generate-answer-templates')) {
+        if (url.includes('/api/v2/templates/generation') && !url.includes('/progress')) {
           return {
             ok: true,
             json: async () => ({ job_id: mockJobId }),
@@ -892,10 +892,10 @@ describe('Template Generation Workflow Integration Tests', () => {
       expect(stateAfterStart.isGenerating).toBe(true);
 
       // Clean up - cancel generation
-      vi.mocked(global.fetch).mockImplementation(async (input) => {
+      vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/cancel-generation')) {
+        if (url.includes('/api/v2/templates/generation') && init?.method === 'DELETE') {
           return {
             ok: true,
             json: async () => ({ success: true }),
