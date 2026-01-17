@@ -142,14 +142,18 @@ export const verificationHandlers = [
     });
   }),
 
-  // Verification summary
+  // Verification summary - returns envelope with success and summary fields
   http.post('/api/verification/summary', () => {
-    return HttpResponse.json(mockSummaryStats);
+    return HttpResponse.json({
+      success: true,
+      summary: mockSummaryStats,
+    });
   }),
 
-  // Compare models
+  // Compare models - returns envelope with success field
   http.post('/api/verification/compare-models', () => {
     return HttpResponse.json({
+      success: true,
       model_summaries: {
         'claude-haiku-4-5': mockSummaryStats,
       },

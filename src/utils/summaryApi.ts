@@ -43,7 +43,8 @@ export async function fetchSummary(request: SummaryRequest): Promise<SummaryStat
     }
 
     const data = await response.json();
-    return data as SummaryStats;
+    // Server returns envelope: { success: true, summary: {...} }
+    return data.summary as SummaryStats;
   } catch (error) {
     if (error instanceof SummaryApiError) {
       throw error;
@@ -77,7 +78,10 @@ export async function fetchModelComparison(request: ModelComparisonRequest): Pro
     }
 
     const data = await response.json();
-    return data as ModelComparisonResponse;
+    // Server returns envelope: { success: true, model_summaries, heatmap_data, question_token_data }
+    // Extract the fields we need, excluding 'success'
+    const { model_summaries, heatmap_data, question_token_data } = data;
+    return { model_summaries, heatmap_data, question_token_data } as ModelComparisonResponse;
   } catch (error) {
     if (error instanceof SummaryApiError) {
       throw error;
