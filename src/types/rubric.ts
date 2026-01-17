@@ -63,3 +63,9 @@ export interface RubricEvaluation {
   trait_scores: Record<string, number | boolean>;
   llm_trait_labels?: Record<string, string>; // For literal traits: mapping of trait name to class label
 }
+
+/**
+ * Type alias for LLMRubricTrait used in checkpoint conversions.
+ * This maintains compatibility with the checkpoint converter functions.
+ */
+export type RubricTrait = LLMRubricTrait;
