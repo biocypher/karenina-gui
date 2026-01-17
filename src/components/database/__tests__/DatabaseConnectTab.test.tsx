@@ -39,7 +39,7 @@ describe('DatabaseConnectTab', () => {
     render(<DatabaseConnectTab onConnect={mockOnConnect} />);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/database/list-databases');
+      expect(global.fetch).toHaveBeenCalledWith('/api/v2/databases');
     });
 
     expect(await screen.findByText('test1.db')).toBeInTheDocument();
@@ -129,7 +129,7 @@ describe('DatabaseConnectTab', () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/database/connect',
+        '/api/v2/databases/connections',
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -195,7 +195,7 @@ describe('DatabaseConnectTab', () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/database/connect',
+        '/api/v2/databases/connections',
         expect.objectContaining({
           body: JSON.stringify({
             storage_url: 'sqlite:////current/directory/new_db.db',
@@ -247,7 +247,7 @@ describe('DatabaseConnectTab', () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/database/connect',
+        '/api/v2/databases/connections',
         expect.objectContaining({
           body: JSON.stringify({
             storage_url: 'postgresql://user:pass123@db.example.com:5432/mydb',
