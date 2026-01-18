@@ -12,7 +12,6 @@ import {
   Search,
   Plus,
   Pencil,
-  Brain,
 } from 'lucide-react';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { useQuestionStore } from '../stores/useQuestionStore';
@@ -533,24 +532,6 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
                 Add Question
               </button>
             </div>
-
-            {/* ADeLe Batch Classify Button */}
-            {allQuestionIds.length > 0 && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 opacity-0 pointer-events-none">
-                  Spacer
-                </label>
-                <button
-                  onClick={() => setIsAdeleBatchModalOpen(true)}
-                  disabled={!isBenchmarkInitialized || allQuestionIds.length === 0}
-                  title="Classify questions using ADeLe dimensions"
-                  className="px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 dark:from-purple-700 dark:to-indigo-700 dark:hover:from-purple-800 dark:hover:to-indigo-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-600 dark:disabled:to-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none disabled:opacity-50"
-                >
-                  <Brain className="w-4 h-4" />
-                  Classify ADeLe
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Question Selection Section */}
@@ -756,6 +737,8 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
                 customMetadata={checkpointItem?.custom_metadata as Record<string, unknown> | undefined}
                 onClassificationUpdate={handleAdeleClassificationUpdate}
                 disabled={!selectedQuestionId}
+                onOpenBatchModal={() => setIsAdeleBatchModalOpen(true)}
+                totalQuestionCount={allQuestionIds.length}
               />
             )}
           </div>

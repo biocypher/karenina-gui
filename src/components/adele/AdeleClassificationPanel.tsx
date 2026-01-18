@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Brain, RefreshCw, ChevronDown, ChevronUp, Loader2, Settings } from 'lucide-react';
+import { Brain, RefreshCw, ChevronDown, ChevronUp, Loader2, Settings, Users } from 'lucide-react';
 import { adeleApi } from '../../services/adeleApi';
 import { AdeleScoreBadge } from './AdeleScoreBadge';
 import { AdeleConfigModal } from './AdeleConfigModal';
@@ -31,6 +31,10 @@ interface AdeleClassificationPanelProps {
   onClassificationUpdate?: (questionId: string, classification: ClassificationResult) => void;
   /** Whether to disable interaction */
   disabled?: boolean;
+  /** Callback to open batch classification modal */
+  onOpenBatchModal?: () => void;
+  /** Total number of questions in the benchmark (for batch button label) */
+  totalQuestionCount?: number;
 }
 
 export const AdeleClassificationPanel: React.FC<AdeleClassificationPanelProps> = ({
@@ -39,6 +43,8 @@ export const AdeleClassificationPanel: React.FC<AdeleClassificationPanelProps> =
   customMetadata,
   onClassificationUpdate,
   disabled = false,
+  onOpenBatchModal,
+  totalQuestionCount,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -219,8 +225,8 @@ export const AdeleClassificationPanel: React.FC<AdeleClassificationPanelProps> =
           </div>
         )}
 
-        {/* Footer with classify button */}
-        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-start">
+        {/* Footer with classify buttons */}
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center gap-3">
           <button
             onClick={handleClassify}
             disabled={disabled || isLoading}
@@ -243,6 +249,18 @@ export const AdeleClassificationPanel: React.FC<AdeleClassificationPanelProps> =
               </>
             )}
           </button>
+
+          {onOpenBatchModal && (
+            <button
+              onClick={onOpenBatchModal}
+              disabled={isLoading}
+              title="Classify all questions in the benchmark"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Users className="w-4 h-4" />
+              Classify All{totalQuestionCount !== undefined && ` (${totalQuestionCount})`}
+            </button>
+          )}
         </div>
       </div>
 
