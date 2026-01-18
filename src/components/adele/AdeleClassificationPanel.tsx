@@ -54,6 +54,13 @@ export const AdeleClassificationPanel: React.FC<AdeleClassificationPanelProps> =
     initializeFromDefaults();
   }, [initializeFromDefaults]);
 
+  // Reset local state when question changes
+  useEffect(() => {
+    setLocalClassification(null);
+    setError(null);
+    setIsExpanded(false);
+  }, [questionId]);
+
   // Get existing classification from metadata or local state
   const existingClassification = getAdeleClassification(customMetadata);
   const classification =

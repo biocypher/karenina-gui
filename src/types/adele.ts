@@ -156,27 +156,44 @@ export interface AdeleClassificationMetadata {
 
 /**
  * Type guard to check if custom_metadata contains ADeLe classification.
+ * Handles both object format (from local state) and JSON string (from persisted checkpoint).
  */
-export function hasAdeleClassification(
-  metadata: Record<string, unknown> | undefined
-): metadata is Record<string, unknown> & { adele_classification: AdeleClassificationMetadata } {
-  return (
-    metadata !== undefined &&
-    'adele_classification' in metadata &&
-    metadata.adele_classification !== null &&
-    typeof metadata.adele_classification === 'object'
-  );
+export function hasAdeleClassification(metadata: Record<string, unknown> | undefined): boolean {
+  if (metadata === undefined || !('adele_classification' in metadata) || metadata.adele_classification === null) {
+    return false;
+  }
+  // Accept both object and string formats
+  const value = metadata.adele_classification;
+  return typeof value === 'object' || typeof value === 'string';
 }
 
 /**
  * Get ADeLe classification from custom_metadata if present.
+ * Handles both object format (from local state) and JSON string (from persisted checkpoint).
  */
 export function getAdeleClassification(
   metadata: Record<string, unknown> | undefined
 ): AdeleClassificationMetadata | null {
-  if (hasAdeleClassification(metadata)) {
-    return metadata.adele_classification as AdeleClassificationMetadata;
+  if (!hasAdeleClassification(metadata)) {
+    return null;
   }
+
+  const value = metadata!.adele_classification;
+
+  // If already an object, return directly
+  if (typeof value === 'object') {
+    return value as AdeleClassificationMetadata;
+  }
+
+  // If string, try to parse as JSON
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as AdeleClassificationMetadata;
+    } catch {
+      return null;
+    }
+  }
+
   return null;
 }
 
