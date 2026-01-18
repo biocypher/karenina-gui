@@ -87,14 +87,14 @@ const waitForJobCompletion = async (
 }> => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const response = await fetch(`${serverUrl}/api/verification-progress/${jobId}`);
+    const response = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/progress`);
     if (!response.ok) {
       throw new Error(`Failed to get progress: ${response.status}`);
     }
     const progress = await response.json();
 
     if (progress.status === 'completed' || progress.status === 'failed' || progress.status === 'cancelled') {
-      const resultsResponse = await fetch(`${serverUrl}/api/verification-results/${jobId}`);
+      const resultsResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/results`);
       if (resultsResponse.ok) {
         const resultsData = await resultsResponse.json();
         return {
@@ -118,8 +118,8 @@ describe('E2E: Edge Cases', () => {
   afterEach(async () => {
     for (const jobId of activeJobIds) {
       try {
-        await fetch(`${serverUrl}/api/cancel-verification/${jobId}`, {
-          method: 'POST',
+        await fetch(`${serverUrl}/api/v2/verifications/${jobId}`, {
+          method: 'DELETE',
         });
       } catch {
         // Ignore cleanup errors
@@ -157,7 +157,7 @@ describe('E2E: Edge Cases', () => {
         },
       ];
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -203,7 +203,7 @@ describe('E2E: Edge Cases', () => {
         },
       ];
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -249,7 +249,7 @@ describe('E2E: Edge Cases', () => {
         },
       ];
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -280,7 +280,7 @@ describe('E2E: Edge Cases', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -307,7 +307,7 @@ describe('E2E: Edge Cases', () => {
         } catch {
           // Timeout is acceptable - job may be stuck with no work to do
           // Just ensure we can still check progress
-          const progressResponse = await fetch(`${serverUrl}/api/verification-progress/${job_id}`);
+          const progressResponse = await fetch(`${serverUrl}/api/v2/verifications/${job_id}/progress`);
           expect(progressResponse.ok).toBe(true);
         }
       } else {
@@ -327,7 +327,7 @@ describe('E2E: Edge Cases', () => {
         evaluation_mode: 'template_only',
       };
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -346,7 +346,7 @@ describe('E2E: Edge Cases', () => {
       const checkpoint = loadCheckpoint('e2e_comprehensive');
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -376,7 +376,7 @@ describe('E2E: Edge Cases', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -410,7 +410,7 @@ describe('E2E: Edge Cases', () => {
       // Start verification with all questions (takes longer)
       const questionIds = checkpoint.dataFeedElement.map((q: { identifier: string }) => q.identifier);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -429,14 +429,14 @@ describe('E2E: Edge Cases', () => {
       // Wait a bit then cancel
       await new Promise((r) => setTimeout(r, 500));
 
-      const cancelResponse = await fetch(`${serverUrl}/api/cancel-verification/${job_id}`, {
-        method: 'POST',
+      const cancelResponse = await fetch(`${serverUrl}/api/v2/verifications/${job_id}`, {
+        method: 'DELETE',
       });
 
       expect(cancelResponse.ok).toBe(true);
 
       // Check status is cancelled
-      const progressResponse = await fetch(`${serverUrl}/api/verification-progress/${job_id}`);
+      const progressResponse = await fetch(`${serverUrl}/api/v2/verifications/${job_id}/progress`);
       if (progressResponse.ok) {
         const progress = await progressResponse.json();
         // Status should be cancelled or completed (if it finished before cancel)
@@ -445,8 +445,8 @@ describe('E2E: Edge Cases', () => {
     });
 
     it('should return 404 for cancelling non-existent job', async () => {
-      const cancelResponse = await fetch(`${serverUrl}/api/cancel-verification/non-existent-job`, {
-        method: 'POST',
+      const cancelResponse = await fetch(`${serverUrl}/api/v2/verifications/non-existent-job`, {
+        method: 'DELETE',
       });
 
       expect(cancelResponse.status).toBe(404);
@@ -458,7 +458,7 @@ describe('E2E: Edge Cases', () => {
       const config = createBaseConfig();
 
       // Use q001 for faster completion
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -478,8 +478,8 @@ describe('E2E: Edge Cases', () => {
       await waitForJobCompletion(serverUrl, job_id, 60000);
 
       // Try to cancel completed job
-      const cancelResponse = await fetch(`${serverUrl}/api/cancel-verification/${job_id}`, {
-        method: 'POST',
+      const cancelResponse = await fetch(`${serverUrl}/api/v2/verifications/${job_id}`, {
+        method: 'DELETE',
       });
 
       // Should handle gracefully - server may return various codes:
@@ -495,7 +495,7 @@ describe('E2E: Edge Cases', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -528,7 +528,7 @@ describe('E2E: Edge Cases', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -564,7 +564,7 @@ describe('E2E: Edge Cases', () => {
       const requests = Array(3)
         .fill(null)
         .map((_, i) =>
-          fetch(`${serverUrl}/api/start-verification`, {
+          fetch(`${serverUrl}/api/v2/verifications`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -595,7 +595,7 @@ describe('E2E: Edge Cases', () => {
     });
 
     it('should return proper error format for invalid requests', async () => {
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -611,7 +611,7 @@ describe('E2E: Edge Cases', () => {
     });
 
     it('should handle malformed JSON in request', async () => {
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{ invalid json }',
@@ -624,12 +624,12 @@ describe('E2E: Edge Cases', () => {
 
   describe('Progress API Edge Cases', () => {
     it('should return 404 for non-existent job progress', async () => {
-      const response = await fetch(`${serverUrl}/api/verification-progress/non-existent-job-id`);
+      const response = await fetch(`${serverUrl}/api/v2/verifications/non-existent-job-id/progress`);
       expect(response.status).toBe(404);
     });
 
     it('should return 404 for non-existent job results', async () => {
-      const response = await fetch(`${serverUrl}/api/verification-results/non-existent-job-id`);
+      const response = await fetch(`${serverUrl}/api/v2/verifications/non-existent-job-id/results`);
       expect(response.status).toBe(404);
     });
   });

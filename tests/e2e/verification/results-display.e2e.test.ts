@@ -128,14 +128,14 @@ const waitForJobCompletion = async (
 }> => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const response = await fetch(`${serverUrl}/api/verification-progress/${jobId}`);
+    const response = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/progress`);
     if (!response.ok) {
       throw new Error(`Failed to get progress: ${response.status}`);
     }
     const progress = await response.json();
 
     if (progress.status === 'completed' || progress.status === 'failed' || progress.status === 'cancelled') {
-      const resultsResponse = await fetch(`${serverUrl}/api/verification-results/${jobId}`);
+      const resultsResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/results`);
       if (resultsResponse.ok) {
         const resultsData = await resultsResponse.json();
         return {
@@ -171,8 +171,8 @@ describe('E2E: Results Display', () => {
   afterEach(async () => {
     for (const jobId of activeJobIds) {
       try {
-        await fetch(`${serverUrl}/api/cancel-verification/${jobId}`, {
-          method: 'POST',
+        await fetch(`${serverUrl}/api/v2/verifications/${jobId}`, {
+          method: 'DELETE',
         });
       } catch {
         // Ignore cleanup errors
@@ -192,7 +192,7 @@ describe('E2E: Results Display', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -237,7 +237,7 @@ describe('E2E: Results Display', () => {
       const config = createRubricConfig();
       const globalRubric = checkpoint.globalRubric;
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -288,7 +288,7 @@ describe('E2E: Results Display', () => {
 
       if (!dangerousQuestion) return;
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -331,7 +331,7 @@ describe('E2E: Results Display', () => {
 
       const questionIds = checkpoint.dataFeedElement.slice(0, 3).map((q: { identifier: string }) => q.identifier);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -351,7 +351,7 @@ describe('E2E: Results Display', () => {
       expect(result.status).toBe('completed');
 
       // Call summary endpoint
-      const summaryResponse = await fetch(`${serverUrl}/api/verification/summary`, {
+      const summaryResponse = await fetch(`${serverUrl}/api/v2/verifications/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -374,7 +374,7 @@ describe('E2E: Results Display', () => {
 
       const questionIds = checkpoint.dataFeedElement.slice(0, 2).map((q: { identifier: string }) => q.identifier);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -393,7 +393,7 @@ describe('E2E: Results Display', () => {
       const result = await waitForJobCompletion(serverUrl, job_id);
       expect(result.status).toBe('completed');
 
-      const summaryResponse = await fetch(`${serverUrl}/api/verification/summary`, {
+      const summaryResponse = await fetch(`${serverUrl}/api/v2/verifications/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -418,7 +418,7 @@ describe('E2E: Results Display', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createMultiModelConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -437,7 +437,7 @@ describe('E2E: Results Display', () => {
       const result = await waitForJobCompletion(serverUrl, job_id);
       expect(result.status).toBe('completed');
 
-      const summaryResponse = await fetch(`${serverUrl}/api/verification/summary`, {
+      const summaryResponse = await fetch(`${serverUrl}/api/v2/verifications/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -464,7 +464,7 @@ describe('E2E: Results Display', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createMultiModelConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -484,7 +484,7 @@ describe('E2E: Results Display', () => {
       expect(result.status).toBe('completed');
 
       // Call compare-models endpoint
-      const compareResponse = await fetch(`${serverUrl}/api/verification/compare-models`, {
+      const compareResponse = await fetch(`${serverUrl}/api/v2/verifications/compare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -509,7 +509,7 @@ describe('E2E: Results Display', () => {
 
       const questionIds = checkpoint.dataFeedElement.slice(0, 3).map((q: { identifier: string }) => q.identifier);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -528,7 +528,7 @@ describe('E2E: Results Display', () => {
       const result = await waitForJobCompletion(serverUrl, job_id, 90000);
       expect(result.status).toBe('completed');
 
-      const compareResponse = await fetch(`${serverUrl}/api/verification/compare-models`, {
+      const compareResponse = await fetch(`${serverUrl}/api/v2/verifications/compare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -555,7 +555,7 @@ describe('E2E: Results Display', () => {
 
       const questionIds = checkpoint.dataFeedElement.map((q: { identifier: string }) => q.identifier);
 
-      const startResponse = await fetch(`${serverUrl}/api/start-verification`, {
+      const startResponse = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -581,7 +581,7 @@ describe('E2E: Results Display', () => {
 
       const timeout = Date.now() + 60000;
       while (Date.now() < timeout) {
-        const progressResponse = await fetch(`${serverUrl}/api/verification-progress/${job_id}`);
+        const progressResponse = await fetch(`${serverUrl}/api/v2/verifications/${job_id}/progress`);
         if (progressResponse.ok) {
           const progress = await progressResponse.json();
           progressUpdates.push(progress);
@@ -609,7 +609,7 @@ describe('E2E: Results Display', () => {
 
       const questionIds = checkpoint.dataFeedElement.slice(0, 2).map((q: { identifier: string }) => q.identifier);
 
-      const startResponse = await fetch(`${serverUrl}/api/start-verification`, {
+      const startResponse = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -631,7 +631,7 @@ describe('E2E: Results Display', () => {
       let sawStageInfo = false;
 
       while (Date.now() < timeout) {
-        const progressResponse = await fetch(`${serverUrl}/api/verification-progress/${job_id}`);
+        const progressResponse = await fetch(`${serverUrl}/api/v2/verifications/${job_id}/progress`);
         if (progressResponse.ok) {
           const progress = await progressResponse.json();
 
@@ -662,7 +662,7 @@ describe('E2E: Results Display', () => {
       const config = createRubricConfig();
       const globalRubric = checkpoint.globalRubric;
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -705,7 +705,7 @@ describe('E2E: Results Display', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -94,14 +94,14 @@ const waitForJobCompletion = async (
 }> => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const response = await fetch(`${serverUrl}/api/verification-progress/${jobId}`);
+    const response = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/progress`);
     if (!response.ok) {
       throw new Error(`Failed to get progress: ${response.status}`);
     }
     const progress = await response.json();
 
     if (progress.status === 'completed' || progress.status === 'failed' || progress.status === 'cancelled') {
-      const resultsResponse = await fetch(`${serverUrl}/api/verification-results/${jobId}`);
+      const resultsResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/results`);
       if (resultsResponse.ok) {
         const resultsData = await resultsResponse.json();
         return {
@@ -128,7 +128,7 @@ const runVerification = async (
   const finishedTemplates = buildFinishedTemplates(checkpoint);
   const qIds = questionIds || [checkpoint.dataFeedElement[0].identifier];
 
-  const response = await fetch(`${serverUrl}/api/start-verification`, {
+  const response = await fetch(`${serverUrl}/api/v2/verifications`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -156,8 +156,8 @@ describe('E2E: Results Export', () => {
   afterEach(async () => {
     for (const jobId of activeJobIds) {
       try {
-        await fetch(`${serverUrl}/api/cancel-verification/${jobId}`, {
-          method: 'POST',
+        await fetch(`${serverUrl}/api/v2/verifications/${jobId}`, {
+          method: 'DELETE',
         });
       } catch {
         // Ignore cleanup errors
@@ -185,7 +185,7 @@ describe('E2E: Results Export', () => {
       expect(result.status).toBe('completed');
 
       // Export as JSON
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       expect(exportResponse.ok).toBe(true);
 
       const jsonContent = await exportResponse.text();
@@ -220,7 +220,7 @@ describe('E2E: Results Export', () => {
       const result = await waitForJobCompletion(serverUrl, jobId);
       expect(result.status).toBe('completed');
 
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       expect(exportResponse.ok).toBe(true);
 
       const exportData = JSON.parse(await exportResponse.text());
@@ -241,7 +241,7 @@ describe('E2E: Results Export', () => {
       const result = await waitForJobCompletion(serverUrl, jobId);
       expect(result.status).toBe('completed');
 
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       const exportData = JSON.parse(await exportResponse.text());
 
       // Export should contain data in some form
@@ -273,7 +273,7 @@ describe('E2E: Results Export', () => {
       const result = await waitForJobCompletion(serverUrl, jobId);
       expect(result.status).toBe('completed');
 
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       const exportData = JSON.parse(await exportResponse.text());
 
       // JSON should be valid and parseable
@@ -299,7 +299,7 @@ describe('E2E: Results Export', () => {
       expect(result.status).toBe('completed');
 
       // Export as CSV
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=csv`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=csv`);
       expect(exportResponse.ok).toBe(true);
 
       const csvContent = await exportResponse.text();
@@ -327,7 +327,7 @@ describe('E2E: Results Export', () => {
       const result = await waitForJobCompletion(serverUrl, jobId);
       expect(result.status).toBe('completed');
 
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=csv`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=csv`);
       const csvContent = await exportResponse.text();
 
       const headerLine = csvContent.split('\n')[0];
@@ -349,7 +349,7 @@ describe('E2E: Results Export', () => {
       const result = await waitForJobCompletion(serverUrl, jobId);
       expect(result.status).toBe('completed');
 
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=csv`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=csv`);
       const csvContent = await exportResponse.text();
 
       // CSV should be parseable - check basic structure
@@ -372,7 +372,7 @@ describe('E2E: Results Export', () => {
       const result = await waitForJobCompletion(serverUrl, jobId);
       expect(result.status).toBe('completed');
 
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=csv`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=csv`);
       expect(exportResponse.ok).toBe(true);
 
       // Check Content-Disposition header for filename
@@ -397,11 +397,11 @@ describe('E2E: Results Export', () => {
       expect(result.status).toBe('completed');
 
       // Get raw results
-      const resultsResponse = await fetch(`${serverUrl}/api/verification-results/${jobId}`);
+      const resultsResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/results`);
       const rawResults = await resultsResponse.json();
 
       // Export and compare
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       const exportData = JSON.parse(await exportResponse.text());
 
       // Token counts in export should match raw results
@@ -430,7 +430,7 @@ describe('E2E: Results Export', () => {
       const result = await waitForJobCompletion(serverUrl, jobId);
       expect(result.status).toBe('completed');
 
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       const exportData = JSON.parse(await exportResponse.text());
 
       // Rubric scores should be preserved
@@ -463,7 +463,7 @@ describe('E2E: Results Export', () => {
       const result = await waitForJobCompletion(serverUrl, jobId);
       expect(result.status).toBe('completed');
 
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       const exportData = JSON.parse(await exportResponse.text());
 
       // Export should contain data
@@ -491,7 +491,7 @@ describe('E2E: Results Export', () => {
       expect(result.status).toBe('completed');
 
       // Export
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       const exportContent = await exportResponse.text();
 
       // Parse
@@ -511,7 +511,7 @@ describe('E2E: Results Export', () => {
   describe('Export Edge Cases', () => {
     it('should handle export of job with no results gracefully', async () => {
       // Try to export a non-existent job
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/non-existent-job?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/non-existent-job/export?fmt=json`);
 
       // Should return 404 or appropriate error
       expect(exportResponse.status).toBe(404);
@@ -523,7 +523,7 @@ describe('E2E: Results Export', () => {
       const config = createBaseConfig();
 
       // Start verification with all questions
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -540,7 +540,7 @@ describe('E2E: Results Export', () => {
       activeJobIds.push(jobId);
 
       // Immediately try to export (job likely still running)
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
 
       // Should either fail with appropriate error or return partial data
       // The exact behavior depends on implementation
@@ -563,7 +563,7 @@ describe('E2E: Results Export', () => {
       expect(result.status).toBe('completed');
 
       // Export result set
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=json`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=json`);
       expect(exportResponse.ok).toBe(true);
 
       const exportData = JSON.parse(await exportResponse.text());
@@ -589,7 +589,7 @@ describe('E2E: Results Export', () => {
       expect(result.status).toBe('completed');
 
       // Export as CSV (more sensitive to special chars)
-      const exportResponse = await fetch(`${serverUrl}/api/export-verification/${jobId}?fmt=csv`);
+      const exportResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/export?fmt=csv`);
       expect(exportResponse.ok).toBe(true);
 
       const csvContent = await exportResponse.text();

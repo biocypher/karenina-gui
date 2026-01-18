@@ -35,8 +35,8 @@ describe('E2E: Verification API', () => {
   afterEach(async () => {
     for (const jobId of activeJobIds) {
       try {
-        await fetch(`${serverUrl}/api/cancel-verification/${jobId}`, {
-          method: 'POST',
+        await fetch(`${serverUrl}/api/v2/verifications/${jobId}`, {
+          method: 'DELETE',
         });
       } catch {
         // Ignore cleanup errors
@@ -85,7 +85,7 @@ describe('E2E: Verification API', () => {
         deep_judgment_enabled: false,
       };
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -136,7 +136,7 @@ describe('E2E: Verification API', () => {
         replicates: 1,
       };
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -184,7 +184,7 @@ describe('E2E: Verification API', () => {
       };
 
       // Start a job
-      const startResponse = await fetch(`${serverUrl}/api/start-verification`, {
+      const startResponse = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -199,8 +199,8 @@ describe('E2E: Verification API', () => {
         activeJobIds.push(job_id);
 
         // Cancel the job
-        const cancelResponse = await fetch(`${serverUrl}/api/cancel-verification/${job_id}`, {
-          method: 'POST',
+        const cancelResponse = await fetch(`${serverUrl}/api/v2/verifications/${job_id}`, {
+          method: 'DELETE',
         });
 
         expect(cancelResponse.ok).toBe(true);
@@ -213,7 +213,7 @@ describe('E2E: Verification API', () => {
 
   describe('Progress Polling', () => {
     it('should return 404 for non-existent job', async () => {
-      const response = await fetch(`${serverUrl}/api/verification-progress/non-existent-job-id`);
+      const response = await fetch(`${serverUrl}/api/v2/verifications/non-existent-job-id/progress`);
 
       expect(response.status).toBe(404);
     });
@@ -252,7 +252,7 @@ describe('E2E: Verification API', () => {
       };
 
       // Start a job
-      const startResponse = await fetch(`${serverUrl}/api/start-verification`, {
+      const startResponse = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -267,7 +267,7 @@ describe('E2E: Verification API', () => {
         activeJobIds.push(job_id);
 
         // Get progress
-        const progressResponse = await fetch(`${serverUrl}/api/verification-progress/${job_id}`);
+        const progressResponse = await fetch(`${serverUrl}/api/v2/verifications/${job_id}/progress`);
 
         expect(progressResponse.ok).toBe(true);
 
@@ -284,13 +284,13 @@ describe('E2E: Verification API', () => {
 
   describe('Results Retrieval', () => {
     it('should return 404 for results of non-existent job', async () => {
-      const response = await fetch(`${serverUrl}/api/verification-results/non-existent-job-id`);
+      const response = await fetch(`${serverUrl}/api/v2/verifications/non-existent-job-id/results`);
 
       expect(response.status).toBe(404);
     });
 
     it('should retrieve all historical results', async () => {
-      const response = await fetch(`${serverUrl}/api/all-verification-results`);
+      const response = await fetch(`${serverUrl}/api/v2/verifications/results`);
 
       expect(response.ok).toBe(true);
 
@@ -302,7 +302,7 @@ describe('E2E: Verification API', () => {
 
   describe('Summary and Comparison', () => {
     it('should compute summary for empty results', async () => {
-      const response = await fetch(`${serverUrl}/api/verification/summary`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -315,7 +315,7 @@ describe('E2E: Verification API', () => {
     });
 
     it('should reject model comparison with no models specified', async () => {
-      const response = await fetch(`${serverUrl}/api/verification/compare-models`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications/compare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -342,7 +342,7 @@ describe('E2E: WebSocket Progress', () => {
 
 describe('E2E: Result Set Format (WebSocket fetch target)', () => {
   /**
-   * These tests verify the /api/verification-progress/{jobId} endpoint
+   * These tests verify the /api/v2/verifications/{jobId}/progress endpoint
    * returns result_set in the VerificationResultSet format that the
    * WebSocket handler (useVerificationWebSocket) expects to parse.
    *
@@ -360,8 +360,8 @@ describe('E2E: Result Set Format (WebSocket fetch target)', () => {
   afterEach(async () => {
     for (const jobId of activeJobIds) {
       try {
-        await fetch(`${serverUrl}/api/cancel-verification/${jobId}`, {
-          method: 'POST',
+        await fetch(`${serverUrl}/api/v2/verifications/${jobId}`, {
+          method: 'DELETE',
         });
       } catch {
         // Ignore cleanup errors
@@ -377,7 +377,7 @@ describe('E2E: Result Set Format (WebSocket fetch target)', () => {
   ): Promise<{ status: string; result_set?: unknown; error?: string }> => {
     const start = Date.now();
     while (Date.now() - start < timeout) {
-      const response = await fetch(`${serverUrl}/api/verification-progress/${jobId}`);
+      const response = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/progress`);
       if (!response.ok) {
         throw new Error(`Failed to get progress: ${response.status}`);
       }
@@ -425,7 +425,7 @@ describe('E2E: Result Set Format (WebSocket fetch target)', () => {
       replicates: 1,
     };
 
-    const startResponse = await fetch(`${serverUrl}/api/start-verification`, {
+    const startResponse = await fetch(`${serverUrl}/api/v2/verifications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -501,7 +501,7 @@ describe('E2E: Result Set Format (WebSocket fetch target)', () => {
       replicates: 2, // Multiple replicates
     };
 
-    const startResponse = await fetch(`${serverUrl}/api/start-verification`, {
+    const startResponse = await fetch(`${serverUrl}/api/v2/verifications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

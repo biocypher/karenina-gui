@@ -17,7 +17,7 @@ describe('E2E: Presets API', () => {
 
   describe('Preset Listing', () => {
     it('should list available presets', async () => {
-      const response = await fetch(`${serverUrl}/api/presets`);
+      const response = await fetch(`${serverUrl}/api/v2/presets`);
 
       expect(response.ok).toBe(true);
 
@@ -28,7 +28,7 @@ describe('E2E: Presets API', () => {
     });
 
     it('should have default preset available', async () => {
-      const response = await fetch(`${serverUrl}/api/presets`);
+      const response = await fetch(`${serverUrl}/api/v2/presets`);
 
       expect(response.ok).toBe(true);
 
@@ -63,7 +63,7 @@ describe('E2E: Presets API', () => {
     });
 
     it('should return proper preset structure', async () => {
-      const response = await fetch(`${serverUrl}/api/presets`);
+      const response = await fetch(`${serverUrl}/api/v2/presets`);
       expect(response.ok).toBe(true);
 
       const presets = await response.json();

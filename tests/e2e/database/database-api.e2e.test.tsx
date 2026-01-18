@@ -40,7 +40,7 @@ describe('E2E: Database API', () => {
 
   describe('Database Connection', () => {
     it('should initialize a new database', async () => {
-      const response = await fetch(`${serverUrl}/api/database/init`, {
+      const response = await fetch(`${serverUrl}/api/v2/databases`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -56,7 +56,7 @@ describe('E2E: Database API', () => {
     });
 
     it('should connect to existing database', async () => {
-      const response = await fetch(`${serverUrl}/api/database/connect`, {
+      const response = await fetch(`${serverUrl}/api/v2/databases/connections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -77,7 +77,7 @@ describe('E2E: Database API', () => {
     const testBenchmarkName = `e2e-test-benchmark-${Date.now()}`;
 
     it('should create a new benchmark', async () => {
-      const response = await fetch(`${serverUrl}/api/database/create-benchmark`, {
+      const response = await fetch(`${serverUrl}/api/v2/benchmarks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -99,7 +99,7 @@ describe('E2E: Database API', () => {
     });
 
     it('should list benchmarks', async () => {
-      const response = await fetch(`${serverUrl}/api/database/benchmarks?storage_url=${encodeURIComponent(testDbUrl)}`);
+      const response = await fetch(`${serverUrl}/api/v2/benchmarks?storage_url=${encodeURIComponent(testDbUrl)}`);
 
       expect(response.ok).toBe(true);
 
@@ -113,14 +113,12 @@ describe('E2E: Database API', () => {
     });
 
     it('should load a benchmark', async () => {
-      const response = await fetch(`${serverUrl}/api/database/load-benchmark`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storage_url: testDbUrl,
-          benchmark_name: testBenchmarkName,
-        }),
-      });
+      const response = await fetch(
+        `${serverUrl}/api/v2/benchmarks/${encodeURIComponent(testBenchmarkName)}?storage_url=${encodeURIComponent(testDbUrl)}`,
+        {
+          method: 'GET',
+        }
+      );
 
       expect(response.ok).toBe(true);
 
@@ -135,12 +133,11 @@ describe('E2E: Database API', () => {
     it('should save benchmark data', async () => {
       const checkpoint = loadCheckpoint('minimal');
 
-      const response = await fetch(`${serverUrl}/api/database/save-benchmark`, {
-        method: 'POST',
+      const response = await fetch(`${serverUrl}/api/v2/benchmarks/${encodeURIComponent(testBenchmarkName)}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           storage_url: testDbUrl,
-          benchmark_name: testBenchmarkName,
           checkpoint_data: checkpoint,
         }),
       });
@@ -152,14 +149,12 @@ describe('E2E: Database API', () => {
     });
 
     it('should delete a benchmark', async () => {
-      const response = await fetch(`${serverUrl}/api/database/delete-benchmark`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storage_url: testDbUrl,
-          benchmark_name: testBenchmarkName,
-        }),
-      });
+      const response = await fetch(
+        `${serverUrl}/api/v2/benchmarks/${encodeURIComponent(testBenchmarkName)}?storage_url=${encodeURIComponent(testDbUrl)}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       expect(response.ok).toBe(true);
 
@@ -170,13 +165,12 @@ describe('E2E: Database API', () => {
 
   describe('Verification Runs', () => {
     it('should list verification runs (empty)', async () => {
-      const response = await fetch(`${serverUrl}/api/database/verification-runs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storage_url: testDbUrl,
-        }),
-      });
+      const response = await fetch(
+        `${serverUrl}/api/v2/verification-runs?storage_url=${encodeURIComponent(testDbUrl)}`,
+        {
+          method: 'GET',
+        }
+      );
 
       expect(response.ok).toBe(true);
 
@@ -191,7 +185,7 @@ describe('E2E: Database Error Handling', () => {
   const serverUrl = getServerUrl();
 
   it('should handle connection to non-existent database gracefully', async () => {
-    const response = await fetch(`${serverUrl}/api/database/connect`, {
+    const response = await fetch(`${serverUrl}/api/v2/databases/connections`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -205,7 +199,7 @@ describe('E2E: Database Error Handling', () => {
   });
 
   it('should handle invalid storage URL', async () => {
-    const response = await fetch(`${serverUrl}/api/database/connect`, {
+    const response = await fetch(`${serverUrl}/api/v2/databases/connections`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -223,7 +217,7 @@ describe('E2E: Database Error Handling', () => {
     const testDbUrl = `sqlite:///${testDbPath}`;
 
     // First create the database
-    await fetch(`${serverUrl}/api/database/init`, {
+    await fetch(`${serverUrl}/api/v2/databases`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -232,14 +226,12 @@ describe('E2E: Database Error Handling', () => {
     });
 
     // Try to load non-existent benchmark
-    const response = await fetch(`${serverUrl}/api/database/load-benchmark`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        storage_url: testDbUrl,
-        benchmark_name: 'non-existent-benchmark',
-      }),
-    });
+    const response = await fetch(
+      `${serverUrl}/api/v2/benchmarks/${encodeURIComponent('non-existent-benchmark')}?storage_url=${encodeURIComponent(testDbUrl)}`,
+      {
+        method: 'GET',
+      }
+    );
 
     // Should fail gracefully
     expect(response.status).toBeGreaterThanOrEqual(400);
