@@ -2,6 +2,8 @@
  * API client for benchmark configuration presets
  */
 
+import { API_ENDPOINTS } from '../constants/api';
+
 /**
  * Verification configuration interface matching backend VerificationConfig
  */
@@ -130,7 +132,7 @@ export class PresetApiError extends Error {
  */
 export async function fetchPresets(): Promise<PresetListItem[]> {
   try {
-    const response = await fetch('/api/presets');
+    const response = await fetch(API_ENDPOINTS.PRESETS_LIST);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -152,7 +154,7 @@ export async function fetchPresets(): Promise<PresetListItem[]> {
  */
 export async function getPreset(presetId: string): Promise<Preset> {
   try {
-    const response = await fetch(`/api/presets/${presetId}`);
+    const response = await fetch(API_ENDPOINTS.PRESET_DETAIL(presetId));
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -174,7 +176,7 @@ export async function getPreset(presetId: string): Promise<Preset> {
  */
 export async function createPreset(request: CreatePresetRequest): Promise<Preset> {
   try {
-    const response = await fetch('/api/presets', {
+    const response = await fetch(API_ENDPOINTS.PRESETS_LIST, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -202,7 +204,7 @@ export async function createPreset(request: CreatePresetRequest): Promise<Preset
  */
 export async function updatePreset(presetId: string, request: UpdatePresetRequest): Promise<Preset> {
   try {
-    const response = await fetch(`/api/presets/${presetId}`, {
+    const response = await fetch(API_ENDPOINTS.PRESET_DETAIL(presetId), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -230,7 +232,7 @@ export async function updatePreset(presetId: string, request: UpdatePresetReques
  */
 export async function deletePreset(presetId: string): Promise<void> {
   try {
-    const response = await fetch(`/api/presets/${presetId}`, {
+    const response = await fetch(API_ENDPOINTS.PRESET_DETAIL(presetId), {
       method: 'DELETE',
     });
 
