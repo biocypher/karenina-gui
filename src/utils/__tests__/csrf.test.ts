@@ -38,7 +38,7 @@ describe('CsrfManager', () => {
       const result = await csrf.initialize();
 
       expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith('/api/auth/csrf-token', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/v2/auth/csrf-token', {
         method: 'GET',
         credentials: 'include',
       });
