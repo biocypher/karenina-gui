@@ -12,6 +12,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Brain, Loader2, CheckCircle, AlertCircle, Play, StopCircle } from 'lucide-react';
 import { adeleApi } from '../../services/adeleApi';
+import { AdeleTraitSelector } from './AdeleTraitSelector';
 import { useAdeleConfigStore } from '../../stores/useAdeleConfigStore';
 import type {
   AdeleTraitInfo,
@@ -65,7 +66,8 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
     new Set(initialSelectedIds || questions.map((q) => q.questionId))
   );
   const [availableTraits, setAvailableTraits] = useState<AdeleTraitInfo[]>([]);
-  const [selectedTraits, setSelectedTraits] = useState<Set<string>>(new Set());
+  // Empty array means "all traits" - matches AdeleTraitSelector behavior
+  const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
   const [traitsInitialized, setTraitsInitialized] = useState(false);
   const [traitsLoading, setTraitsLoading] = useState(false);
   const [traitsError, setTraitsError] = useState<string | null>(null);
@@ -76,6 +78,10 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
   const [progress, setProgress] = useState<BatchProgressResponse | null>(null);
   const [results, setResults] = useState<ClassificationResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Timing state
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
 
   // WebSocket ref
   const wsRef = useRef<WebSocket | null>(null);
@@ -103,11 +109,11 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
       try {
         const traits = await adeleApi.getTraits();
         setAvailableTraits(traits);
-        // Use session traits if specified, otherwise select all
+        // Use session traits if specified, otherwise empty array means "all traits"
         if (sessionSelectedTraits.length > 0 && !traitsInitialized) {
-          setSelectedTraits(new Set(sessionSelectedTraits));
+          setSelectedTraits([...sessionSelectedTraits]);
         } else if (!traitsInitialized) {
-          setSelectedTraits(new Set(traits.map((t) => t.name)));
+          setSelectedTraits([]); // Empty = all traits
         }
         setTraitsInitialized(true);
       } catch (err) {
@@ -129,12 +135,25 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
       setResults([]);
       setErrorMessage(null);
       setTraitsInitialized(false);
+      setStartTime(null);
+      setElapsedSeconds(0);
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
       }
     }
   }, [isOpen]);
+
+  // Elapsed time tracking
+  useEffect(() => {
+    if (modalState !== 'running' || !startTime) return;
+
+    const intervalId = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [modalState, startTime]);
 
   // Poll for progress when running
   useEffect(() => {
@@ -195,36 +214,44 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
     setSelectedQuestionIds(newSet);
   };
 
-  const handleSelectAllTraits = () => {
-    setSelectedTraits(new Set(availableTraits.map((t) => t.name)));
+  // Compute effective trait count (empty array means all traits)
+  const effectiveTraitCount = selectedTraits.length === 0 ? availableTraits.length : selectedTraits.length;
+
+  // Format duration in human-readable form
+  const formatDuration = (seconds: number): string => {
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins < 60) return `${mins}m ${secs}s`;
+    const hours = Math.floor(mins / 60);
+    const remainingMins = mins % 60;
+    return `${hours}h ${remainingMins}m ${secs}s`;
   };
 
-  const handleSelectNoTraits = () => {
-    setSelectedTraits(new Set());
-  };
-
-  const handleToggleTrait = (traitName: string) => {
-    const newSet = new Set(selectedTraits);
-    if (newSet.has(traitName)) {
-      newSet.delete(traitName);
-    } else {
-      newSet.add(traitName);
-    }
-    setSelectedTraits(newSet);
+  // Estimate remaining time based on progress
+  const estimateRemainingTime = (): string | null => {
+    if (!progress || progress.completed === 0 || elapsedSeconds === 0) return null;
+    const rate = progress.completed / elapsedSeconds; // questions per second
+    const remaining = progress.total - progress.completed;
+    const estimatedSeconds = Math.round(remaining / rate);
+    return formatDuration(estimatedSeconds);
   };
 
   const handleStartClassification = async () => {
-    if (selectedQuestionIds.size === 0 || selectedTraits.size === 0) return;
+    if (selectedQuestionIds.size === 0 || effectiveTraitCount === 0) return;
 
     setModalState('running');
     setErrorMessage(null);
+    setStartTime(Date.now());
+    setElapsedSeconds(0);
 
     try {
       const questionsToClassify = questions
         .filter((q) => selectedQuestionIds.has(q.questionId))
         .map((q) => ({ questionId: q.questionId, questionText: q.questionText }));
 
-      const traitNames = Array.from(selectedTraits);
+      // Empty array means all traits
+      const traitNames = selectedTraits.length === 0 ? availableTraits.map((t) => t.name) : selectedTraits;
       const llmConfig = buildLlmConfig();
 
       const { jobId: newJobId } = await adeleApi.startBatchClassification(questionsToClassify, traitNames, llmConfig);
@@ -254,7 +281,7 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-[90vw] max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -317,25 +344,7 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
 
               {/* Trait selection */}
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Select Traits ({selectedTraits.size} / {availableTraits.length})
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleSelectAllTraits}
-                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
-                    >
-                      Select All
-                    </button>
-                    <button
-                      onClick={handleSelectNoTraits}
-                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
-                    >
-                      Select None
-                    </button>
-                  </div>
-                </div>
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Select Traits</h3>
                 {traitsLoading ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
@@ -346,53 +355,57 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
                     {traitsError}
                   </div>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-2">
-                    <div className="grid grid-cols-2 gap-1">
-                      {availableTraits.map((trait) => (
-                        <label
-                          key={trait.name}
-                          className="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded cursor-pointer"
-                          title={trait.description || trait.name}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedTraits.has(trait.name)}
-                            onChange={() => handleToggleTrait(trait.name)}
-                            className="rounded border-slate-300 dark:border-slate-600 text-purple-600 focus:ring-purple-500"
-                          />
-                          <span className="text-xs text-slate-700 dark:text-slate-300 truncate">
-                            {trait.name.replace(/_/g, ' ')}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+                  <AdeleTraitSelector
+                    selectedTraits={selectedTraits}
+                    onChange={setSelectedTraits}
+                    availableTraits={availableTraits}
+                  />
                 )}
               </div>
             </div>
           )}
 
-          {modalState === 'running' && progress && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-purple-600" />
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                  Classifying Questions...
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{progress.message}</p>
+          {modalState === 'running' && (
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-purple-600 flex-shrink-0" />
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Classifying Questions...</h3>
+                  {progress && <p className="text-sm text-slate-500 dark:text-slate-400">{progress.message}</p>}
+                </div>
               </div>
 
+              {/* Progress stats */}
+              {progress && (
+                <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
+                  <span>
+                    Progress: {progress.completed} / {progress.total} questions
+                  </span>
+                  <span>{Math.round(progress.progress)}%</span>
+                </div>
+              )}
+
               {/* Progress bar */}
-              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full transition-all duration-300"
-                  style={{ width: `${progress.progress}%` }}
+                  style={{ width: `${progress?.progress || 0}%` }}
                 />
               </div>
 
-              <div className="text-center text-sm text-slate-600 dark:text-slate-400">
-                {progress.completed} / {progress.total} questions ({Math.round(progress.progress)}%)
+              {/* Timing info */}
+              <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+                <span>Elapsed: {formatDuration(elapsedSeconds)}</span>
+                {estimateRemainingTime() && <span>Est. remaining: {estimateRemainingTime()}</span>}
               </div>
+
+              {/* Rate info */}
+              {progress && progress.completed > 0 && elapsedSeconds > 0 && (
+                <div className="text-xs text-slate-400 dark:text-slate-500">
+                  Rate: {(progress.completed / elapsedSeconds).toFixed(2)} questions/sec
+                </div>
+              )}
             </div>
           )}
 
@@ -404,7 +417,7 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
                   Classification Complete!
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Successfully classified {results.length} questions across {selectedTraits.size} traits.
+                  Successfully classified {results.length} questions across {effectiveTraitCount} traits.
                 </p>
               </div>
 
@@ -418,8 +431,22 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
                   </div>
                   <div>
                     <span className="text-slate-500 dark:text-slate-400">Traits:</span>{' '}
-                    <span className="font-medium text-slate-700 dark:text-slate-200">{selectedTraits.size}</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-200">{effectiveTraitCount}</span>
                   </div>
+                  <div>
+                    <span className="text-slate-500 dark:text-slate-400">Duration:</span>{' '}
+                    <span className="font-medium text-slate-700 dark:text-slate-200">
+                      {formatDuration(elapsedSeconds)}
+                    </span>
+                  </div>
+                  {results.length > 0 && elapsedSeconds > 0 && (
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400">Avg rate:</span>{' '}
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
+                        {(results.length / elapsedSeconds).toFixed(2)} q/s
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -448,7 +475,7 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
               </button>
               <button
                 onClick={handleStartClassification}
-                disabled={selectedQuestionIds.size === 0 || selectedTraits.size === 0 || traitsLoading}
+                disabled={selectedQuestionIds.size === 0 || effectiveTraitCount === 0 || traitsLoading}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Play className="w-4 h-4" />
