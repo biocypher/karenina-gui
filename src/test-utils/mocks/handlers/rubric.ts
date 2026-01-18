@@ -26,6 +26,27 @@ export const mockRubric = {
 };
 
 export const rubricHandlers = [
+  // V2 endpoints
+  // Get current rubric (V2)
+  http.get('/api/v2/rubrics/current', () => {
+    return HttpResponse.json(mockRubric);
+  }),
+
+  // Update rubric (V2 - uses PUT)
+  http.put('/api/v2/rubrics/current', () => {
+    return HttpResponse.json({
+      message: 'Rubric saved successfully',
+    });
+  }),
+
+  // Delete rubric (V2)
+  http.delete('/api/v2/rubrics/current', () => {
+    return HttpResponse.json({
+      message: 'Rubric deleted successfully',
+    });
+  }),
+
+  // V1 endpoints (legacy - kept for backward compatibility)
   // Get current rubric
   http.get('/api/rubric', () => {
     return HttpResponse.json(mockRubric);
