@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Rubric, RubricTrait, RegexTrait, MetricRubricTrait } from '../types';
 import { logger } from '../utils/logger';
+import { API_ENDPOINTS } from '../constants/api';
 
 interface RubricState {
   // Current rubric being edited
@@ -266,7 +267,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     set({ isLoadingRubric: true, lastError: null });
 
     try {
-      const response = await fetch('/api/rubric');
+      const response = await fetch(API_ENDPOINTS.RUBRIC_CURRENT);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -318,8 +319,8 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     set({ isSavingRubric: true, lastError: null });
 
     try {
-      const response = await fetch('/api/rubric', {
-        method: 'POST',
+      const response = await fetch(API_ENDPOINTS.RUBRIC_CURRENT, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -348,7 +349,7 @@ export const useRubricStore = create<RubricState>((set, get) => ({
     set({ isSavingRubric: true, lastError: null });
 
     try {
-      const response = await fetch('/api/rubric', {
+      const response = await fetch(API_ENDPOINTS.RUBRIC_CURRENT, {
         method: 'DELETE',
       });
 
