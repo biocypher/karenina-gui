@@ -40,6 +40,24 @@ export const API_ENDPOINTS = {
   MCP_PRESETS: '/api/v2/mcp/presets',
   MCP_VALIDATE: '/api/v2/mcp/servers/validation',
   MCP_SAVE_PRESET: (name: string) => `/api/v2/mcp/presets/${encodeURIComponent(name)}`, // method: PUT
+
+  // Rubric endpoints (V2)
+  RUBRIC_CURRENT: '/api/v2/rubrics/current', // GET, PUT, DELETE
+
+  // Auth endpoints (V2)
+  CSRF_TOKEN: '/api/v2/auth/csrf-token', // GET
+
+  // Preset endpoints (V2)
+  PRESETS_LIST: '/api/v2/presets', // GET, POST
+  PRESET_DETAIL: (presetId: string) => `/api/v2/presets/${presetId}`, // GET, PUT, DELETE
+
+  // Config endpoints (V2)
+  CONFIG_ENV_VARS: '/api/v2/config/env-vars', // GET (masked), PUT
+  CONFIG_ENV_VARS_UNMASKED: '/api/v2/config/env-vars/unmasked', // GET
+  CONFIG_ENV_VARS_BULK: '/api/v2/config/env-vars/bulk', // PUT
+  CONFIG_ENV_VAR_DELETE: (key: string) => `/api/v2/config/env-vars/${key}`, // DELETE
+  CONFIG_ENV_FILE: '/api/v2/config/env-file', // GET, PUT
+  CONFIG_DEFAULTS: '/api/v2/config/defaults', // GET, PUT
 } as const;
 
 // HTTP methods
