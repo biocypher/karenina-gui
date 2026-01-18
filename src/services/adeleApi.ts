@@ -8,7 +8,12 @@
 
 import { API_ENDPOINTS } from '../constants/api';
 import { logger } from '../utils/logger';
-import type { AdeleTraitInfo, ClassificationResult, BatchProgressResponse } from '../types/adele';
+import type {
+  AdeleTraitInfo,
+  ClassificationResult,
+  BatchProgressResponse,
+  AdeleModelConfigRequest,
+} from '../types/adele';
 
 /**
  * Custom error class for ADeLe API errors.
@@ -93,7 +98,8 @@ export const adeleApi = {
   async classifySingle(
     questionText: string,
     traitNames?: string[],
-    questionId?: string
+    questionId?: string,
+    llmConfig?: AdeleModelConfigRequest
   ): Promise<ClassificationResult> {
     const url = API_ENDPOINTS.ADELE_CLASSIFY;
 
@@ -107,6 +113,7 @@ export const adeleApi = {
           question_text: questionText,
           question_id: questionId,
           trait_names: traitNames,
+          llm_config: llmConfig,
         }),
       });
 
@@ -158,7 +165,8 @@ export const adeleApi = {
    */
   async startBatchClassification(
     questions: Array<{ questionId: string; questionText: string }>,
-    traitNames?: string[]
+    traitNames?: string[],
+    llmConfig?: AdeleModelConfigRequest
   ): Promise<{ jobId: string; totalQuestions: number }> {
     const url = API_ENDPOINTS.ADELE_CLASSIFY_BATCH;
 
@@ -174,6 +182,7 @@ export const adeleApi = {
             question_text: q.questionText,
           })),
           trait_names: traitNames,
+          llm_config: llmConfig,
         }),
       });
 

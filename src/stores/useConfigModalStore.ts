@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type ConfigModalTab = 'defaults' | 'env' | 'traceHighlighting';
+export type ConfigModalTab = 'defaults' | 'env' | 'traceHighlighting' | 'adele';
 
 interface ConfigModalState {
   isOpen: boolean;

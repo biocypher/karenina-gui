@@ -13,7 +13,8 @@ import { ConfigModalTab } from '../stores/useConfigModalStore';
 import { TraceHighlightingTab } from './TraceHighlightingTab';
 import { DefaultsConfigTab } from './configuration/DefaultsConfigTab';
 import { EnvConfigTab } from './configuration/EnvConfigTab';
-import { Highlighter, RefreshCw } from 'lucide-react';
+import { AdeleConfigTab } from './configuration/AdeleConfigTab';
+import { Brain, Highlighter, RefreshCw } from 'lucide-react';
 
 interface ConfigurationModalProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
   const { loadPresets } = usePresetStore();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<'defaults' | 'env' | 'traceHighlighting'>('defaults');
+  const [activeTab, setActiveTab] = useState<ConfigModalTab>('defaults');
 
   // Local state for tab components
   const [localError, setLocalError] = useState<string | null>(null);
@@ -96,6 +97,17 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
             <Highlighter className="w-4 h-4" />
             Trace Highlighting
           </button>
+          <button
+            onClick={() => setActiveTab('adele')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-1.5 ${
+              activeTab === 'adele'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            <Brain className="w-4 h-4" />
+            ADeLe Defaults
+          </button>
         </nav>
       </div>
 
@@ -126,6 +138,8 @@ export const ConfigurationModal: React.FC<ConfigurationModalProps> = ({ isOpen, 
         />
       ) : activeTab === 'env' ? (
         <EnvConfigTab setLocalError={setLocalError} />
+      ) : activeTab === 'adele' ? (
+        <AdeleConfigTab setLocalError={setLocalError} />
       ) : (
         <TraceHighlightingTab />
       )}

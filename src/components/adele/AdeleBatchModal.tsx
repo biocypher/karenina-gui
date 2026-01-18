@@ -3,12 +3,22 @@
  *
  * Allows selecting questions and traits, shows progress during classification,
  * and reports results when complete.
+ *
+ * Uses session configuration from useAdeleConfigStore for:
+ * - Model configuration (interface, provider, model, temperature, endpoint)
+ * - Pre-selected traits (from session defaults)
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Brain, Loader2, CheckCircle, AlertCircle, Play, StopCircle } from 'lucide-react';
 import { adeleApi } from '../../services/adeleApi';
-import type { AdeleTraitInfo, ClassificationResult, BatchProgressResponse } from '../../types/adele';
+import { useAdeleConfigStore } from '../../stores/useAdeleConfigStore';
+import type {
+  AdeleTraitInfo,
+  ClassificationResult,
+  BatchProgressResponse,
+  AdeleModelConfigRequest,
+} from '../../types/adele';
 
 interface Question {
   questionId: string;
@@ -37,12 +47,26 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
   initialSelectedIds,
   onClassificationsComplete,
 }) => {
+  // Get session configuration
+  const {
+    modelConfig,
+    selectedTraits: sessionSelectedTraits,
+    traitEvalMode,
+    initializeFromDefaults,
+  } = useAdeleConfigStore();
+
+  // Initialize session config on mount
+  useEffect(() => {
+    initializeFromDefaults();
+  }, [initializeFromDefaults]);
+
   // Configuration state
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(
     new Set(initialSelectedIds || questions.map((q) => q.questionId))
   );
   const [availableTraits, setAvailableTraits] = useState<AdeleTraitInfo[]>([]);
   const [selectedTraits, setSelectedTraits] = useState<Set<string>>(new Set());
+  const [traitsInitialized, setTraitsInitialized] = useState(false);
   const [traitsLoading, setTraitsLoading] = useState(false);
   const [traitsError, setTraitsError] = useState<string | null>(null);
 
@@ -56,6 +80,19 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
   // WebSocket ref
   const wsRef = useRef<WebSocket | null>(null);
 
+  // Convert model config to API request format
+  const buildLlmConfig = useCallback((): AdeleModelConfigRequest => {
+    return {
+      interface: modelConfig.interface,
+      provider: modelConfig.provider,
+      model_name: modelConfig.modelName,
+      temperature: modelConfig.temperature,
+      endpoint_base_url: modelConfig.endpointBaseUrl,
+      endpoint_api_key: modelConfig.endpointApiKey,
+      trait_eval_mode: traitEvalMode,
+    };
+  }, [modelConfig, traitEvalMode]);
+
   // Load available traits on mount
   useEffect(() => {
     if (!isOpen) return;
@@ -66,8 +103,13 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
       try {
         const traits = await adeleApi.getTraits();
         setAvailableTraits(traits);
-        // Select all traits by default
-        setSelectedTraits(new Set(traits.map((t) => t.name)));
+        // Use session traits if specified, otherwise select all
+        if (sessionSelectedTraits.length > 0 && !traitsInitialized) {
+          setSelectedTraits(new Set(sessionSelectedTraits));
+        } else if (!traitsInitialized) {
+          setSelectedTraits(new Set(traits.map((t) => t.name)));
+        }
+        setTraitsInitialized(true);
       } catch (err) {
         setTraitsError(err instanceof Error ? err.message : 'Failed to load traits');
       } finally {
@@ -76,7 +118,7 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
     };
 
     loadTraits();
-  }, [isOpen]);
+  }, [isOpen, sessionSelectedTraits, traitsInitialized]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -86,6 +128,7 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
       setProgress(null);
       setResults([]);
       setErrorMessage(null);
+      setTraitsInitialized(false);
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
@@ -182,8 +225,9 @@ export const AdeleBatchModal: React.FC<AdeleBatchModalProps> = ({
         .map((q) => ({ questionId: q.questionId, questionText: q.questionText }));
 
       const traitNames = Array.from(selectedTraits);
+      const llmConfig = buildLlmConfig();
 
-      const { jobId: newJobId } = await adeleApi.startBatchClassification(questionsToClassify, traitNames);
+      const { jobId: newJobId } = await adeleApi.startBatchClassification(questionsToClassify, traitNames, llmConfig);
       setJobId(newJobId);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Failed to start classification');

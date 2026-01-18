@@ -51,12 +51,27 @@ export interface ListAdeleTraitsResponse {
 }
 
 /**
+ * Model configuration for ADeLe classification API requests.
+ */
+export interface AdeleModelConfigRequest {
+  interface: 'langchain' | 'openrouter' | 'openai_endpoint';
+  provider: string;
+  model_name: string;
+  temperature: number;
+  endpoint_base_url?: string;
+  endpoint_api_key?: string;
+  /** How traits are evaluated: 'batch' (one call) or 'sequential' (one call per trait) */
+  trait_eval_mode: 'batch' | 'sequential';
+}
+
+/**
  * Request to classify a single question.
  */
 export interface ClassifySingleRequest {
   questionText: string;
   questionId?: string;
   traitNames?: string[];
+  llmConfig?: AdeleModelConfigRequest;
 }
 
 /**
@@ -74,6 +89,7 @@ export interface ClassifySingleResponse {
 export interface ClassifyBatchRequest {
   questions: Array<{ question_id: string; question_text: string }>;
   trait_names?: string[];
+  llm_config?: AdeleModelConfigRequest;
 }
 
 /**
