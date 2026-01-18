@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { API_ENDPOINTS } from '../constants/api';
 import { apiKeyStorage } from '../utils/secureStorage';
 
 /**
@@ -187,14 +188,14 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // Load environment variables (masked)
-      const envResponse = await fetch('/api/config/env-vars');
+      const envResponse = await fetch(API_ENDPOINTS.CONFIG_ENV_VARS);
       if (!envResponse.ok) {
         throw new Error('Failed to load environment variables');
       }
       const envVariables = await envResponse.json();
 
       // Load default configuration
-      const defaultsResponse = await fetch('/api/config/defaults');
+      const defaultsResponse = await fetch(API_ENDPOINTS.CONFIG_DEFAULTS);
       if (!defaultsResponse.ok) {
         throw new Error('Failed to load default configuration');
       }
@@ -241,7 +242,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   // Load unmasked environment variables
   loadUnmaskedEnvVariables: async () => {
     try {
-      const response = await fetch('/api/config/env-vars/unmasked');
+      const response = await fetch(API_ENDPOINTS.CONFIG_ENV_VARS_UNMASKED);
       if (!response.ok) {
         throw new Error('Failed to load unmasked environment variables');
       }
@@ -301,7 +302,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         default_async_max_workers: state.defaultAsyncMaxWorkers,
       };
 
-      const response = await fetch('/api/config/defaults', {
+      const response = await fetch(API_ENDPOINTS.CONFIG_DEFAULTS, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(defaultsToSave),
@@ -368,7 +369,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   updateEnvVariable: async (key, value) => {
     set({ isSaving: true, error: null });
     try {
-      const response = await fetch('/api/config/env-vars', {
+      const response = await fetch(API_ENDPOINTS.CONFIG_ENV_VARS, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, value }),
@@ -395,7 +396,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   updateEnvVariables: async (variables) => {
     set({ isSaving: true, error: null });
     try {
-      const response = await fetch('/api/config/env-vars/bulk', {
+      const response = await fetch(API_ENDPOINTS.CONFIG_ENV_VARS_BULK, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ variables }),
@@ -422,7 +423,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   updateEnvFileContents: async (content) => {
     set({ isSaving: true, error: null });
     try {
-      const response = await fetch('/api/config/env-file', {
+      const response = await fetch(API_ENDPOINTS.CONFIG_ENV_FILE, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -449,7 +450,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   removeEnvVariable: async (key) => {
     set({ isSaving: true, error: null });
     try {
-      const response = await fetch(`/api/config/env-vars/${key}`, {
+      const response = await fetch(API_ENDPOINTS.CONFIG_ENV_VAR_DELETE(key), {
         method: 'DELETE',
       });
 
