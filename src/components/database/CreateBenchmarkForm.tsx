@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, X, Loader } from 'lucide-react';
 import { csrf } from '../../utils/csrf';
+import { API_ENDPOINTS } from '../../constants/api';
 
 interface CreateBenchmarkFormProps {
   storageUrl: string;
@@ -28,7 +29,7 @@ export const CreateBenchmarkForm: React.FC<CreateBenchmarkFormProps> = ({ storag
     setError(null);
 
     try {
-      const response = await csrf.fetchWithCsrf('/api/database/create-benchmark', {
+      const response = await csrf.fetchWithCsrf(API_ENDPOINTS.DATABASE_CREATE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -19,15 +19,16 @@ export const mockBenchmarkList = [
 ];
 
 export const databaseHandlers = [
-  // List benchmarks
-  http.get('/api/database/benchmarks', () => {
+  // List benchmarks (v2: GET /api/v2/benchmarks)
+  http.get('/api/v2/benchmarks', () => {
     return HttpResponse.json({
       benchmarks: mockBenchmarkList,
     });
   }),
 
-  // Load benchmark
-  http.post('/api/database/load-benchmark', () => {
+  // Load benchmark (v2: GET /api/v2/benchmarks/:name - method changed from POST to GET)
+  http.get('/api/v2/benchmarks/:name', ({ params }) => {
+    const { name } = params;
     return HttpResponse.json({
       success: true,
       checkpoint: {
@@ -41,14 +42,14 @@ export const databaseHandlers = [
       },
       global_rubric: null,
       dataset_metadata: {
-        name: 'Test Benchmark',
+        name: name || 'Test Benchmark',
         description: 'A test benchmark',
       },
     });
   }),
 
-  // Save benchmark
-  http.post('/api/database/save-benchmark', () => {
+  // Save benchmark (v2: PUT /api/v2/benchmarks/:name - method changed from POST to PUT)
+  http.put('/api/v2/benchmarks/:name', () => {
     return HttpResponse.json({
       success: true,
       message: 'Benchmark saved successfully',
@@ -56,55 +57,55 @@ export const databaseHandlers = [
     });
   }),
 
-  // Resolve duplicates
-  http.post('/api/database/resolve-duplicates', () => {
+  // Resolve duplicates (v2: POST /api/v2/benchmarks/:name/duplicates)
+  http.post('/api/v2/benchmarks/:name/duplicates', () => {
     return HttpResponse.json({
       success: true,
       message: 'Duplicates resolved',
     });
   }),
 
-  // Delete benchmark
-  http.post('/api/database/delete-benchmark', () => {
+  // Delete benchmark (v2: DELETE /api/v2/benchmarks/:name)
+  http.delete('/api/v2/benchmarks/:name', () => {
     return HttpResponse.json({
       success: true,
       message: 'Benchmark deleted',
     });
   }),
 
-  // Create benchmark
-  http.post('/api/database/create-benchmark', () => {
+  // Create benchmark (v2: POST /api/v2/benchmarks)
+  http.post('/api/v2/benchmarks', () => {
     return HttpResponse.json({
       success: true,
       message: 'Benchmark created',
     });
   }),
 
-  // Import results
-  http.post('/api/database/import-results', () => {
+  // Import results (v2: POST /api/v2/benchmarks/:name/results)
+  http.post('/api/v2/benchmarks/:name/results', () => {
     return HttpResponse.json({
       success: true,
       imported_count: 5,
     });
   }),
 
-  // Delete database
-  http.post('/api/database/delete', () => {
+  // Delete database (v2: DELETE /api/v2/databases - method changed from POST to DELETE)
+  http.delete('/api/v2/databases', () => {
     return HttpResponse.json({
       success: true,
       message: 'Database deleted',
     });
   }),
 
-  // List databases
-  http.get('/api/database/list-databases', () => {
+  // List databases (v2: GET /api/v2/databases)
+  http.get('/api/v2/databases', () => {
     return HttpResponse.json({
       databases: ['sqlite:///benchmarks.db', 'sqlite:///results.db'],
     });
   }),
 
-  // Connect to database
-  http.post('/api/database/connect', () => {
+  // Connect to database (v2: POST /api/v2/databases/connections)
+  http.post('/api/v2/databases/connections', () => {
     return HttpResponse.json({
       success: true,
       message: 'Connected to database',

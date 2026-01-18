@@ -10,6 +10,7 @@ import { logger } from '../utils/logger';
 import { handleApiError } from '../utils/errorHandler';
 import { downloadJSON } from '../utils/fileDownload';
 import { connectTemplateProgressWebSocket, disconnectTemplateProgressWebSocket } from '../services/templateWebSocket';
+import { API_ENDPOINTS } from '../constants/api';
 
 // Extraction workflow types
 export interface FileInfo {
@@ -227,7 +228,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         force_regenerate: forceRegenerate,
       };
 
-      const response = await fetch('/api/generate-answer-templates', {
+      const response = await fetch(API_ENDPOINTS.GENERATE_TEMPLATES, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -270,8 +271,8 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     if (!state.jobId) return;
 
     try {
-      await fetch(`/api/cancel-generation/${state.jobId}`, {
-        method: 'POST',
+      await fetch(API_ENDPOINTS.CANCEL_GENERATION(state.jobId), {
+        method: 'DELETE',
       });
 
       // Disconnect WebSocket

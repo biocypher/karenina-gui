@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Eye, EyeOff, RefreshCw, Save, Trash2 } from 'lucide-react';
+import { API_ENDPOINTS } from '../../constants/api';
 import { useConfigStore } from '../../stores/useConfigStore';
 import { logger } from '../../utils/logger';
 
@@ -32,7 +33,7 @@ export function EnvConfigTab({ setLocalError }: EnvConfigTabProps): JSX.Element 
   // Load .env file content
   const loadEnvFileContent = async () => {
     try {
-      const response = await fetch('/api/config/env-file');
+      const response = await fetch(API_ENDPOINTS.CONFIG_ENV_FILE);
       if (response.ok) {
         const data = await response.json();
         setEnvFileContent(data.content);

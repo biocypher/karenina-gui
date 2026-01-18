@@ -148,7 +148,7 @@ describe('End-to-End Workflow Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/presets/high-quality-preset')) {
+        if (url.includes('/api/v2/presets/high-quality-preset')) {
           return {
             ok: true,
             json: async () => ({

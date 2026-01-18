@@ -27,46 +27,52 @@ export const mockPresets = [
 ];
 
 export const presetHandlers = [
-  // List all presets
-  http.get('/api/presets', () => {
+  // V2 endpoints
+  // List all presets (V2)
+  http.get('/api/v2/presets', () => {
     return HttpResponse.json({
       presets: mockPresets,
     });
   }),
 
-  // Get single preset
-  http.get('/api/presets/:presetId', ({ params }) => {
+  // Get single preset (V2)
+  http.get('/api/v2/presets/:presetId', ({ params }) => {
     const preset = mockPresets.find((p) => p.id === params.presetId);
     if (preset) {
-      return HttpResponse.json(preset);
+      return HttpResponse.json({ preset });
     }
     return HttpResponse.json({ error: 'Preset not found' }, { status: 404 });
   }),
 
-  // Create preset
-  http.post('/api/presets', async ({ request }) => {
+  // Create preset (V2)
+  http.post('/api/v2/presets', async ({ request }) => {
     const body = await request.json();
     return HttpResponse.json({
-      id: 'preset-new',
-      ...body,
+      message: 'Preset created successfully',
+      preset: {
+        id: 'preset-new',
+        ...body,
+      },
     });
   }),
 
-  // Update preset
-  http.put('/api/presets/:presetId', async ({ params, request }) => {
+  // Update preset (V2)
+  http.put('/api/v2/presets/:presetId', async ({ params, request }) => {
     const body = await request.json();
     return HttpResponse.json({
-      id: params.presetId,
-      ...body,
-      updated: true,
+      message: 'Preset updated successfully',
+      preset: {
+        id: params.presetId,
+        ...body,
+        updated: true,
+      },
     });
   }),
 
-  // Delete preset
-  http.delete('/api/presets/:presetId', () => {
+  // Delete preset (V2)
+  http.delete('/api/v2/presets/:presetId', () => {
     return HttpResponse.json({
-      success: true,
-      message: 'Preset deleted',
+      message: 'Preset deleted successfully',
     });
   }),
 ];

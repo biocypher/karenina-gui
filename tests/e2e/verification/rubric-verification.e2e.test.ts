@@ -112,8 +112,8 @@ const transformRubricForApi = (rubric: Record<string, unknown>): Record<string, 
 // Helper to set the global rubric via API
 const setGlobalRubric = async (serverUrl: string, rubric: unknown) => {
   const transformedRubric = transformRubricForApi(rubric as Record<string, unknown>);
-  const response = await fetch(`${serverUrl}/api/rubric`, {
-    method: 'POST',
+  const response = await fetch(`${serverUrl}/api/v2/rubrics/current`, {
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(transformedRubric),
   });
@@ -125,7 +125,7 @@ const setGlobalRubric = async (serverUrl: string, rubric: unknown) => {
 
 // Helper to clear the global rubric
 const clearGlobalRubric = async (serverUrl: string) => {
-  await fetch(`${serverUrl}/api/rubric`, { method: 'DELETE' });
+  await fetch(`${serverUrl}/api/v2/rubrics/current`, { method: 'DELETE' });
 };
 
 // Helper to extract first result from results
@@ -161,14 +161,14 @@ const waitForJobCompletion = async (
 }> => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const response = await fetch(`${serverUrl}/api/verification-progress/${jobId}`);
+    const response = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/progress`);
     if (!response.ok) {
       throw new Error(`Failed to get progress: ${response.status}`);
     }
     const progress = await response.json();
 
     if (progress.status === 'completed' || progress.status === 'failed' || progress.status === 'cancelled') {
-      const resultsResponse = await fetch(`${serverUrl}/api/verification-results/${jobId}`);
+      const resultsResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/results`);
       if (resultsResponse.ok) {
         const resultsData = await resultsResponse.json();
         return {
@@ -192,8 +192,8 @@ describe('E2E: Rubric Verification', () => {
     // Cancel any active jobs
     for (const jobId of activeJobIds) {
       try {
-        await fetch(`${serverUrl}/api/cancel-verification/${jobId}`, {
-          method: 'POST',
+        await fetch(`${serverUrl}/api/v2/verifications/${jobId}`, {
+          method: 'DELETE',
         });
       } catch {
         // Ignore cleanup errors
@@ -224,7 +224,7 @@ describe('E2E: Rubric Verification', () => {
       const globalRubric = checkpoint.globalRubric;
       await setGlobalRubric(serverUrl, globalRubric);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -271,7 +271,7 @@ describe('E2E: Rubric Verification', () => {
 
       await setGlobalRubric(serverUrl, globalRubric);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -319,7 +319,7 @@ describe('E2E: Rubric Verification', () => {
 
       await setGlobalRubric(serverUrl, globalRubric);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -367,7 +367,7 @@ describe('E2E: Rubric Verification', () => {
 
       await setGlobalRubric(serverUrl, globalRubric);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -414,7 +414,7 @@ describe('E2E: Rubric Verification', () => {
 
       await setGlobalRubric(serverUrl, globalRubric);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -456,7 +456,7 @@ describe('E2E: Rubric Verification', () => {
 
       await setGlobalRubric(serverUrl, globalRubric);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -502,7 +502,7 @@ describe('E2E: Rubric Verification', () => {
       await setGlobalRubric(serverUrl, globalRubric);
 
       // Use first question - regex traits apply globally
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -556,7 +556,7 @@ describe('E2E: Rubric Verification', () => {
 
       await setGlobalRubric(serverUrl, globalRubric);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -604,7 +604,7 @@ describe('E2E: Rubric Verification', () => {
 
       await setGlobalRubric(serverUrl, globalRubric);
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

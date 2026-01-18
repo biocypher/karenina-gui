@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Loader, Trash2, X, Database, FileText } from 'lucide-react';
 import { csrf } from '../../utils/csrf';
+import { API_ENDPOINTS } from '../../constants/api';
 
 interface BenchmarkInfo {
   id: string;
@@ -36,13 +37,8 @@ export const DeleteBenchmarkModal: React.FC<DeleteBenchmarkModalProps> = ({
     setError(null);
 
     try {
-      const response = await csrf.fetchWithCsrf('/api/database/delete-benchmark', {
+      const response = await csrf.fetchWithCsrf(API_ENDPOINTS.DATABASE_DELETE(benchmark.name, storageUrl), {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storage_url: storageUrl,
-          benchmark_name: benchmark.name,
-        }),
       });
 
       if (!response.ok) {

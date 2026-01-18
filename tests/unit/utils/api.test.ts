@@ -5,14 +5,14 @@ describe('API Constants', () => {
   describe('API_ENDPOINTS', () => {
     it('should have static endpoint paths', () => {
       expect(API_ENDPOINTS.TIMESTAMP).toBe('/api/timestamp');
-      expect(API_ENDPOINTS.START_VERIFICATION).toBe('/api/start-verification');
+      expect(API_ENDPOINTS.START_VERIFICATION).toBe('/api/v2/verifications');
     });
 
     it('should generate dynamic endpoint paths correctly', () => {
       const testJobId = 'test-job-123';
 
-      expect(API_ENDPOINTS.VERIFICATION_PROGRESS(testJobId)).toBe('/api/verification-progress/test-job-123');
-      expect(API_ENDPOINTS.CANCEL_VERIFICATION(testJobId)).toBe('/api/cancel-verification/test-job-123');
+      expect(API_ENDPOINTS.VERIFICATION_PROGRESS(testJobId)).toBe('/api/v2/verifications/test-job-123/progress');
+      expect(API_ENDPOINTS.CANCEL_VERIFICATION(testJobId)).toBe('/api/v2/verifications/test-job-123');
     });
 
     it('should generate export endpoint with format parameter', () => {
@@ -20,7 +20,7 @@ describe('API Constants', () => {
       const format = 'csv';
 
       expect(API_ENDPOINTS.EXPORT_VERIFICATION(testJobId, format)).toBe(
-        '/api/export-verification/test-job-123?fmt=csv'
+        '/api/v2/verifications/test-job-123/export?fmt=csv'
       );
     });
 
@@ -72,9 +72,9 @@ describe('API Constants', () => {
     });
 
     it('should maintain consistent path structure', () => {
-      // All API endpoints should start with /api/
+      // TIMESTAMP remains at v1 for informational purposes, all others should be /api/v2/
       expect(API_ENDPOINTS.TIMESTAMP).toMatch(/^\/api\//);
-      expect(API_ENDPOINTS.START_VERIFICATION).toMatch(/^\/api\//);
+      expect(API_ENDPOINTS.START_VERIFICATION).toMatch(/^\/api\/v2\//);
     });
   });
 });

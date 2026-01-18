@@ -21,7 +21,7 @@ describe('Error Handling', () => {
     it('should handle network failure gracefully', async () => {
       // Mock network error on config endpoint
       server.use(
-        http.get('/api/config/defaults', () => {
+        http.get('/api/v2/config/defaults', () => {
           return HttpResponse.error();
         })
       );
@@ -41,7 +41,7 @@ describe('Error Handling', () => {
 
     it('should handle 500 errors gracefully', async () => {
       server.use(
-        http.get('/api/config/defaults', () => {
+        http.get('/api/v2/config/defaults', () => {
           return HttpResponse.json({ error: 'Internal Server Error' }, { status: 500 });
         })
       );
@@ -60,7 +60,7 @@ describe('Error Handling', () => {
 
     it('should handle timeout errors gracefully', async () => {
       server.use(
-        http.get('/api/config/defaults', async () => {
+        http.get('/api/v2/config/defaults', async () => {
           // Simulate slow response
           await new Promise((resolve) => setTimeout(resolve, 100));
           return HttpResponse.json({ success: true });
@@ -79,7 +79,7 @@ describe('Error Handling', () => {
   describe('API Error Responses', () => {
     it('should handle validation errors', async () => {
       server.use(
-        http.post('/api/start-verification', () => {
+        http.post('/api/v2/verifications', () => {
           return HttpResponse.json({ error: 'Validation failed: Missing required fields' }, { status: 400 });
         })
       );
@@ -151,7 +151,7 @@ describe('Error Handling', () => {
     it('should not crash when receiving unexpected data shapes', async () => {
       // Mock API returning unexpected data shape
       server.use(
-        http.get('/api/config/defaults', () => {
+        http.get('/api/v2/config/defaults', () => {
           return HttpResponse.json({
             unexpected_field: 'unexpected_value',
             // Missing expected fields

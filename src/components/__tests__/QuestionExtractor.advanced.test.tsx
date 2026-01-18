@@ -187,14 +187,14 @@ describe('QuestionExtractor - Advanced Extraction', () => {
     fireEvent.click(extractButton);
 
     // Wait for API call and verify payload includes metadata settings
+    // V2 API: file_id is in URL path, not in body
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith('/api/extract-questions', {
+      expect(fetch).toHaveBeenCalledWith('/api/v2/files/test-file-id/questions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          file_id: 'test-file-id',
           question_column: 'Question',
           answer_column: 'Answer',
           sheet_name: null,
@@ -249,14 +249,14 @@ describe('QuestionExtractor - Advanced Extraction', () => {
     fireEvent.click(extractButton);
 
     // Verify API call includes null values for metadata columns
+    // V2 API: file_id is in URL path, not in body
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith('/api/extract-questions', {
+      expect(fetch).toHaveBeenCalledWith('/api/v2/files/test-file-id/questions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          file_id: 'test-file-id',
           question_column: 'Question',
           answer_column: 'Answer',
           sheet_name: null,

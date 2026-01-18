@@ -4,6 +4,7 @@ import { Modal } from './ui/Modal';
 import { useConfigStore } from '../stores/useConfigStore';
 import { csrf } from '../utils/csrf';
 import { logger } from '../utils/logger';
+import { API_ENDPOINTS } from '../constants/api';
 import { connectTemplateProgressWebSocket, disconnectTemplateProgressWebSocket } from '../services/templateWebSocket';
 import { QuestionFormInputs, QuestionMetadataForm, TemplateGenerationSection, GenerationConfig } from './addQuestion';
 
@@ -151,7 +152,7 @@ export const AddQuestionModal: React.FC<AddQuestionModalProps> = ({ isOpen, onCl
         },
       };
 
-      const response = await csrf.fetchWithCsrf('/api/generate-answer-templates', {
+      const response = await csrf.fetchWithCsrf(API_ENDPOINTS.GENERATE_TEMPLATES, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -2,6 +2,7 @@ import { Checkpoint } from '../types';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { useRubricStore } from '../stores/useRubricStore';
 import { logger } from './logger';
+import { API_ENDPOINTS } from '../constants/api';
 
 /**
  * Auto-save the current checkpoint to the connected database.
@@ -53,14 +54,14 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
 
     // Call the save-benchmark API with detect_duplicates=false
     // This allows updating existing questions without triggering duplicate detection
-    const response = await fetch('/api/database/save-benchmark', {
-      method: 'POST',
+    // V2 API: PUT /api/v2/benchmarks/{name} with name in URL path
+    const response = await fetch(API_ENDPOINTS.DATABASE_SAVE(currentBenchmarkName), {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         storage_url: storageUrl,
-        benchmark_name: currentBenchmarkName,
         checkpoint_data: checkpointData,
         detect_duplicates: false, // Skip duplicate detection for auto-save
       }),

@@ -17,7 +17,7 @@ describe('E2E: Presets API', () => {
 
   describe('Preset Listing', () => {
     it('should list available presets', async () => {
-      const response = await fetch(`${serverUrl}/api/presets`);
+      const response = await fetch(`${serverUrl}/api/v2/presets`);
 
       expect(response.ok).toBe(true);
 
@@ -28,7 +28,7 @@ describe('E2E: Presets API', () => {
     });
 
     it('should have default preset available', async () => {
-      const response = await fetch(`${serverUrl}/api/presets`);
+      const response = await fetch(`${serverUrl}/api/v2/presets`);
 
       expect(response.ok).toBe(true);
 
@@ -43,7 +43,7 @@ describe('E2E: Presets API', () => {
   describe('Preset Loading', () => {
     it('should load a specific preset', async () => {
       // First get list of presets
-      const listResponse = await fetch(`${serverUrl}/api/presets`);
+      const listResponse = await fetch(`${serverUrl}/api/v2/presets`);
       expect(listResponse.ok).toBe(true);
 
       const presets = await listResponse.json();
@@ -63,7 +63,7 @@ describe('E2E: Presets API', () => {
     });
 
     it('should return proper preset structure', async () => {
-      const response = await fetch(`${serverUrl}/api/presets`);
+      const response = await fetch(`${serverUrl}/api/v2/presets`);
       expect(response.ok).toBe(true);
 
       const presets = await response.json();
@@ -90,7 +90,7 @@ describe('E2E: Generation API', () => {
 
   describe('Template Generation', () => {
     it('should reject generation with missing parameters', async () => {
-      const response = await fetch(`${serverUrl}/api/generate-template`, {
+      const response = await fetch(`${serverUrl}/api/v2/templates/generation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -106,7 +106,7 @@ describe('E2E: Generation API', () => {
     it('should have rubric generation endpoint available', async () => {
       // Test that the endpoint exists and accepts requests
       // (may require fixtures to actually work)
-      const response = await fetch(`${serverUrl}/api/generate-rubric`, {
+      const response = await fetch(`${serverUrl}/api/v2/rubrics/generation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Loader, CheckCircle, AlertCircle, Folder, Plus, Unplug, Trash2 } from 'lucide-react';
 import { DeleteDatabaseModal } from './DeleteDatabaseModal';
+import { API_ENDPOINTS } from '../../constants/api';
 
 interface CurrentConnection {
   storageUrl: string;
@@ -74,7 +75,7 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
   const loadDatabases = async () => {
     setIsLoadingDatabases(true);
     try {
-      const response = await fetch('/api/database/list-databases');
+      const response = await fetch(API_ENDPOINTS.DATABASE_LIST);
       if (!response.ok) {
         throw new Error('Failed to load databases');
       }
@@ -107,7 +108,7 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
 
     try {
       const storageUrl = `sqlite:///${selectedDatabase.path}`;
-      const response = await fetch('/api/database/connect', {
+      const response = await fetch(API_ENDPOINTS.DATABASE_CONNECT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -162,7 +163,7 @@ export const DatabaseConnectTab: React.FC<DatabaseConnectTabProps> = ({
     setConnectionStatus('idle');
 
     try {
-      const response = await fetch('/api/database/connect', {
+      const response = await fetch(API_ENDPOINTS.DATABASE_CONNECT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

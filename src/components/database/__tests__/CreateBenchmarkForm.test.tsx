@@ -84,7 +84,7 @@ describe('CreateBenchmarkForm', () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/database/create-benchmark',
+        '/api/v2/benchmarks',
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -124,7 +124,7 @@ describe('CreateBenchmarkForm', () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/database/create-benchmark',
+        '/api/v2/benchmarks',
         expect.objectContaining({
           body: JSON.stringify({
             storage_url: mockStorageUrl,
@@ -230,7 +230,7 @@ describe('CreateBenchmarkForm', () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/database/create-benchmark',
+        '/api/v2/benchmarks',
         expect.objectContaining({
           body: expect.stringContaining('"name":"Trimmed"'),
         })

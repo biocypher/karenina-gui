@@ -28,7 +28,7 @@ describe('E2E: Health Check', () => {
 
     it('should return CSRF token', async () => {
       const serverUrl = getServerUrl();
-      const response = await fetch(`${serverUrl}/api/csrf-token`);
+      const response = await fetch(`${serverUrl}/api/v2/auth/csrf-token`);
 
       expect(response.ok).toBe(true);
 
@@ -39,7 +39,7 @@ describe('E2E: Health Check', () => {
 
     it('should list available presets', async () => {
       const serverUrl = getServerUrl();
-      const response = await fetch(`${serverUrl}/api/presets`);
+      const response = await fetch(`${serverUrl}/api/v2/presets`);
 
       expect(response.ok).toBe(true);
 

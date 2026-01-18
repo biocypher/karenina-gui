@@ -7,7 +7,7 @@
  * 3. Storing the token in memory only (not persisted for security)
  *
  * BACKEND REQUIREMENTS:
- * - Backend should provide an endpoint like /api/auth/csrf-token that returns { token: string }
+ * - Backend should provide an endpoint like /api/v2/auth/csrf-token that returns { token: string }
  * - Backend should validate the CSRF token on all mutation requests
  * - Token should be tied to the user session
  *
@@ -30,6 +30,7 @@
  * ```
  */
 
+import { API_ENDPOINTS } from '../constants/api';
 import { logger } from './logger';
 
 interface CsrfTokenResponse {
@@ -44,7 +45,7 @@ class CsrfManager {
   private isInitialized = false;
   private initializationPromise: Promise<boolean> | null = null;
   private readonly tokenHeader = 'X-CSRF-Token';
-  private readonly defaultEndpoint = '/api/auth/csrf-token';
+  private readonly defaultEndpoint = API_ENDPOINTS.CSRF_TOKEN;
 
   /**
    * Initialize CSRF protection by fetching a token from the backend

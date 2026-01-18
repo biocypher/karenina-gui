@@ -253,7 +253,7 @@ describe('BenchmarkTab', () => {
     fireEvent.click(runSelectedButton);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/start-verification', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/v2/verifications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -318,7 +318,7 @@ describe('BenchmarkTab', () => {
     fireEvent.click(runSelectedButton);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/start-verification', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/v2/verifications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -326,7 +326,7 @@ describe('BenchmarkTab', () => {
         body: expect.stringContaining('"system_prompt":"Custom answering prompt for testing"'),
       });
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/start-verification', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/v2/verifications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -17,13 +17,14 @@ export const mockDefaults = {
 };
 
 export const configHandlers = [
-  // Get environment variables (masked)
-  http.get('/api/config/env-vars', () => {
+  // V2 endpoints
+  // Get environment variables - masked (V2)
+  http.get('/api/v2/config/env-vars', () => {
     return HttpResponse.json(mockEnvVars);
   }),
 
-  // Get environment variables (unmasked)
-  http.get('/api/config/env-vars/unmasked', () => {
+  // Get environment variables - unmasked (V2)
+  http.get('/api/v2/config/env-vars/unmasked', () => {
     return HttpResponse.json({
       ANTHROPIC_API_KEY: 'sk-ant-test-key',
       OPENAI_API_KEY: 'sk-test-key',
@@ -31,55 +32,59 @@ export const configHandlers = [
     });
   }),
 
-  // Set environment variable
-  http.post('/api/config/env-vars', () => {
+  // Update environment variable (V2 - uses PUT)
+  http.put('/api/v2/config/env-vars', () => {
     return HttpResponse.json({
-      success: true,
-      message: 'Environment variable set',
+      message: 'Environment variable updated',
     });
   }),
 
-  // Set environment variables in bulk
-  http.post('/api/config/env-vars/bulk', () => {
+  // Update environment variables in bulk (V2 - uses PUT)
+  http.put('/api/v2/config/env-vars/bulk', () => {
     return HttpResponse.json({
-      success: true,
-      message: 'Environment variables updated',
+      message: 'All variables updated successfully',
+      updated: [],
     });
   }),
 
-  // Delete environment variable
-  http.delete('/api/config/env-vars/:key', () => {
+  // Delete environment variable (V2)
+  http.delete('/api/v2/config/env-vars/:key', () => {
     return HttpResponse.json({
-      success: true,
-      message: 'Environment variable deleted',
+      message: 'Environment variable removed',
     });
   }),
 
-  // Get env file contents
-  http.get('/api/config/env-file', () => {
+  // Get env file contents (V2)
+  http.get('/api/v2/config/env-file', () => {
     return HttpResponse.json({
       content: 'ANTHROPIC_API_KEY=sk-ant-test\nOPENAI_API_KEY=sk-test',
     });
   }),
 
-  // Update env file
-  http.post('/api/config/env-file', () => {
+  // Update env file (V2 - uses PUT)
+  http.put('/api/v2/config/env-file', () => {
     return HttpResponse.json({
-      success: true,
-      message: 'Env file updated',
+      message: 'Successfully updated .env file',
     });
   }),
 
-  // Get defaults
-  http.get('/api/config/defaults', () => {
+  // Get defaults (V2)
+  http.get('/api/v2/config/defaults', () => {
     return HttpResponse.json(mockDefaults);
   }),
 
-  // Update defaults
-  http.post('/api/config/defaults', () => {
+  // Update defaults (V2 - uses PUT)
+  http.put('/api/v2/config/defaults', () => {
     return HttpResponse.json({
-      success: true,
-      message: 'Defaults updated',
+      message: 'Default configuration saved successfully',
+      config: mockDefaults,
+    });
+  }),
+
+  // V2 Auth - CSRF token
+  http.get('/api/v2/auth/csrf-token', () => {
+    return HttpResponse.json({
+      token: 'test-csrf-token-v2',
     });
   }),
 

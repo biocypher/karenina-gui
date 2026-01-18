@@ -5,6 +5,7 @@
 
 import type { TemplateGenerationProgress } from '../types';
 import { logger } from '../utils/logger';
+import { API_ENDPOINTS } from '../constants/api';
 
 /**
  * Progress update callback type
@@ -152,7 +153,7 @@ export class TemplateGenerationWebSocket {
   private fetchFinalResult(jobId: string): void {
     if (!this.handlers) return;
 
-    fetch(`/api/generation-progress/${jobId}`)
+    fetch(API_ENDPOINTS.GENERATION_PROGRESS(jobId))
       .then((res) => res.json())
       .then((data) => {
         if (data.result) {

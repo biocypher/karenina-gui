@@ -41,7 +41,7 @@ describe('Preset Management Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/presets')) {
+        if (url.includes('/api/v2/presets')) {
           return {
             ok: true,
             json: async () => ({
@@ -124,7 +124,7 @@ describe('Preset Management Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/presets/preset-1')) {
+        if (url.includes('/api/v2/presets/preset-1')) {
           return {
             ok: true,
             json: async () => ({ preset: mockPresetDetail }),
@@ -237,7 +237,7 @@ describe('Preset Management Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/presets') && init?.method === 'POST') {
+        if (url.includes('/api/v2/presets') && init?.method === 'POST') {
           return {
             ok: true,
             json: async () => ({
@@ -328,7 +328,7 @@ describe('Preset Management Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/presets/preset-1') && init?.method === 'PUT') {
+        if (url.includes('/api/v2/presets/preset-1') && init?.method === 'PUT') {
           return {
             ok: true,
             json: async () => ({
@@ -406,7 +406,7 @@ describe('Preset Management Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/presets/preset-1') && init?.method === 'DELETE') {
+        if (url.includes('/api/v2/presets/preset-1') && init?.method === 'DELETE') {
           return {
             ok: true,
             json: async () => ({ success: true, message: 'Preset deleted' }),
@@ -619,7 +619,7 @@ describe('Preset Management Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/presets/preset-to-apply')) {
+        if (url.includes('/api/v2/presets/preset-to-apply')) {
           return {
             ok: true,
             json: async () => ({ preset: mockPresetDetail }),
@@ -704,7 +704,7 @@ describe('Preset Management Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/presets') && init?.method === 'POST') {
+        if (url.includes('/api/v2/presets') && init?.method === 'POST') {
           return {
             ok: true,
             json: async () => ({

@@ -160,7 +160,7 @@ export function useVerificationRun({
 
       try {
         await fetch(API_ENDPOINTS.CANCEL_VERIFICATION(jobId), {
-          method: HTTP_METHODS.POST,
+          method: HTTP_METHODS.DELETE,
         });
 
         // Note: WebSocket disconnect is handled by the caller

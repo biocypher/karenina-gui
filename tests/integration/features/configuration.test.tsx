@@ -87,7 +87,7 @@ describe('Configuration Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/config/defaults')) {
+        if (url.includes('/api/v2/config/defaults')) {
           fetchCallCount++;
           return {
             ok: true,
@@ -95,7 +95,7 @@ describe('Configuration Integration Tests', () => {
           } as Response;
         }
 
-        if (url.includes('/api/config/env-vars')) {
+        if (url.includes('/api/v2/config/env-vars')) {
           fetchCallCount++;
           return {
             ok: true,
@@ -188,7 +188,7 @@ describe('Configuration Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/config/defaults') && init?.method === 'PUT') {
+        if (url.includes('/api/v2/config/defaults') && init?.method === 'PUT') {
           capturedBody = JSON.parse(init.body as string);
           return {
             ok: true,
@@ -338,7 +338,7 @@ describe('Configuration Integration Tests', () => {
       // Mock successful save
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
-        if (url.includes('/api/config/defaults') && init?.method === 'PUT') {
+        if (url.includes('/api/v2/config/defaults') && init?.method === 'PUT') {
           return { ok: true, json: async () => ({ success: true }) } as Response;
         }
         return { ok: true, json: async () => ({}) } as Response;
@@ -393,7 +393,7 @@ describe('Configuration Integration Tests', () => {
 
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
-        if (url.includes('/api/config/env-vars')) {
+        if (url.includes('/api/v2/config/env-vars')) {
           return {
             ok: true,
             json: async () => mockEnvVars,
@@ -417,7 +417,7 @@ describe('Configuration Integration Tests', () => {
 
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : input.url;
-        if (url.includes('/api/config/env-vars/unmasked')) {
+        if (url.includes('/api/v2/config/env-vars/unmasked')) {
           return {
             ok: true,
             json: async () => mockUnmaskedVars,
@@ -440,7 +440,7 @@ describe('Configuration Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/config/env-vars') && init?.method === 'PUT') {
+        if (url.includes('/api/v2/config/env-vars') && init?.method === 'PUT') {
           const body = JSON.parse(init.body as string);
           capturedKey = body.key;
           capturedValue = body.value;
@@ -476,7 +476,7 @@ describe('Configuration Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/config/env-vars/bulk')) {
+        if (url.includes('/api/v2/config/env-vars/bulk')) {
           const body = JSON.parse(init.body as string);
           capturedVariables = body.variables;
           return {
@@ -503,7 +503,7 @@ describe('Configuration Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input) => {
         const url = typeof input === 'string' ? input : url;
 
-        if (url.includes('/api/config/env-vars/VAR_TO_DELETE')) {
+        if (url.includes('/api/v2/config/env-vars/VAR_TO_DELETE')) {
           capturedKey = 'VAR_TO_DELETE';
           return {
             ok: true,
@@ -531,7 +531,7 @@ describe('Configuration Integration Tests', () => {
       vi.mocked(global.fetch).mockImplementation(async (input, init) => {
         const url = typeof input === 'string' ? input : input.url;
 
-        if (url.includes('/api/config/env-file') && init?.method === 'PUT') {
+        if (url.includes('/api/v2/config/env-file') && init?.method === 'PUT') {
           const body = JSON.parse(init.body as string);
           capturedContents = body.content;
           return {

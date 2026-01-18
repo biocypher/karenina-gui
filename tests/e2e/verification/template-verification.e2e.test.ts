@@ -88,7 +88,7 @@ const waitForJobCompletion = async (
 }> => {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const response = await fetch(`${serverUrl}/api/verification-progress/${jobId}`);
+    const response = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/progress`);
     if (!response.ok) {
       throw new Error(`Failed to get progress: ${response.status}`);
     }
@@ -96,7 +96,7 @@ const waitForJobCompletion = async (
 
     if (progress.status === 'completed' || progress.status === 'failed' || progress.status === 'cancelled') {
       // Fetch final results
-      const resultsResponse = await fetch(`${serverUrl}/api/verification-results/${jobId}`);
+      const resultsResponse = await fetch(`${serverUrl}/api/v2/verifications/${jobId}/results`);
       if (resultsResponse.ok) {
         const resultsData = await resultsResponse.json();
         return {
@@ -154,8 +154,8 @@ describe('E2E: Template Verification', () => {
   afterEach(async () => {
     for (const jobId of activeJobIds) {
       try {
-        await fetch(`${serverUrl}/api/cancel-verification/${jobId}`, {
-          method: 'POST',
+        await fetch(`${serverUrl}/api/v2/verifications/${jobId}`, {
+          method: 'DELETE',
         });
       } catch {
         // Ignore cleanup errors
@@ -177,7 +177,7 @@ describe('E2E: Template Verification', () => {
       const config = createBaseConfig();
 
       // Use q001 (capital of France) - simple template_simple scenario
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -218,7 +218,7 @@ describe('E2E: Template Verification', () => {
       const config = createBaseConfig();
 
       // Use q002 (15 * 7 = 105) which expects integer result
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -269,7 +269,7 @@ describe('E2E: Template Verification', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -319,7 +319,7 @@ describe('E2E: Template Verification', () => {
       const finishedTemplates = buildFinishedTemplates(checkpoint);
       const config = createBaseConfig();
 
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -372,7 +372,7 @@ describe('E2E: Template Verification', () => {
       const config = createBaseConfig();
 
       // Use q001 (capital of France) which uses case-insensitive verify
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -411,7 +411,7 @@ describe('E2E: Template Verification', () => {
       const config = createBaseConfig();
 
       // Use q010 (sky color) which is a simple factual question
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -459,7 +459,7 @@ describe('E2E: Template Verification', () => {
       const config = createBaseConfig();
 
       // Verify first 3 simple template questions
-      const response = await fetch(`${serverUrl}/api/start-verification`, {
+      const response = await fetch(`${serverUrl}/api/v2/verifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
