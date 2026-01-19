@@ -97,17 +97,6 @@ export function convertRubricTraitToRating(
   trait: RubricTrait,
   rubricType: 'global' | 'question-specific'
 ): SchemaOrgRating {
-  const additionalType = rubricType === 'global' ? 'GlobalRubricTrait' : 'QuestionSpecificRubricTrait';
-
-  // Base rating object
-  const baseRating = {
-    '@type': 'Rating' as const,
-    '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
-    name: trait.name,
-    description: trait.description,
-    additionalType,
-  };
-
   // Add deep judgment configuration if present (for LLM traits)
   const deepJudgmentFields = createDeepJudgmentProperties(trait);
 
@@ -115,15 +104,57 @@ export function convertRubricTraitToRating(
   const additionalProperty: SchemaOrgPropertyValue[] = [createHigherIsBetterProperty(trait.higher_is_better)];
 
   if (trait.kind === 'boolean') {
+    const additionalType = rubricType === 'global' ? 'GlobalRubricTrait' : 'QuestionSpecificRubricTrait';
     return {
-      ...baseRating,
+      '@type': 'Rating' as const,
+      '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
+      name: trait.name,
+      description: trait.description,
+      additionalType,
       bestRating: 1,
+      worstRating: 0,
+      additionalProperty,
+      ...deepJudgmentFields,
+    };
+  } else if (trait.kind === 'literal') {
+    // Literal kind: store kind and classes in additionalProperty
+    // Uses GlobalLLMRubricTrait/QuestionSpecificLLMRubricTrait to distinguish from boolean/score
+    const additionalType = rubricType === 'global' ? 'GlobalLLMRubricTrait' : 'QuestionSpecificLLMRubricTrait';
+
+    // Add kind property to distinguish literal from boolean/score
+    additionalProperty.push({
+      '@type': 'PropertyValue' as const,
+      name: 'kind',
+      value: 'literal',
+    });
+
+    // Add classes if present (required for literal kind)
+    if (trait.classes) {
+      additionalProperty.push({
+        '@type': 'PropertyValue' as const,
+        name: 'classes',
+        value: trait.classes,
+      });
+    }
+
+    // min_score=0, max_score=len(classes)-1 (auto-derived from classes)
+    const classCount = trait.classes ? Object.keys(trait.classes).length : 0;
+    const maxScore = classCount > 0 ? classCount - 1 : 0;
+
+    return {
+      '@type': 'Rating' as const,
+      '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
+      name: trait.name,
+      description: trait.description,
+      additionalType,
+      bestRating: maxScore,
       worstRating: 0,
       additionalProperty,
       ...deepJudgmentFields,
     };
   } else {
     // Score trait - validate and handle score ranges
+    const additionalType = rubricType === 'global' ? 'GlobalRubricTrait' : 'QuestionSpecificRubricTrait';
     const minScore = validateScoreValue(trait.min_score, 1, 'min_score', trait.name);
     const maxScore = validateScoreValue(trait.max_score, 5, 'max_score', trait.name);
 
@@ -135,7 +166,11 @@ export function convertRubricTraitToRating(
     }
 
     return {
-      ...baseRating,
+      '@type': 'Rating' as const,
+      '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
+      name: trait.name,
+      description: trait.description,
+      additionalType,
       bestRating: maxScore,
       worstRating: minScore,
       additionalProperty,
@@ -323,28 +358,79 @@ export function convertRatingToRubricTrait(rating: SchemaOrgRating): RubricTrait
     );
   }
 
-  // Determine if it's a boolean trait (standard 0-1 range)
-  const isBoolean = rating.bestRating === 1 && rating.worstRating === 0;
+  // Extract higher_is_better from additionalProperty (default true for legacy)
+  const higherIsBetter = (extractProperty(rating, 'higher_is_better') as boolean) ?? true;
 
-  // Validate score range for non-boolean traits
-  if (!isBoolean && rating.worstRating >= rating.bestRating) {
+  // Check for explicit kind property (for literal kind traits)
+  const explicitKind = extractProperty(rating, 'kind') as string | undefined;
+
+  // Check for classes (for literal kind traits)
+  const classesRaw = extractProperty(rating, 'classes');
+  let classes: Record<string, string> | undefined;
+  if (classesRaw) {
+    if (typeof classesRaw === 'object' && classesRaw !== null) {
+      // Classes stored as object directly
+      classes = classesRaw as Record<string, string>;
+    } else if (typeof classesRaw === 'string') {
+      // Classes stored as JSON string (legacy support)
+      try {
+        classes = JSON.parse(classesRaw);
+      } catch {
+        console.warn(`Failed to parse classes JSON for trait "${rating.name}"`);
+      }
+    }
+  }
+
+  // Determine trait kind
+  let kind: 'boolean' | 'score' | 'literal';
+  if (explicitKind === 'literal') {
+    kind = 'literal';
+  } else {
+    // Infer kind from rating range (legacy support for boolean/score)
+    const isBoolean = rating.bestRating === 1 && rating.worstRating === 0;
+    kind = isBoolean ? 'boolean' : 'score';
+  }
+
+  // Validate score range for score traits (not applicable to literal - derived from classes)
+  if (kind === 'score' && rating.worstRating >= rating.bestRating) {
     throw new CheckpointConversionError(
       `Invalid rating object "${rating.name}": worstRating (${rating.worstRating}) must be less than bestRating (${rating.bestRating})`
     );
   }
 
-  // Extract higher_is_better from additionalProperty (default true for legacy)
-  const higherIsBetter = (extractProperty(rating, 'higher_is_better') as boolean) ?? true;
-
-  // Restore deep judgment configuration if present
-  const trait: RubricTrait = {
-    name: rating.name,
-    description: rating.description,
-    kind: isBoolean ? 'boolean' : 'score',
-    min_score: isBoolean ? undefined : rating.worstRating,
-    max_score: isBoolean ? undefined : rating.bestRating,
-    higher_is_better: higherIsBetter,
-  };
+  // Build the trait based on kind
+  let trait: RubricTrait;
+  if (kind === 'literal') {
+    // Literal kind: min_score/max_score are auto-derived from classes by the domain model
+    trait = {
+      name: rating.name,
+      description: rating.description,
+      kind: 'literal',
+      classes,
+      min_score: undefined, // Auto-derived from classes (0)
+      max_score: undefined, // Auto-derived from classes (len-1)
+      higher_is_better: higherIsBetter,
+    };
+  } else if (kind === 'boolean') {
+    trait = {
+      name: rating.name,
+      description: rating.description,
+      kind: 'boolean',
+      min_score: undefined,
+      max_score: undefined,
+      higher_is_better: higherIsBetter,
+    };
+  } else {
+    // Score kind
+    trait = {
+      name: rating.name,
+      description: rating.description,
+      kind: 'score',
+      min_score: rating.worstRating,
+      max_score: rating.bestRating,
+      higher_is_better: higherIsBetter,
+    };
+  }
 
   // Add deep judgment fields if they were saved
   if (rating.deep_judgment_enabled !== undefined) {

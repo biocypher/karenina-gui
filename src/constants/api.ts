@@ -58,6 +58,14 @@ export const API_ENDPOINTS = {
   CONFIG_ENV_VAR_DELETE: (key: string) => `/api/v2/config/env-vars/${key}`, // DELETE
   CONFIG_ENV_FILE: '/api/v2/config/env-file', // GET, PUT
   CONFIG_DEFAULTS: '/api/v2/config/defaults', // GET, PUT
+
+  // ADeLe classification endpoints (V2)
+  ADELE_TRAITS: '/api/v2/adele/traits', // GET
+  ADELE_CLASSIFY: '/api/v2/adele/classify', // POST
+  ADELE_CLASSIFY_BATCH: '/api/v2/adele/classify-batch', // POST
+  ADELE_BATCH_PROGRESS: (jobId: string) => `/api/v2/adele/classify-batch/${jobId}`, // GET
+  ADELE_BATCH_RESULTS: (jobId: string) => `/api/v2/adele/classify-batch/${jobId}/results`, // GET
+  ADELE_CANCEL_BATCH: (jobId: string) => `/api/v2/adele/classify-batch/${jobId}`, // DELETE
 } as const;
 
 // HTTP methods

@@ -22,6 +22,7 @@ import { StatusBadge } from './StatusBadge';
 import { MetadataEditor } from './MetadataEditor';
 import { FewShotExamplesEditor } from './FewShotExamplesEditor';
 import { QuestionActionsPanel } from './QuestionActionsPanel';
+import { AdeleClassificationPanel, AdeleBatchModal } from './adele';
 import { FileManager } from './FileManager';
 import { AddQuestionModal } from './AddQuestionModal';
 import { QuestionContentEditor } from './QuestionContentEditor';
@@ -30,6 +31,7 @@ import RubricTraitEditor from './RubricTraitEditor';
 import { formatTimestamp } from '../utils/dataLoader';
 import { logger } from '../utils/logger';
 import { CheckpointItem, UnifiedCheckpoint } from '../types';
+import type { ClassificationResult, AdeleClassificationMetadata } from '../types/adele';
 
 export interface CuratorTabProps {
   codeEditorRef: MutableRefObject<CodeEditorRef | null>;
@@ -79,6 +81,7 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
   const [isQuestionEditorOpen, setIsQuestionEditorOpen] = useState(false);
   const [isExpandedMode, setIsExpandedMode] = useState(false);
+  const [isAdeleBatchModalOpen, setIsAdeleBatchModalOpen] = useState(false);
 
   // Scroll management
   const isNavigatingRef = useRef<boolean>(false);
@@ -376,6 +379,70 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
     }
   };
 
+  // Handle ADeLe classification update for a single question
+  const handleAdeleClassificationUpdate = (questionId: string, classification: ClassificationResult) => {
+    const currentCheckpointItem = checkpoint[questionId];
+    if (!currentCheckpointItem) return;
+
+    const adeleMetadata: AdeleClassificationMetadata = {
+      scores: classification.scores,
+      labels: classification.labels,
+      model: classification.model,
+      classifiedAt: classification.classifiedAt,
+    };
+
+    const updatedItem: CheckpointItem = {
+      ...currentCheckpointItem,
+      custom_metadata: {
+        ...currentCheckpointItem.custom_metadata,
+        adele_classification: JSON.stringify(adeleMetadata),
+      },
+    };
+
+    const updatedCheckpoint = {
+      ...checkpoint,
+      [questionId]: updatedItem,
+    };
+
+    setCheckpoint(updatedCheckpoint);
+    logger.debugLog('CURATOR', `Updated ADeLe classification for question: ${questionId}`, 'CuratorTab', {
+      traitsClassified: Object.keys(classification.scores).length,
+    });
+  };
+
+  // Handle ADeLe batch classification completion
+  const handleAdeleBatchComplete = (results: Map<string, ClassificationResult>) => {
+    let updatedCheckpoint = { ...checkpoint };
+
+    results.forEach((classification, questionId) => {
+      const currentCheckpointItem = updatedCheckpoint[questionId];
+      if (!currentCheckpointItem) return;
+
+      const adeleMetadata: AdeleClassificationMetadata = {
+        scores: classification.scores,
+        labels: classification.labels,
+        model: classification.model,
+        classifiedAt: classification.classifiedAt,
+      };
+
+      updatedCheckpoint = {
+        ...updatedCheckpoint,
+        [questionId]: {
+          ...currentCheckpointItem,
+          custom_metadata: {
+            ...currentCheckpointItem.custom_metadata,
+            adele_classification: JSON.stringify(adeleMetadata),
+          },
+        },
+      };
+    });
+
+    setCheckpoint(updatedCheckpoint);
+    logger.debugLog('CURATOR', `Batch ADeLe classification complete`, 'CuratorTab', {
+      questionsClassified: results.size,
+    });
+  };
+
   // Use store getters for computed values
   const selectedQuestion = getSelectedQuestion();
   const checkpointItem = getCheckpointItem();
@@ -661,6 +728,19 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
               onClone={handleCloneQuestion}
               disabled={!selectedQuestionId}
             />
+
+            {/* ADeLe Classification Panel */}
+            {selectedQuestionId && selectedQuestion && (
+              <AdeleClassificationPanel
+                questionId={selectedQuestionId}
+                questionText={selectedQuestion.question}
+                customMetadata={checkpointItem?.custom_metadata as Record<string, unknown> | undefined}
+                onClassificationUpdate={handleAdeleClassificationUpdate}
+                disabled={!selectedQuestionId}
+                onOpenBatchModal={() => setIsAdeleBatchModalOpen(true)}
+                totalQuestionCount={allQuestionIds.length}
+              />
+            )}
           </div>
 
           {/* Right Column - Answer Template Editor (2/3 width) */}
@@ -827,6 +907,17 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
         isOpen={isAddQuestionModalOpen}
         onClose={() => setIsAddQuestionModalOpen(false)}
         onAdd={handleAddNewQuestion}
+      />
+
+      {/* ADeLe Batch Classification Modal */}
+      <AdeleBatchModal
+        isOpen={isAdeleBatchModalOpen}
+        onClose={() => setIsAdeleBatchModalOpen(false)}
+        questions={allQuestionIds.map((qId) => ({
+          questionId: qId,
+          questionText: questionData[qId]?.question || '',
+        }))}
+        onClassificationsComplete={handleAdeleBatchComplete}
       />
 
       {/* Expanded Editor Overlay */}
