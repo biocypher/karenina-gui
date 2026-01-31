@@ -11,10 +11,10 @@ export const TraceToolResultBlock: React.FC<TraceToolResultBlockProps> = ({ cont
 
   return (
     <div
-      className={`text-xs rounded p-2 max-h-40 overflow-y-auto whitespace-pre-wrap ${
+      className={`text-xs rounded p-2 mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap ${
         isError
           ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-700'
-          : 'bg-yellow-50 dark:bg-yellow-900/10 text-slate-700 dark:text-slate-300'
+          : 'bg-white/60 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border border-yellow-200 dark:border-yellow-700'
       }`}
     >
       <span className="text-[10px] text-slate-400 dark:text-slate-500">

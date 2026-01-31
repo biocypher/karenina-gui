@@ -28,7 +28,7 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
   onClose,
 }) => {
   const hasStructuredTrace = (result?.template?.trace_messages?.length ?? 0) > 0;
-  const [traceView, setTraceView] = useState<'raw' | 'structured'>(hasStructuredTrace ? 'structured' : 'raw');
+  const [traceView, setTraceView] = useState<'raw' | 'structured'>('raw');
 
   // Handle ESC key press
   useEffect(() => {

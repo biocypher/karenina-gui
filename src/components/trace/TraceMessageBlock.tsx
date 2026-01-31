@@ -44,17 +44,19 @@ export const TraceMessageBlock: React.FC<TraceMessageBlockProps> = ({ message })
       {/* Thinking block (SDK extended thinking) */}
       {message.thinking && <TraceThinkingBlock thinking={message.thinking} />}
 
-      {/* Text content */}
-      {message.content && (
-        <pre className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap mt-1">{message.content}</pre>
-      )}
-
-      {/* Tool calls */}
-      {message.tool_calls && message.tool_calls.length > 0 && <TraceToolCallBlock toolCalls={message.tool_calls} />}
-
-      {/* Tool result */}
-      {message.role === 'tool' && message.tool_result && (
+      {/* Tool result (for tool messages, rendered instead of generic content to avoid duplication) */}
+      {message.role === 'tool' && message.tool_result ? (
         <TraceToolResultBlock content={message.content} toolResult={message.tool_result} />
+      ) : (
+        <>
+          {/* Text content (non-tool messages) */}
+          {message.content && (
+            <pre className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap mt-1">{message.content}</pre>
+          )}
+
+          {/* Tool calls */}
+          {message.tool_calls && message.tool_calls.length > 0 && <TraceToolCallBlock toolCalls={message.tool_calls} />}
+        </>
       )}
     </div>
   );
