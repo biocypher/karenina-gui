@@ -15,7 +15,7 @@ interface EnvVariable {
  * ADeLe classification default settings (persisted to localStorage)
  */
 export interface AdeleDefaults {
-  interface: 'langchain' | 'openrouter' | 'openai_endpoint';
+  interface: 'langchain' | 'openrouter' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
   provider: string;
   modelName: string;
   temperature: number;
@@ -43,7 +43,7 @@ interface ConfigState {
   // and only applied to saved values when explicitly saved
 
   /** Draft LLM interface selection being edited in modal */
-  defaultInterface: 'langchain' | 'openrouter' | 'openai_endpoint';
+  defaultInterface: 'langchain' | 'openrouter' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
   /** Draft provider name being edited in modal (e.g., 'openai', 'google_genai') */
   defaultProvider: string;
   /** Draft model name being edited in modal (e.g., 'gpt-4', 'gemini-2.0-flash') */
@@ -61,7 +61,7 @@ interface ConfigState {
   // These values are used by generation components and only updated when saved
 
   /** Currently saved and active LLM interface used by generation components */
-  savedInterface: 'langchain' | 'openrouter' | 'openai_endpoint';
+  savedInterface: 'langchain' | 'openrouter' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
   /** Currently saved and active provider used by generation components */
   savedProvider: string;
   /** Currently saved and active model used by generation components */
@@ -80,7 +80,7 @@ interface ConfigState {
 
   /** Original defaults from server for reset functionality */
   originalDefaults: {
-    defaultInterface: 'langchain' | 'openrouter' | 'openai_endpoint';
+    defaultInterface: 'langchain' | 'openrouter' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
     defaultProvider: string;
     defaultModel: string;
     defaultEndpointBaseUrl: string;
@@ -125,7 +125,9 @@ interface ConfigState {
 
   // Working value updates (for modal editing)
   /** Update draft interface selection */
-  updateDefaultInterface: (interface: 'langchain' | 'openrouter' | 'openai_endpoint') => void;
+  updateDefaultInterface: (
+    interface: 'langchain' | 'openrouter' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk'
+  ) => void;
   /** Update draft provider selection */
   updateDefaultProvider: (provider: string) => void;
   /** Update draft model selection */

@@ -88,4 +88,64 @@ describe('ModelSelector', () => {
     const modelField = getByPlaceholderText('e.g., meta-llama/llama-3.2-3b-instruct:free');
     expect(modelField).toBeTruthy();
   });
+
+  it('sets model_provider to anthropic when switching to Claude Tool', () => {
+    const onConfigChange = vi.fn();
+    const { getByLabelText } = render(<ModelSelector config={defaultConfig} onConfigChange={onConfigChange} />);
+
+    const claudeToolRadio = getByLabelText('Claude Tool');
+    fireEvent.click(claudeToolRadio);
+
+    expect(onConfigChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interface: 'claude_tool',
+        model_provider: 'anthropic',
+      })
+    );
+  });
+
+  it('sets model_provider to anthropic when switching to Claude Agent SDK', () => {
+    const onConfigChange = vi.fn();
+    const { getByLabelText } = render(<ModelSelector config={defaultConfig} onConfigChange={onConfigChange} />);
+
+    const claudeAgentRadio = getByLabelText('Claude Agent SDK');
+    fireEvent.click(claudeAgentRadio);
+
+    expect(onConfigChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        interface: 'claude_agent_sdk',
+        model_provider: 'anthropic',
+      })
+    );
+  });
+
+  it('shows locked provider field for Claude Tool interface', () => {
+    const claudeToolConfig: RubricTraitGenerationConfig = {
+      model_provider: 'anthropic',
+      model_name: 'claude-sonnet-4-20250514',
+      temperature: 0.1,
+      interface: 'claude_tool',
+    };
+
+    const { getByDisplayValue } = render(<ModelSelector config={claudeToolConfig} onConfigChange={vi.fn()} />);
+
+    // Provider field should show "anthropic" and be disabled
+    const providerField = getByDisplayValue('anthropic');
+    expect(providerField).toBeTruthy();
+    expect(providerField).toBeDisabled();
+  });
+
+  it('shows Claude-specific placeholder for model name', () => {
+    const claudeToolConfig: RubricTraitGenerationConfig = {
+      model_provider: 'anthropic',
+      model_name: '',
+      temperature: 0.1,
+      interface: 'claude_tool',
+    };
+
+    const { getByPlaceholderText } = render(<ModelSelector config={claudeToolConfig} onConfigChange={vi.fn()} />);
+
+    const modelField = getByPlaceholderText('e.g., claude-sonnet-4-20250514');
+    expect(modelField).toBeTruthy();
+  });
 });

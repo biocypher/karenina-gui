@@ -71,8 +71,68 @@ export const AdeleModelConfig: React.FC<AdeleModelConfigProps> = ({
             />
             OpenAI Endpoint
           </label>
+          <label
+            className="flex items-center text-slate-900 dark:text-white cursor-pointer"
+            title="Anthropic SDK with structured output"
+          >
+            <input
+              type="radio"
+              name={`${idPrefix}-interface`}
+              value="claude_tool"
+              checked={config.interface === 'claude_tool'}
+              onChange={() => {
+                onChange({
+                  interface: 'claude_tool',
+                  provider: 'anthropic',
+                  endpointBaseUrl: undefined,
+                  endpointApiKey: undefined,
+                });
+              }}
+              disabled={disabled}
+              className="mr-2"
+            />
+            Claude Tool
+          </label>
+          <label
+            className="flex items-center text-slate-900 dark:text-white cursor-pointer"
+            title="Claude Code CLI agent"
+          >
+            <input
+              type="radio"
+              name={`${idPrefix}-interface`}
+              value="claude_agent_sdk"
+              checked={config.interface === 'claude_agent_sdk'}
+              onChange={() => {
+                onChange({
+                  interface: 'claude_agent_sdk',
+                  provider: 'anthropic',
+                  endpointBaseUrl: undefined,
+                  endpointApiKey: undefined,
+                });
+              }}
+              disabled={disabled}
+              className="mr-2"
+            />
+            Claude Agent SDK
+          </label>
         </div>
       </div>
+
+      {/* Provider - Locked for Claude interfaces */}
+      {(config.interface === 'claude_tool' || config.interface === 'claude_agent_sdk') && (
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Provider</label>
+          <input
+            type="text"
+            value="anthropic"
+            disabled
+            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+          />
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {config.interface === 'claude_tool' ? 'Anthropic SDK with structured output' : 'Claude Code CLI agent'}
+          </p>
+        </div>
+      )}
 
       {/* Provider - Show only for LangChain interface */}
       {config.interface === 'langchain' && (
