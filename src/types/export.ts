@@ -96,6 +96,7 @@ export interface ExportableResultMetadata {
  */
 export interface ExportableResultTemplate {
   raw_llm_response: string;
+  trace_messages?: Array<Record<string, unknown>>;
   parsed_gt_response?: Record<string, unknown>;
   parsed_llm_response?: Record<string, unknown>;
   template_verification_performed?: boolean;

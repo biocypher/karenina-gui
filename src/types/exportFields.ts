@@ -172,6 +172,14 @@ export const TEMPLATE_FIELDS: ExportFieldDefinition[] = [
     defaultValue: '',
   },
   {
+    key: 'trace_messages',
+    label: 'Trace Messages',
+    description: 'Structured trace messages from the LLM interaction',
+    path: 'template.trace_messages',
+    isJson: true,
+    defaultValue: '',
+  },
+  {
     key: 'parsed_gt_answer',
     label: 'Ground Truth Answer',
     description: 'Expected response from the "correct" field',

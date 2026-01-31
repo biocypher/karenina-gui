@@ -5,6 +5,7 @@
 
 import type { UsageMetadata } from './index';
 import type { SearchResultItem } from './search';
+import type { TraceMessage } from './trace';
 
 /**
  * Metadata subclass - core identity and tracking fields
@@ -36,6 +37,7 @@ export interface VerificationResultMetadata {
  */
 export interface VerificationResultTemplate {
   raw_llm_response: string;
+  trace_messages?: TraceMessage[];
   parsed_gt_response?: Record<string, unknown>;
   parsed_llm_response?: Record<string, unknown>;
   template_verification_performed?: boolean;

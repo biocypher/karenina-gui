@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { Checkpoint, VerificationResult, Rubric } from '../../types';
 import { TraceHighlightedTextDisplay } from '../TraceHighlightedTextDisplay';
+import { TraceStructuredDisplay } from '../trace/TraceStructuredDisplay';
 import { RubricResultsDisplay } from '../RubricResultsDisplay';
 import { logger } from '../../utils/logger';
 import { DeepJudgmentResults } from './verification/DeepJudgmentResults';
@@ -26,6 +27,9 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
   currentRubric,
   onClose,
 }) => {
+  const hasStructuredTrace = (result?.template?.trace_messages?.length ?? 0) > 0;
+  const [traceView, setTraceView] = useState<'raw' | 'structured'>(hasStructuredTrace ? 'structured' : 'raw');
+
   // Handle ESC key press
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -106,15 +110,43 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                     </div>
                   </div>
 
-                  {/* Raw LLM Response (Generated) */}
+                  {/* LLM Response (Generated) */}
                   <div>
-                    <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">
-                      Raw LLM Response (Generated)
-                    </h4>
-                    <TraceHighlightedTextDisplay
-                      text={result.template?.raw_llm_response || 'N/A'}
-                      className="text-slate-800 dark:text-slate-200"
-                    />
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100">LLM Response (Generated)</h4>
+                      {hasStructuredTrace && (
+                        <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+                          <button
+                            onClick={() => setTraceView('raw')}
+                            className={`px-2 py-0.5 text-xs rounded-md transition-colors ${
+                              traceView === 'raw'
+                                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                            }`}
+                          >
+                            Raw
+                          </button>
+                          <button
+                            onClick={() => setTraceView('structured')}
+                            className={`px-2 py-0.5 text-xs rounded-md transition-colors ${
+                              traceView === 'structured'
+                                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                            }`}
+                          >
+                            Structured
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {traceView === 'structured' && hasStructuredTrace ? (
+                      <TraceStructuredDisplay traceMessages={result.template!.trace_messages!} />
+                    ) : (
+                      <TraceHighlightedTextDisplay
+                        text={result.template?.raw_llm_response || 'N/A'}
+                        className="text-slate-800 dark:text-slate-200"
+                      />
+                    )}
                   </div>
 
                   {/* Ground Truth (Expected) */}
