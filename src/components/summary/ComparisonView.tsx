@@ -26,11 +26,13 @@ import type {
   TraitLetterMap,
   BadgeVisibilityFilter,
 } from '../../types';
+import { formatModelIdentityDisplay } from '../../types/verification';
 
 interface ModelOption {
   answering_model: string;
   mcp_config: string;
   display_name: string;
+  interface?: string;
 }
 
 interface ComparisonViewProps {
@@ -98,30 +100,27 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     const modelsMap = new Map<string, ModelOption>();
 
     Object.values(results).forEach((result) => {
-      const answering_model = result.metadata.answering_model;
+      const identity = result.metadata.answering;
+      const answering_model = identity.model_name;
+      const modelInterface = identity.interface;
 
-      // Extract MCP servers from template
-      const mcpServers = result.template?.answering_mcp_servers || [];
-      const mcp_config = JSON.stringify(mcpServers.sort()); // Sort for consistent keys
-      const key = `${answering_model}|${mcp_config}`;
+      // Use tools from ModelIdentity (already sorted by backend)
+      const tools = identity.tools || [];
+      const mcp_config = JSON.stringify([...tools].sort());
+      const key = `${modelInterface}:${answering_model}|${mcp_config}`;
 
       if (!modelsMap.has(key)) {
-        // Create display name with MCP servers
-        let mcpSuffix = '';
-        if (mcpServers.length > 0) {
-          mcpSuffix = ` (MCP: ${mcpServers.join(', ')})`;
-        }
-
         modelsMap.set(key, {
           answering_model,
           mcp_config,
-          display_name: `${answering_model}${mcpSuffix}`,
+          interface: modelInterface,
+          display_name: formatModelIdentityDisplay(identity),
         });
       }
 
       // Set default parsing model to the first one found
-      if (!parsingModel && result.metadata.parsing_model) {
-        setParsingModel(result.metadata.parsing_model);
+      if (!parsingModel && result.metadata.parsing) {
+        setParsingModel(formatModelIdentityDisplay(result.metadata.parsing));
       }
     });
 
@@ -130,13 +129,13 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
 
     // Auto-select first model (or first 2 if available)
     if (models.length >= 1) {
+      const toModelConfig = (m: ModelOption): ModelConfig => ({
+        answering_model: m.answering_model,
+        mcp_config: m.mcp_config,
+        interface: m.interface,
+      });
       const autoSelected =
-        models.length >= 2
-          ? [
-              { answering_model: models[0].answering_model, mcp_config: models[0].mcp_config },
-              { answering_model: models[1].answering_model, mcp_config: models[1].mcp_config },
-            ]
-          : [{ answering_model: models[0].answering_model, mcp_config: models[0].mcp_config }];
+        models.length >= 2 ? [toModelConfig(models[0]), toModelConfig(models[1])] : [toModelConfig(models[0])];
       setSelectedModels(autoSelected);
     }
   }, [results, parsingModel]);
@@ -175,7 +174,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
 
         logger.debugLog('COMPARISON', 'Selected models', 'ComparisonView', {
           selectedModels,
-          generatedModelKeys: selectedModels.map((m) => `${m.answering_model}|${m.mcp_config}`),
+          generatedModelKeys: selectedModels.map(getModelKey),
         });
 
         // Validate the response has required data
@@ -260,7 +259,7 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
   }, [comparisonData, selectedQuestions]);
 
   const getModelKey = (model: ModelConfig): string => {
-    return `${model.answering_model}|${model.mcp_config}`;
+    return `${model.interface || 'langchain'}:${model.answering_model}|${model.mcp_config}`;
   };
 
   // Question selection handlers - operate on filtered questions only
@@ -332,14 +331,14 @@ export function ComparisonView({ results, checkpoint, currentRubric, onCompariso
     // Find the matching result for the specified replicate
     const matchingResult = Object.values(results).find((result) => {
       if (result.metadata.question_id !== questionId) return false;
-      if (result.metadata.parsing_model !== parsingModel) return false;
+      if (formatModelIdentityDisplay(result.metadata.parsing) !== parsingModel) return false;
       if (replicate !== undefined && result.metadata.replicate !== replicate) return false;
 
-      // Extract model info from result
-      const resultAnsweringModel = result.metadata.answering_model;
-      const resultMcpServers = result.template?.answering_mcp_servers || [];
-      const resultMcpConfig = JSON.stringify(resultMcpServers.sort());
-      const resultModelKey = `${resultAnsweringModel}|${resultMcpConfig}`;
+      // Extract model info from result's ModelIdentity
+      const identity = result.metadata.answering;
+      const tools = identity.tools || [];
+      const resultMcpConfig = JSON.stringify([...tools].sort());
+      const resultModelKey = `${identity.interface}:${identity.model_name}|${resultMcpConfig}`;
 
       return resultModelKey === modelKey;
     });

@@ -7,27 +7,37 @@ import type { ExportableResult } from '../../utils/export';
 describe('CustomExportDialog', () => {
   const mockResults: ExportableResult[] = [
     {
-      question_id: 'test1',
-      question_text: 'Test question 1',
-      raw_answer: 'Ground truth answer 1',
-      raw_llm_response: 'Test response 1',
-      answering_model: 'gpt-4',
-      parsing_model: 'gpt-4',
-      completed_without_errors: true,
-      execution_time: 1.5,
-      timestamp: '2025-08-28T12:00:00Z',
+      metadata: {
+        question_id: 'test1',
+        template_id: 'test1-template',
+        question_text: 'Test question 1',
+        raw_answer: 'Ground truth answer 1',
+        answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
+        parsing: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
+        completed_without_errors: true,
+        execution_time: 1.5,
+        timestamp: '2025-08-28T12:00:00Z',
+      },
+      template: {
+        raw_llm_response: 'Test response 1',
+      },
     },
     {
-      question_id: 'test2',
-      question_text: 'Test question 2',
-      raw_answer: 'Ground truth answer 2',
-      raw_llm_response: 'Test response 2',
-      answering_model: 'claude-3',
-      parsing_model: 'claude-3',
-      completed_without_errors: false,
-      execution_time: 2.0,
-      timestamp: '2025-08-28T12:01:00Z',
-      error: 'Parsing error',
+      metadata: {
+        question_id: 'test2',
+        template_id: 'test2-template',
+        question_text: 'Test question 2',
+        raw_answer: 'Ground truth answer 2',
+        answering: { interface: 'langchain', model_name: 'claude-3', tools: [] },
+        parsing: { interface: 'langchain', model_name: 'claude-3', tools: [] },
+        completed_without_errors: false,
+        execution_time: 2.0,
+        timestamp: '2025-08-28T12:01:00Z',
+        error: 'Parsing error',
+      },
+      template: {
+        raw_llm_response: 'Test response 2',
+      },
     },
   ];
 

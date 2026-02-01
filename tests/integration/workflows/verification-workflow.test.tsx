@@ -20,6 +20,7 @@ import {
 import { useQuestionStore } from '../../../src/stores/useQuestionStore';
 import { BenchmarkTab } from '../../../src/components/BenchmarkTab';
 import { Checkpoint, VerificationResult } from '../../../src/types';
+import { formatModelIdentityDisplay } from '../../../src/types/verification';
 
 // Wrapper component that provides required props
 const BenchmarkTabWrapper: React.FC<{ initialCheckpoint?: Checkpoint }> = ({ initialCheckpoint }) => {
@@ -292,15 +293,15 @@ describe('Verification Workflow', () => {
       expect(q1Results.length).toBeGreaterThanOrEqual(2);
 
       // Verify different answering models are present
-      const answeringModels = new Set(q1Results.map(([, result]) => result.metadata.answering_model));
+      const answeringModels = new Set(q1Results.map(([, result]) => result.metadata.answering.model_name));
       expect(answeringModels.size).toBeGreaterThanOrEqual(2);
-      expect(answeringModels.has('anthropic/claude-haiku-4-5')).toBe(true);
-      expect(answeringModels.has('openai/gpt-4')).toBe(true);
+      expect(answeringModels.has('claude-haiku-4-5')).toBe(true);
+      expect(answeringModels.has('gpt-4')).toBe(true);
 
       // Verify each result has proper structure
       q1Results.forEach(([, result]) => {
-        expect(result.metadata.answering_model).toBeTruthy();
-        expect(result.metadata.parsing_model).toBeTruthy();
+        expect(result.metadata.answering.model_name).toBeTruthy();
+        expect(result.metadata.parsing.model_name).toBeTruthy();
         expect(result.template.verify_result).toBeDefined();
       });
     });
@@ -377,17 +378,17 @@ describe('Verification Workflow', () => {
         const { metadata } = result;
 
         expect(metadata.question_id).toBeTruthy();
-        expect(metadata.answering_model).toBeTruthy();
-        expect(metadata.parsing_model).toBeTruthy();
+        expect(metadata.answering.model_name).toBeTruthy();
+        expect(metadata.parsing.model_name).toBeTruthy();
         expect(metadata.answering_system_prompt).toBeTruthy();
         expect(metadata.parsing_system_prompt).toBeTruthy();
         expect(metadata.execution_time).toBeGreaterThan(0);
         expect(metadata.timestamp).toBeTruthy();
         expect(metadata.result_id).toBeTruthy();
 
-        // Verify model names follow expected format
-        expect(metadata.answering_model).toMatch(/\//); // Should contain provider/model format
-        expect(metadata.parsing_model).toMatch(/\//);
+        // Verify model identity has required fields
+        expect(metadata.answering.interface).toBeTruthy();
+        expect(metadata.parsing.interface).toBeTruthy();
       });
     });
 
@@ -397,7 +398,7 @@ describe('Verification Workflow', () => {
       // Find results with different model combinations
       const combinations = new Set<string>();
       Object.values(multiModelResults).forEach((result) => {
-        const combo = `${result.metadata.answering_model}+${result.metadata.parsing_model}`;
+        const combo = `${formatModelIdentityDisplay(result.metadata.answering)}+${formatModelIdentityDisplay(result.metadata.parsing)}`;
         combinations.add(combo);
       });
 
@@ -406,15 +407,15 @@ describe('Verification Workflow', () => {
 
       // Verify expected combinations exist
       const expectedCombos = [
-        'anthropic/claude-haiku-4-5+anthropic/claude-haiku-4-5',
-        'openai/gpt-4+anthropic/claude-haiku-4-5',
-        'anthropic/claude-haiku-4-5+openai/gpt-4',
-        'openai/gpt-4+openai/gpt-4',
+        'langchain:claude-haiku-4-5+langchain:claude-haiku-4-5',
+        'langchain:gpt-4+langchain:claude-haiku-4-5',
+        'langchain:claude-haiku-4-5+langchain:gpt-4',
+        'langchain:gpt-4+langchain:gpt-4',
       ];
 
       expectedCombos.forEach((combo) => {
         // At least some of these combinations should exist
-        if (combo === 'anthropic/claude-haiku-4-5+openai/gpt-4') {
+        if (combo === 'langchain:claude-haiku-4-5+langchain:gpt-4') {
           expect(combinations.has(combo)).toBe(true);
         }
       });
@@ -708,23 +709,21 @@ describe('Verification Workflow', () => {
       expect(sortedByQuestion[0][1].metadata.question_id).toBe('q1');
       expect(sortedByQuestion[1][1].metadata.question_id).toBe('q1');
 
-      // Sort by answering model
+      // Sort by answering model name
       const sortedByModel = [...resultsArray].sort((a, b) =>
-        a[1].metadata.answering_model.localeCompare(b[1].metadata.answering_model)
+        a[1].metadata.answering.model_name.localeCompare(b[1].metadata.answering.model_name)
       );
 
-      // Verify model sorting - Claude should come before OpenAI alphabetically
-      const claudeResults = sortedByModel.filter(
-        ([, r]) => r.metadata.answering_model === 'anthropic/claude-haiku-4-5'
-      );
-      const openaiResults = sortedByModel.filter(([, r]) => r.metadata.answering_model === 'openai/gpt-4');
+      // Verify model sorting - Claude should come before GPT alphabetically
+      const claudeResults = sortedByModel.filter(([, r]) => r.metadata.answering.model_name === 'claude-haiku-4-5');
+      const gptResults = sortedByModel.filter(([, r]) => r.metadata.answering.model_name === 'gpt-4');
 
       expect(claudeResults.length).toBeGreaterThan(0);
-      expect(openaiResults.length).toBeGreaterThan(0);
-      // claude comes before openai alphabetically
-      expect(
-        sortedByModel.findIndex(([, r]) => r.metadata.answering_model === 'anthropic/claude-haiku-4-5')
-      ).toBeLessThan(sortedByModel.findIndex(([, r]) => r.metadata.answering_model === 'openai/gpt-4'));
+      expect(gptResults.length).toBeGreaterThan(0);
+      // claude comes before gpt alphabetically
+      expect(sortedByModel.findIndex(([, r]) => r.metadata.answering.model_name === 'claude-haiku-4-5')).toBeLessThan(
+        sortedByModel.findIndex(([, r]) => r.metadata.answering.model_name === 'gpt-4')
+      );
     });
 
     it('should verify filtering by result status works', () => {
@@ -787,8 +786,8 @@ describe('Verification Workflow', () => {
         question_text: result.metadata.question_text,
         raw_answer: result.metadata.raw_answer,
         verify_result: result.template.verify_result ? 'Pass' : 'Fail',
-        answering_model: result.metadata.answering_model,
-        parsing_model: result.metadata.parsing_model,
+        answering_model: formatModelIdentityDisplay(result.metadata.answering),
+        parsing_model: formatModelIdentityDisplay(result.metadata.parsing),
         execution_time: result.metadata.execution_time,
       }));
 
@@ -800,7 +799,7 @@ describe('Verification Workflow', () => {
         expect(row.question_text).toBeDefined();
         expect(row.raw_answer).toBeDefined();
         expect(row.verify_result).toBe('Pass');
-        expect(row.answering_model).toBe('anthropic/claude-haiku-4-5');
+        expect(row.answering_model).toBe('langchain:claude-haiku-4-5');
         expect(typeof row.execution_time).toBe('number');
       });
 
@@ -864,7 +863,7 @@ describe('Verification Workflow', () => {
 
         // Apply filter for specific model
         const claudeResults = Object.values(testResults).filter(
-          (r) => r.metadata.answering_model === 'anthropic/claude-haiku-4-5'
+          (r) => r.metadata.answering.model_name === 'claude-haiku-4-5'
         );
 
         // Verify count
@@ -877,16 +876,16 @@ describe('Verification Workflow', () => {
 
         // Verify filter still applies after sort
         expect(sortedByQuestion.length).toBe(3);
-        expect(sortedByQuestion.every((r) => r.metadata.answering_model === 'anthropic/claude-haiku-4-5')).toBe(true);
+        expect(sortedByQuestion.every((r) => r.metadata.answering.model_name === 'claude-haiku-4-5')).toBe(true);
       });
 
       it('should provide aggregate statistics for multi-model results', () => {
         const testResults = loadMockedVerificationResults('multi-model-results');
 
-        // Group by answering model
+        // Group by answering model display string
         const byModel: Record<string, typeof testResults> = {};
         for (const [, result] of Object.entries(testResults)) {
-          const model = result.metadata.answering_model;
+          const model = result.metadata.answering.model_name;
           if (!byModel[model]) {
             byModel[model] = {};
           }
@@ -895,12 +894,12 @@ describe('Verification Workflow', () => {
 
         // Verify per-model statistics
         expect(Object.keys(byModel)).toHaveLength(2);
-        expect(byModel['anthropic/claude-haiku-4-5']).toBeDefined();
-        expect(byModel['openai/gpt-4']).toBeDefined();
+        expect(byModel['claude-haiku-4-5']).toBeDefined();
+        expect(byModel['gpt-4']).toBeDefined();
 
         // Each model should have 3 results
-        expect(Object.keys(byModel['anthropic/claude-haiku-4-5']).length).toBe(3);
-        expect(Object.keys(byModel['openai/gpt-4']).length).toBe(3);
+        expect(Object.keys(byModel['claude-haiku-4-5']).length).toBe(3);
+        expect(Object.keys(byModel['gpt-4']).length).toBe(3);
       });
 
       it('should verify summary panel shows completion percentage', () => {

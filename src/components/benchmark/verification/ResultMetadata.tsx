@@ -1,5 +1,6 @@
 import React from 'react';
 import type { VerificationResult } from '../../../types';
+import { formatModelIdentityDisplay } from '../../../types/verification';
 
 interface ResultMetadataProps {
   metadata: VerificationResult['metadata'];
@@ -12,11 +13,15 @@ export const ResultMetadata: React.FC<ResultMetadataProps> = ({ metadata, templa
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <span className="font-medium text-slate-600 dark:text-slate-300">Answering Model:</span>
-          <p className="text-slate-800 dark:text-slate-200">{metadata?.answering_model || 'N/A'}</p>
+          <p className="text-slate-800 dark:text-slate-200">
+            {metadata?.answering ? formatModelIdentityDisplay(metadata.answering) : 'N/A'}
+          </p>
         </div>
         <div>
           <span className="font-medium text-slate-600 dark:text-slate-300">Parsing Model:</span>
-          <p className="text-slate-800 dark:text-slate-200">{metadata?.parsing_model || 'N/A'}</p>
+          <p className="text-slate-800 dark:text-slate-200">
+            {metadata?.parsing ? formatModelIdentityDisplay(metadata.parsing) : 'N/A'}
+          </p>
         </div>
         <div>
           <span className="font-medium text-slate-600 dark:text-slate-300">Execution Time:</span>

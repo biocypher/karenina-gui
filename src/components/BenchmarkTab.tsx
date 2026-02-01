@@ -941,9 +941,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 }
 
                 if (filter.modelKey) {
-                  // Model key is in format "model_name|mcp_config"
-                  const [modelName] = filter.modelKey.split('|');
-                  filters.push({ id: 'answering_model', value: modelName });
+                  // Model key is in format "interface:model_name|mcp_config"
+                  const [modelDisplay] = filter.modelKey.split('|');
+                  filters.push({ id: 'answering_model', value: modelDisplay });
                 }
 
                 setExternalFilters(filters);

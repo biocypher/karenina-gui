@@ -172,3 +172,5 @@ playwright/.cache/
 # Karenina specific
 *.karenina-pids.json
 .e2e-server.pid
+
+.serena/

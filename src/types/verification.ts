@@ -8,6 +8,29 @@ import type { SearchResultItem } from './search';
 import type { TraceMessage } from './trace';
 
 /**
+ * Model identity - composite identifier for a model configuration.
+ * Replaces flat answering_model/parsing_model strings with structured data.
+ */
+export interface ModelIdentity {
+  interface: string;
+  model_name: string;
+  tools: string[];
+}
+
+/**
+ * Helper to format a ModelIdentity as a display string.
+ * Matches the Python ModelIdentity.display_string property format.
+ */
+export function formatModelIdentityDisplay(identity: ModelIdentity | undefined | null): string {
+  if (!identity) return 'unknown';
+  const base = `${identity.interface || 'unknown'}:${identity.model_name || 'unknown'}`;
+  if (identity.tools && identity.tools.length > 0) {
+    return `${base} +[${identity.tools.join(', ')}]`;
+  }
+  return base;
+}
+
+/**
  * Metadata subclass - core identity and tracking fields
  */
 export interface VerificationResultMetadata {
@@ -19,16 +42,14 @@ export interface VerificationResultMetadata {
   question_text: string;
   raw_answer?: string; // Ground truth answer from checkpoint
   keywords?: string[];
-  answering_model: string;
-  parsing_model: string;
+  answering: ModelIdentity;
+  parsing: ModelIdentity;
   answering_system_prompt?: string;
   parsing_system_prompt?: string;
   execution_time: number;
   timestamp: string;
   run_name?: string;
   job_id?: string;
-  answering_model_id?: string;
-  parsing_model_id?: string;
   replicate?: number;
 }
 

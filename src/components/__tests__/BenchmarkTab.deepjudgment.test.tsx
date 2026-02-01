@@ -28,8 +28,8 @@ describe('BenchmarkTab - Deep-Judgment Modal Display', () => {
     metadata: {
       question_id: 'q1',
       question_text: 'Test question',
-      answering_model: 'gpt-4',
-      parsing_model: 'gpt-4',
+      answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
+      parsing: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
       answering_mcp_servers: [],
       completed_without_errors: true,
       execution_time: 1.23,

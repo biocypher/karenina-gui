@@ -10,6 +10,7 @@
  */
 
 import type { ExportableResult } from './export';
+import { formatModelIdentityDisplay } from './verification';
 
 /**
  * Field definition for exportable result fields
@@ -99,14 +100,36 @@ export const METADATA_FIELDS: ExportFieldDefinition[] = [
   {
     key: 'answering_model',
     label: 'Answering Model',
-    description: 'Model used for answering',
-    path: 'metadata.answering_model',
+    description: 'Model used for answering (interface:model_name)',
+    path: 'metadata.answering',
+    extractor: (result) => formatModelIdentityDisplay(result.metadata.answering),
+  },
+  {
+    key: 'answering_interface',
+    label: 'Answering Interface',
+    description: 'Interface used for answering (e.g. langchain, claude_agent_sdk)',
+    path: 'metadata.answering.interface',
+  },
+  {
+    key: 'answering_tools',
+    label: 'Answering Tools',
+    description: 'MCP tools attached to answering model',
+    path: 'metadata.answering.tools',
+    isJson: true,
+    defaultValue: '[]',
   },
   {
     key: 'parsing_model',
     label: 'Parsing Model',
-    description: 'Model used for parsing',
-    path: 'metadata.parsing_model',
+    description: 'Model used for parsing (interface:model_name)',
+    path: 'metadata.parsing',
+    extractor: (result) => formatModelIdentityDisplay(result.metadata.parsing),
+  },
+  {
+    key: 'parsing_interface',
+    label: 'Parsing Interface',
+    description: 'Interface used for parsing',
+    path: 'metadata.parsing.interface',
   },
   {
     key: 'replicate',

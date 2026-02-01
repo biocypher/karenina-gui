@@ -16,23 +16,37 @@
         "question_text": "What is the capital of France?",
         "raw_answer": "The capital of France is Paris.",
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
         "answering_system_prompt": "You are a helpful assistant.",
         "parsing_system_prompt": "You are a helpful assistant.",
         "execution_time": 1.523,
         "timestamp": "2026-01-10 12:00:00",
         "result_id": "mock-result-004",
         "run_name": "mock-verification",
-        "replicate": null
+        "replicate": null,
+        "answering": {
+          "interface": "langchain",
+          "model_name": "claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "claude-haiku-4-5",
+          "tools": []
+        }
       },
       "template": {
         "raw_llm_response": "I believe the capital of France is Lyon.",
-        "parsed_gt_response": { "capital": "Paris" },
-        "parsed_llm_response": { "capital": "Lyon" },
+        "parsed_gt_response": {
+          "capital": "Paris"
+        },
+        "parsed_llm_response": {
+          "capital": "Lyon"
+        },
         "template_verification_performed": true,
         "verify_result": false,
-        "verify_granular_result": { "capital_match": false },
+        "verify_granular_result": {
+          "capital_match": false
+        },
         "embedding_check_performed": false,
         "embedding_similarity_score": null,
         "embedding_override_applied": false,

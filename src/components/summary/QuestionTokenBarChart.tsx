@@ -13,16 +13,17 @@ interface Props {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 // Helper function to format model label (matches heatmap format)
+// Key format: "interface:model_name|mcp_config"
 const formatModelLabel = (modelKey: string): string => {
   const parts = modelKey.split('|');
-  const modelName = parts[0] || modelKey;
+  const modelName = parts[0] || modelKey; // "interface:model_name"
   const mcpConfig = parts[1];
 
   if (mcpConfig && mcpConfig !== '[]') {
     try {
-      const mcpServers = JSON.parse(mcpConfig);
-      if (Array.isArray(mcpServers) && mcpServers.length > 0) {
-        return `${modelName} (${mcpServers.join(', ')})`;
+      const tools = JSON.parse(mcpConfig);
+      if (Array.isArray(tools) && tools.length > 0) {
+        return `${modelName} +[${tools.join(', ')}]`;
       }
     } catch {
       // If parsing fails, just return model name
