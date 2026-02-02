@@ -84,8 +84,8 @@ describe('useRubricStore', () => {
       result.current.addTrait(newTrait);
     });
 
-    expect(result.current.currentRubric?.traits).toHaveLength(1);
-    expect(result.current.currentRubric?.traits[0]).toEqual(newTrait);
+    expect(result.current.currentRubric?.llm_traits).toHaveLength(1);
+    expect(result.current.currentRubric?.llm_traits[0]).toEqual(newTrait);
   });
 
   it('should prevent adding duplicate trait names', () => {
@@ -119,7 +119,7 @@ describe('useRubricStore', () => {
       result.current.addTrait(duplicateTrait);
     });
 
-    expect(result.current.currentRubric?.traits).toHaveLength(1); // Should not add
+    expect(result.current.currentRubric?.llm_traits).toHaveLength(1); // Should not add
     expect(result.current.lastError).toContain('already exists');
   });
 
@@ -154,7 +154,7 @@ describe('useRubricStore', () => {
       result.current.updateTrait(0, updatedTrait);
     });
 
-    expect(result.current.currentRubric?.traits[0]).toEqual(updatedTrait);
+    expect(result.current.currentRubric?.llm_traits[0]).toEqual(updatedTrait);
   });
 
   it('should remove trait', () => {
@@ -187,8 +187,8 @@ describe('useRubricStore', () => {
       result.current.removeTrait(0);
     });
 
-    expect(result.current.currentRubric?.traits).toHaveLength(1);
-    expect(result.current.currentRubric?.traits[0].name).toBe('completeness');
+    expect(result.current.currentRubric?.llm_traits).toHaveLength(1);
+    expect(result.current.currentRubric?.llm_traits[0].name).toBe('completeness');
   });
 
   it('should reorder traits', () => {
@@ -221,8 +221,8 @@ describe('useRubricStore', () => {
       result.current.reorderTraits(0, 1); // Move first trait to second position
     });
 
-    expect(result.current.currentRubric?.traits[0].name).toBe('completeness');
-    expect(result.current.currentRubric?.traits[1].name).toBe('accuracy');
+    expect(result.current.currentRubric?.llm_traits[0].name).toBe('completeness');
+    expect(result.current.currentRubric?.llm_traits[1].name).toBe('accuracy');
   });
 
   it('should clear error', () => {

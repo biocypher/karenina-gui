@@ -1,6 +1,8 @@
 import { Checkpoint } from '../types';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { useRubricStore } from '../stores/useRubricStore';
+import { logger } from './logger';
+import { API_ENDPOINTS } from '../constants/api';
 
 /**
  * Auto-save the current checkpoint to the connected database.
@@ -10,7 +12,7 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
   const { isConnectedToDatabase, storageUrl, currentBenchmarkName, metadata, setIsSaving, setLastSaved, setSaveError } =
     useDatasetStore.getState();
 
-  console.log('🔍 autoSaveToDatabase called', {
+  logger.debugLog('DATABASE', 'autoSaveToDatabase called', 'databaseAutoSave', {
     isConnectedToDatabase,
     hasStorageUrl: !!storageUrl,
     currentBenchmarkName,
@@ -24,7 +26,7 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
       : !storageUrl
         ? 'no storage URL'
         : 'no benchmark name';
-    console.warn(`⏭️ Skipping database auto-save: ${reason}`, {
+    logger.debugLog('DATABASE', `Skipping database auto-save: ${reason}`, 'databaseAutoSave', {
       isConnectedToDatabase,
       storageUrl,
       currentBenchmarkName,
@@ -32,7 +34,7 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
     return;
   }
 
-  console.log('💾 Auto-saving to database...', {
+  logger.debugLog('DATABASE', 'Auto-saving to database...', 'databaseAutoSave', {
     benchmarkName: currentBenchmarkName,
     storageUrl: storageUrl.substring(0, 30) + '...',
   });
@@ -52,14 +54,14 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
 
     // Call the save-benchmark API with detect_duplicates=false
     // This allows updating existing questions without triggering duplicate detection
-    const response = await fetch('/api/database/save-benchmark', {
-      method: 'POST',
+    // V2 API: PUT /api/v2/benchmarks/{name} with name in URL path
+    const response = await fetch(API_ENDPOINTS.DATABASE_SAVE(currentBenchmarkName), {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         storage_url: storageUrl,
-        benchmark_name: currentBenchmarkName,
         checkpoint_data: checkpointData,
         detect_duplicates: false, // Skip duplicate detection for auto-save
       }),
@@ -68,7 +70,7 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
     if (!response.ok) {
       const error = await response.json();
       const errorMessage = error.detail || 'Failed to save to database';
-      console.error('❌ Database save failed with HTTP error:', {
+      logger.error('DATABASE', 'Database save failed with HTTP error', 'databaseAutoSave', {
         status: response.status,
         statusText: response.statusText,
         error,
@@ -81,13 +83,13 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
     // Update last saved timestamp
     setLastSaved(data.last_modified || new Date().toISOString());
 
-    console.log('✅ Auto-saved to database successfully', {
+    logger.debugLog('DATABASE', 'Auto-saved to database successfully', 'databaseAutoSave', {
       benchmarkName: currentBenchmarkName,
       lastModified: data.last_modified,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('❌ Failed to auto-save to database:', {
+    logger.error('DATABASE', 'Failed to auto-save to database', 'databaseAutoSave', {
       error: errorMessage,
       fullError: error,
     });
@@ -118,15 +120,15 @@ export async function autoSaveToDatabase(checkpoint: Checkpoint): Promise<void> 
 /**
  * Show a toast notification for database save events.
  * This is a helper function for displaying user feedback.
+ * Note: Errors are handled via setSaveError in useDatasetStore for non-blocking display.
  */
 export function showSaveNotification(type: 'success' | 'error', message: string): void {
-  // For now, use browser alerts. In the future, this can be replaced with a toast library
   if (type === 'success') {
-    // Success notifications can be less intrusive
-    console.log(`✅ ${message}`);
+    // Success notifications are logged for debugging
+    logger.debugLog('DATABASE', message, 'databaseAutoSave');
   } else {
-    // Error notifications should be visible
-    console.error(`❌ ${message}`);
-    alert(`Error: ${message}`);
+    // Error notifications are logged and handled via error state in the store
+    // The UI components display saveError from useDatasetStore for non-blocking feedback
+    logger.error('DATABASE', message, 'databaseAutoSave');
   }
 }

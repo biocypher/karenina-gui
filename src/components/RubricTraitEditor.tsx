@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { PlusIcon, TrashIcon, XMarkIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useRef, useState } from 'react';
+import { PlusIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
 import { LLMRubricTrait, TraitKind, RegexTrait, MetricRubricTrait } from '../types';
+import { RubricLLMTraitCard } from './rubric/RubricLLMTraitCard';
+import { RubricRegexTraitCard } from './rubric/RubricRegexTraitCard';
+import { RubricMetricTraitCard } from './rubric/RubricMetricTraitCard';
+import { RubricCallableTraitCard } from './rubric/RubricCallableTraitCard';
 
-type TraitType = 'boolean' | 'score' | 'regex' | 'metric';
+type TraitType = 'boolean' | 'score' | 'literal' | 'manual' | 'metric';
 
 // Valid metrics for each evaluation mode
 const VALID_METRICS_TP_ONLY = ['precision', 'recall', 'f1'] as const;
@@ -24,6 +28,14 @@ const getAvailableMetrics = (evaluationMode: 'tp_only' | 'full_matrix'): readonl
   return evaluationMode === 'tp_only' ? VALID_METRICS_TP_ONLY : VALID_METRICS_FULL_MATRIX;
 };
 
+// JSON import schema for literal trait definitions
+interface LiteralTraitImport {
+  trait_name: string;
+  trait_description?: string;
+  higher_is_better?: boolean;
+  classes: Record<string, string>;
+}
+
 export default function RubricTraitEditor() {
   const {
     currentRubric,
@@ -39,10 +51,18 @@ export default function RubricTraitEditor() {
     saveRubric,
     clearError,
     setCurrentRubric,
+    // Literal kind class management
+    updateLLMTraitClasses,
+    addClassToLLMTrait,
+    removeClassFromLLMTrait,
+    changeLLMTraitKind,
   } = useRubricStore();
 
-  const [showRegexExamples, setShowRegexExamples] = useState<number | null>(null);
-  const [showInvertTooltip, setShowInvertTooltip] = useState<number | null>(null);
+  // Ref for hidden file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State for import error messages
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Initialize with default rubric if none exists
   useEffect(() => {
@@ -66,14 +86,103 @@ export default function RubricTraitEditor() {
       name: `Trait ${totalTraits + 1}`,
       description: '',
       kind: 'boolean',
+      higher_is_better: true, // Default to higher is better
     };
     addTrait(newTrait);
   };
 
-  const handleTraitTypeChange = (index: number, newType: TraitType, source: 'llm' | 'regex' | 'metric') => {
+  // Handle JSON file import for literal traits
+  const handleJsonImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Clear any previous import error
+    setImportError(null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content) as LiteralTraitImport;
+
+        // Validate required fields
+        if (!data.trait_name || typeof data.trait_name !== 'string') {
+          setImportError('Invalid JSON: "trait_name" is required and must be a string');
+          return;
+        }
+
+        if (!data.classes || typeof data.classes !== 'object') {
+          setImportError('Invalid JSON: "classes" is required and must be an object');
+          return;
+        }
+
+        // Validate classes count (2-20)
+        const classNames = Object.keys(data.classes);
+        if (classNames.length < 2) {
+          setImportError('Invalid JSON: "classes" must have at least 2 entries');
+          return;
+        }
+        if (classNames.length > 20) {
+          setImportError('Invalid JSON: "classes" cannot have more than 20 entries');
+          return;
+        }
+
+        // Validate class names and descriptions are non-empty
+        for (const [name, description] of Object.entries(data.classes)) {
+          if (!name.trim()) {
+            setImportError('Invalid JSON: Class names cannot be empty');
+            return;
+          }
+          if (typeof description !== 'string' || !description.trim()) {
+            setImportError(`Invalid JSON: Description for class "${name}" must be a non-empty string`);
+            return;
+          }
+        }
+
+        // Validate case-insensitive uniqueness of class names
+        const lowerNames = new Set<string>();
+        for (const name of classNames) {
+          const lowerName = name.toLowerCase();
+          if (lowerNames.has(lowerName)) {
+            setImportError(`Invalid JSON: Duplicate class name (case-insensitive): "${name}"`);
+            return;
+          }
+          lowerNames.add(lowerName);
+        }
+
+        // Create the LLMRubricTrait with kind='literal'
+        const newTrait: LLMRubricTrait = {
+          name: data.trait_name.trim(),
+          description: data.trait_description?.trim() || '',
+          kind: 'literal',
+          classes: data.classes,
+          higher_is_better: data.higher_is_better ?? true,
+          // min_score and max_score will be auto-derived by the backend
+        };
+
+        addTrait(newTrait);
+      } catch (err) {
+        setImportError(`Failed to parse JSON: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+    };
+
+    reader.onerror = () => {
+      setImportError('Failed to read file');
+    };
+
+    reader.readAsText(file);
+
+    // Reset file input so the same file can be imported again
+    event.target.value = '';
+  };
+
+  const handleTraitTypeChange = (index: number, newType: TraitType, source: 'llm' | 'regex' | 'metric' | 'trait') => {
     if (!currentRubric) return;
 
-    if (source === 'regex') {
+    // Handle 'trait' source as an alias for 'llm' (for backward compatibility with new components)
+    const effectiveSource = source === 'trait' ? 'llm' : source;
+
+    if (effectiveSource === 'regex' || effectiveSource === 'manual') {
       // Converting from manual trait
       const regexTrait = currentRubric.regex_traits?.[index];
       if (!regexTrait) return;
@@ -101,11 +210,12 @@ export default function RubricTraitEditor() {
           metric_traits: [...(currentRubric.metric_traits || []), convertedTrait],
         });
       } else {
-        // Convert to LLM trait
+        // Convert to LLM trait, preserving higher_is_better if it exists
         const convertedTrait: LLMRubricTrait = {
           name: regexTrait.name,
           description: regexTrait.description || '',
           kind: newType as TraitKind,
+          higher_is_better: regexTrait.higher_is_better ?? true,
           ...(newType === 'score' && { min_score: 1, max_score: 5 }),
         };
 
@@ -115,7 +225,7 @@ export default function RubricTraitEditor() {
           regex_traits: updatedRegexTraits,
         });
       }
-    } else if (source === 'metric') {
+    } else if (effectiveSource === 'metric') {
       // Converting from metric trait
       const metricTrait = currentRubric.metric_traits?.[index];
       if (!metricTrait) return;
@@ -133,6 +243,7 @@ export default function RubricTraitEditor() {
           pattern: '',
           case_sensitive: true,
           invert_result: false,
+          higher_is_better: true, // Default to higher is better
         };
 
         setCurrentRubric({
@@ -141,11 +252,12 @@ export default function RubricTraitEditor() {
           regex_traits: [...(currentRubric.regex_traits || []), convertedTrait],
         });
       } else {
-        // Convert to LLM trait
+        // Convert to LLM trait (metric traits don't have higher_is_better, default to true)
         const convertedTrait: LLMRubricTrait = {
           name: metricTrait.name,
           description: metricTrait.description || '',
           kind: newType as TraitKind,
+          higher_is_better: true,
           ...(newType === 'score' && { min_score: 1, max_score: 5 }),
         };
 
@@ -161,13 +273,14 @@ export default function RubricTraitEditor() {
       if (!llmTrait) return;
 
       if (newType === 'manual') {
-        // Convert to manual trait
+        // Convert to manual trait, preserving higher_is_better if it exists
         const convertedTrait: RegexTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
           pattern: '',
           case_sensitive: true,
           invert_result: false,
+          higher_is_better: llmTrait.higher_is_better ?? true,
         };
 
         const updatedTraits = currentRubric.llm_traits.filter((_, i) => i !== index);
@@ -197,34 +310,18 @@ export default function RubricTraitEditor() {
           metric_traits: [...(currentRubric.metric_traits || []), convertedTrait],
         });
       } else {
-        // Change LLM trait type (boolean <-> score)
-        const updatedTrait: LLMRubricTrait = {
-          ...llmTrait,
-          kind: newType as TraitKind,
-          ...(newType === 'score' && { min_score: 1, max_score: 5 }),
-          ...(newType === 'boolean' && { min_score: undefined, max_score: undefined }),
-        };
-        updateTrait(index, updatedTrait);
+        // Change LLM trait type (boolean <-> score <-> literal)
+        // Use the dedicated store action that handles all kind transitions properly
+        changeLLMTraitKind(index, newType as TraitKind);
       }
     }
   };
 
-  const handleTraitChange = (index: number, field: keyof RubricTrait, value: string | number | TraitKind) => {
+  const handleTraitChange = (index: number, field: keyof LLMRubricTrait, value: string | number | boolean) => {
     if (!currentRubric || !currentRubric.llm_traits || index < 0 || index >= currentRubric.llm_traits.length) return;
 
     const currentTrait = currentRubric.llm_traits[index];
     const updatedTrait: LLMRubricTrait = { ...currentTrait, [field]: value };
-
-    // Set default min/max for score traits
-    if (field === 'kind') {
-      if (value === 'score') {
-        updatedTrait.min_score = 1;
-        updatedTrait.max_score = 5;
-      } else {
-        updatedTrait.min_score = undefined;
-        updatedTrait.max_score = undefined;
-      }
-    }
 
     updateTrait(index, updatedTrait);
   };
@@ -353,860 +450,102 @@ export default function RubricTraitEditor() {
       <div className="space-y-3 mb-4">
         {/* LLM-based Traits */}
         {(currentRubric.llm_traits || []).map((trait, index) => (
-          <div
+          <RubricLLMTraitCard
             key={`llm-${trait.name}-${index}`}
-            className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-600 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
-          >
-            <div className="grid grid-cols-12 gap-4 items-start">
-              {/* Trait Name */}
-              <div className="col-span-3">
-                <label
-                  htmlFor={`trait-name-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Name
-                </label>
-                <input
-                  id={`trait-name-${index}`}
-                  type="text"
-                  value={trait.name}
-                  onChange={(e) => handleTraitChange(index, 'name', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
-                             hover:border-slate-400 dark:hover:border-slate-500"
-                  placeholder="e.g., Clarity"
-                  aria-label="Trait name"
-                />
-              </div>
-
-              {/* Trait Type Selector */}
-              <div className="col-span-2">
-                <label
-                  htmlFor={`trait-type-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Type
-                </label>
-                <div className="relative">
-                  <select
-                    id={`trait-type-${index}`}
-                    value={trait.kind}
-                    onChange={(e) => handleTraitTypeChange(index, e.target.value as TraitType, 'llm')}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                               bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8
-                               hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
-                    aria-label="Trait type"
-                  >
-                    <option value="boolean">Binary</option>
-                    <option value="score">Score</option>
-                    <option value="manual">Regex</option>
-                    <option value="metric">Metric (Confusion Matrix)</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Score range inputs for score traits */}
-                {trait.kind === 'score' && (
-                  <div className="mt-2">
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Score Range
-                    </label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id={`min-score-${index}`}
-                        type="number"
-                        value={trait.min_score || 1}
-                        onChange={(e) => handleTraitChange(index, 'min_score', parseInt(e.target.value) || 1)}
-                        className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
-                                   bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                                   hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
-                        min="1"
-                        max="10"
-                        aria-label="Minimum score"
-                        title="Minimum score"
-                      />
-                      <span className="text-sm text-slate-500 font-medium">to</span>
-                      <input
-                        id={`max-score-${index}`}
-                        type="number"
-                        value={trait.max_score || 5}
-                        onChange={(e) => handleTraitChange(index, 'max_score', parseInt(e.target.value) || 5)}
-                        className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md 
-                                   bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                                   hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
-                        min="1"
-                        max="10"
-                        aria-label="Maximum score"
-                        title="Maximum score"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Description */}
-              <div className="col-span-6">
-                <label
-                  htmlFor={`trait-description-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Description <span className="text-slate-400 font-normal">(supports Markdown)</span>
-                </label>
-                <textarea
-                  id={`trait-description-${index}`}
-                  value={trait.description || ''}
-                  onChange={(e) => handleTraitChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
-                             hover:border-slate-400 dark:hover:border-slate-500 resize-y font-mono"
-                  placeholder="What should be evaluated for this trait?&#10;&#10;Supports Markdown:&#10;## Headers&#10;**bold** and *italic*&#10;- bullet lists&#10;1. numbered lists&#10;| tables |"
-                  aria-label="Trait description"
-                  rows={6}
-                />
-              </div>
-
-              {/* Deep Judgment Configuration */}
-              <div className="col-span-11">
-                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <input
-                      type="checkbox"
-                      id={`deep-judgment-enabled-${index}`}
-                      checked={trait.deep_judgment_enabled || false}
-                      onChange={(e) => handleTraitChange(index, 'deep_judgment_enabled', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                    />
-                    <label
-                      htmlFor={`deep-judgment-enabled-${index}`}
-                      className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                    >
-                      Deep Judgment (Multi-stage evaluation with evidence)
-                    </label>
-                  </div>
-
-                  {trait.deep_judgment_enabled && (
-                    <div className="ml-6 space-y-3 mt-2">
-                      {/* Extract Excerpts */}
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`deep-judgment-excerpt-${index}`}
-                          checked={trait.deep_judgment_excerpt_enabled !== false}
-                          onChange={(e) => handleTraitChange(index, 'deep_judgment_excerpt_enabled', e.target.checked)}
-                          className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                        />
-                        <label
-                          htmlFor={`deep-judgment-excerpt-${index}`}
-                          className="text-xs text-slate-700 dark:text-slate-300"
-                        >
-                          Extract Excerpts
-                        </label>
-                      </div>
-
-                      {/* Advanced Settings */}
-                      <details className="group">
-                        <summary className="text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer hover:text-slate-800 dark:hover:text-slate-200">
-                          Advanced Settings
-                        </summary>
-                        <div className="ml-4 mt-2 space-y-2">
-                          {/* Max Excerpts */}
-                          <div>
-                            <label
-                              htmlFor={`max-excerpts-${index}`}
-                              className="block text-xs text-slate-600 dark:text-slate-400 mb-1"
-                            >
-                              Max Excerpts (override global default)
-                            </label>
-                            <input
-                              type="number"
-                              id={`max-excerpts-${index}`}
-                              value={trait.deep_judgment_max_excerpts ?? ''}
-                              onChange={(e) =>
-                                handleTraitChange(
-                                  index,
-                                  'deep_judgment_max_excerpts',
-                                  e.target.value ? parseInt(e.target.value) : undefined
-                                )
-                              }
-                              className="w-24 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                              placeholder="7"
-                              min="1"
-                              max="20"
-                            />
-                          </div>
-
-                          {/* Fuzzy Match Threshold */}
-                          <div>
-                            <label
-                              htmlFor={`fuzzy-threshold-${index}`}
-                              className="block text-xs text-slate-600 dark:text-slate-400 mb-1"
-                            >
-                              Fuzzy Match Threshold (0.0-1.0)
-                            </label>
-                            <input
-                              type="number"
-                              id={`fuzzy-threshold-${index}`}
-                              value={trait.deep_judgment_fuzzy_match_threshold ?? ''}
-                              onChange={(e) =>
-                                handleTraitChange(
-                                  index,
-                                  'deep_judgment_fuzzy_match_threshold',
-                                  e.target.value ? parseFloat(e.target.value) : undefined
-                                )
-                              }
-                              className="w-24 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                              placeholder="0.80"
-                              min="0"
-                              max="1"
-                              step="0.01"
-                            />
-                          </div>
-
-                          {/* Retry Attempts */}
-                          <div>
-                            <label
-                              htmlFor={`retry-attempts-${index}`}
-                              className="block text-xs text-slate-600 dark:text-slate-400 mb-1"
-                            >
-                              Retry Attempts
-                            </label>
-                            <input
-                              type="number"
-                              id={`retry-attempts-${index}`}
-                              value={trait.deep_judgment_excerpt_retry_attempts ?? ''}
-                              onChange={(e) =>
-                                handleTraitChange(
-                                  index,
-                                  'deep_judgment_excerpt_retry_attempts',
-                                  e.target.value ? parseInt(e.target.value) : undefined
-                                )
-                              }
-                              className="w-24 px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                              placeholder="2"
-                              min="0"
-                              max="5"
-                            />
-                          </div>
-
-                          {/* Search Enhancement */}
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`deep-judgment-search-${index}`}
-                              checked={trait.deep_judgment_search_enabled || false}
-                              onChange={(e) =>
-                                handleTraitChange(index, 'deep_judgment_search_enabled', e.target.checked)
-                              }
-                              className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                            />
-                            <label
-                              htmlFor={`deep-judgment-search-${index}`}
-                              className="text-xs text-slate-700 dark:text-slate-300"
-                            >
-                              Search Enhancement (hallucination detection)
-                            </label>
-                          </div>
-                        </div>
-                      </details>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Delete Button */}
-              <div className="col-span-1 flex justify-end mt-6">
-                <button
-                  onClick={() => removeTrait(index)}
-                  className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
-                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                  title="Delete trait"
-                  aria-label={`Delete ${trait.name} trait`}
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+            trait={trait}
+            index={index}
+            onTraitChange={handleTraitChange}
+            onRemove={removeTrait}
+            onTypeChange={(index, newType) => handleTraitTypeChange(index, newType, 'llm')}
+            onClassesChange={updateLLMTraitClasses}
+            onAddClass={addClassToLLMTrait}
+            onRemoveClass={removeClassFromLLMTrait}
+          />
         ))}
 
         {/* Regex Traits */}
         {(currentRubric.regex_traits || []).map((trait, index) => (
-          <div
+          <RubricRegexTraitCard
             key={`regex-${trait.name}-${index}`}
-            className="bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
-          >
-            <div className="grid grid-cols-12 gap-4 items-start">
-              {/* Trait Name */}
-              <div className="col-span-3">
-                <label
-                  htmlFor={`regex-trait-name-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Name
-                </label>
-                <input
-                  id={`regex-trait-name-${index}`}
-                  type="text"
-                  value={trait.name}
-                  onChange={(e) => handleRegexTraitChange(index, 'name', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="e.g., Contains Error"
-                />
-              </div>
-
-              {/* Trait Type Selector */}
-              <div className="col-span-2">
-                <label
-                  htmlFor={`regex-trait-type-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Type
-                </label>
-                <div className="relative">
-                  <select
-                    id={`regex-trait-type-${index}`}
-                    value="manual"
-                    onChange={(e) => handleTraitTypeChange(index, e.target.value as TraitType, 'regex')}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                               bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8
-                               hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
-                    aria-label="Trait type"
-                  >
-                    <option value="boolean">Binary</option>
-                    <option value="score">Score</option>
-                    <option value="manual">Regex</option>
-                    <option value="metric">Metric (Confusion Matrix)</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="col-span-6">
-                <label
-                  htmlFor={`regex-trait-description-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Description
-                </label>
-                <input
-                  id={`regex-trait-description-${index}`}
-                  type="text"
-                  value={trait.description || ''}
-                  onChange={(e) => handleRegexTraitChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="What does this regex check for?"
-                />
-              </div>
-
-              {/* Delete Button */}
-              <div className="col-span-1 flex justify-end mt-6">
-                <button
-                  onClick={() => removeRegexTrait(index)}
-                  className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
-                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                  title="Delete manual trait"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Regex Pattern */}
-            <div className="mt-4">
-              <div className="flex items-center gap-2 mb-1">
-                <label
-                  htmlFor={`regex-trait-pattern-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Regex Pattern
-                </label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowRegexExamples(showRegexExamples === index ? null : index)}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    title="Show regex examples"
-                  >
-                    <QuestionMarkCircleIcon className="h-4 w-4" />
-                  </button>
-                  {showRegexExamples === index && (
-                    <div className="absolute left-0 top-6 z-50 w-96 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Regex Examples</h4>
-                        <button
-                          onClick={() => setShowRegexExamples(null)}
-                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                        >
-                          <XMarkIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="space-y-3 text-xs">
-                        <div>
-                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">\berror\b</div>
-                          <div className="text-slate-600 dark:text-slate-400">Matches the word "error"</div>
-                        </div>
-                        <div>
-                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">^Answer:</div>
-                          <div className="text-slate-600 dark:text-slate-400">Text must start with "Answer:"</div>
-                        </div>
-                        <div>
-                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
-                            correct\.$
-                          </div>
-                          <div className="text-slate-600 dark:text-slate-400">Text must end with "correct."</div>
-                        </div>
-                        <div>
-                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
-                            (?&lt;=Explanation:).*
-                          </div>
-                          <div className="text-slate-600 dark:text-slate-400">
-                            Checks if text contains "Explanation:" followed by content
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
-                            &lt;answer&gt;(.*?)&lt;/answer&gt;
-                          </div>
-                          <div className="text-slate-600 dark:text-slate-400">
-                            Checks if content is wrapped in &lt;answer&gt; tags
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
-                            Explanation:.*\bcorrect\b
-                          </div>
-                          <div className="text-slate-600 dark:text-slate-400">
-                            Checks if "correct" appears after "Explanation:"
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mb-1">
-                            &lt;answer&gt;.*\byes\b.*&lt;/answer&gt;
-                          </div>
-                          <div className="text-slate-600 dark:text-slate-400">
-                            Checks if "yes" appears between &lt;answer&gt; tags
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <input
-                id={`regex-trait-pattern-${index}`}
-                type="text"
-                value={trait.pattern || ''}
-                onChange={(e) => handleRegexTraitChange(index, 'pattern', e.target.value)}
-                className="w-full px-3 py-2 text-sm font-mono border border-slate-300 dark:border-slate-600 rounded-md
-                           bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="e.g., \berror\b"
-              />
-            </div>
-
-            {/* Options */}
-            <div className="mt-4 flex items-center gap-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={trait.case_sensitive ?? true}
-                  onChange={(e) => handleRegexTraitChange(index, 'case_sensitive', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-slate-700 dark:text-slate-300">Case Sensitive</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={trait.invert_result ?? false}
-                    onChange={(e) => handleRegexTraitChange(index, 'invert_result', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Invert Result</span>
-                </label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowInvertTooltip(showInvertTooltip === index ? null : index)}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    title="What does invert result mean?"
-                  >
-                    <QuestionMarkCircleIcon className="h-4 w-4" />
-                  </button>
-                  {showInvertTooltip === index && (
-                    <div className="absolute left-0 top-6 z-50 w-72 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Invert Result</h4>
-                        <button
-                          onClick={() => setShowInvertTooltip(null)}
-                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                        >
-                          <XMarkIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="text-xs text-slate-600 dark:text-slate-400 space-y-2">
-                        <p>When enabled, the boolean result of the regex match is inverted:</p>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>
-                            <span className="font-semibold">Match found</span> → Returns{' '}
-                            <span className="font-mono text-red-600 dark:text-red-400">false</span>
-                          </li>
-                          <li>
-                            <span className="font-semibold">No match</span> → Returns{' '}
-                            <span className="font-mono text-green-600 dark:text-green-400">true</span>
-                          </li>
-                        </ul>
-                        <p className="mt-2 text-slate-500 dark:text-slate-500 italic">
-                          Useful for checking that a pattern does NOT appear in the text.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+            trait={trait}
+            index={index}
+            onTraitChange={handleRegexTraitChange}
+            onRemove={removeRegexTrait}
+            onTypeChange={(index, newType) => handleTraitTypeChange(index, newType, 'regex')}
+          />
         ))}
 
         {/* Metric (Confusion Matrix) Traits */}
         {(currentRubric.metric_traits || []).map((trait, index) => (
-          <div
+          <RubricMetricTraitCard
             key={`metric-${trait.name}-${index}`}
-            className="bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800 p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
-          >
-            <div className="grid grid-cols-12 gap-4 items-start">
-              {/* Trait Name */}
-              <div className="col-span-3">
-                <label
-                  htmlFor={`metric-trait-name-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Name
-                </label>
-                <input
-                  id={`metric-trait-name-${index}`}
-                  type="text"
-                  value={trait.name}
-                  onChange={(e) => handleMetricTraitChange(index, 'name', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="e.g., Diagnosis Accuracy"
-                />
-              </div>
-
-              {/* Trait Type Selector */}
-              <div className="col-span-2">
-                <label
-                  htmlFor={`metric-trait-type-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Type
-                </label>
-                <div className="relative">
-                  <select
-                    id={`metric-trait-type-${index}`}
-                    value="metric"
-                    onChange={(e) => handleTraitTypeChange(index, e.target.value as TraitType, 'metric')}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                               bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8
-                               hover:border-slate-400 dark:hover:border-slate-500 transition-colors"
-                    aria-label="Trait type"
-                  >
-                    <option value="boolean">Binary</option>
-                    <option value="score">Score</option>
-                    <option value="manual">Regex</option>
-                    <option value="metric">Metric (Confusion Matrix)</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="col-span-6">
-                <label
-                  htmlFor={`metric-trait-description-${index}`}
-                  className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
-                >
-                  Trait Description
-                </label>
-                <input
-                  id={`metric-trait-description-${index}`}
-                  type="text"
-                  value={trait.description || ''}
-                  onChange={(e) => handleMetricTraitChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="What should be evaluated for this trait?"
-                />
-              </div>
-
-              {/* Delete Button */}
-              <div className="col-span-1 flex justify-end mt-6">
-                <button
-                  onClick={() => removeMetricTrait(index)}
-                  className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
-                             hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                  title="Delete metric trait"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Evaluation Mode Selector */}
-            <div className="mt-4">
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Evaluation Mode
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`eval-mode-${index}`}
-                    value="tp_only"
-                    checked={trait.evaluation_mode === 'tp_only'}
-                    onChange={() => handleEvaluationModeChange(index, 'tp_only')}
-                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">TP-only (Precision, Recall, F1)</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`eval-mode-${index}`}
-                    value="full_matrix"
-                    checked={trait.evaluation_mode === 'full_matrix'}
-                    onChange={() => handleEvaluationModeChange(index, 'full_matrix')}
-                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">
-                    Full Matrix (All metrics including Specificity, Accuracy)
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            {/* Metric Selection */}
-            <div className="mt-4">
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Metrics to Compute
-              </label>
-              <div className="flex flex-wrap gap-3">
-                {getAvailableMetrics(trait.evaluation_mode).map((metric) => {
-                  const isSelected = (trait.metrics || []).includes(metric);
-                  const canCompute = canComputeMetric(trait, metric);
-
-                  return (
-                    <label
-                      key={metric}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors cursor-pointer
-                        ${
-                          isSelected
-                            ? canCompute
-                              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
-                              : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
-                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:border-blue-300'
-                        }`}
-                      title={
-                        isSelected && !canCompute
-                          ? `Missing required buckets: ${METRIC_REQUIREMENTS[metric].join(', ')}`
-                          : ''
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleMetricToggle(index, metric)}
-                        className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">
-                        {metric}
-                      </span>
-                      {isSelected && !canCompute && <span className="text-xs text-red-600 dark:text-red-400">⚠️</span>}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Instruction Buckets */}
-            <div className={`mt-4 grid ${trait.evaluation_mode === 'tp_only' ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
-              {/* True Positives (Correct Extractions) */}
-              <div>
-                <label
-                  htmlFor={`metric-tp-${index}`}
-                  className="block text-xs font-medium text-green-700 dark:text-green-400 mb-1"
-                >
-                  Correct Extractions (TP) - What SHOULD be extracted
-                </label>
-                <textarea
-                  id={`metric-tp-${index}`}
-                  value={(trait.tp_instructions || []).join('\n')}
-                  onChange={(e) => handleInstructionChange(index, 'tp', e.target.value)}
-                  className="w-full px-3 py-2 text-sm font-mono border border-green-300 dark:border-green-700 rounded-md
-                             bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                             focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                  placeholder="One instruction per line&#10;e.g., mentions drug mechanism&#10;     includes dosage information"
-                  rows={4}
-                />
-              </div>
-
-              {/* True Negatives (Incorrect Extractions = FP) - Only show in full_matrix mode */}
-              {trait.evaluation_mode === 'full_matrix' && (
-                <div>
-                  <label
-                    htmlFor={`metric-tn-${index}`}
-                    className="block text-xs font-medium text-red-700 dark:text-red-400 mb-1"
-                  >
-                    Incorrect Extractions (TN) - What SHOULD NOT be extracted
-                  </label>
-                  <textarea
-                    id={`metric-tn-${index}`}
-                    value={(trait.tn_instructions || []).join('\n')}
-                    onChange={(e) => handleInstructionChange(index, 'tn', e.target.value)}
-                    className="w-full px-3 py-2 text-sm font-mono border border-red-300 dark:border-red-700 rounded-md
-                               bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-                               focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                    placeholder="One instruction per line&#10;e.g., mentions side effects&#10;     off-topic information"
-                    rows={4}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Repeated Extraction Toggle */}
-            <div className="mt-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={trait.repeated_extraction ?? true}
-                  onChange={(e) => handleMetricTraitChange(index, 'repeated_extraction', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-slate-700 dark:text-slate-300">
-                  Deduplicate Excerpts (Remove duplicate text across buckets)
-                </span>
-              </label>
-            </div>
-          </div>
+            trait={trait}
+            index={index}
+            onTraitChange={handleMetricTraitChange}
+            onRemove={removeMetricTrait}
+            onTypeChange={(index, newType) => handleTraitTypeChange(index, newType, 'metric')}
+            onMetricToggle={handleMetricToggle}
+            onInstructionChange={handleInstructionChange}
+            onEvaluationModeChange={handleEvaluationModeChange}
+            getAvailableMetrics={getAvailableMetrics}
+            canComputeMetric={canComputeMetric}
+            getMetricRequirements={(metric) => METRIC_REQUIREMENTS[metric]}
+          />
         ))}
 
         {/* Callable Traits (Read-Only) */}
         {(currentRubric.callable_traits || []).map((trait, index) => (
-          <div
-            key={`callable-${trait.name}-${index}`}
-            className="bg-teal-50 dark:bg-teal-900/10 rounded-lg border border-teal-200 dark:border-teal-800 p-6 shadow-sm"
-          >
-            <div className="grid grid-cols-12 gap-4 items-start">
-              {/* Trait Name */}
-              <div className="col-span-3">
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trait Name</label>
-                <div className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                  {trait.name}
-                </div>
-              </div>
-
-              {/* Trait Type */}
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Trait Type</label>
-                <div className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                  Callable ({trait.kind})
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="col-span-6">
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Trait Description
-                </label>
-                <div className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                  {trait.description || 'No description'}
-                </div>
-              </div>
-            </div>
-
-            {/* Callable Code Display */}
-            <div className="mt-4">
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Callable Code (Read-Only)
-              </label>
-              <div className="px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400">
-                {trait.callable_code ? (
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                      />
-                    </svg>
-                    <span className="italic">Pickled Python function (binary format, not displayable as text)</span>
-                  </div>
-                ) : (
-                  'No callable code'
-                )}
-              </div>
-            </div>
-
-            {/* Read-Only Badge */}
-            <div className="mt-3 flex items-center gap-2 text-xs text-teal-700 dark:text-teal-400">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              <span className="font-medium">Read-Only (loaded from checkpoint)</span>
-            </div>
-          </div>
+          <RubricCallableTraitCard key={`callable-${trait.name}-${index}`} trait={trait} />
         ))}
 
-        {/* Add Trait Button */}
-        <button
-          onClick={handleAddTrait}
-          className="flex items-center justify-center w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-600
-                     rounded-lg text-slate-600 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500
-                     hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add trait
-        </button>
+        {/* Add Trait Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleAddTrait}
+            className="flex items-center justify-center flex-1 py-4 border-2 border-dashed border-slate-300 dark:border-slate-600
+                       rounded-lg text-slate-600 dark:text-slate-400 hover:border-blue-400 dark:hover:border-blue-500
+                       hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add trait
+          </button>
+
+          {/* Hidden file input for JSON import */}
+          <input ref={fileInputRef} type="file" accept=".json" onChange={handleJsonImport} className="hidden" />
+
+          {/* Import Literal Trait from JSON Button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center justify-center px-4 py-4 border-2 border-dashed border-indigo-300 dark:border-indigo-600
+                       rounded-lg text-indigo-600 dark:text-indigo-400 hover:border-indigo-400 dark:hover:border-indigo-500
+                       hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all duration-200"
+            title="Import literal trait definition from JSON file"
+          >
+            <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+            Import Literal from JSON
+          </button>
+        </div>
       </div>
+
+      {/* Import Error Display */}
+      {importError && (
+        <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <XMarkIcon className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-amber-800 dark:text-amber-200">{importError}</p>
+              <button
+                onClick={() => setImportError(null)}
+                className="text-xs text-amber-600 dark:text-amber-400 hover:underline mt-1"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Display */}
       {lastError && (
@@ -1290,6 +629,13 @@ export default function RubricTraitEditor() {
                     {currentRubric.llm_traits.filter((t) => t.kind === 'score').length}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 ml-1">score</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-indigo-500 rounded-full mr-1"></span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {currentRubric.llm_traits.filter((t) => t.kind === 'literal').length}
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-1">literal</span>
                 </span>
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-amber-500 rounded-full mr-1"></span>

@@ -3,6 +3,7 @@
  */
 
 import type { SummaryRequest, SummaryStats, ModelComparisonRequest, ModelComparisonResponse } from '../types';
+import { API_ENDPOINTS } from '../constants/api';
 
 /**
  * Error response from Summary API
@@ -29,7 +30,7 @@ export class SummaryApiError extends Error {
  */
 export async function fetchSummary(request: SummaryRequest): Promise<SummaryStats> {
   try {
-    const response = await fetch('/api/verification/summary', {
+    const response = await fetch(API_ENDPOINTS.VERIFICATION_SUMMARY, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,7 +44,8 @@ export async function fetchSummary(request: SummaryRequest): Promise<SummaryStat
     }
 
     const data = await response.json();
-    return data as SummaryStats;
+    // Server returns envelope: { success: true, summary: {...} }
+    return data.summary as SummaryStats;
   } catch (error) {
     if (error instanceof SummaryApiError) {
       throw error;
@@ -63,7 +65,7 @@ export async function fetchSummary(request: SummaryRequest): Promise<SummaryStat
  */
 export async function fetchModelComparison(request: ModelComparisonRequest): Promise<ModelComparisonResponse> {
   try {
-    const response = await fetch('/api/verification/compare-models', {
+    const response = await fetch(API_ENDPOINTS.VERIFICATION_COMPARE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -77,7 +79,10 @@ export async function fetchModelComparison(request: ModelComparisonRequest): Pro
     }
 
     const data = await response.json();
-    return data as ModelComparisonResponse;
+    // Server returns envelope: { success: true, model_summaries, heatmap_data, question_token_data }
+    // Extract the fields we need, excluding 'success'
+    const { model_summaries, heatmap_data, question_token_data } = data;
+    return { model_summaries, heatmap_data, question_token_data } as ModelComparisonResponse;
   } catch (error) {
     if (error instanceof SummaryApiError) {
       throw error;

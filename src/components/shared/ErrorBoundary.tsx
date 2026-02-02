@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -22,7 +23,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('ERROR_BOUNDARY', 'ErrorBoundary caught an error', 'ErrorBoundary', { error, errorInfo });
   }
 
   render(): React.ReactNode {

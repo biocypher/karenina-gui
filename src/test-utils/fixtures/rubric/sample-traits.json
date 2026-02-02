@@ -1,0 +1,46 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T12:00:00.000Z",
+    "description": "Sample rubric traits for integration testing",
+    "isMocked": true
+  },
+  "llm_traits": [
+    {
+      "name": "clarity",
+      "description": "Is the response clear and easy to understand?",
+      "kind": "score",
+      "min_score": 1,
+      "max_score": 5,
+      "higher_is_better": true,
+      "deep_judgment_enabled": false,
+      "deep_judgment_excerpt_enabled": true
+    },
+    {
+      "name": "has_citations",
+      "description": "Does the response include proper citations?",
+      "kind": "boolean",
+      "higher_is_better": true
+    }
+  ],
+  "regex_traits": [
+    {
+      "name": "contains_bracketed_answer",
+      "description": "Answer is enclosed in [ANSWER] brackets",
+      "pattern": "\\[ANSWER:\\s*.*?\\]",
+      "case_sensitive": false,
+      "invert_result": false,
+      "higher_is_better": true
+    }
+  ],
+  "metric_traits": [
+    {
+      "name": "entity_extraction",
+      "description": "Extract all gene names from the text",
+      "evaluation_mode": "full_matrix",
+      "metrics": ["precision", "recall", "f1"],
+      "tp_instructions": ["Gene names should be capitalized", "Gene names should be standard HGNC symbols"],
+      "tn_instructions": ["Common words should not be extracted as gene names"],
+      "repeated_extraction": true
+    }
+  ]
+}

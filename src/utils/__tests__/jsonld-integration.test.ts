@@ -6,7 +6,7 @@ describe('JSON-LD Integration Tests', () => {
   const sampleV2Checkpoint: UnifiedCheckpoint = {
     version: '2.0',
     global_rubric: {
-      traits: [
+      llm_traits: [
         {
           name: 'Accuracy',
           description: 'Is the answer factually correct?',
@@ -31,7 +31,7 @@ describe('JSON-LD Integration Tests', () => {
         last_modified: '2025-07-19T12:00:00Z',
         finished: true,
         question_rubric: {
-          traits: [
+          llm_traits: [
             {
               name: 'Geographic Accuracy',
               description: 'Is the geographic information correct?',
@@ -74,16 +74,16 @@ describe('JSON-LD Integration Tests', () => {
 
       // Verify global rubric preservation
       expect(reconvertedV2.global_rubric).toBeDefined();
-      expect(reconvertedV2.global_rubric?.traits).toHaveLength(2);
+      expect(reconvertedV2.global_rubric?.llm_traits).toHaveLength(2);
 
-      const accuracyTrait = reconvertedV2.global_rubric?.traits.find((t) => t.name === 'Accuracy');
+      const accuracyTrait = reconvertedV2.global_rubric?.llm_traits.find((t) => t.name === 'Accuracy');
       expect(accuracyTrait?.kind).toBe('boolean');
       expect(accuracyTrait?.description).toBe('Is the answer factually correct?');
 
       // Verify question-specific rubric preservation
       expect(reconvertedQuestion.question_rubric).toBeDefined();
-      expect(reconvertedQuestion.question_rubric?.traits).toHaveLength(1);
-      expect(reconvertedQuestion.question_rubric?.traits[0].name).toBe('Geographic Accuracy');
+      expect(reconvertedQuestion.question_rubric?.llm_traits).toHaveLength(1);
+      expect(reconvertedQuestion.question_rubric?.llm_traits[0].name).toBe('Geographic Accuracy');
     });
 
     it('should handle checkpoints without global rubrics', () => {

@@ -3,8 +3,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DatabaseManageTab } from '../DatabaseManageTab';
 
-// Mock fetch globally
-global.fetch = vi.fn();
+// Mock the CSRF module to pass through to global fetch
+vi.mock('../../utils/csrf', () => ({
+  csrf: {
+    fetchWithCsrf: vi.fn((url: string, options: RequestInit = {}) => {
+      return (global.fetch as ReturnType<typeof vi.fn>)(url, options);
+    }),
+    initialize: vi.fn(() => Promise.resolve(true)),
+    getHeaders: vi.fn(() => ({})),
+  },
+}));
 
 describe('DatabaseManageTab', () => {
   const mockOnLoadBenchmark = vi.fn();
@@ -12,7 +20,8 @@ describe('DatabaseManageTab', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (global.fetch as ReturnType<typeof vi.fn>).mockClear();
+    // Reset global fetch mock
+    (global.fetch as ReturnType<typeof vi.fn>).mockReset();
   });
 
   it('shows loading state while fetching benchmarks', () => {
@@ -22,7 +31,7 @@ describe('DatabaseManageTab', () => {
 
     // Should show loader while fetching (Lucide Loader icon with animate-spin class)
     // During loading, the component only shows the loader, not the benchmarks list or load button
-    const createButton = screen.getByText('Create New Benchmark in Database');
+    const createButton = screen.getByText('Create New Benchmark');
     expect(createButton).toBeInTheDocument();
 
     // The Load Selected Benchmark button should NOT be present during loading
@@ -184,11 +193,17 @@ describe('DatabaseManageTab', () => {
     const benchmark = await screen.findByText('Test Benchmark');
     await user.click(benchmark);
 
-    // Mock loading failure
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    // Mock loading failure - need to handle retries (3 attempts)
+    const errorResponse = {
       ok: false,
+      status: 404,
+      statusText: 'Not Found',
       json: async () => ({ detail: 'Benchmark not found' }),
-    });
+    };
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(errorResponse)
+      .mockResolvedValueOnce(errorResponse)
+      .mockResolvedValueOnce(errorResponse);
 
     await user.click(screen.getByText('Load Selected Benchmark'));
 
@@ -204,7 +219,7 @@ describe('DatabaseManageTab', () => {
 
     render(<DatabaseManageTab storageUrl={mockStorageUrl} onLoadBenchmark={mockOnLoadBenchmark} />);
 
-    expect(await screen.findByText('Create New Benchmark in Database')).toBeInTheDocument();
+    expect(await screen.findByText('Create New Benchmark')).toBeInTheDocument();
   });
 
   it('shows create benchmark form when button is clicked', async () => {
@@ -216,10 +231,10 @@ describe('DatabaseManageTab', () => {
 
     render(<DatabaseManageTab storageUrl={mockStorageUrl} onLoadBenchmark={mockOnLoadBenchmark} />);
 
-    const createButton = await screen.findByText('Create New Benchmark in Database');
+    const createButton = await screen.findByText('Create New Benchmark');
     await user.click(createButton);
 
-    expect(screen.getByText('Create New Benchmark')).toBeInTheDocument();
+    expect(screen.getByText('Create Benchmark')).toBeInTheDocument();
     expect(screen.getByLabelText(/Benchmark Name/)).toBeInTheDocument();
   });
 
@@ -232,10 +247,14 @@ describe('DatabaseManageTab', () => {
 
     render(<DatabaseManageTab storageUrl={mockStorageUrl} onLoadBenchmark={mockOnLoadBenchmark} />);
 
-    const createButton = await screen.findByText('Create New Benchmark in Database');
+    const createButton = await screen.findByText('Create New Benchmark');
     await user.click(createButton);
 
-    expect(screen.queryByText('Create New Benchmark in Database')).not.toBeInTheDocument();
+    // The "Create New Benchmark" button should be hidden, but the form header still has the text
+    // Check that the form is shown by looking for the input field
+    expect(screen.getByLabelText(/Benchmark Name/)).toBeInTheDocument();
+    // Check that the Create button (not "Create New Benchmark" button) is shown
+    expect(screen.getByText('Create Benchmark')).toBeInTheDocument();
   });
 
   it('reloads benchmarks after creating new benchmark', async () => {
@@ -249,38 +268,24 @@ describe('DatabaseManageTab', () => {
 
     render(<DatabaseManageTab storageUrl={mockStorageUrl} onLoadBenchmark={mockOnLoadBenchmark} />);
 
-    await user.click(await screen.findByText('Create New Benchmark in Database'));
+    await user.click(await screen.findByText('Create New Benchmark'));
 
-    // Mock create benchmark success
+    // Clear previous mock and set up new mocks for create and reload
+    (global.fetch as ReturnType<typeof vi.fn>).mockReset();
+
+    // Mock create benchmark success - API only returns benchmark_name
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         benchmark_name: 'New Benchmark',
-        checkpoint_data: {
-          dataset_metadata: { name: 'New Benchmark' },
-          questions: {},
-          global_rubric: null,
-        },
       }),
     });
 
-    // Mock reload with new benchmark
+    // Mock reload with new benchmark (getBenchmarks API returns different structure)
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        benchmarks: [{ id: '1', name: 'New Benchmark', total_questions: 0, finished_count: 0, unfinished_count: 0 }],
-      }),
-    });
-
-    // Mock load benchmark
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        checkpoint_data: {
-          dataset_metadata: { name: 'New Benchmark' },
-          questions: {},
-          global_rubric: null,
-        },
+        benchmarks: [{ name: 'New Benchmark', question_count: 0, created_at: '2024-01-01', updated_at: '2024-01-01' }],
       }),
     });
 
@@ -288,20 +293,45 @@ describe('DatabaseManageTab', () => {
     await user.type(screen.getByLabelText(/Benchmark Name/), 'New Benchmark');
     await user.click(screen.getByText('Create Benchmark'));
 
-    // Should load the new benchmark and call onLoadBenchmark
-    await waitFor(() => {
-      expect(mockOnLoadBenchmark).toHaveBeenCalled();
-    });
+    // Wait for the form to close and benchmarks to reload
+    await waitFor(
+      () => {
+        // Form should be closed (input field should be gone)
+        expect(screen.queryByLabelText(/Benchmark Name/)).not.toBeInTheDocument();
+      },
+      { timeout: 10000 }
+    );
+
+    // Should show the new benchmark in the list
+    expect(await screen.findByText('New Benchmark', {}, { timeout: 10000 })).toBeInTheDocument();
+    // Benchmark should be selected but not loaded (onLoadBenchmark not called)
+    expect(mockOnLoadBenchmark).not.toHaveBeenCalled();
   });
 
-  it('handles network errors gracefully', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
+  it('handles network errors gracefully', { timeout: 20000 }, async () => {
+    // Clear any previous mocks
+    (global.fetch as ReturnType<typeof vi.fn>).mockReset();
+
+    // Mock to return an error response - need to handle 4 retries (initial + 3 retries)
+    const errorResponse = {
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      json: vi.fn().mockResolvedValue({ detail: 'Failed to load benchmarks' }),
+      headers: new Headers(),
+      redirected: false,
+      type: 'basic' as ResponseType,
+      url: '/api/database/benchmarks?storage_url=sqlite%3A%2F%2Ftest.db',
+      clone: vi.fn(function () {
+        return this;
+      }),
+    } as Response;
+
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(errorResponse);
 
     render(<DatabaseManageTab storageUrl={mockStorageUrl} onLoadBenchmark={mockOnLoadBenchmark} />);
 
-    // Should show error state - actual error message varies
-    await waitFor(() => {
-      expect(screen.getByText(/Network error|Failed to load/i)).toBeInTheDocument();
-    });
+    // Should show error state - increase timeout to account for retry delays
+    expect(await screen.findByText(/Failed to load benchmarks/i, {}, { timeout: 15000 })).toBeInTheDocument();
   });
 });

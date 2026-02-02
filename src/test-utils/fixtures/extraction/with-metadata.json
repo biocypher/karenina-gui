@@ -1,0 +1,89 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T00:00:00.000Z",
+    "scenario": "extraction-with-metadata",
+    "description": "Extraction with metadata columns (keywords, URL, author)"
+  },
+  "uploadResponse": {
+    "file_id": "test-metadata-123",
+    "filename": "questions-with-metadata.csv",
+    "size": 2048
+  },
+  "previewResponse": {
+    "success": true,
+    "total_rows": 3,
+    "columns": ["Question", "Answer", "Author", "Email", "URL", "Keywords"],
+    "preview_rows": 3,
+    "data": [
+      {
+        "Question": "What is the capital of France?",
+        "Answer": "Paris",
+        "Author": "John Doe",
+        "Email": "john@example.com",
+        "URL": "https://example.com/q1",
+        "Keywords": "geography,europe,capital"
+      },
+      {
+        "Question": "What is 2 + 2?",
+        "Answer": "4",
+        "Author": "Jane Smith",
+        "Email": "jane@example.com",
+        "URL": "https://example.com/q2",
+        "Keywords": "math,basic,arithmetic"
+      },
+      {
+        "Question": "Who wrote Romeo and Juliet?",
+        "Answer": "William Shakespeare",
+        "Author": "Bob Johnson",
+        "Email": "bob@example.com",
+        "URL": "https://example.com/q3",
+        "Keywords": "literature,shakespeare,plays"
+      }
+    ]
+  },
+  "extractionResponse": {
+    "success": true,
+    "questions_data": {
+      "0": {
+        "question": "What is the capital of France?",
+        "raw_answer": "Paris",
+        "answer_template": "Paris",
+        "metadata": {
+          "author": {
+            "name": "John Doe",
+            "email": "john@example.com"
+          },
+          "url": "https://example.com/q1",
+          "keywords": ["geography", "europe", "capital"]
+        }
+      },
+      "1": {
+        "question": "What is 2 + 2?",
+        "raw_answer": "4",
+        "answer_template": "4",
+        "metadata": {
+          "author": {
+            "name": "Jane Smith",
+            "email": "jane@example.com"
+          },
+          "url": "https://example.com/q2",
+          "keywords": ["math", "basic", "arithmetic"]
+        }
+      },
+      "2": {
+        "question": "Who wrote Romeo and Juliet?",
+        "raw_answer": "William Shakespeare",
+        "answer_template": "William Shakespeare",
+        "metadata": {
+          "author": {
+            "name": "Bob Johnson",
+            "email": "bob@example.com"
+          },
+          "url": "https://example.com/q3",
+          "keywords": ["literature", "shakespeare", "plays"]
+        }
+      }
+    },
+    "total_extracted": 3
+  }
+}

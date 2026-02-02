@@ -7,7 +7,7 @@ import { Rubric } from '../../types';
 describe('RubricResultsDisplay', () => {
   // Mock rubric data
   const mockRubric: Rubric = {
-    traits: [
+    llm_traits: [
       {
         name: 'Accuracy',
         kind: 'boolean',
@@ -39,10 +39,10 @@ describe('RubricResultsDisplay', () => {
   });
 
   describe('when rubricResults is empty', () => {
-    it('displays no rubric traits message', () => {
+    it('displays no rubric evaluation message', () => {
       render(<RubricResultsDisplay rubricResults={{}} />);
 
-      expect(screen.getByText('No rubric traits evaluated')).toBeInTheDocument();
+      expect(screen.getByText('No rubric evaluation performed')).toBeInTheDocument();
     });
   });
 
@@ -175,7 +175,7 @@ describe('RubricResultsDisplay', () => {
 
     it('prioritizes evaluationRubric over currentRubric for descriptions', () => {
       const evaluationRubric: Rubric = {
-        traits: [
+        llm_traits: [
           {
             name: 'Accuracy',
             kind: 'boolean',
@@ -253,7 +253,7 @@ describe('RubricResultsDisplay', () => {
 
     it('displays question-specific indicators correctly', () => {
       const globalRubric: Rubric = {
-        traits: [
+        llm_traits: [
           {
             name: 'GlobalTrait',
             kind: 'boolean',
@@ -263,7 +263,7 @@ describe('RubricResultsDisplay', () => {
       };
 
       const evaluationRubric: Rubric = {
-        traits: [
+        llm_traits: [
           {
             name: 'GlobalTrait',
             kind: 'boolean',
@@ -301,7 +301,7 @@ describe('RubricResultsDisplay', () => {
 
     it('handles case where no global rubric is provided', () => {
       const evaluationRubric: Rubric = {
-        traits: [
+        llm_traits: [
           {
             name: 'SomeTrait',
             kind: 'boolean',

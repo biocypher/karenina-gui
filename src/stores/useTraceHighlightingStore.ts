@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { logger } from '../utils/logger';
 
 // Color presets for highlight patterns
 export const HIGHLIGHT_COLORS = [
@@ -130,7 +131,7 @@ const loadStoredSettings = (): {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.warn('Failed to load trace highlighting settings:', error);
+    logger.warning('STORAGE', 'Failed to load trace highlighting settings', 'useTraceHighlightingStore', { error });
   }
   return null;
 };
@@ -147,7 +148,7 @@ const saveToStorage = (state: { patterns: HighlightPattern[]; highlightingEnable
       })
     );
   } catch (error) {
-    console.warn('Failed to save trace highlighting settings:', error);
+    logger.warning('STORAGE', 'Failed to save trace highlighting settings', 'useTraceHighlightingStore', { error });
   }
 };
 

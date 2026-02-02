@@ -1,6 +1,7 @@
 import React from 'react';
 import { QuestionExtractor } from './QuestionExtractor';
 import { AnswerTemplateGenerator } from './AnswerTemplateGenerator';
+import { ErrorBoundary } from './shared/ErrorBoundary';
 import { QuestionData } from '../types';
 import { useTemplateStore } from '../stores/useTemplateStore';
 
@@ -32,7 +33,25 @@ export const TemplateGenerationTab: React.FC<TemplateGenerationTabProps> = ({
             Upload a file and extract questions to prepare for template generation
           </p>
         </div>
-        <QuestionExtractor onQuestionsExtracted={handleQuestionsExtracted} extractedQuestions={extractedQuestions} />
+        <ErrorBoundary
+          fallback={
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">Extraction Error</h3>
+              <p className="text-red-600 dark:text-red-400 text-sm mb-4">
+                The question extraction component encountered an error. Please try refreshing the page or uploading a
+                different file.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          }
+        >
+          <QuestionExtractor onQuestionsExtracted={handleQuestionsExtracted} extractedQuestions={extractedQuestions} />
+        </ErrorBoundary>
       </div>
 
       {/* Visual Separator */}
@@ -57,11 +76,28 @@ export const TemplateGenerationTab: React.FC<TemplateGenerationTabProps> = ({
             Generate answer templates from extracted questions using LLM providers
           </p>
         </div>
-        <AnswerTemplateGenerator
-          questions={extractedQuestions}
-          onTemplatesGenerated={onTemplatesGenerated}
-          onSwitchToCurator={onSwitchToCurator}
-        />
+        <ErrorBoundary
+          fallback={
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">Template Generation Error</h3>
+              <p className="text-red-600 dark:text-red-400 text-sm mb-4">
+                The template generation component encountered an error. Please try refreshing the page.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          }
+        >
+          <AnswerTemplateGenerator
+            questions={extractedQuestions}
+            onTemplatesGenerated={onTemplatesGenerated}
+            onSwitchToCurator={onSwitchToCurator}
+          />
+        </ErrorBoundary>
       </div>
     </div>
   );

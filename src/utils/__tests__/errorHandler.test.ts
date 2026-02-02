@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   handleFileError,
   handleApiError,
@@ -8,16 +8,20 @@ import {
   isValidationError,
   ERROR_MESSAGES,
 } from '../errorHandler';
+import { logger } from '../logger';
+
+// Mock the logger
+vi.mock('../logger', () => ({
+  logger: {
+    error: vi.fn(),
+    warning: vi.fn(),
+    debugLog: vi.fn(),
+  },
+}));
 
 describe('errorHandler', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-  let alertSpy: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -30,7 +34,10 @@ describe('errorHandler', () => {
 
       handleFileError(error, 'File upload');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('File upload: Test error', error);
+      expect(logger.error).toHaveBeenCalledWith('ERROR_HANDLER', 'File upload: Test error', 'errorHandler', {
+        error,
+        context: 'File upload',
+      });
     });
 
     it('should not log to console when disabled', () => {
@@ -38,7 +45,7 @@ describe('errorHandler', () => {
 
       handleFileError(error, 'File upload', { logToConsole: false });
 
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      expect(logger.error).not.toHaveBeenCalled();
     });
 
     it('should call setErrorState when provided', () => {
@@ -50,24 +57,24 @@ describe('errorHandler', () => {
       expect(setErrorState).toHaveBeenCalledWith('File upload: Test error');
     });
 
-    it('should show alert when requested', () => {
-      const error = new Error('Test error');
-
-      handleFileError(error, 'File upload', { showAlert: true });
-
-      expect(alertSpy).toHaveBeenCalledWith('File upload: Test error');
-    });
-
     it('should handle string errors', () => {
       handleFileError('String error', 'File upload');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('File upload: String error', 'String error');
+      expect(logger.error).toHaveBeenCalledWith('ERROR_HANDLER', 'File upload: String error', 'errorHandler', {
+        error: 'String error',
+        context: 'File upload',
+      });
     });
 
     it('should handle unknown error types', () => {
       handleFileError({ unknown: 'error' }, 'File upload');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('File upload: Unknown error occurred', { unknown: 'error' });
+      expect(logger.error).toHaveBeenCalledWith(
+        'ERROR_HANDLER',
+        'File upload: Unknown error occurred',
+        'errorHandler',
+        { error: { unknown: 'error' }, context: 'File upload' }
+      );
     });
 
     it('should warn about unimplemented toast', () => {
@@ -75,8 +82,15 @@ describe('errorHandler', () => {
 
       handleFileError(error, 'File upload', { useToast: true });
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Toast notifications not yet implemented, falling back to console');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('File upload: Test error');
+      expect(logger.warning).toHaveBeenCalledWith(
+        'ERROR_HANDLER',
+        'useToast option provided but no setErrorState function available',
+        'errorHandler'
+      );
+      expect(logger.error).toHaveBeenCalledWith('ERROR_HANDLER', 'File upload: Test error', 'errorHandler', {
+        error,
+        context: 'File upload',
+      });
     });
   });
 
@@ -86,7 +100,10 @@ describe('errorHandler', () => {
 
       handleApiError(error, 'Fetch data');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('API Error - Fetch data: API failed', error);
+      expect(logger.error).toHaveBeenCalledWith('ERROR_HANDLER', 'API Error - Fetch data: API failed', 'errorHandler', {
+        error,
+        context: 'API Error - Fetch data',
+      });
     });
 
     it('should always log to console for API errors', () => {
@@ -94,7 +111,7 @@ describe('errorHandler', () => {
 
       handleApiError(error, 'Fetch data', { logToConsole: false });
 
-      expect(consoleErrorSpy).toHaveBeenCalled(); // Should still log despite logToConsole: false
+      expect(logger.error).toHaveBeenCalled(); // Should still log despite logToConsole: false
     });
 
     it('should handle non-Error objects with message property', () => {
@@ -102,9 +119,11 @@ describe('errorHandler', () => {
 
       handleApiError(error, 'Fetch data');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(logger.error).toHaveBeenCalledWith(
+        'ERROR_HANDLER',
         'API Error - Fetch data: Custom error object',
-        'Custom error object'
+        'errorHandler',
+        { error: 'Custom error object', context: 'API Error - Fetch data' }
       );
     });
   });

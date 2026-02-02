@@ -1,17 +1,24 @@
 import { QuestionData } from '../types';
+import { logger } from './logger';
 
 // DEPRECATED: Default data loading is disabled
 // Users should start with Question Extractor or manually upload data through File Manager
 export const loadQuestionData = async (): Promise<QuestionData> => {
-  console.warn('DEPRECATED: loadQuestionData() is deprecated. Use Question Extractor or File Manager to load data.');
+  logger.warning(
+    'DEPRECATED',
+    'loadQuestionData() is deprecated. Use Question Extractor or File Manager to load data.',
+    'dataLoader'
+  );
   return {};
 };
 
 // DEPRECATED: Default data file has been removed
 // Use Question Extractor or File Manager to load data
 export const loadDefaultQuestionData = async (): Promise<QuestionData> => {
-  console.warn(
-    'DEPRECATED: Default graphical_data.json file has been removed. Use Question Extractor or File Manager to load data.'
+  logger.warning(
+    'DEPRECATED',
+    'Default graphical_data.json file has been removed. Use Question Extractor or File Manager to load data.',
+    'dataLoader'
   );
   return {};
 };
@@ -28,18 +35,11 @@ export const formatTimestamp = (timestamp: string): string => {
 };
 
 /**
- * Generate a unique session ID for dev mode display
- */
-export const generateSessionId = (): string => {
-  return `karenina_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
-
-/**
  * Force clear any lingering browser storage (for reset buttons)
  * Note: With pure state management, this is mainly for cleanup of any old data
  */
 export const forceResetAllData = (): void => {
-  console.log('🧹 forceResetAllData: Clearing any lingering browser storage');
+  logger.debugLog('STORAGE', 'forceResetAllData: Clearing any lingering browser storage', 'dataLoader');
 
   try {
     // Clear any localStorage items that might exist from previous versions
@@ -48,7 +48,7 @@ export const forceResetAllData = (): void => {
     keysToRemove.forEach((key) => {
       if (localStorage.getItem(key)) {
         localStorage.removeItem(key);
-        console.log(`  🗑️ Cleared localStorage: ${key}`);
+        logger.debugLog('STORAGE', `Cleared localStorage: ${key}`, 'dataLoader');
       }
     });
 
@@ -58,12 +58,12 @@ export const forceResetAllData = (): void => {
     sessionKeysToRemove.forEach((key) => {
       if (sessionStorage.getItem(key)) {
         sessionStorage.removeItem(key);
-        console.log(`  🗑️ Cleared sessionStorage: ${key}`);
+        logger.debugLog('STORAGE', `Cleared sessionStorage: ${key}`, 'dataLoader');
       }
     });
 
-    console.log('✅ Force reset complete - any lingering browser data cleared');
+    logger.debugLog('STORAGE', 'Force reset complete - any lingering browser data cleared', 'dataLoader');
   } catch (error) {
-    console.error('❌ Error during force reset:', error);
+    logger.error('STORAGE', 'Error during force reset', 'dataLoader', { error });
   }
 };

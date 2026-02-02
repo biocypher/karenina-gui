@@ -1,0 +1,207 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T12:00:00.000Z",
+    "description": "Sample mergeable verification runs for integration testing",
+    "isMocked": true
+  },
+  "runs": [
+    {
+      "run_id": "run-001",
+      "name": "First verification run",
+      "timestamp": "2026-01-10T10:00:00.000Z",
+      "results_count": 3,
+      "results": {
+        "q1_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1000000000000": {
+          "metadata": {
+            "question_id": "q1",
+            "template_id": "template-001",
+            "completed_without_errors": true,
+            "error": null,
+            "question_text": "What is the capital of France?",
+            "raw_answer": "Paris",
+            "answering_model": "anthropic/claude-haiku-4-5",
+            "parsing_model": "anthropic/claude-haiku-4-5",
+            "execution_time": 1.2,
+            "timestamp": "2026-01-10 10:00:00",
+            "result_id": "result-001"
+          },
+          "template": {
+            "raw_llm_response": "Paris",
+            "parsed_gt_response": { "capital": "Paris" },
+            "parsed_llm_response": { "capital": "Paris" },
+            "template_verification_performed": true,
+            "verify_result": true,
+            "abstention_detected": false
+          },
+          "rubric": null,
+          "deep_judgment": null,
+          "used_full_trace": true
+        },
+        "q2_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1000000000100": {
+          "metadata": {
+            "question_id": "q2",
+            "template_id": "template-002",
+            "completed_without_errors": true,
+            "error": null,
+            "question_text": "Calculate 15 + 27.",
+            "raw_answer": "42",
+            "answering_model": "anthropic/claude-haiku-4-5",
+            "parsing_model": "anthropic/claude-haiku-4-5",
+            "execution_time": 0.9,
+            "timestamp": "2026-01-10 10:00:01",
+            "result_id": "result-002"
+          },
+          "template": {
+            "raw_llm_response": "15 + 27 = 42",
+            "parsed_gt_response": { "result": 42 },
+            "parsed_llm_response": { "result": 42 },
+            "template_verification_performed": true,
+            "verify_result": true,
+            "abstention_detected": false
+          },
+          "rubric": null,
+          "deep_judgment": null,
+          "used_full_trace": true
+        },
+        "q3_anthropic/claude-haiku-4-5_anthropic/claude-haiku-4-5_1000000000200": {
+          "metadata": {
+            "question_id": "q3",
+            "template_id": "template-003",
+            "completed_without_errors": true,
+            "error": null,
+            "question_text": "Name three primary colors.",
+            "raw_answer": "Red, blue, yellow",
+            "answering_model": "anthropic/claude-haiku-4-5",
+            "parsing_model": "anthropic/claude-haiku-4-5",
+            "execution_time": 1.1,
+            "timestamp": "2026-01-10 10:00:02",
+            "result_id": "result-003"
+          },
+          "template": {
+            "raw_llm_response": "Red, blue, yellow",
+            "parsed_gt_response": { "colors": ["red", "blue", "yellow"] },
+            "parsed_llm_response": { "colors": ["red", "blue", "yellow"] },
+            "template_verification_performed": true,
+            "verify_result": true,
+            "abstention_detected": false
+          },
+          "rubric": null,
+          "deep_judgment": null,
+          "used_full_trace": true
+        }
+      }
+    },
+    {
+      "run_id": "run-002",
+      "name": "Second verification run",
+      "timestamp": "2026-01-10T11:00:00.000Z",
+      "results_count": 4,
+      "results": {
+        "q1_openai/gpt-4_openai/gpt-4_1100000000000": {
+          "metadata": {
+            "question_id": "q1",
+            "template_id": "template-001",
+            "completed_without_errors": true,
+            "error": null,
+            "question_text": "What is the capital of France?",
+            "raw_answer": "Paris",
+            "answering_model": "openai/gpt-4",
+            "parsing_model": "openai/gpt-4",
+            "execution_time": 2.5,
+            "timestamp": "2026-01-10 11:00:00",
+            "result_id": "result-004"
+          },
+          "template": {
+            "raw_llm_response": "The capital of France is Paris.",
+            "parsed_gt_response": { "capital": "Paris" },
+            "parsed_llm_response": { "capital": "Paris" },
+            "template_verification_performed": true,
+            "verify_result": true,
+            "abstention_detected": false
+          },
+          "rubric": null,
+          "deep_judgment": null,
+          "used_full_trace": true
+        },
+        "q2_openai/gpt-4_openai/gpt-4_1100000000100": {
+          "metadata": {
+            "question_id": "q2",
+            "template_id": "template-002",
+            "completed_without_errors": true,
+            "error": null,
+            "question_text": "Calculate 15 + 27.",
+            "raw_answer": "The answer is 42.",
+            "answering_model": "openai/gpt-4",
+            "parsing_model": "openai/gpt-4",
+            "execution_time": 2.1,
+            "timestamp": "2026-01-10 11:00:01",
+            "result_id": "result-005"
+          },
+          "template": {
+            "raw_llm_response": "The answer is 42.",
+            "parsed_gt_response": { "result": 42 },
+            "parsed_llm_response": { "result": 42 },
+            "template_verification_performed": true,
+            "verify_result": true,
+            "abstention_detected": false
+          },
+          "rubric": null,
+          "deep_judgment": null,
+          "used_full_trace": true
+        },
+        "q3_openai/gpt-4_openai/gpt-4_1100000000200": {
+          "metadata": {
+            "question_id": "q3",
+            "template_id": "template-003",
+            "completed_without_errors": true,
+            "error": null,
+            "question_text": "Name three primary colors.",
+            "raw_answer": "Red, green, blue",
+            "answering_model": "openai/gpt-4",
+            "parsing_model": "openai/gpt-4",
+            "execution_time": 2.3,
+            "timestamp": "2026-01-10 11:00:02",
+            "result_id": "result-006"
+          },
+          "template": {
+            "raw_llm_response": "Red, green, blue",
+            "parsed_gt_response": { "colors": ["red", "green", "blue"] },
+            "parsed_llm_response": { "colors": ["red", "green", "blue"] },
+            "template_verification_performed": true,
+            "verify_result": false,
+            "abstention_detected": false
+          },
+          "rubric": null,
+          "deep_judgment": null,
+          "used_full_trace": true
+        },
+        "q4_openai/gpt-4_openai/gpt-4_1100000000300": {
+          "metadata": {
+            "question_id": "q4",
+            "template_id": "template-004",
+            "completed_without_errors": true,
+            "error": null,
+            "question_text": "What is 2 * 5?",
+            "raw_answer": "10",
+            "answering_model": "openai/gpt-4",
+            "parsing_model": "openai/gpt-4",
+            "execution_time": 1.8,
+            "timestamp": "2026-01-10 11:00:03",
+            "result_id": "result-007"
+          },
+          "template": {
+            "raw_llm_response": "2 * 5 = 10",
+            "parsed_gt_response": { "result": 10 },
+            "parsed_llm_response": { "result": 10 },
+            "template_verification_performed": true,
+            "verify_result": true,
+            "abstention_detected": false
+          },
+          "rubric": null,
+          "deep_judgment": null,
+          "used_full_trace": true
+        }
+      }
+    }
+  ]
+}

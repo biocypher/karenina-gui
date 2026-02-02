@@ -102,16 +102,17 @@ export const useDatasetStore = create<DatasetState>((set) => ({
   },
 
   addKeyword: (keyword: string) => {
-    if (!keyword.trim()) return;
+    const trimmed = keyword.trim();
+    if (!trimmed) return;
 
     set((state) => {
       const currentKeywords = state.metadata.keywords || [];
-      if (currentKeywords.includes(keyword.trim())) return state;
+      if (currentKeywords.includes(trimmed)) return state;
 
       return {
         metadata: {
           ...state.metadata,
-          keywords: [...currentKeywords, keyword.trim()],
+          keywords: [...currentKeywords, trimmed],
           dateModified: new Date().toISOString(),
         },
       };
@@ -129,14 +130,15 @@ export const useDatasetStore = create<DatasetState>((set) => ({
   },
 
   addCustomProperty: (key: string, value: string) => {
-    if (!key.trim()) return;
+    const trimmedKey = key.trim();
+    if (!trimmedKey) return;
 
     set((state) => ({
       metadata: {
         ...state.metadata,
         custom_properties: {
           ...state.metadata.custom_properties,
-          [key.trim()]: value,
+          [trimmedKey]: value,
         },
         dateModified: new Date().toISOString(),
       },

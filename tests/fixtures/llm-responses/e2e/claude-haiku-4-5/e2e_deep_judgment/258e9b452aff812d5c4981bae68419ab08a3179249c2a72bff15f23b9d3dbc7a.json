@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "scenario": "e2e_deep_judgment",
+    "model": "claude-haiku-4-5",
+    "timestamp": "2026-01-13T21:08:47.087456",
+    "prompt_hash": "258e9b452aff812d5c4981bae68419ab08a3179249c2a72bff15f23b9d3dbc7a"
+  },
+  "request": {
+    "messages": [
+      {
+        "content": "You are an evaluator that extracts structured information from responses.\n\nYou will receive:\n1. A response to parse (either a final answer or a complete trace)\n2. A JSON schema with descriptive fields indicating what information to extract\n\n# Extraction Protocol\n\n## 1. Focus on the Final Answer\n- Your primary extraction source is the **final answer** given to the user\n- Extract information from this answer according to the schema field descriptions\n\n## 2. Extract According to Schema\n- Each field description specifies WHAT to extract from the answer and HOW\n- Follow field descriptions precisely\n- Use `null` for information not present in the final answer (if field allows null)\n\n## 3. Validate Structure\n- Return valid JSON matching the provided schema exactly\n- Use correct data types for each field\n\n# Critical Rules\n\n**Answer-First**: Extract primarily from the final answer content.\n\n**Description Adherence**: Each field's description is authoritative for what and how to extract.\n\n**Fidelity**: Extract only what's actually stated. Don't infer or add information not present.\n\n**JSON Only**: Return ONLY the JSON object - no explanations, no markdown fences, no surrounding text.\n\n# Output Format\n\nReturn only the completed JSON object - no surrounding text, no markdown fences:\n\nYou are an expert parameter extractor for deep-judgment template parsing. Your role is to extract final attribute values from reasoning traces.\n\n# Task Overview\n\nYou will receive:\n1. An original question in <original_question> tags\n2. Reasoning traces in <reasoning_traces> tags explaining how excerpts map to attribute values\n\nYour task: Extract **final attribute values** based on the reasoning traces, conforming to the JSON schema below.\n\n# Extraction Protocol\n\nFor each attribute:\n1. **Read the reasoning** - understand what value was determined\n2. **Apply the schema** - extract the value in the correct format/type\n3. **Handle missing info** - use null if allowed, or best inference\n\n# Critical Requirements\n\n**Schema Compliance**: Output MUST match the JSON schema exactly.\n\n**Reasoning-Based**: Extract values based on the reasoning provided.\n\n**Type Correctness**: Use correct data types (string, bool, int, list, etc.)\n\n**JSON Only**: Return ONLY the JSON object - no explanations, no markdown fences.\n\n# What NOT to Do\n\n- Do NOT invent values not supported by the reasoning\n- Do NOT wrap the JSON in markdown code blocks\n- Do NOT add explanatory text before or after the JSON\n- Do NOT include extra fields not in the schema\n\n# Output Schema\n\nThe output should be formatted as a JSON instance that conforms to the JSON schema below.\n\nAs an example, for the schema {\"properties\": {\"foo\": {\"title\": \"Foo\", \"description\": \"a list of strings\", \"type\": \"array\", \"items\": {\"type\": \"string\"}}}, \"required\": [\"foo\"]}\nthe object {\"foo\": [\"bar\", \"baz\"]} is a well-formatted instance of the schema. The object {\"properties\": {\"foo\": [\"bar\", \"baz\"]}} is not well-formatted.\n\nHere is the output schema:\n```\n{\"additionalProperties\": true, \"properties\": {\"id\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Id\"}, \"celsius\": {\"description\": \"Temperature in Celsius\", \"title\": \"Celsius\", \"type\": \"integer\"}, \"fahrenheit\": {\"description\": \"Temperature in Fahrenheit\", \"title\": \"Fahrenheit\", \"type\": \"integer\"}}, \"required\": [\"celsius\", \"fahrenheit\"]}\n```",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "system",
+        "name": null,
+        "id": null
+      },
+      {
+        "content": "<original_question>\nWhat is the boiling point of water at sea level?\n</original_question>\n\n<reasoning_traces>\ncelsius:\n  The excerpts directly state that water boils at 100 degrees Celsius, with high confidence and perfect similarity to the question. Multiple sources confirm this value at standard atmospheric pressure (sea level), making this the definitive answer.\n\nfahrenheit:\n  The excerpts explicitly provide 212 degrees Fahrenheit as the boiling point of water at standard atmospheric pressure (sea level), with high confidence and perfect similarity. This value is presented as the equivalent to 100 degrees Celsius, confirming its accuracy.\n\n</reasoning_traces>\n\n**YOUR JSON RESPONSE (following the schema above):**",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+      }
+    ],
+    "kwargs": {}
+  },
+  "response": {
+    "content": "```json\n{\"celsius\": 100, \"fahrenheit\": 212}\n```",
+    "id": "lc_run--c897e5a6-2e4e-4add-bd40-897684f683f6-0",
+    "model": "claude-haiku-4-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0
+    }
+  }
+}

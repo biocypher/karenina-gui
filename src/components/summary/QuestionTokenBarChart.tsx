@@ -1,6 +1,8 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ErrorBar, ResponsiveContainer } from 'recharts';
 import type { QuestionTokenData } from '../../types';
+import { logger } from '../../utils/logger';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 interface Props {
   data: QuestionTokenData[];
@@ -11,16 +13,17 @@ interface Props {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 // Helper function to format model label (matches heatmap format)
+// Key format: "interface:model_name|mcp_config"
 const formatModelLabel = (modelKey: string): string => {
   const parts = modelKey.split('|');
-  const modelName = parts[0] || modelKey;
+  const modelName = parts[0] || modelKey; // "interface:model_name"
   const mcpConfig = parts[1];
 
   if (mcpConfig && mcpConfig !== '[]') {
     try {
-      const mcpServers = JSON.parse(mcpConfig);
-      if (Array.isArray(mcpServers) && mcpServers.length > 0) {
-        return `${modelName} (${mcpServers.join(', ')})`;
+      const tools = JSON.parse(mcpConfig);
+      if (Array.isArray(tools) && tools.length > 0) {
+        return `${modelName} +[${tools.join(', ')}]`;
       }
     } catch {
       // If parsing fails, just return model name
@@ -30,7 +33,7 @@ const formatModelLabel = (modelKey: string): string => {
 };
 
 export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, tokenType }) => {
-  const isDark = document.documentElement.classList.contains('dark');
+  const isDark = useDarkMode();
 
   // Transform data for Recharts format
   // Filter to only include models that are selected
@@ -62,7 +65,7 @@ export const QuestionTokenBarChart: React.FC<Props> = ({ data, selectedModels, t
   });
 
   // Debug logging
-  console.log('QuestionTokenBarChart Debug:', {
+  logger.debugLog('CHART', 'QuestionTokenBarChart Debug', 'QuestionTokenBarChart', {
     tokenType,
     dataLength: data.length,
     selectedModels,

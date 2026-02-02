@@ -1,0 +1,60 @@
+{
+  "@context": "https://schema.org",
+  "@type": "DataFeed",
+  "name": "deep-judgment-test-benchmark",
+  "description": "Benchmark for testing deep judgment excerpt extraction and validation",
+  "version": "1.0.0",
+  "dateModified": "2026-01-13T00:00:00Z",
+  "rubric": {
+    "traits": [
+      {
+        "type": "LLMRubricTrait",
+        "name": "factually_grounded",
+        "description": "The response cites specific facts that can be verified",
+        "higher_is_better": true
+      }
+    ]
+  },
+  "dataFeedElement": [
+    {
+      "@type": "Question",
+      "identifier": "q001-factual-claim",
+      "name": "What is the boiling point of water at sea level?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "100 degrees Celsius or 212 degrees Fahrenheit"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    celsius: int = Field(description=\"Temperature in Celsius\")\n    fahrenheit: int = Field(description=\"Temperature in Fahrenheit\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"celsius\": 100, \"fahrenheit\": 212}\n\n    def verify(self) -> bool:\n        return self.celsius == self.correct[\"celsius\"] and self.fahrenheit == self.correct[\"fahrenheit\"]"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q002-scientific-fact",
+      "name": "What is the speed of light in a vacuum?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Approximately 299,792,458 meters per second"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    speed: int = Field(description=\"Speed in meters per second\")\n    unit: str = Field(description=\"Unit of measurement\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"speed_approx\": 299792458}\n\n    def verify(self) -> bool:\n        return abs(self.speed - self.correct[\"speed_approx\"]) < 1000"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q003-historical-date",
+      "name": "When was the first moon landing and who commanded the mission?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "July 20, 1969, commanded by Neil Armstrong"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    year: int = Field(description=\"Year of the landing\")\n    month: str = Field(description=\"Month of the landing\")\n    commander: str = Field(description=\"Name of the mission commander\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"year\": 1969, \"month\": \"july\", \"commander\": \"armstrong\"}\n\n    def verify(self) -> bool:\n        return (self.year == self.correct[\"year\"] and \n                self.month.lower() == self.correct[\"month\"] and \n                self.correct[\"commander\"] in self.commander.lower())"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q004-verifiable-stat",
+      "name": "What is the approximate population of Tokyo as of 2023?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Approximately 14 million in the city proper, 37 million in the greater metropolitan area"
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    city_population: int = Field(description=\"Population of Tokyo city proper in millions\")\n    metro_population: int = Field(description=\"Population of greater Tokyo metro area in millions\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"city_min\": 13, \"city_max\": 15, \"metro_min\": 35, \"metro_max\": 40}\n\n    def verify(self) -> bool:\n        return (self.correct[\"city_min\"] <= self.city_population <= self.correct[\"city_max\"] and\n                self.correct[\"metro_min\"] <= self.metro_population <= self.correct[\"metro_max\"])"
+    }
+  ]
+}

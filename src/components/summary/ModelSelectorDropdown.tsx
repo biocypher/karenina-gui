@@ -13,6 +13,7 @@ interface ModelOption {
   answering_model: string;
   mcp_config: string;
   display_name: string;
+  interface?: string;
 }
 
 interface ModelSelectorDropdownProps {
@@ -36,11 +37,15 @@ export function ModelSelectorDropdown({
     const newModel: ModelConfig = {
       answering_model: model.answering_model,
       mcp_config: model.mcp_config,
+      interface: model.interface,
     };
 
     // Check if already selected
     const isAlreadySelected = selectedModels.some(
-      (m) => m.answering_model === newModel.answering_model && m.mcp_config === newModel.mcp_config
+      (m) =>
+        m.answering_model === newModel.answering_model &&
+        m.mcp_config === newModel.mcp_config &&
+        (m.interface || 'langchain') === (newModel.interface || 'langchain')
     );
 
     if (!isAlreadySelected) {
@@ -56,14 +61,22 @@ export function ModelSelectorDropdown({
 
   const getModelDisplayName = (model: ModelConfig): string => {
     const option = availableModels.find(
-      (m) => m.answering_model === model.answering_model && m.mcp_config === model.mcp_config
+      (m) =>
+        m.answering_model === model.answering_model &&
+        m.mcp_config === model.mcp_config &&
+        (m.interface || 'langchain') === (model.interface || 'langchain')
     );
-    return option?.display_name || model.answering_model;
+    return option?.display_name || `${model.interface || 'langchain'}:${model.answering_model}`;
   };
 
   const unselectedModels = availableModels.filter(
     (option) =>
-      !selectedModels.some((m) => m.answering_model === option.answering_model && m.mcp_config === option.mcp_config)
+      !selectedModels.some(
+        (m) =>
+          m.answering_model === option.answering_model &&
+          m.mcp_config === option.mcp_config &&
+          (m.interface || 'langchain') === (option.interface || 'langchain')
+      )
   );
 
   return (

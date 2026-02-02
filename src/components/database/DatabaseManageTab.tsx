@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Database, Loader, Save, Upload } from 'lucide-react';
 import { BenchmarkCard } from './BenchmarkCard';
 import { CreateBenchmarkForm } from './CreateBenchmarkForm';
@@ -16,6 +16,8 @@ import {
 import { useQuestionStore } from '../../stores/useQuestionStore';
 import { useDatasetStore } from '../../stores/useDatasetStore';
 import { useRubricStore } from '../../stores/useRubricStore';
+import { logger } from '../../utils/logger';
+import { createDatabaseApiService, type DatabaseApiService, DatabaseApiError } from '../../services/databaseApi';
 
 interface BenchmarkInfo {
   id: string;
@@ -56,6 +58,9 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
   // Delete benchmark modal state
   const [benchmarkToDelete, setBenchmarkToDelete] = useState<BenchmarkInfo | null>(null);
 
+  // Database API service - created with useMemo to avoid recreating on every render
+  const databaseApi: DatabaseApiService = useMemo(() => createDatabaseApiService({ storageUrl }), [storageUrl]);
+
   // Check if we have questions loaded in memory
   const hasQuestionsInMemory = Object.keys(checkpoint).length > 0;
 
@@ -70,17 +75,26 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
     setError(null);
 
     try {
-      const response = await fetch(`/api/database/benchmarks?storage_url=${encodeURIComponent(storageUrl)}`);
+      const apiBenchmarks = await databaseApi.getBenchmarks();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to load benchmarks');
-      }
+      // Map API response to component's BenchmarkInfo format
+      const mappedBenchmarks: BenchmarkInfo[] = apiBenchmarks.map((b) => ({
+        id: b.name,
+        name: b.name,
+        total_questions: b.question_count,
+        finished_count: 0, // Not provided by API
+        unfinished_count: 0, // Not provided by API
+        last_modified: b.updated_at,
+      }));
 
-      const data = await response.json();
-      setBenchmarks(data.benchmarks || []);
+      setBenchmarks(mappedBenchmarks);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load benchmarks');
+      if (err instanceof DatabaseApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to load benchmarks');
+      }
+      logger.error('DATABASE', 'Failed to load benchmarks', 'DatabaseManageTab', { error: err });
     } finally {
       setIsLoading(false);
     }
@@ -109,23 +123,8 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
     setError(null);
 
     try {
-      const response = await fetch('/api/database/load-benchmark', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          storage_url: storageUrl,
-          benchmark_name: nameToLoad,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to load benchmark');
-      }
-
-      const data = await response.json();
+      databaseApi.setBenchmarkName(nameToLoad);
+      const data = await databaseApi.loadBenchmark(nameToLoad);
 
       // Convert checkpoint_data to UnifiedCheckpoint format
       const checkpoint: UnifiedCheckpoint = {
@@ -138,7 +137,15 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
       // Pass to parent component
       onLoadBenchmark(checkpoint, nameToLoad);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load benchmark');
+      if (err instanceof DatabaseApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to load benchmark');
+      }
+      logger.error('DATABASE', 'Failed to load benchmark', 'DatabaseManageTab', {
+        error: err,
+        benchmarkName: nameToLoad,
+      });
     } finally {
       setIsLoadingBenchmark(false);
     }
@@ -166,30 +173,15 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
         global_rubric: currentRubric,
       };
 
+      // Set the benchmark name for the API service
+      databaseApi.setBenchmarkName(selectedBenchmark);
+
       // First, detect duplicates
-      const response = await fetch('/api/database/save-benchmark', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          storage_url: storageUrl,
-          benchmark_name: selectedBenchmark,
-          checkpoint_data: checkpointData,
-          detect_duplicates: true, // Only detect, don't save yet
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to check for duplicates');
-      }
-
-      const data = await response.json();
+      const data = await databaseApi.saveBenchmark(checkpointData, true);
 
       // If duplicates found, show resolution modal
       if (data.duplicates && data.duplicates.length > 0) {
-        console.log(`⚠️ Found ${data.duplicates.length} duplicate question(s)`);
+        logger.debugLog('DATABASE', `Found ${data.duplicates.length} duplicate question(s)`, 'DatabaseManageTab');
         setDuplicates(data.duplicates);
         setShowDuplicateModal(true);
       } else {
@@ -197,7 +189,12 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
         await performSave(checkpointData);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export questions to benchmark');
+      if (err instanceof DatabaseApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to export questions to benchmark');
+      }
+      logger.error('DATABASE', 'Failed to save benchmark', 'DatabaseManageTab', { error: err });
       setIsSavingQuestions(false);
     }
   };
@@ -208,29 +205,13 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
     global_rubric: Rubric | null;
   }) => {
     try {
-      const response = await fetch('/api/database/save-benchmark', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          storage_url: storageUrl,
-          benchmark_name: selectedBenchmark,
-          checkpoint_data: checkpointData,
-          detect_duplicates: false, // Actual save
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to export questions to benchmark');
-      }
-
-      await response.json();
+      await databaseApi.saveBenchmark(checkpointData, false);
 
       // Success - show message and reload benchmarks list to reflect updated counts
-      console.log(
-        `✅ Successfully exported ${Object.keys(checkpoint).length} questions to benchmark '${selectedBenchmark}'`
+      logger.debugLog(
+        'DATABASE',
+        `Successfully exported ${Object.keys(checkpoint).length} questions to benchmark '${selectedBenchmark}'`,
+        'DatabaseManageTab'
       );
 
       // Reload benchmarks to show updated question counts
@@ -238,6 +219,13 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
 
       // Clear any previous errors
       setError(null);
+    } catch (err) {
+      if (err instanceof DatabaseApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to export questions to benchmark');
+      }
+      logger.error('DATABASE', 'Failed to perform save', 'DatabaseManageTab', { error: err });
     } finally {
       setIsSavingQuestions(false);
     }
@@ -270,34 +258,29 @@ export const DatabaseManageTab: React.FC<DatabaseManageTabProps> = ({ storageUrl
       global_rubric: currentRubric,
     };
 
-    // Call resolve-duplicates endpoint
-    const response = await fetch('/api/database/resolve-duplicates', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        storage_url: storageUrl,
-        benchmark_name: selectedBenchmark,
-        checkpoint_data: checkpointData,
-        resolutions: resolutions,
-      }),
-    });
+    try {
+      // Set the benchmark name for the API service
+      databaseApi.setBenchmarkName(selectedBenchmark);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to resolve duplicates');
+      // Call resolve-duplicates endpoint
+      const data = await databaseApi.resolveDuplicates(checkpointData, resolutions);
+
+      // Success - reload benchmarks list
+      logger.debugLog('DATABASE', data.message, 'DatabaseManageTab');
+      await loadBenchmarks();
+
+      // Clear state
+      setIsSavingQuestions(false);
+      setError(null);
+    } catch (err) {
+      if (err instanceof DatabaseApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to resolve duplicates');
+      }
+      logger.error('DATABASE', 'Failed to resolve duplicates', 'DatabaseManageTab', { error: err });
+      setIsSavingQuestions(false);
     }
-
-    const data = await response.json();
-
-    // Success - reload benchmarks list
-    console.log(`✅ ${data.message}`);
-    await loadBenchmarks();
-
-    // Clear state
-    setIsSavingQuestions(false);
-    setError(null);
   };
 
   return (

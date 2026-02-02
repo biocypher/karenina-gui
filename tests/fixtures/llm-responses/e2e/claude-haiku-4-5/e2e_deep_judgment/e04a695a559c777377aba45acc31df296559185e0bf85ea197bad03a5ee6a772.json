@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "scenario": "e2e_deep_judgment",
+    "model": "claude-haiku-4-5",
+    "timestamp": "2026-01-13T21:08:50.665107",
+    "prompt_hash": "e04a695a559c777377aba45acc31df296559185e0bf85ea197bad03a5ee6a772"
+  },
+  "request": {
+    "messages": [
+      {
+        "content": "You are an evaluator that extracts structured information from responses.\n\nYou will receive:\n1. A response to parse (either a final answer or a complete trace)\n2. A JSON schema with descriptive fields indicating what information to extract\n\n# Extraction Protocol\n\n## 1. Focus on the Final Answer\n- Your primary extraction source is the **final answer** given to the user\n- Extract information from this answer according to the schema field descriptions\n\n## 2. Extract According to Schema\n- Each field description specifies WHAT to extract from the answer and HOW\n- Follow field descriptions precisely\n- Use `null` for information not present in the final answer (if field allows null)\n\n## 3. Validate Structure\n- Return valid JSON matching the provided schema exactly\n- Use correct data types for each field\n\n# Critical Rules\n\n**Answer-First**: Extract primarily from the final answer content.\n\n**Description Adherence**: Each field's description is authoritative for what and how to extract.\n\n**Fidelity**: Extract only what's actually stated. Don't infer or add information not present.\n\n**JSON Only**: Return ONLY the JSON object - no explanations, no markdown fences, no surrounding text.\n\n# Additional Instructions\n\nYou are a validation assistant. Parse and validate responses against the given Pydantic template.\n\n# Output Format\n\nReturn only the completed JSON object - no surrounding text, no markdown fences:\n\nYou are an expert reasoning generator for deep-judgment template parsing. Your role is to explain how excerpts inform attribute values.\n\n# Task Overview\n\nYou will receive:\n1. An original question in <original_question> tags\n2. Extracted excerpts in <extracted_excerpts> tags from the previous stage\n\n\nYour task: Generate **reasoning** explaining how the excerpts should inform each attribute's value.\n\n# Attribute Definitions\n\nFor each attribute below, the description indicates what value it expects:\n\n- year: Year of the landing\n- month: Month of the landing\n- commander: Name of the mission commander\n\n# Reasoning Protocol\n\nFor each attribute:\n1. **Review the attribute's description** - understand what value it expects\n2. **Analyze the excerpts** - determine what they reveal about this attribute\n3. **Generate reasoning** (2-3 sentences) explaining:\n   - How the excerpts relate to the attribute\n   - What value the attribute should have based on evidence\n   - Any ambiguities or confidence issues\n\nWhen excerpts are empty: Explain why (e.g., \"Model refused\", \"No explicit info\") and how this affects the attribute.\n\n# Critical Requirements\n\n**All Attributes**: Generate reasoning for EVERY attribute listed above.\n\n**Evidence-Based**: Base reasoning on the actual excerpts provided.\n\n**JSON Only**: Return ONLY the JSON object - no explanations, no markdown fences.\n\n# What NOT to Do\n\n- Do NOT skip any attributes\n- Do NOT wrap the JSON in markdown code blocks\n- Do NOT add explanatory text before or after the JSON\n\n# Output Format\n\nReturn JSON with reasoning for ALL attributes:\n{\n  \"attribute_name\": \"reasoning text explaining how excerpts inform the attribute value\"\n}",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "system",
+        "name": null,
+        "id": null
+      },
+      {
+        "content": "<original_question>\nWhen was the first moon landing and who commanded the mission?\n</original_question>\n\n<extracted_excerpts>\nyear:\n  Excerpt 1:\n    Text: \"1969\"\n    Confidence: high\n    Similarity: 1.000\n\nmonth:\n  Excerpt 1:\n    Text: \"July 20, 1969\"\n    Confidence: high\n    Similarity: 1.000\n\ncommander:\n  Excerpt 1:\n    Text: \"The mission was commanded by Neil Armstrong\"\n    Confidence: high\n    Similarity: 1.000\n\n</extracted_excerpts>",
+        "additional_kwargs": {},
+        "response_metadata": {},
+        "type": "human",
+        "name": null,
+        "id": null
+      }
+    ],
+    "kwargs": {}
+  },
+  "response": {
+    "content": "```json\n{\n  \"year\": \"The excerpt directly states '1969' with high confidence and perfect similarity, providing clear evidence that the first moon landing occurred in 1969.\",\n  \"month\": \"The excerpt explicitly states 'July 20, 1969' with high confidence, establishing that the landing took place in July (month 7) of that year.\",\n  \"commander\": \"The excerpt directly identifies 'Neil Armstrong' as the mission commander with high confidence and perfect similarity, providing definitive evidence for this attribute.\"\n}\n```",
+    "id": "lc_run--03ea7d84-4a64-4150-a42f-fd80b231e101-0",
+    "model": "claude-haiku-4-5",
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0
+    }
+  }
+}

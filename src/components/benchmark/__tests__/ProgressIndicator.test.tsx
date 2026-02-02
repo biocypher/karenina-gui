@@ -12,7 +12,8 @@ const mockProgress = {
   total_count: 10,
   successful_count: 3,
   failed_count: 2,
-  estimated_time_remaining: 120,
+  start_time: Math.floor(Date.now() / 1000) - 45, // 45 seconds ago
+  duration_seconds: 45,
 };
 
 const defaultProps = {
@@ -36,7 +37,7 @@ describe('ProgressIndicator', () => {
 
     expect(screen.getByText('Progress: 5 / 10')).toBeInTheDocument();
     expect(screen.getByText('50%')).toBeInTheDocument();
-    expect(screen.getByText('Estimated time remaining: 2m 0s')).toBeInTheDocument();
+    expect(screen.getByText(/Running for:/)).toBeInTheDocument();
   });
 
   it('displays progress bar with correct percentage', () => {
@@ -55,21 +56,23 @@ describe('ProgressIndicator', () => {
     expect(screen.getByText('Current: What is 2+2?')).toBeInTheDocument();
   });
 
-  it('shows estimated time remaining when status is not completed', () => {
+  it('shows running time when status is running', () => {
     render(<ProgressIndicator {...defaultProps} />);
 
-    expect(screen.getByText('Estimated time remaining: 2m 0s')).toBeInTheDocument();
+    expect(screen.getByText(/Running for:/)).toBeInTheDocument();
   });
 
-  it('does not show estimated time remaining when status is completed', () => {
+  it('shows completed time when status is completed', () => {
     const completedProgress = {
       ...mockProgress,
       status: 'completed',
+      duration_seconds: 120,
     };
 
     render(<ProgressIndicator {...defaultProps} progress={completedProgress} />);
 
-    expect(screen.queryByText('Estimated time remaining: 2m 0s')).not.toBeInTheDocument();
+    expect(screen.getByText(/Completed in:/)).toBeInTheDocument();
+    expect(screen.queryByText(/Running for:/)).not.toBeInTheDocument();
   });
 
   it('displays initializing state when running without progress data', () => {
@@ -130,39 +133,42 @@ describe('ProgressIndicator', () => {
     expect(screen.getByText('Progress: 1 / 4')).toBeInTheDocument();
     expect(screen.getByText('25%')).toBeInTheDocument();
     expect(screen.queryByText('Current:')).not.toBeInTheDocument(); // No current question
-    expect(screen.queryByText('Estimated time remaining:')).not.toBeInTheDocument(); // No estimated time
+    // No time shown when start_time and duration_seconds are both missing
+    expect(screen.queryByText(/Running for:/)).not.toBeInTheDocument();
   });
 
   describe('formatDuration', () => {
     it('formats seconds correctly', () => {
       const props = {
         ...defaultProps,
-        progress: { ...mockProgress, estimated_time_remaining: 45 },
+        progress: { ...mockProgress, start_time: Math.floor(Date.now() / 1000) - 45, duration_seconds: 45 },
       };
 
       render(<ProgressIndicator {...props} />);
-      expect(screen.getByText(/45s/)).toBeInTheDocument();
+      // formatDuration returns "00:45" format (mm:ss)
+      expect(screen.getByText(/Running for:.*00:45/)).toBeInTheDocument();
     });
 
     it('formats minutes and seconds correctly', () => {
       const props = {
         ...defaultProps,
-        progress: { ...mockProgress, estimated_time_remaining: 90 },
+        progress: { ...mockProgress, start_time: Math.floor(Date.now() / 1000) - 90, duration_seconds: 90 },
       };
 
       render(<ProgressIndicator {...props} />);
-      expect(screen.getByText(/1m 30s/)).toBeInTheDocument();
+      // formatDuration returns "01:30" format (mm:ss)
+      expect(screen.getByText(/Running for:.*01:30/)).toBeInTheDocument();
     });
 
     it('handles undefined/invalid values', () => {
       const props = {
         ...defaultProps,
-        progress: { ...mockProgress, estimated_time_remaining: undefined },
+        progress: { ...mockProgress, start_time: undefined, duration_seconds: undefined },
       };
 
       render(<ProgressIndicator {...props} />);
-      // When estimated_time_remaining is undefined, the element is not rendered at all
-      expect(screen.queryByText(/Estimated time remaining/)).not.toBeInTheDocument();
+      // When start_time and duration_seconds are both undefined, time is not shown
+      expect(screen.queryByText(/Running for:/)).not.toBeInTheDocument();
     });
   });
 });

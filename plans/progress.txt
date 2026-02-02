@@ -1,0 +1,105 @@
+# Ralph Loop Progress
+
+## 2026-01-09
+
+### flaw-022: ComparisonView.tsx Refactoring
+- Created 3 new components in src/components/summary/comparison/:
+  - ComparisonMetricsTable.tsx (274 lines) - Side-by-side metrics comparison
+  - ToolUsageSection.tsx (230 lines) - Collapsible tool usage statistics with charts
+  - QuestionFilters.tsx (120 lines) - Question and keyword filter controls
+- Refactored ComparisonView.tsx from 1,144 to 513 lines (-631 lines, 55% reduction)
+- Component now serves as composition root for state management and data fetching
+- Type-check passes
+
+### flaw-003: RubricTraitEditor.tsx Refactoring
+- Created 4 new trait card components in src/components/rubric/:
+  - RubricLLMTraitCard.tsx (245 lines)
+  - RubricRegexTraitCard.tsx (255 lines)
+  - RubricMetricTraitCard.tsx (195 lines)
+  - RubricCallableTraitCard.tsx (70 lines)
+- Refactored RubricTraitEditor.tsx from 1,405 to 525 lines (-880 lines, 63% reduction)
+- Key difference from QuestionRubricEditor: Score Direction controls (Higher/Lower is Better) for optimization
+- Type-check passes
+
+### flaw-002: QuestionRubricEditor.tsx Refactoring (completed earlier)
+- Created 4 trait card components in src/components/rubric/:
+  - LLMTraitCard.tsx (273 lines)
+  - RegexTraitCard.tsx (248 lines)
+  - MetricTraitCard.tsx (241 lines)
+  - CallableTraitCard.tsx (77 lines)
+- Refactored QuestionRubricEditor.tsx from 1,365 to 590 lines (-775 lines, 57% reduction)
+
+## Remaining High-Priority Flaws
+- flaw-005: BenchmarkTable.tsx refactoring (1,047 lines)
+
+## 2026-01-09 (continued)
+
+### flaw-004: App.tsx Refactoring
+- Created 5 new components/hooks:
+  - AppLayout.tsx (33 lines) - Loading state and background gradient layout wrapper
+  - AppHeader.tsx (82 lines) - Logo, title, dev mode status, config button, theme toggle
+  - TabNavigation.tsx (57 lines) - Tab buttons with unsaved changes indicator
+  - AppRouter.tsx (63 lines) - Routes generator/curator/benchmark/docs tabs, includes ConfigurationModal
+  - CuratorTab.tsx (830 lines) - Complete question curation interface
+- Created useTabManagement.ts hook (35 lines) - Tab switching with auto-save
+- Refactored App.tsx from 1,219 to 169 lines (-1,050 lines, 86% reduction)
+- Fixed lint errors in extracted components:
+  - Removed unused logger import from AppHeader.tsx
+  - Removed unused useRef import from useTabManagement.ts
+  - Replaced 'any' types with proper QuestionData/UnifiedCheckpoint interfaces
+- Type-check passes with no errors
+
+### flaw-023: ExtraKwargsModal.tsx Refactoring
+- Created 5 new components/hook in src/components/benchmark/kwargs/:
+  - KwargsInputComponents.tsx (267 lines) - Reusable input components (ExpandableSection, StopSequencesInput, NumberInput, SliderInput, SelectInput, ToggleInput)
+  - MiddlewareConfigurationSections.tsx (253 lines) - Agent middleware configuration with Limits, Summarization, Model Retry, Tool Retry sections
+  - KwargsJsonEditor.tsx (106 lines) - JSON editor with example templates and validation
+  - useExtraKwargsState.ts (334 lines) - Custom hook for all state management (tab state, generation params, middleware config, JSON text, conflicts, action handlers)
+  - CommonParametersTab.tsx (126 lines) - Common parameters tab with generation params and conditional middleware config
+  - index.ts (38 lines) - Clean module re-exports
+- Refactored ExtraKwargsModal.tsx from 961 to 207 lines (-754 lines, 78% reduction)
+- Modal now serves as composition root using custom hook for state management
+- Type-check passes with no errors
+
+### flaw-024: MCPConfigurationModal.tsx Refactoring
+- Created 4 new components/hook in src/components/benchmark/mcp/:
+  - useMCPState.ts (611 lines) - Custom hook for all MCP state management (configuration, servers, tools, presets, validation, action handlers)
+  - MCPQuickConfiguration.tsx (81 lines) - Quick configuration section with preset server cards
+  - MCPServerList.tsx (201 lines) - Server list with add/remove/validate/save-preset functionality
+  - MCPTools.tsx (152 lines) - Tool selection with search and select-all/none
+  - index.ts (13 lines) - Clean module re-exports
+- Refactored MCPConfigurationModal.tsx from 951 to 236 lines (-715 lines, 75% reduction)
+- Modal now serves as composition root using custom hook for state management
+- Type-check passes with no errors
+
+### flaw-026: TraceHighlightedTextDisplay.tsx Refactoring
+- Created 4 new components/hook in src/components/trace/:
+  - useTraceSearch.ts (167 lines) - Custom hook for search functionality (query, case sensitivity, regex, navigation, match finding)
+  - useTraceMessageBlocks.ts (225 lines) - Custom hook for message block parsing and highlighting (active patterns, message blocks, final-only mode, scroll-to-message)
+  - TraceSearchControls.tsx (139 lines) - Search input with navigation buttons, case/regex toggles, match counter
+  - TraceMessageNavigation.tsx (106 lines) - Final-only toggle and message jump buttons
+  - index.ts (13 lines) - Clean module re-exports
+- Refactored TraceHighlightedTextDisplay.tsx from 582 to 215 lines (-367 lines, 63% reduction)
+- Component now serves as composition root using custom hooks for state and extracted components for UI
+- Type-check passes with no errors
+
+### flaw-055: AnswerTemplateGenerator.tsx Refactoring
+- Created 3 new components in src/components/template/:
+  - TemplateConfigurationPanel.tsx (249 lines) - LLM interface selection (langchain/openrouter/openai_endpoint), model configuration forms, temperature slider, generation/cancel buttons
+  - GeneratedTemplatesSection.tsx (189 lines) - Generated templates table with stats, retry/download/clear actions, add-to-curation CTA button
+  - EmptyState.tsx (inline) - No questions and all-completed states
+  - index.ts (6 lines) - Clean module re-exports
+- Refactored AnswerTemplateGenerator.tsx from 555 to 244 lines (-311 lines, 56% reduction)
+- Component now serves as composition root orchestrating question selection, configuration, and generated templates display
+- Type-check passes with no errors
+
+### flaw-056: AddQuestionModal.tsx Refactoring
+- Created 3 new components in src/components/addQuestion/:
+  - QuestionFormInputs.tsx (73 lines) - Question and answer textarea inputs with validation
+  - QuestionMetadataForm.tsx (63 lines) - Optional author and keywords fields
+  - TemplateGenerationSection.tsx (154 lines) - Generate button, collapsible settings panel (interface, provider, model, temperature), status messages
+  - index.ts (7 lines) - Clean module re-exports
+- Refactored AddQuestionModal.tsx from 474 to 293 lines (-181 lines, 38% reduction)
+- Modal now serves as composition root orchestrating form state, WebSocket template generation, and extracted UI components
+- Type-check passes with no errors
+

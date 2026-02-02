@@ -58,7 +58,7 @@ describe('AdvancedExtractionPanel', () => {
     expect(screen.getByLabelText('Author Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Author Affiliation')).toBeInTheDocument();
     expect(screen.getByLabelText('URL/Link')).toBeInTheDocument();
-    expect(screen.getByLabelText('Keywords')).toBeInTheDocument();
+    expect(screen.getByLabelText('Column')).toBeInTheDocument(); // First keyword column select
   });
 
   it('calls onToggle when toggle button is clicked', () => {
@@ -92,7 +92,7 @@ describe('AdvancedExtractionPanel', () => {
     fireEvent.change(authorNameSelect, { target: { value: 'Author_Name' } });
 
     expect(mockOnSettingsChange).toHaveBeenCalledWith({
-      keywords_separator: ',',
+      keywords_columns: [{ column: '', separator: ',' }],
       author_name_column: 'Author_Name',
     });
   });
@@ -112,15 +112,15 @@ describe('AdvancedExtractionPanel', () => {
   it('shows keywords separator input and preview when keywords column is selected', () => {
     render(<AdvancedExtractionPanel {...defaultProps} isVisible={true} />);
 
-    // Select keywords column
-    const keywordsSelect = screen.getByLabelText('Keywords');
+    // Select keywords column - the select has id="keyword-column-0"
+    const keywordsSelect = screen.getByLabelText('Column'); // First keyword column label
     fireEvent.change(keywordsSelect, { target: { value: 'Keywords' } });
 
     // Should show separator input
     expect(screen.getByLabelText('Separator')).toBeInTheDocument();
 
     // Should show keywords preview
-    expect(screen.getByText('Keywords Preview')).toBeInTheDocument();
+    expect(screen.getByText('Keywords Preview (Concatenated)')).toBeInTheDocument();
     expect(screen.getByText('"geography, france, capital"')).toBeInTheDocument();
   });
 
@@ -129,7 +129,7 @@ describe('AdvancedExtractionPanel', () => {
     render(<AdvancedExtractionPanel {...defaultProps} isVisible={true} onSettingsChange={mockOnSettingsChange} />);
 
     // Select keywords column
-    const keywordsSelect = screen.getByLabelText('Keywords');
+    const keywordsSelect = screen.getByLabelText('Column'); // First keyword column label
     fireEvent.change(keywordsSelect, { target: { value: 'Keywords' } });
 
     // Change separator
@@ -137,8 +137,7 @@ describe('AdvancedExtractionPanel', () => {
     fireEvent.change(separatorInput, { target: { value: ';' } });
 
     expect(mockOnSettingsChange).toHaveBeenLastCalledWith({
-      keywords_separator: ';',
-      keywords_column: 'Keywords',
+      keywords_columns: [{ column: 'Keywords', separator: ';' }],
     });
   });
 
@@ -153,7 +152,7 @@ describe('AdvancedExtractionPanel', () => {
 
     // Should convert empty string to undefined
     expect(mockOnSettingsChange).toHaveBeenLastCalledWith({
-      keywords_separator: ',',
+      keywords_columns: [{ column: '', separator: ',' }],
       author_name_column: undefined,
     });
   });

@@ -9,6 +9,7 @@ import type {
   CallableTrait,
 } from '../../types';
 import { Modal } from '../ui/Modal';
+import { logger } from '../../utils/logger';
 
 interface RubricTraitMenuProps {
   rubric: Rubric | null;
@@ -181,7 +182,7 @@ export function RubricTraitMenu({
   }
 
   // Debug logging after trait collection
-  console.log('🏷️ RubricTraitMenu:', {
+  logger.debugLog('RUBRIC', 'RubricTraitMenu', 'RubricTraitMenu', {
     hasRubric: !!rubric,
     rubricKeys: rubric ? Object.keys(rubric) : null,
     llm_traits_count: rubric?.llm_traits?.length,

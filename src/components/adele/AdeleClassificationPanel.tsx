@@ -1,0 +1,273 @@
+/**
+ * AdeleClassificationPanel - Per-question ADeLe classification display and trigger.
+ *
+ * Shows existing classification results or allows triggering new classification.
+ * Displays scores in a compact grid format.
+ *
+ * Features:
+ * - Gear icon in header opens configuration modal
+ * - Classify/Re-classify button in footer area
+ * - Respects batch/sequential mode from session config
+ * - Uses model config and selected traits from session config
+ */
+
+import React, { useState, useCallback, useEffect } from 'react';
+import { Brain, RefreshCw, ChevronDown, ChevronUp, Loader2, Settings, Users } from 'lucide-react';
+import { adeleApi } from '../../services/adeleApi';
+import { AdeleScoreBadge } from './AdeleScoreBadge';
+import { AdeleConfigModal } from './AdeleConfigModal';
+import { useAdeleConfigStore } from '../../stores/useAdeleConfigStore';
+import type { ClassificationResult, AdeleModelConfigRequest } from '../../types/adele';
+import { getAdeleClassification } from '../../types/adele';
+
+interface AdeleClassificationPanelProps {
+  /** Question ID */
+  questionId: string;
+  /** Question text for classification */
+  questionText: string;
+  /** Custom metadata from the question (may contain classification) */
+  customMetadata?: Record<string, unknown>;
+  /** Callback when classification is updated */
+  onClassificationUpdate?: (questionId: string, classification: ClassificationResult) => void;
+  /** Whether to disable interaction */
+  disabled?: boolean;
+  /** Callback to open batch classification modal */
+  onOpenBatchModal?: () => void;
+  /** Total number of questions in the benchmark (for batch button label) */
+  totalQuestionCount?: number;
+}
+
+export const AdeleClassificationPanel: React.FC<AdeleClassificationPanelProps> = ({
+  questionId,
+  questionText,
+  customMetadata,
+  onClassificationUpdate,
+  disabled = false,
+  onOpenBatchModal,
+  totalQuestionCount,
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [localClassification, setLocalClassification] = useState<ClassificationResult | null>(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+  // Get configuration from session store
+  const { modelConfig, selectedTraits, traitEvalMode, initializeFromDefaults } = useAdeleConfigStore();
+
+  // Initialize from defaults on mount
+  useEffect(() => {
+    initializeFromDefaults();
+  }, [initializeFromDefaults]);
+
+  // Reset local state when question changes
+  useEffect(() => {
+    setLocalClassification(null);
+    setError(null);
+    setIsExpanded(false);
+  }, [questionId]);
+
+  // Get existing classification from metadata or local state
+  const existingClassification = getAdeleClassification(customMetadata);
+  const classification =
+    localClassification ||
+    (existingClassification
+      ? {
+          questionId,
+          questionText,
+          scores: existingClassification.scores,
+          labels: existingClassification.labels,
+          model: existingClassification.model,
+          classifiedAt: existingClassification.classifiedAt,
+        }
+      : null);
+
+  const hasClassification = classification !== null;
+  const traitCount = hasClassification ? Object.keys(classification.scores).length : 0;
+
+  // Get sorted trait names for consistent display
+  const sortedTraitNames = hasClassification ? Object.keys(classification.scores).sort() : [];
+
+  // Convert model config to API request format
+  const buildLlmConfig = useCallback((): AdeleModelConfigRequest => {
+    return {
+      interface: modelConfig.interface,
+      provider: modelConfig.provider,
+      model_name: modelConfig.modelName,
+      temperature: modelConfig.temperature,
+      endpoint_base_url: modelConfig.endpointBaseUrl,
+      endpoint_api_key: modelConfig.endpointApiKey,
+      trait_eval_mode: traitEvalMode,
+    };
+  }, [modelConfig, traitEvalMode]);
+
+  const handleClassify = useCallback(async () => {
+    if (disabled || isLoading) return;
+
+    // For batch mode, we would open a batch modal - but for single question panel,
+    // sequential mode makes more sense as the default behavior
+    // The batch modal is typically triggered from the benchmark-level interface
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const llmConfig = buildLlmConfig();
+      const traitNames = selectedTraits.length > 0 ? selectedTraits : undefined;
+      const result = await adeleApi.classifySingle(questionText, traitNames, questionId, llmConfig);
+      setLocalClassification(result);
+      onClassificationUpdate?.(questionId, result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Classification failed';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [questionId, questionText, disabled, isLoading, onClassificationUpdate, buildLlmConfig, selectedTraits]);
+
+  // Calculate average score for summary
+  const averageScore = hasClassification
+    ? Object.values(classification.scores)
+        .filter((s) => s >= 0)
+        .reduce((a, b) => a + b, 0) / Object.values(classification.scores).filter((s) => s >= 0).length
+    : 0;
+
+  return (
+    <>
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+        {/* Header with title and gear icon */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            ADeLe Classification
+          </h3>
+          <button
+            onClick={() => setIsConfigModalOpen(true)}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            title="Configure ADeLe classification"
+          >
+            <Settings className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+            {error}
+          </div>
+        )}
+
+        {hasClassification ? (
+          <>
+            {/* Summary row */}
+            <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400 mb-3">
+              <span>
+                {traitCount} traits classified | Avg: {averageScore.toFixed(1)}
+              </span>
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    Collapse
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    Expand
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Compact score grid (always visible) */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {sortedTraitNames.slice(0, isExpanded ? undefined : 6).map((traitName) => (
+                <AdeleScoreBadge
+                  key={traitName}
+                  traitName={traitName}
+                  score={classification.scores[traitName]}
+                  label={classification.labels[traitName]}
+                  compact
+                />
+              ))}
+              {!isExpanded && sortedTraitNames.length > 6 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                  +{sortedTraitNames.length - 6} more
+                </span>
+              )}
+            </div>
+
+            {/* Expanded detailed view */}
+            {isExpanded && (
+              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {sortedTraitNames.map((traitName) => (
+                    <AdeleScoreBadge
+                      key={traitName}
+                      traitName={traitName}
+                      score={classification.scores[traitName]}
+                      label={classification.labels[traitName]}
+                      showName
+                    />
+                  ))}
+                </div>
+                <div className="mt-3 text-xs text-slate-500 dark:text-slate-500">
+                  Classified: {new Date(classification.classifiedAt).toLocaleString()} | Model: {classification.model}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-sm text-slate-500 dark:text-slate-400 italic">
+            No classification yet. Click "Classify" to analyze this question using ADeLe dimensions.
+          </div>
+        )}
+
+        {/* Footer with classify buttons */}
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center gap-3">
+          <button
+            onClick={handleClassify}
+            disabled={disabled || isLoading}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Classifying...
+              </>
+            ) : hasClassification ? (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Re-classify
+              </>
+            ) : (
+              <>
+                <Brain className="w-4 h-4" />
+                Classify
+              </>
+            )}
+          </button>
+
+          {onOpenBatchModal && (
+            <button
+              onClick={onOpenBatchModal}
+              disabled={isLoading}
+              title="Classify all questions in the benchmark"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Users className="w-4 h-4" />
+              Classify All{totalQuestionCount !== undefined && ` (${totalQuestionCount})`}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Configuration Modal */}
+      <AdeleConfigModal isOpen={isConfigModalOpen} onClose={() => setIsConfigModalOpen(false)} />
+    </>
+  );
+};
+
+export default AdeleClassificationPanel;

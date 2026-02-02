@@ -49,21 +49,16 @@ export const DuplicateResolutionModal: React.FC<DuplicateResolutionModalProps> =
     }));
   };
 
-  const handleKeepAllOld = () => {
+  const setAllResolutions = (resolution: 'keep_old' | 'keep_new') => {
     const newResolutions: DuplicateResolutions = {};
     duplicates.forEach((dup) => {
-      newResolutions[dup.question_id] = 'keep_old';
+      newResolutions[dup.question_id] = resolution;
     });
     setResolutions(newResolutions);
   };
 
-  const handleKeepAllNew = () => {
-    const newResolutions: DuplicateResolutions = {};
-    duplicates.forEach((dup) => {
-      newResolutions[dup.question_id] = 'keep_new';
-    });
-    setResolutions(newResolutions);
-  };
+  const handleKeepAllOld = () => setAllResolutions('keep_old');
+  const handleKeepAllNew = () => setAllResolutions('keep_new');
 
   const handleApply = async () => {
     setIsApplying(true);

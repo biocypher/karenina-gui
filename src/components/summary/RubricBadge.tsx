@@ -4,12 +4,14 @@ interface RubricBadgeProps {
   letters: string; // 1-2 characters, e.g., "A" or "AB"
   value: boolean | number;
   kind: 'boolean' | 'score';
+  higherIsBetter?: boolean; // Whether higher values indicate better performance (default: true)
 }
 
 /**
  * Get color for score-type badges based on score value (1-5 scale)
+ * If higherIsBetter is false, the color scale is inverted
  */
-const getScoreColor = (score: number): string => {
+const getScoreColor = (score: number, higherIsBetter: boolean = true): string => {
   const colors: Record<number, string> = {
     1: 'rgba(239, 68, 68, 0.7)', // red
     2: 'rgba(249, 115, 22, 0.7)', // orange
@@ -17,7 +19,9 @@ const getScoreColor = (score: number): string => {
     4: 'rgba(132, 204, 22, 0.7)', // lime
     5: 'rgba(34, 197, 94, 0.7)', // green
   };
-  const roundedScore = Math.round(Math.min(5, Math.max(1, score)));
+  // Invert score for color mapping if lower is better
+  const effectiveScore = higherIsBetter ? score : 6 - score;
+  const roundedScore = Math.round(Math.min(5, Math.max(1, effectiveScore)));
   return colors[roundedScore] || colors[3];
 };
 
@@ -30,9 +34,12 @@ const getBooleanBackgroundColor = (): string => {
 
 /**
  * Get text color for boolean badges (full opacity)
+ * If higherIsBetter is false, the color interpretation is inverted
  */
-const getBooleanTextColor = (value: boolean): string => {
-  return value
+const getBooleanTextColor = (value: boolean, higherIsBetter: boolean = true): string => {
+  // Determine if this is a "positive" outcome based on directionality
+  const isPositive = higherIsBetter ? value : !value;
+  return isPositive
     ? 'rgb(21, 128, 61)' // green-700
     : 'rgb(185, 28, 28)'; // red-700
 };
@@ -43,7 +50,7 @@ const getBooleanTextColor = (value: boolean): string => {
  * - Boolean traits: Green/red badge with letters
  * - Score traits: Gradient-colored badge with letters and score value
  */
-export function RubricBadge({ letters, value, kind }: RubricBadgeProps) {
+export function RubricBadge({ letters, value, kind, higherIsBetter = true }: RubricBadgeProps) {
   const isScore = kind === 'score' && typeof value === 'number';
 
   if (isScore) {
@@ -53,12 +60,12 @@ export function RubricBadge({ letters, value, kind }: RubricBadgeProps) {
       <div
         className="flex items-center justify-center rounded text-[9px] font-bold text-white shadow-sm"
         style={{
-          backgroundColor: getScoreColor(score),
+          backgroundColor: getScoreColor(score, higherIsBetter),
           minWidth: letters.length === 1 ? '28px' : '36px',
           height: '14px',
           padding: '0 3px',
         }}
-        title={`${letters}: ${roundedScore}/5`}
+        title={`${letters}: ${roundedScore}/5${!higherIsBetter ? ' (lower is better)' : ''}`}
       >
         {letters}:{roundedScore}
       </div>
@@ -67,6 +74,8 @@ export function RubricBadge({ letters, value, kind }: RubricBadgeProps) {
 
   // Boolean badge
   const boolValue = value as boolean;
+  // Determine pass/fail based on directionality
+  const isPass = higherIsBetter ? boolValue : !boolValue;
   return (
     <div
       className="flex items-center justify-center rounded text-[10px] font-bold shadow-sm"
@@ -75,9 +84,9 @@ export function RubricBadge({ letters, value, kind }: RubricBadgeProps) {
         minWidth: letters.length === 1 ? '18px' : '24px',
         height: '14px',
         padding: '0 3px',
-        color: getBooleanTextColor(boolValue),
+        color: getBooleanTextColor(boolValue, higherIsBetter),
       }}
-      title={`${letters}: ${boolValue ? 'Pass' : 'Fail'}`}
+      title={`${letters}: ${isPass ? 'Pass' : 'Fail'}${!higherIsBetter ? ' (inverted)' : ''}`}
     >
       {letters}
     </div>

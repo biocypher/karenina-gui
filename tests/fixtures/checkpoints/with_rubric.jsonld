@@ -1,0 +1,82 @@
+{
+  "@context": "https://schema.org",
+  "@type": "DataFeed",
+  "name": "rubric-test-benchmark",
+  "description": "Benchmark with questions that have rubric traits for E2E rubric evaluation testing",
+  "version": "1.0.0",
+  "dateModified": "2026-01-13T00:00:00Z",
+  "rubric": {
+    "llm_traits": [
+      {
+        "name": "clarity",
+        "description": "The response is clear, unambiguous, and easy to understand",
+        "kind": "boolean"
+      },
+      {
+        "name": "helpfulness",
+        "description": "The response is helpful and addresses the user's actual need",
+        "kind": "score",
+        "min_score": 1,
+        "max_score": 5
+      }
+    ],
+    "regex_traits": [
+      {
+        "name": "has_citation",
+        "description": "The response includes citation-like references",
+        "pattern": "\\[\\d+\\]|\\(\\d{4}\\)"
+      }
+    ]
+  },
+  "dataFeedElement": [
+    {
+      "@type": "Question",
+      "identifier": "q001-rubric-bool",
+      "name": "Explain what photosynthesis is in simple terms.",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Photosynthesis is the process by which plants convert sunlight into energy."
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    definition: str = Field(description=\"The definition of photosynthesis\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"keyword\": \"sunlight\"}\n\n    def verify(self) -> bool:\n        return \"sunlight\" in self.definition.lower() or \"light\" in self.definition.lower()"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q002-rubric-score",
+      "name": "How do I make a good cup of coffee?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use fresh beans, proper water temperature, and correct ratio."
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    steps: str = Field(description=\"The steps to make coffee\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"has_steps\": True}\n\n    def verify(self) -> bool:\n        return len(self.steps) > 20"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q003-rubric-regex",
+      "name": "When was the Declaration of Independence signed? Please cite your source.",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The Declaration of Independence was signed in 1776 [1]."
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    year: int = Field(description=\"The year it was signed\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"year\": 1776}\n\n    def verify(self) -> bool:\n        return self.year == self.correct[\"year\"]"
+    },
+    {
+      "@type": "Question",
+      "identifier": "q004-rubric-multi",
+      "name": "What is the recommended daily water intake for adults?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "About 8 glasses or 2 liters per day."
+      },
+      "answerTemplate": "class Answer(BaseAnswer):\n    amount: str = Field(description=\"The recommended amount\")\n    unit: str = Field(description=\"The unit of measurement\")\n\n    def model_post_init(self, __context):\n        self.correct = {\"contains_number\": True}\n\n    def verify(self) -> bool:\n        import re\n        return bool(re.search(r'\\d+', self.amount))",
+      "rubric": {
+        "llm_traits": [
+          {
+            "name": "medically_accurate",
+            "description": "The medical information provided is accurate and safe",
+            "kind": "boolean"
+          }
+        ]
+      }
+    }
+  ]
+}

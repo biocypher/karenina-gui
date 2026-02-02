@@ -64,21 +64,21 @@ export function QuestionHeatmap({
     );
   }
 
-  // Extract model label from key (format: "model|mcp_config")
+  // Extract model label from key (format: "interface:model_name|mcp_config")
   const getModelLabel = (modelKey: string): { name: string; mcpLabel: string } => {
     const parts = modelKey.split('|');
-    const modelName = parts[0] || modelKey;
+    const modelName = parts[0] || modelKey; // "interface:model_name"
     const mcpConfig = parts[1];
 
     let mcpLabel = '';
     if (mcpConfig && mcpConfig !== '[]') {
       try {
-        const mcpServers = JSON.parse(mcpConfig);
-        if (Array.isArray(mcpServers) && mcpServers.length > 0) {
-          mcpLabel = `(${mcpServers.join(', ')})`;
+        const tools = JSON.parse(mcpConfig);
+        if (Array.isArray(tools) && tools.length > 0) {
+          mcpLabel = `+[${tools.join(', ')}]`;
         }
       } catch {
-        // If parsing fails, no MCP label
+        // If parsing fails, no tools label
       }
     }
 
@@ -93,6 +93,8 @@ export function QuestionHeatmap({
       return '#f97316'; // Orange - error (check this before passed===null)
     } else if (cell.abstained) {
       return '#eab308'; // Yellow - abstained
+    } else if (cell.insufficient) {
+      return '#a855f7'; // Purple - insufficient info
     } else if (cell.passed === null) {
       return '#94a3b8'; // Gray - not tested (no result yet)
     } else if (cell.passed) {
@@ -331,6 +333,10 @@ export function QuestionHeatmap({
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#eab308' }} />
           <span className="text-slate-600 dark:text-slate-400">Abstained</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#a855f7' }} />
+          <span className="text-slate-600 dark:text-slate-400">Insufficient</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#f97316' }} />

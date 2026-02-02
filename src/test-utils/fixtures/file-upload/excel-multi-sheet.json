@@ -1,0 +1,67 @@
+{
+  "_metadata": {
+    "capturedAt": "2026-01-10T00:00:00.000Z",
+    "scenario": "excel-file-upload-multiple-sheets",
+    "description": "Excel file upload with multiple sheets, sheet selector appears"
+  },
+  "uploadResponse": {
+    "file_id": "test-excel-file-456",
+    "filename": "multi-sheet-questions.xlsx",
+    "size": 5120
+  },
+  "previewResponse": {
+    "success": true,
+    "total_rows": 50,
+    "columns": ["Question", "Answer", "Category"],
+    "preview_rows": 5,
+    "data": [
+      {
+        "Question": "What is the capital of Spain?",
+        "Answer": "Madrid",
+        "Category": "Geography"
+      },
+      {
+        "Question": "What is 3 + 3?",
+        "Answer": "6",
+        "Category": "Math"
+      }
+    ],
+    "sheets": ["Sheet1", "Sheet2", "Sheet3"],
+    "current_sheet": "Sheet1"
+  },
+  "sheet2PreviewResponse": {
+    "success": true,
+    "total_rows": 75,
+    "columns": ["Question", "Answer", "Difficulty"],
+    "preview_rows": 5,
+    "data": [
+      {
+        "Question": "What is the capital of Italy?",
+        "Answer": "Rome",
+        "Difficulty": "Easy"
+      },
+      {
+        "Question": "What is 5 * 5?",
+        "Answer": "25",
+        "Difficulty": "Medium"
+      }
+    ],
+    "sheets": ["Sheet1", "Sheet2", "Sheet3"],
+    "current_sheet": "Sheet2"
+  },
+  "sheet3PreviewResponse": {
+    "success": true,
+    "total_rows": 30,
+    "columns": ["Question", "Answer", "Topic"],
+    "preview_rows": 5,
+    "data": [
+      {
+        "Question": "What is the capital of Germany?",
+        "Answer": "Berlin",
+        "Topic": "European Capitals"
+      }
+    ],
+    "sheets": ["Sheet1", "Sheet2", "Sheet3"],
+    "current_sheet": "Sheet3"
+  }
+}

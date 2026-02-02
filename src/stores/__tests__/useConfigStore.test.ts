@@ -143,7 +143,7 @@ describe('useConfigStore', () => {
       await result.current.updateEnvVariable('NEW_KEY', 'test_value');
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/config/env-vars', {
+    expect(global.fetch).toHaveBeenCalledWith('/api/v2/config/env-vars', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: 'NEW_KEY', value: 'test_value' }),
@@ -203,7 +203,7 @@ describe('useConfigStore', () => {
       await result.current.removeEnvVariable('OLD_KEY');
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/config/env-vars/OLD_KEY', {
+    expect(global.fetch).toHaveBeenCalledWith('/api/v2/config/env-vars/OLD_KEY', {
       method: 'DELETE',
     });
 
@@ -258,7 +258,7 @@ describe('useConfigStore', () => {
       await result.current.updateEnvFileContents('NEW_VAR=new_value');
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/config/env-file', {
+    expect(global.fetch).toHaveBeenCalledWith('/api/v2/config/env-file', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: 'NEW_VAR=new_value' }),

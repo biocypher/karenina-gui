@@ -1,5 +1,7 @@
 import type { VerificationResult } from '../types';
 import type { ExportableResult, UnifiedExportFormat, ExportMetadata } from './export';
+import { formatModelIdentityDisplay } from '../types/verification';
+import { logger } from './logger';
 
 /**
  * Result of parsing and validating an uploaded verification results file
@@ -44,11 +46,17 @@ function validateResultStructure(result: unknown): result is ExportableResult {
   const metadata = r.metadata as Record<string, unknown>;
 
   // Validate required metadata fields
+  const answering = metadata.answering as Record<string, unknown> | undefined;
+  const parsing = metadata.parsing as Record<string, unknown> | undefined;
   if (
     typeof metadata.question_id !== 'string' ||
     typeof metadata.question_text !== 'string' ||
-    typeof metadata.answering_model !== 'string' ||
-    typeof metadata.parsing_model !== 'string'
+    !answering ||
+    typeof answering.model_name !== 'string' ||
+    typeof answering.interface !== 'string' ||
+    !parsing ||
+    typeof parsing.model_name !== 'string' ||
+    typeof parsing.interface !== 'string'
   ) {
     return false;
   }
@@ -72,23 +80,22 @@ function validateResultStructure(result: unknown): result is ExportableResult {
 
 /**
  * Generates a unique result ID from VerificationResult metadata
- * Format: {question_id}_{answering_model}_{parsing_model}_{answering_replicate}_{parsing_replicate}_{timestamp}
+ * Format: {question_id}_{answering_display}_{parsing_display}_{replicate}_{timestamp}
  */
 function generateResultId(result: ExportableResult, index: number): string {
   const { metadata } = result;
 
-  // Clean model names (remove slashes, spaces)
-  const cleanAnsweringModel = metadata.answering_model.replace(/[/\s]/g, '_');
-  const cleanParsingModel = metadata.parsing_model.replace(/[/\s]/g, '_');
+  // Clean model display strings (remove slashes, spaces, colons)
+  const cleanAnsweringModel = formatModelIdentityDisplay(metadata.answering).replace(/[/\s:]/g, '_');
+  const cleanParsingModel = formatModelIdentityDisplay(metadata.parsing).replace(/[/\s:]/g, '_');
 
-  // Use replicates if available, otherwise use index
-  const answeringReplicate = metadata.answering_replicate !== undefined ? metadata.answering_replicate : index;
-  const parsingReplicate = metadata.parsing_replicate !== undefined ? metadata.parsing_replicate : index;
+  // Use replicate if available, otherwise use index
+  const replicate = metadata.replicate !== undefined ? metadata.replicate : index;
 
   // Use timestamp if available, otherwise use current time
   const timestamp = metadata.timestamp || new Date().toISOString();
 
-  return `${metadata.question_id}_${cleanAnsweringModel}_${cleanParsingModel}_${answeringReplicate}_${parsingReplicate}_${timestamp}`;
+  return `${metadata.question_id}_${cleanAnsweringModel}_${cleanParsingModel}_${replicate}_${timestamp}`;
 }
 
 /**
@@ -143,9 +150,9 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
     metadata = parsedObj.metadata as ExportMetadata;
     sharedData = parsedObj.shared_data as SharedData | undefined;
 
-    console.log('Detected v2.0 export format with shared_data optimization');
+    logger.debugLog('IMPORT', 'Detected v2.0 export format with shared_data optimization', 'import.ts');
     if (sharedData?.rubric_definition) {
-      console.log('Found shared rubric_definition in shared_data');
+      logger.debugLog('IMPORT', 'Found shared rubric_definition in shared_data', 'import.ts');
     }
   } else if ('metadata' in parsedObj && 'results' in parsedObj) {
     // Legacy unified format with metadata wrapper (v1.x)
@@ -158,11 +165,11 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
     resultsArray = unified.results;
     metadata = unified.metadata as ExportMetadata;
 
-    console.log('Detected legacy unified export format with metadata wrapper');
+    logger.debugLog('IMPORT', 'Detected legacy unified export format with metadata wrapper', 'import.ts');
   } else if (Array.isArray(parsed)) {
     // Legacy array format (old frontend exports)
     resultsArray = parsed;
-    console.log('Detected legacy array export format');
+    logger.debugLog('IMPORT', 'Detected legacy array export format', 'import.ts');
   } else {
     throw new ImportValidationError(
       'Unrecognized format. Expected v2.0 format {format_version: "2.0", ...}, unified format {metadata, results}, or legacy array format'
@@ -196,7 +203,7 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
 
     // Collect stats
     questions.add(validResult.metadata.question_id);
-    models.add(validResult.metadata.answering_model);
+    models.add(formatModelIdentityDisplay(validResult.metadata.answering));
   });
 
   return {

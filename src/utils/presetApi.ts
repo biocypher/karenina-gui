@@ -2,6 +2,8 @@
  * API client for benchmark configuration presets
  */
 
+import { API_ENDPOINTS } from '../constants/api';
+
 /**
  * Verification configuration interface matching backend VerificationConfig
  */
@@ -15,6 +17,7 @@ export interface VerificationConfig {
   rubric_evaluation_strategy?: 'batch' | 'sequential';
   evaluation_mode?: 'template_only' | 'template_and_rubric' | 'rubric_only';
   abstention_enabled?: boolean;
+  sufficiency_enabled?: boolean;
   deep_judgment_enabled?: boolean;
   deep_judgment_max_excerpts_per_attribute?: number;
   deep_judgment_fuzzy_match_threshold?: number;
@@ -125,11 +128,19 @@ export class PresetApiError extends Error {
 }
 
 /**
+ * Response from fetching presets, including optional warnings about skipped presets
+ */
+export interface FetchPresetsResult {
+  presets: PresetListItem[];
+  warnings?: string[];
+}
+
+/**
  * Fetch all presets with summary information
  */
-export async function fetchPresets(): Promise<PresetListItem[]> {
+export async function fetchPresets(): Promise<FetchPresetsResult> {
   try {
-    const response = await fetch('/api/presets');
+    const response = await fetch(API_ENDPOINTS.PRESETS_LIST);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -137,7 +148,10 @@ export async function fetchPresets(): Promise<PresetListItem[]> {
     }
 
     const data = await response.json();
-    return data.presets || [];
+    return {
+      presets: data.presets || [],
+      warnings: data.warnings,
+    };
   } catch (error) {
     if (error instanceof PresetApiError) {
       throw error;
@@ -151,7 +165,7 @@ export async function fetchPresets(): Promise<PresetListItem[]> {
  */
 export async function getPreset(presetId: string): Promise<Preset> {
   try {
-    const response = await fetch(`/api/presets/${presetId}`);
+    const response = await fetch(API_ENDPOINTS.PRESET_DETAIL(presetId));
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -173,7 +187,7 @@ export async function getPreset(presetId: string): Promise<Preset> {
  */
 export async function createPreset(request: CreatePresetRequest): Promise<Preset> {
   try {
-    const response = await fetch('/api/presets', {
+    const response = await fetch(API_ENDPOINTS.PRESETS_LIST, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -201,7 +215,7 @@ export async function createPreset(request: CreatePresetRequest): Promise<Preset
  */
 export async function updatePreset(presetId: string, request: UpdatePresetRequest): Promise<Preset> {
   try {
-    const response = await fetch(`/api/presets/${presetId}`, {
+    const response = await fetch(API_ENDPOINTS.PRESET_DETAIL(presetId), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -229,7 +243,7 @@ export async function updatePreset(presetId: string, request: UpdatePresetReques
  */
 export async function deletePreset(presetId: string): Promise<void> {
   try {
-    const response = await fetch(`/api/presets/${presetId}`, {
+    const response = await fetch(API_ENDPOINTS.PRESET_DETAIL(presetId), {
       method: 'DELETE',
     });
 
