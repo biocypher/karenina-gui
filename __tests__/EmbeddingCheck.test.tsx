@@ -38,82 +38,34 @@ vi.mock('../src/hooks/useBenchmarkConfiguration', () => ({
 // Mock the API calls
 global.fetch = vi.fn();
 
-const createMockResult = (overrides: Partial<VerificationResult> = {}): VerificationResult => {
-  const baseResult: VerificationResult = {
+const createMockResult = (
+  overrides: {
+    metadata?: Partial<VerificationResult['metadata']>;
+    template?: Partial<VerificationResult['template']>;
+  } = {}
+): VerificationResult => {
+  return {
     metadata: {
       question_id: 'test-question-1',
       template_id: 'test-question-1-template',
       completed_without_errors: true,
       question_text: 'What is 2+2?',
-      answering_model: 'gpt-4',
-      parsing_model: 'gpt-3.5-turbo',
+      answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
+      parsing: { interface: 'langchain', model_name: 'gpt-3.5-turbo', tools: [] },
+      execution_time: 0,
+      timestamp: '2023-12-01T10:00:00Z',
+      ...overrides.metadata,
     },
     template: {
       raw_llm_response: 'The answer is 4.',
       parsed_llm_response: { answer: '4' },
       verify_result: true,
-      // Embedding check defaults
       embedding_check_performed: false,
-      embedding_similarity_score: null,
+      embedding_similarity_score: undefined,
       embedding_override_applied: false,
-      embedding_model_used: null,
+      embedding_model_used: undefined,
+      ...overrides.template,
     },
-  };
-
-  // Check if overrides use the old flat structure (backward compatibility)
-  const flatFields = [
-    'question_id',
-    'completed_without_errors',
-    'question_text',
-    'answering_model',
-    'parsing_model',
-    'raw_llm_response',
-    'parsed_llm_response',
-    'verify_result',
-    'embedding_check_performed',
-    'embedding_similarity_score',
-    'embedding_override_applied',
-    'embedding_model_used',
-  ];
-  const hasFlatFields = flatFields.some((field) => field in overrides);
-
-  if (hasFlatFields) {
-    // Map flat structure to nested structure
-    const metadataFields: Record<string, unknown> = {};
-    const templateFields: Record<string, unknown> = {};
-
-    if (overrides.question_id) metadataFields.question_id = overrides.question_id;
-    if (overrides.completed_without_errors !== undefined)
-      metadataFields.completed_without_errors = overrides.completed_without_errors;
-    if (overrides.question_text) metadataFields.question_text = overrides.question_text;
-    if (overrides.answering_model) metadataFields.answering_model = overrides.answering_model;
-    if (overrides.parsing_model) metadataFields.parsing_model = overrides.parsing_model;
-
-    if (overrides.raw_llm_response) templateFields.raw_llm_response = overrides.raw_llm_response;
-    if (overrides.parsed_llm_response) templateFields.parsed_llm_response = overrides.parsed_llm_response;
-    if (overrides.verify_result !== undefined) templateFields.verify_result = overrides.verify_result;
-    if (overrides.embedding_check_performed !== undefined)
-      templateFields.embedding_check_performed = overrides.embedding_check_performed;
-    if (overrides.embedding_similarity_score !== undefined)
-      templateFields.embedding_similarity_score = overrides.embedding_similarity_score;
-    if (overrides.embedding_override_applied !== undefined)
-      templateFields.embedding_override_applied = overrides.embedding_override_applied;
-    if (overrides.embedding_model_used !== undefined)
-      templateFields.embedding_model_used = overrides.embedding_model_used;
-
-    return {
-      ...baseResult,
-      metadata: { ...baseResult.metadata, ...metadataFields },
-      template: { ...baseResult.template, ...templateFields },
-    };
-  }
-
-  // If overrides already has nested structure, do a proper merge
-  return {
-    ...baseResult,
-    ...overrides,
-    metadata: { ...baseResult.metadata, ...overrides.metadata },
-    template: { ...baseResult.template, ...overrides.template },
   };
 };
 
@@ -149,9 +101,11 @@ describe('EmbeddingCheck UI Components', () => {
     it('should show embedding section with basic info when embedding check was performed', async () => {
       const user = userEvent.setup();
       const mockResult = createMockResult({
-        embedding_check_performed: true,
-        embedding_similarity_score: 0.75,
-        embedding_model_used: 'all-MiniLM-L6-v2',
+        template: {
+          embedding_check_performed: true,
+          embedding_similarity_score: 0.75,
+          embedding_model_used: 'all-MiniLM-L6-v2',
+        },
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -184,12 +138,14 @@ describe('EmbeddingCheck UI Components', () => {
     it('should show override success message when embedding check overrode the result', async () => {
       const user = userEvent.setup();
       const mockResult = createMockResult({
-        completed_without_errors: false, // Original verification failed
-        verify_result: false,
-        embedding_check_performed: true,
-        embedding_similarity_score: 0.92,
-        embedding_override_applied: true,
-        embedding_model_used: 'all-MiniLM-L6-v2',
+        metadata: { completed_without_errors: false },
+        template: {
+          verify_result: false,
+          embedding_check_performed: true,
+          embedding_similarity_score: 0.92,
+          embedding_override_applied: true,
+          embedding_model_used: 'all-MiniLM-L6-v2',
+        },
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -221,10 +177,12 @@ describe('EmbeddingCheck UI Components', () => {
     it('should not show override message when embedding check did not override', async () => {
       const user = userEvent.setup();
       const mockResult = createMockResult({
-        embedding_check_performed: true,
-        embedding_similarity_score: 0.6,
-        embedding_override_applied: false,
-        embedding_model_used: 'all-MiniLM-L6-v2',
+        template: {
+          embedding_check_performed: true,
+          embedding_similarity_score: 0.6,
+          embedding_override_applied: false,
+          embedding_model_used: 'all-MiniLM-L6-v2',
+        },
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -253,9 +211,11 @@ describe('EmbeddingCheck UI Components', () => {
     it('should handle missing embedding data gracefully', async () => {
       const user = userEvent.setup();
       const mockResult = createMockResult({
-        embedding_check_performed: true,
-        embedding_similarity_score: null, // Missing score
-        embedding_model_used: null, // Missing model
+        template: {
+          embedding_check_performed: true,
+          embedding_similarity_score: undefined,
+          embedding_model_used: undefined,
+        },
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -289,9 +249,11 @@ describe('EmbeddingCheck UI Components', () => {
     it('should include embedding fields in export options', async () => {
       const user = userEvent.setup();
       const mockResult = createMockResult({
-        embedding_check_performed: true,
-        embedding_similarity_score: 0.85,
-        embedding_override_applied: true,
+        template: {
+          embedding_check_performed: true,
+          embedding_similarity_score: 0.85,
+          embedding_override_applied: true,
+        },
       });
       const benchmarkResults = { 'test-question-1': mockResult };
       const checkpoint = {
@@ -358,10 +320,12 @@ describe('Embedding Check Field Descriptions', () => {
 describe('EmbeddingCheck Data Types', () => {
   it('should handle all embedding field types correctly', () => {
     const mockResult = createMockResult({
-      embedding_check_performed: true,
-      embedding_similarity_score: 0.85,
-      embedding_override_applied: false,
-      embedding_model_used: 'test-model',
+      template: {
+        embedding_check_performed: true,
+        embedding_similarity_score: 0.85,
+        embedding_override_applied: false,
+        embedding_model_used: 'test-model',
+      },
     });
 
     // Access from nested template structure
@@ -373,15 +337,17 @@ describe('EmbeddingCheck Data Types', () => {
 
   it('should handle null/undefined embedding values', () => {
     const mockResult = createMockResult({
-      embedding_check_performed: false,
-      embedding_similarity_score: null,
-      embedding_override_applied: false,
-      embedding_model_used: null,
+      template: {
+        embedding_check_performed: false,
+        embedding_similarity_score: undefined,
+        embedding_override_applied: false,
+        embedding_model_used: undefined,
+      },
     });
 
     expect(mockResult.template?.embedding_check_performed).toBe(false);
-    expect(mockResult.template?.embedding_similarity_score).toBeNull();
+    expect(mockResult.template?.embedding_similarity_score).toBeUndefined();
     expect(mockResult.template?.embedding_override_applied).toBe(false);
-    expect(mockResult.template?.embedding_model_used).toBeNull();
+    expect(mockResult.template?.embedding_model_used).toBeUndefined();
   });
 });

@@ -11,6 +11,7 @@ import {
   CreatePresetRequest,
   UpdatePresetRequest,
 } from '../utils/presetApi';
+import type { FetchPresetsResult } from '../utils/presetApi';
 import { logger } from '../utils/logger';
 
 /**
@@ -22,6 +23,7 @@ interface PresetState {
   currentPresetId: string | null;
   isLoading: boolean;
   error: string | null;
+  warnings: string[];
 
   // Actions
   loadPresets: () => Promise<void>;
@@ -39,13 +41,23 @@ export const usePresetStore = create<PresetState>((set) => ({
   currentPresetId: null,
   isLoading: false,
   error: null,
+  warnings: [],
 
   // Load all presets
   loadPresets: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, warnings: [] });
     try {
-      const presets = await fetchPresets();
-      set({ presets, isLoading: false });
+      const result: FetchPresetsResult = await fetchPresets();
+      set({
+        presets: result.presets,
+        warnings: result.warnings || [],
+        isLoading: false,
+      });
+      if (result.warnings?.length) {
+        logger.warn('PRESET', 'Some presets were skipped', 'usePresetStore', {
+          warnings: result.warnings,
+        });
+      }
     } catch (error) {
       const errorMessage = error instanceof PresetApiError ? error.message : 'Failed to load presets';
       set({ error: errorMessage, isLoading: false });

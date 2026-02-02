@@ -17,7 +17,7 @@ import { useConfigStore } from './useConfigStore';
 /**
  * LLM interface types supported by the ADeLe classifier.
  */
-export type AdeleInterface = 'langchain' | 'openrouter' | 'openai_endpoint';
+export type AdeleInterface = 'langchain' | 'openrouter' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
 
 /**
  * Trait evaluation mode - how traits are evaluated for a single question.

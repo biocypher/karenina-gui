@@ -220,16 +220,18 @@ describe('ConfigurationPanel', () => {
     const langchainRadios = screen.getAllByLabelText('LangChain');
     const openrouterRadios = screen.getAllByLabelText('OpenRouter');
     const openaiEndpointRadios = screen.getAllByLabelText('OpenAI Endpoint');
-    const nativeSdkRadios = screen.getAllByLabelText('Native SDK');
+    const claudeToolRadios = screen.getAllByLabelText('Claude Tool');
+    const claudeAgentSdkRadios = screen.getAllByLabelText('Claude Agent SDK');
 
-    // Should have 5 radio options for answering (LangChain, OpenRouter, OpenAI Endpoint, Native SDK, Manual)
-    // and 4 radio options for parsing (LangChain, OpenRouter, OpenAI Endpoint, Native SDK)
-    // Total: 5 + 4 = 9 radio buttons
-    expect(allAnsweringRadios).toHaveLength(9);
+    // Should have 6 radio options for answering (LangChain, OpenRouter, OpenAI Endpoint, Claude Tool, Claude Agent SDK, Manual)
+    // and 5 radio options for parsing (LangChain, OpenRouter, OpenAI Endpoint, Claude Tool, Claude Agent SDK)
+    // Total: 6 + 5 = 11 radio buttons
+    expect(allAnsweringRadios).toHaveLength(11);
     expect(langchainRadios).toHaveLength(2); // One for answering, one for parsing
     expect(openrouterRadios).toHaveLength(2); // One for answering, one for parsing
     expect(openaiEndpointRadios).toHaveLength(2); // One for answering, one for parsing
-    expect(nativeSdkRadios).toHaveLength(2); // One for answering, one for parsing
+    expect(claudeToolRadios).toHaveLength(2); // One for answering, one for parsing
+    expect(claudeAgentSdkRadios).toHaveLength(2); // One for answering, one for parsing
     expect(manualRadios).toHaveLength(1); // Only for answering models
   });
 

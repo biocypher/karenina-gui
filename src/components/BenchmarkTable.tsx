@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { Eye, AlertCircle } from 'lucide-react';
 import { VerificationResult, Checkpoint } from '../types';
+import { formatModelIdentityDisplay } from '../types/verification';
 import {
   useReactTable,
   getCoreRowModel,
@@ -268,7 +269,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         },
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor((row) => row.metadata.answering_model, {
+      columnHelper.accessor((row) => formatModelIdentityDisplay(row.metadata.answering), {
         id: 'answering_model',
         header: 'Answering Model',
         cell: (info) => (
@@ -278,7 +279,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
         ),
         filterFn: 'arrIncludesSome',
       }),
-      columnHelper.accessor((row) => row.metadata.parsing_model, {
+      columnHelper.accessor((row) => formatModelIdentityDisplay(row.metadata.parsing), {
         id: 'parsing_model',
         header: 'Parsing Model',
         cell: (info) => (
@@ -504,10 +505,10 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
       }
       const allResults = Object.values(benchmarkResults);
       const answeringModels = new Set(
-        allResults.map((r) => r.metadata.answering_model).filter((model): model is string => Boolean(model))
+        allResults.map((r) => formatModelIdentityDisplay(r.metadata.answering)).filter(Boolean)
       );
       const parsingModels = new Set(
-        allResults.map((r) => r.metadata.parsing_model).filter((model): model is string => Boolean(model))
+        allResults.map((r) => formatModelIdentityDisplay(r.metadata.parsing)).filter(Boolean)
       );
       const runNames = new Set(
         allResults.map((r) => r.metadata.run_name).filter((name): name is string => Boolean(name))

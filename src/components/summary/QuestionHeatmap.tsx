@@ -64,21 +64,21 @@ export function QuestionHeatmap({
     );
   }
 
-  // Extract model label from key (format: "model|mcp_config")
+  // Extract model label from key (format: "interface:model_name|mcp_config")
   const getModelLabel = (modelKey: string): { name: string; mcpLabel: string } => {
     const parts = modelKey.split('|');
-    const modelName = parts[0] || modelKey;
+    const modelName = parts[0] || modelKey; // "interface:model_name"
     const mcpConfig = parts[1];
 
     let mcpLabel = '';
     if (mcpConfig && mcpConfig !== '[]') {
       try {
-        const mcpServers = JSON.parse(mcpConfig);
-        if (Array.isArray(mcpServers) && mcpServers.length > 0) {
-          mcpLabel = `(${mcpServers.join(', ')})`;
+        const tools = JSON.parse(mcpConfig);
+        if (Array.isArray(tools) && tools.length > 0) {
+          mcpLabel = `+[${tools.join(', ')}]`;
         }
       } catch {
-        // If parsing fails, no MCP label
+        // If parsing fails, no tools label
       }
     }
 

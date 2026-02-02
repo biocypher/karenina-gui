@@ -7,7 +7,7 @@ interface ComparisonMetricsTableProps {
 
 export function ComparisonMetricsTable({ selectedModels, comparisonData }: ComparisonMetricsTableProps) {
   const getModelKey = (model: ModelConfig): string => {
-    return `${model.answering_model}|${model.mcp_config}`;
+    return `${model.interface || 'langchain'}:${model.answering_model}|${model.mcp_config}`;
   };
 
   const formatDuration = (seconds: number): string => {

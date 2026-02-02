@@ -10,7 +10,7 @@ interface ToolUsageSectionProps {
 
 export function ToolUsageSection({ selectedModels, comparisonData, collapsed, onToggle }: ToolUsageSectionProps) {
   const getModelKey = (model: ModelConfig): string => {
-    return `${model.answering_model}|${model.mcp_config}`;
+    return `${model.interface || 'langchain'}:${model.answering_model}|${model.mcp_config}`;
   };
 
   // Check if any model has tool usage stats

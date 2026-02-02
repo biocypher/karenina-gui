@@ -4,6 +4,7 @@
  */
 
 import type { UsageMetadata } from './index';
+import type { ModelIdentity } from './verification';
 
 /**
  * Job summary metadata for exports
@@ -80,8 +81,8 @@ export interface ExportableResultMetadata {
   question_text: string;
   raw_answer?: string;
   keywords?: string[];
-  answering_model: string;
-  parsing_model: string;
+  answering: ModelIdentity;
+  parsing: ModelIdentity;
   answering_system_prompt?: string;
   parsing_system_prompt?: string;
   execution_time: number;
@@ -96,6 +97,7 @@ export interface ExportableResultMetadata {
  */
 export interface ExportableResultTemplate {
   raw_llm_response: string;
+  trace_messages?: Array<Record<string, unknown>>;
   parsed_gt_response?: Record<string, unknown>;
   parsed_llm_response?: Record<string, unknown>;
   template_verification_performed?: boolean;

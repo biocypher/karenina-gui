@@ -94,7 +94,9 @@ export function DefaultsConfigTab({
       const model = answeringModels[0];
 
       // Apply model configuration to default settings
-      updateDefaultInterface(model.interface as 'langchain' | 'openrouter' | 'openai_endpoint');
+      updateDefaultInterface(
+        model.interface as 'langchain' | 'openrouter' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk'
+      );
       updateDefaultProvider(model.model_provider || '');
       updateDefaultModel(model.model_name || '');
 
@@ -102,6 +104,11 @@ export function DefaultsConfigTab({
       if (model.interface === 'openai_endpoint') {
         updateDefaultEndpointBaseUrl(model.endpoint_base_url || '');
         updateDefaultEndpointApiKey(model.endpoint_api_key || '');
+      } else if (model.interface === 'claude_tool' || model.interface === 'claude_agent_sdk') {
+        // Force provider to anthropic for Claude adapters
+        updateDefaultProvider('anthropic');
+        updateDefaultEndpointBaseUrl('');
+        updateDefaultEndpointApiKey('');
       } else {
         // Clear endpoint settings for non-endpoint interfaces
         updateDefaultEndpointBaseUrl('');
@@ -198,6 +205,36 @@ export function DefaultsConfigTab({
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">OpenAI Endpoint</span>
           </label>
+          <label className="flex items-center" title="Anthropic SDK with structured output">
+            <input
+              type="radio"
+              value="claude_tool"
+              checked={defaultInterface === 'claude_tool'}
+              onChange={() => {
+                updateDefaultInterface('claude_tool');
+                updateDefaultProvider('anthropic');
+                updateDefaultEndpointBaseUrl('');
+                updateDefaultEndpointApiKey('');
+              }}
+              className="mr-2"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">Claude Tool</span>
+          </label>
+          <label className="flex items-center" title="Claude Code CLI agent">
+            <input
+              type="radio"
+              value="claude_agent_sdk"
+              checked={defaultInterface === 'claude_agent_sdk'}
+              onChange={() => {
+                updateDefaultInterface('claude_agent_sdk');
+                updateDefaultProvider('anthropic');
+                updateDefaultEndpointBaseUrl('');
+                updateDefaultEndpointApiKey('');
+              }}
+              className="mr-2"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">Claude Agent SDK</span>
+          </label>
         </div>
       </div>
 
@@ -237,6 +274,31 @@ export function DefaultsConfigTab({
             placeholder="e.g., openai/gpt-4"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+      ) : defaultInterface === 'claude_tool' || defaultInterface === 'claude_agent_sdk' ? (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Provider</label>
+            <input
+              type="text"
+              value="anthropic"
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {defaultInterface === 'claude_tool' ? 'Anthropic SDK with structured output' : 'Claude Code CLI agent'}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default Model</label>
+            <input
+              type="text"
+              value={defaultModel}
+              onChange={(e) => updateDefaultModel(e.target.value)}
+              placeholder="e.g., claude-sonnet-4-20250514"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
       ) : (
         <div className="space-y-4">

@@ -30,8 +30,8 @@ describe('VerificationResultDetailModal', () => {
       question_text: 'Test question',
       raw_answer: 'Expected raw answer',
       keywords: ['test', 'keyword'],
-      answering_model: 'gpt-4',
-      parsing_model: 'gpt-4',
+      answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
+      parsing: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
       execution_time: 1.23,
       timestamp: new Date().toISOString(),
       run_name: 'test-run',
@@ -426,8 +426,8 @@ describe('VerificationResultDetailModal', () => {
     const result = createMockResult({
       metadata: {
         ...createMockResult().metadata,
-        answering_model: 'gpt-4-turbo',
-        parsing_model: 'gpt-4-mini',
+        answering: { interface: 'langchain', model_name: 'gpt-4-turbo', tools: [] },
+        parsing: { interface: 'langchain', model_name: 'gpt-4-mini', tools: [] },
         execution_time: 2.45,
         timestamp: '2025-01-15T10:30:00Z',
       },
@@ -443,8 +443,8 @@ describe('VerificationResultDetailModal', () => {
     );
 
     expect(screen.getByText('Metadata')).toBeInTheDocument();
-    expect(screen.getByText('gpt-4-turbo')).toBeInTheDocument();
-    expect(screen.getByText('gpt-4-mini')).toBeInTheDocument();
+    expect(screen.getByText('langchain:gpt-4-turbo')).toBeInTheDocument();
+    expect(screen.getByText('langchain:gpt-4-mini')).toBeInTheDocument();
     expect(screen.getByText('2.45s')).toBeInTheDocument();
   });
 

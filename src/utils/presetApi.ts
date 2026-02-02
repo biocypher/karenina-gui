@@ -128,9 +128,17 @@ export class PresetApiError extends Error {
 }
 
 /**
+ * Response from fetching presets, including optional warnings about skipped presets
+ */
+export interface FetchPresetsResult {
+  presets: PresetListItem[];
+  warnings?: string[];
+}
+
+/**
  * Fetch all presets with summary information
  */
-export async function fetchPresets(): Promise<PresetListItem[]> {
+export async function fetchPresets(): Promise<FetchPresetsResult> {
   try {
     const response = await fetch(API_ENDPOINTS.PRESETS_LIST);
 
@@ -140,7 +148,10 @@ export async function fetchPresets(): Promise<PresetListItem[]> {
     }
 
     const data = await response.json();
-    return data.presets || [];
+    return {
+      presets: data.presets || [],
+      warnings: data.warnings,
+    };
   } catch (error) {
     if (error instanceof PresetApiError) {
       throw error;
