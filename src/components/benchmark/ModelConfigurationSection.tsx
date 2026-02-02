@@ -8,7 +8,7 @@ interface ModelConfiguration {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'native_sdk';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
   system_prompt: string;
   endpoint_base_url?: string;
   endpoint_api_key?: string;
@@ -117,23 +117,32 @@ export const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps>
             />
             OpenAI Endpoint
           </label>
-          <label className="flex items-center text-slate-900 dark:text-white">
+          <label
+            className="flex items-center text-slate-900 dark:text-white"
+            title="Anthropic SDK with structured output"
+          >
             <input
               type="radio"
               name={`${model.id}-interface`}
-              value="native_sdk"
-              checked={model.interface === 'native_sdk'}
-              onChange={() => {
-                // When switching to native_sdk, force provider to be openai or anthropic
-                const currentProvider = model.model_provider;
-                const validNativeSdkProvider =
-                  currentProvider === 'openai' || currentProvider === 'anthropic' ? currentProvider : 'openai';
-                handleUpdate({ interface: 'native_sdk', model_provider: validNativeSdkProvider });
-              }}
+              value="claude_tool"
+              checked={model.interface === 'claude_tool'}
+              onChange={() => handleUpdate({ interface: 'claude_tool', model_provider: 'anthropic' })}
               disabled={isRunning}
               className="mr-2"
             />
-            Native SDK
+            Claude Tool
+          </label>
+          <label className="flex items-center text-slate-900 dark:text-white" title="Claude Code CLI agent">
+            <input
+              type="radio"
+              name={`${model.id}-interface`}
+              value="claude_agent_sdk"
+              checked={model.interface === 'claude_agent_sdk'}
+              onChange={() => handleUpdate({ interface: 'claude_agent_sdk', model_provider: 'anthropic' })}
+              disabled={isRunning}
+              className="mr-2"
+            />
+            Claude Agent SDK
           </label>
           {isAnswering && (
             <label className="flex items-center text-slate-900 dark:text-white">
@@ -218,24 +227,19 @@ export const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps>
         </div>
       )}
 
-      {/* Native SDK Configuration - Show only for native_sdk interface */}
-      {model.interface === 'native_sdk' && (
+      {/* Claude Tool / Claude Agent SDK Configuration */}
+      {(model.interface === 'claude_tool' || model.interface === 'claude_agent_sdk') && (
         <div className="space-y-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Provider <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={model.model_provider}
-              onChange={(e) => handleUpdate({ model_provider: e.target.value })}
-              disabled={isRunning}
-              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-            >
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-            </select>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Provider</label>
+            <input
+              type="text"
+              value="anthropic"
+              disabled
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+            />
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Direct SDK calls without LangChain abstraction
+              {model.interface === 'claude_tool' ? 'Anthropic SDK with structured output' : 'Claude Code CLI agent'}
             </p>
           </div>
           <div>
@@ -248,9 +252,7 @@ export const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps>
               onChange={(e) => handleUpdate({ model_name: e.target.value })}
               disabled={isRunning}
               className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-              placeholder={
-                model.model_provider === 'openai' ? 'e.g., gpt-4.1-mini, gpt-4o' : 'e.g., claude-sonnet-4-20250514'
-              }
+              placeholder="e.g., claude-sonnet-4-20250514"
             />
           </div>
         </div>
@@ -271,11 +273,12 @@ export const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps>
         </div>
       )}
 
-      {/* Temperature - Show for LangChain, OpenRouter, OpenAI Endpoint, and Native SDK interfaces */}
+      {/* Temperature - Show for LangChain, OpenRouter, OpenAI Endpoint, Claude Tool, and Claude Agent SDK interfaces */}
       {(model.interface === 'langchain' ||
         model.interface === 'openrouter' ||
         model.interface === 'openai_endpoint' ||
-        model.interface === 'native_sdk') && (
+        model.interface === 'claude_tool' ||
+        model.interface === 'claude_agent_sdk') && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Temperature: {model.temperature}
@@ -293,11 +296,12 @@ export const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps>
         </div>
       )}
 
-      {/* System Prompt - Show for LangChain, OpenRouter, OpenAI Endpoint, and Native SDK interfaces */}
+      {/* System Prompt - Show for LangChain, OpenRouter, OpenAI Endpoint, Claude Tool, and Claude Agent SDK interfaces */}
       {(model.interface === 'langchain' ||
         model.interface === 'openrouter' ||
         model.interface === 'openai_endpoint' ||
-        model.interface === 'native_sdk') && (
+        model.interface === 'claude_tool' ||
+        model.interface === 'claude_agent_sdk') && (
         <div className="mb-2">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">System Prompt</label>

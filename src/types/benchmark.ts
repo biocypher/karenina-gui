@@ -10,7 +10,7 @@ export interface ModelConfiguration {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'native_sdk';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
   system_prompt: string;
   // MCP (Model Context Protocol) configuration
   mcp_urls_dict?: Record<string, string>;

@@ -321,7 +321,11 @@ describe('useVerificationWebSocket', () => {
           results: [
             // Valid result
             {
-              metadata: { question_id: 'q1', answering_model: 'test', parsing_model: 'test' },
+              metadata: {
+                question_id: 'q1',
+                answering: { interface: 'langchain', model_name: 'test', tools: [] },
+                parsing: { interface: 'langchain', model_name: 'test', tools: [] },
+              },
               template: { verify_result: true },
             },
             // Malformed - no metadata
@@ -386,8 +390,8 @@ describe('useVerificationWebSocket', () => {
             {
               metadata: {
                 question_id: 'q1',
-                answering_model: 'claude',
-                parsing_model: 'claude',
+                answering: { interface: 'langchain', model_name: 'claude', tools: [] },
+                parsing: { interface: 'langchain', model_name: 'claude', tools: [] },
                 replicate: 0,
               },
               template: { verify_result: true },
@@ -395,8 +399,8 @@ describe('useVerificationWebSocket', () => {
             {
               metadata: {
                 question_id: 'q1',
-                answering_model: 'claude',
-                parsing_model: 'claude',
+                answering: { interface: 'langchain', model_name: 'claude', tools: [] },
+                parsing: { interface: 'langchain', model_name: 'claude', tools: [] },
                 replicate: 1,
               },
               template: { verify_result: true },

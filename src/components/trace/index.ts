@@ -11,3 +11,10 @@ export type { TraceSearchControlsProps } from './TraceSearchControls';
 
 export { TraceMessageNavigation } from './TraceMessageNavigation';
 export type { TraceMessageNavigationProps } from './TraceMessageNavigation';
+
+// Structured trace display
+export { TraceStructuredDisplay } from './TraceStructuredDisplay';
+export { TraceMessageBlock } from './TraceMessageBlock';
+export { TraceToolCallBlock } from './TraceToolCallBlock';
+export { TraceToolResultBlock } from './TraceToolResultBlock';
+export { TraceThinkingBlock } from './TraceThinkingBlock';

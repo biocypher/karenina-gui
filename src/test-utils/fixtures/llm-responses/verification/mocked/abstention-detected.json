@@ -16,15 +16,23 @@
         "question_text": "What will the stock price be next week?",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
         "answering_system_prompt": "You are a helpful assistant.",
         "parsing_system_prompt": "You are a helpful assistant.",
         "execution_time": 1.234,
         "timestamp": "2026-01-10 12:00:00",
         "result_id": "mock-result-005",
         "run_name": "mock-verification",
-        "replicate": null
+        "replicate": null,
+        "answering": {
+          "interface": "langchain",
+          "model_name": "claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "claude-haiku-4-5",
+          "tools": []
+        }
       },
       "template": {
         "raw_llm_response": "I cannot predict future stock prices as they depend on many unpredictable factors. I would recommend consulting a financial advisor for investment decisions.",

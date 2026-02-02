@@ -6,6 +6,7 @@
 export interface ModelConfig {
   answering_model: string;
   mcp_config: string;
+  interface?: string; // LLM interface (e.g. 'langchain', 'claude_agent_sdk')
 }
 
 export interface HeatmapCell {

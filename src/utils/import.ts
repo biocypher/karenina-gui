@@ -1,5 +1,6 @@
 import type { VerificationResult } from '../types';
 import type { ExportableResult, UnifiedExportFormat, ExportMetadata } from './export';
+import { formatModelIdentityDisplay } from '../types/verification';
 import { logger } from './logger';
 
 /**
@@ -45,11 +46,17 @@ function validateResultStructure(result: unknown): result is ExportableResult {
   const metadata = r.metadata as Record<string, unknown>;
 
   // Validate required metadata fields
+  const answering = metadata.answering as Record<string, unknown> | undefined;
+  const parsing = metadata.parsing as Record<string, unknown> | undefined;
   if (
     typeof metadata.question_id !== 'string' ||
     typeof metadata.question_text !== 'string' ||
-    typeof metadata.answering_model !== 'string' ||
-    typeof metadata.parsing_model !== 'string'
+    !answering ||
+    typeof answering.model_name !== 'string' ||
+    typeof answering.interface !== 'string' ||
+    !parsing ||
+    typeof parsing.model_name !== 'string' ||
+    typeof parsing.interface !== 'string'
   ) {
     return false;
   }
@@ -73,14 +80,14 @@ function validateResultStructure(result: unknown): result is ExportableResult {
 
 /**
  * Generates a unique result ID from VerificationResult metadata
- * Format: {question_id}_{answering_model}_{parsing_model}_{replicate}_{timestamp}
+ * Format: {question_id}_{answering_display}_{parsing_display}_{replicate}_{timestamp}
  */
 function generateResultId(result: ExportableResult, index: number): string {
   const { metadata } = result;
 
-  // Clean model names (remove slashes, spaces)
-  const cleanAnsweringModel = metadata.answering_model.replace(/[/\s]/g, '_');
-  const cleanParsingModel = metadata.parsing_model.replace(/[/\s]/g, '_');
+  // Clean model display strings (remove slashes, spaces, colons)
+  const cleanAnsweringModel = formatModelIdentityDisplay(metadata.answering).replace(/[/\s:]/g, '_');
+  const cleanParsingModel = formatModelIdentityDisplay(metadata.parsing).replace(/[/\s:]/g, '_');
 
   // Use replicate if available, otherwise use index
   const replicate = metadata.replicate !== undefined ? metadata.replicate : index;
@@ -196,7 +203,7 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
 
     // Collect stats
     questions.add(validResult.metadata.question_id);
-    models.add(validResult.metadata.answering_model);
+    models.add(formatModelIdentityDisplay(validResult.metadata.answering));
   });
 
   return {

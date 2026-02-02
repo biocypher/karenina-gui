@@ -7,7 +7,7 @@ export interface TemplateGenerationConfig {
   model_provider: string;
   model_name: string;
   temperature: number;
-  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'native_sdk';
+  interface: 'langchain' | 'openrouter' | 'manual' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
   endpoint_base_url?: string;
   endpoint_api_key?: string;
 }

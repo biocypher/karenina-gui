@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { VerificationProgress, VerificationResult } from '../types';
+import { formatModelIdentityDisplay } from '../types/verification';
 import { API_ENDPOINTS } from '../constants/api';
 
 export interface VerificationWebSocketOptions {
@@ -115,7 +116,7 @@ export function useVerificationWebSocket({
                         console.log('Setting results from array:', data.result_set.results.length, 'items');
                         for (const result of data.result_set.results) {
                           if (result && typeof result === 'object' && result.metadata) {
-                            const key = `${result.metadata.question_id}_${result.metadata.answering_model}_${result.metadata.parsing_model}${
+                            const key = `${result.metadata.question_id}_${formatModelIdentityDisplay(result.metadata.answering)}_${formatModelIdentityDisplay(result.metadata.parsing)}${
                               result.metadata.replicate != null ? `_rep${result.metadata.replicate}` : ''
                             }`;
                             sanitizedResults[key] = result as VerificationResult;

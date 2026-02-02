@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { VerificationResult } from '../types';
+import { formatModelIdentityDisplay } from '../types/verification';
 
 export interface BenchmarkResultStats {
   totalResults: number;
@@ -49,7 +50,7 @@ export function useBenchmarkResults({ benchmarkResults }: UseBenchmarkResultsOpt
 
     // Count unique questions and models
     const uniqueQuestions = new Set(results.map((r) => r.metadata.question_id)).size;
-    const uniqueModels = new Set(results.map((r) => r.metadata.answering_model)).size;
+    const uniqueModels = new Set(results.map((r) => formatModelIdentityDisplay(r.metadata.answering))).size;
 
     // Count successful/failed based on completion status
     const successfulCount = results.filter((r) => r.metadata.completed_without_errors).length;

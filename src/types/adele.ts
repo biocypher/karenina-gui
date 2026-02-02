@@ -54,7 +54,7 @@ export interface ListAdeleTraitsResponse {
  * Model configuration for ADeLe classification API requests.
  */
 export interface AdeleModelConfigRequest {
-  interface: 'langchain' | 'openrouter' | 'openai_endpoint';
+  interface: 'langchain' | 'openrouter' | 'openai_endpoint' | 'claude_tool' | 'claude_agent_sdk';
   provider: string;
   model_name: string;
   temperature: number;

@@ -54,8 +54,8 @@ const mockVerificationResults = {
       completed_without_errors: true,
       question_text: 'What is 2+2?',
       raw_answer: 'The answer is 4',
-      answering_model: 'google_genai/gemini-2.0-flash',
-      parsing_model: 'google_genai/gemini-2.0-flash',
+      answering: { interface: 'langchain', model_name: 'gemini-2.0-flash', tools: [] },
+      parsing: { interface: 'langchain', model_name: 'gemini-2.0-flash', tools: [] },
     },
     template: {
       raw_llm_response: 'The answer is 4',
@@ -71,8 +71,8 @@ const mockVerificationResults = {
       completed_without_errors: false,
       question_text: 'What is the capital of France?',
       raw_answer: 'The capital of France is Paris',
-      answering_model: 'openai/gpt-4',
-      parsing_model: 'openai/gpt-4',
+      answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
+      parsing: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
       error: 'Parse error',
     },
     template: {
@@ -89,8 +89,8 @@ const mockVerificationResults = {
       completed_without_errors: true,
       question_text: 'What is Python?',
       raw_answer: 'Python is a high-level programming language',
-      answering_model: 'anthropic/claude-3',
-      parsing_model: 'google_genai/gemini-2.0-flash',
+      answering: { interface: 'langchain', model_name: 'claude-3', tools: [] },
+      parsing: { interface: 'langchain', model_name: 'gemini-2.0-flash', tools: [] },
     },
     template: {
       raw_llm_response: 'Python is a high-level programming language',
@@ -211,9 +211,13 @@ describe('BenchmarkTab Filters and Export', () => {
       expect(withoutGranularResults).toHaveLength(1); // q2
 
       // Test model filtering
-      const geminiAnsweringResults = allResults.filter((result) => result.metadata.answering_model.includes('gemini'));
-      const gptAnsweringResults = allResults.filter((result) => result.metadata.answering_model.includes('gpt-4'));
-      const claudeAnsweringResults = allResults.filter((result) => result.metadata.answering_model.includes('claude'));
+      const geminiAnsweringResults = allResults.filter((result) =>
+        result.metadata.answering.model_name.includes('gemini')
+      );
+      const gptAnsweringResults = allResults.filter((result) => result.metadata.answering.model_name.includes('gpt-4'));
+      const claudeAnsweringResults = allResults.filter((result) =>
+        result.metadata.answering.model_name.includes('claude')
+      );
 
       expect(geminiAnsweringResults).toHaveLength(1); // q1
       expect(gptAnsweringResults).toHaveLength(1); // q2
@@ -226,13 +230,14 @@ describe('BenchmarkTab Filters and Export', () => {
       const allResults = Object.values(mockVerificationResults);
 
       // Test union mode (default)
-      const answeringModels = new Set(['google_genai/gemini-2.0-flash']);
-      const parsingModels = new Set(['openai/gpt-4']);
+      const answeringModels = new Set(['gemini-2.0-flash']);
+      const parsingModels = new Set(['gpt-4']);
 
       // Union: should include results that match either answering OR parsing model
       const unionResults = allResults.filter(
         (result) =>
-          answeringModels.has(result.metadata.answering_model) || parsingModels.has(result.metadata.parsing_model)
+          answeringModels.has(result.metadata.answering.model_name) ||
+          parsingModels.has(result.metadata.parsing.model_name)
       );
 
       expect(unionResults).toHaveLength(2); // q1 (gemini answering) and q2 (gpt-4 both)
@@ -240,7 +245,8 @@ describe('BenchmarkTab Filters and Export', () => {
       // Intersection: should include results that match both answering AND parsing model
       const intersectionResults = allResults.filter(
         (result) =>
-          answeringModels.has(result.metadata.answering_model) && parsingModels.has(result.metadata.parsing_model)
+          answeringModels.has(result.metadata.answering.model_name) &&
+          parsingModels.has(result.metadata.parsing.model_name)
       );
 
       expect(intersectionResults).toHaveLength(0); // No results match both criteria
@@ -251,7 +257,7 @@ describe('BenchmarkTab Filters and Export', () => {
 
       // Since the new data structure doesn't include timestamp at the top level,
       // this test now validates the model filter functionality instead
-      const geminiResults = allResults.filter((result) => result.metadata.answering_model.includes('gemini'));
+      const geminiResults = allResults.filter((result) => result.metadata.answering.model_name.includes('gemini'));
 
       expect(geminiResults).toHaveLength(1); // q1
       expect(geminiResults[0].metadata.question_id).toBe('q1');
@@ -277,7 +283,7 @@ describe('BenchmarkTab Filters and Export', () => {
 
       expect(jsonData).toContain('question_id');
       expect(jsonData).toContain('question_text');
-      expect(jsonData).toContain('answering_model');
+      expect(jsonData).toContain('model_name');
       expect(jsonData).toBeDefined();
     });
 
@@ -296,8 +302,8 @@ describe('BenchmarkTab Filters and Export', () => {
         const row = [
           result.metadata.question_id,
           `"${result.metadata.question_text.replace(/"/g, '""')}"`,
-          result.metadata.answering_model,
-          result.metadata.parsing_model,
+          `${result.metadata.answering.interface}:${result.metadata.answering.model_name}`,
+          `${result.metadata.parsing.interface}:${result.metadata.parsing.model_name}`,
           result.metadata.completed_without_errors,
           result.template?.verify_result !== undefined ? result.template?.verify_result : 'N/A',
         ];
@@ -306,7 +312,7 @@ describe('BenchmarkTab Filters and Export', () => {
 
       const csvContent = csvRows.join('\n');
       expect(csvContent).toContain('question_id,question_text');
-      expect(csvContent).toContain('google_genai/gemini-2.0-flash');
+      expect(csvContent).toContain('langchain:gemini-2.0-flash');
     });
 
     it('properly escapes CSV special characters', () => {

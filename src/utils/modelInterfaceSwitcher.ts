@@ -74,6 +74,15 @@ export function processInterfaceSwitch(
       }
       break;
 
+    case 'claude_tool':
+    case 'claude_agent_sdk':
+      // Set provider to anthropic for Claude adapters
+      processedUpdates.model_provider = 'anthropic';
+      // Clear endpoint fields
+      processedUpdates.endpoint_base_url = undefined;
+      processedUpdates.endpoint_api_key = undefined;
+      break;
+
     case 'manual':
       // Clear both provider and model_name for manual
       processedUpdates.model_provider = '';
@@ -140,6 +149,15 @@ export function processParsingInterfaceSwitch(
       if (!processedUpdates.endpoint_api_key) {
         processedUpdates.endpoint_api_key = config.savedEndpointApiKey;
       }
+      break;
+
+    case 'claude_tool':
+    case 'claude_agent_sdk':
+      // Set provider to anthropic for Claude adapters
+      processedUpdates.model_provider = 'anthropic';
+      // Clear endpoint fields
+      processedUpdates.endpoint_base_url = undefined;
+      processedUpdates.endpoint_api_key = undefined;
       break;
 
     case 'manual':

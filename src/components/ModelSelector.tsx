@@ -14,12 +14,17 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
   disabled = false,
   className = '',
 }) => {
-  const handleInterfaceChange = (interface_type: 'langchain' | 'openrouter') => {
+  const handleInterfaceChange = (interface_type: TemplateGenerationConfig['interface']) => {
     const updatedConfig = { ...config, interface: interface_type };
 
     // Clear model_provider when switching to OpenRouter
     if (interface_type === 'openrouter') {
       updatedConfig.model_provider = '';
+    } else if (interface_type === 'claude_tool' || interface_type === 'claude_agent_sdk') {
+      // Lock provider to anthropic for Claude adapters
+      updatedConfig.model_provider = 'anthropic';
+      updatedConfig.endpoint_base_url = undefined;
+      updatedConfig.endpoint_api_key = undefined;
     } else if (interface_type === 'langchain' && !config.model_provider) {
       // Set default provider for langchain if not already set
       updatedConfig.model_provider = 'google_genai';
@@ -52,7 +57,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
               name="interface"
               value="langchain"
               checked={config.interface === 'langchain'}
-              onChange={(e) => handleInterfaceChange(e.target.value as 'langchain' | 'openrouter')}
+              onChange={(e) => handleInterfaceChange(e.target.value as TemplateGenerationConfig['interface'])}
               disabled={disabled}
               className="mr-2"
             />
@@ -64,18 +69,42 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
               name="interface"
               value="openrouter"
               checked={config.interface === 'openrouter'}
-              onChange={(e) => handleInterfaceChange(e.target.value as 'langchain' | 'openrouter')}
+              onChange={(e) => handleInterfaceChange(e.target.value as TemplateGenerationConfig['interface'])}
               disabled={disabled}
               className="mr-2"
             />
             <span className="text-sm text-slate-700 dark:text-slate-300">OpenRouter (no provider needed)</span>
+          </label>
+          <label className="flex items-center" title="Anthropic SDK with structured output">
+            <input
+              type="radio"
+              name="interface"
+              value="claude_tool"
+              checked={config.interface === 'claude_tool'}
+              onChange={(e) => handleInterfaceChange(e.target.value as TemplateGenerationConfig['interface'])}
+              disabled={disabled}
+              className="mr-2"
+            />
+            <span className="text-sm text-slate-700 dark:text-slate-300">Claude Tool</span>
+          </label>
+          <label className="flex items-center" title="Claude Code CLI agent">
+            <input
+              type="radio"
+              name="interface"
+              value="claude_agent_sdk"
+              checked={config.interface === 'claude_agent_sdk'}
+              onChange={(e) => handleInterfaceChange(e.target.value as TemplateGenerationConfig['interface'])}
+              disabled={disabled}
+              className="mr-2"
+            />
+            <span className="text-sm text-slate-700 dark:text-slate-300">Claude Agent SDK</span>
           </label>
         </div>
       </div>
 
       {/* Configuration */}
       <div
-        className={`grid grid-cols-1 ${config.interface === 'langchain' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}
+        className={`grid grid-cols-1 ${config.interface === 'langchain' || config.interface === 'claude_tool' || config.interface === 'claude_agent_sdk' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}
       >
         {config.interface === 'langchain' && (
           <div>
@@ -91,6 +120,18 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
           </div>
         )}
 
+        {(config.interface === 'claude_tool' || config.interface === 'claude_agent_sdk') && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Provider</label>
+            <input
+              type="text"
+              value="anthropic"
+              disabled
+              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+            />
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Model Name</label>
           <input
@@ -102,7 +143,9 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
             placeholder={
               config.interface === 'langchain'
                 ? 'e.g., gemini-2.0-flash, gpt-4'
-                : 'e.g., meta-llama/llama-3.2-3b-instruct:free'
+                : config.interface === 'claude_tool' || config.interface === 'claude_agent_sdk'
+                  ? 'e.g., claude-sonnet-4-20250514'
+                  : 'e.g., meta-llama/llama-3.2-3b-instruct:free'
             }
           />
           {config.interface === 'openrouter' && (

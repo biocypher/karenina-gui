@@ -39,5 +39,8 @@ export * from './summary';
 // Model comparison types
 export * from './comparison';
 
+// Trace message types
+export * from './trace';
+
 // Export types
 export * from './export';
