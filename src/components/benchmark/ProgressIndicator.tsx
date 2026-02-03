@@ -64,18 +64,39 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
 
   const totalTests = selectedTestsCount * answeringModelsCount * parsingModelsCount * replicateCount;
 
-  // Helper to get question text from question ID
-  const getQuestionText = (questionId: string): string => {
-    if (!finishedTemplates) {
-      return questionId;
+  // Helper to parse task key into base question ID and replicate number
+  const parseTaskKey = (taskKey: string): { questionId: string; replicate: number | null } => {
+    // Task keys may have format: "question_id" or "question_id_rep{N}"
+    const replicateMatch = taskKey.match(/_rep(\d+)$/);
+    if (replicateMatch) {
+      const replicate = parseInt(replicateMatch[1], 10);
+      const questionId = taskKey.slice(0, -replicateMatch[0].length);
+      return { questionId, replicate };
     }
+    return { questionId: taskKey, replicate: null };
+  };
+
+  // Helper to get question text from task key (may include replicate suffix)
+  const getQuestionText = (taskKey: string): string => {
+    const { questionId, replicate } = parseTaskKey(taskKey);
+
+    if (!finishedTemplates) {
+      // No templates available, show task key with replicate info if present
+      return replicate !== null ? `${questionId} (rep ${replicate})` : questionId;
+    }
+
     const template = finishedTemplates.find(([id]) => id === questionId);
     if (!template) {
-      return questionId;
+      // Template not found, show task key with replicate info if present
+      return replicate !== null ? `${questionId} (rep ${replicate})` : questionId;
     }
+
     const question = template[1].question || questionId;
     // Truncate long questions
-    return question.length > 60 ? `${question.substring(0, 60)}...` : question;
+    const truncated = question.length > 60 ? `${question.substring(0, 60)}...` : question;
+
+    // Append replicate number for multi-replicate runs
+    return replicate !== null ? `${truncated} (rep ${replicate})` : truncated;
   };
 
   return (
@@ -107,11 +128,12 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
                   <span
                     key={`${questionId}-${index}`}
                     className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700"
-                    title={
-                      finishedTemplates
-                        ? finishedTemplates.find(([id]) => id === questionId)?.[1]?.question || questionId
-                        : questionId
-                    }
+                    title={(() => {
+                      const { questionId: baseId, replicate } = parseTaskKey(questionId);
+                      const template = finishedTemplates?.find(([id]) => id === baseId);
+                      const questionText = template?.[1]?.question || baseId;
+                      return replicate !== null ? `${questionText} (replicate ${replicate})` : questionText;
+                    })()}
                   >
                     {getQuestionText(questionId)}
                   </span>
@@ -123,7 +145,9 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
           {/* Current Question (fallback for when in_progress_questions is empty) */}
           {(!progress.in_progress_questions || progress.in_progress_questions.length === 0) &&
             progress.current_question && (
-              <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Current: {progress.current_question}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+                Current: {getQuestionText(progress.current_question)}
+              </p>
             )}
           {/* Show elapsed time while running (live clock), total time when complete */}
           {(elapsedSeconds !== null || progress.duration_seconds !== undefined) && (
