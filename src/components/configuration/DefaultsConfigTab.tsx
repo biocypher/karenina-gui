@@ -36,6 +36,11 @@ export function DefaultsConfigTab({
     defaultModel,
     defaultEndpointBaseUrl,
     defaultEndpointApiKey,
+    defaultAnthropicBaseUrl,
+    defaultAnthropicApiKey,
+    defaultAnthropicOpusModel,
+    defaultAnthropicSonnetModel,
+    defaultAnthropicHaikuModel,
     isSavingDefaults,
     hasUnsavedDefaults,
     updateDefaultInterface,
@@ -43,6 +48,11 @@ export function DefaultsConfigTab({
     updateDefaultModel,
     updateDefaultEndpointBaseUrl,
     updateDefaultEndpointApiKey,
+    updateDefaultAnthropicBaseUrl,
+    updateDefaultAnthropicApiKey,
+    updateDefaultAnthropicOpusModel,
+    updateDefaultAnthropicSonnetModel,
+    updateDefaultAnthropicHaikuModel,
     saveDefaults,
     resetDefaults,
   } = useConfigStore();
@@ -299,6 +309,86 @@ export function DefaultsConfigTab({
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          {/* Anthropic API Configuration */}
+          <div className="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Anthropic API Configuration</h4>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Custom Base URL <span className="text-gray-400">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={defaultAnthropicBaseUrl}
+                  onChange={(e) => updateDefaultAnthropicBaseUrl(e.target.value)}
+                  placeholder="e.g., https://api.proxy.example.com/v1"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  For proxies or self-hosted endpoints. Leave empty to use Anthropic's default API.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  API Key <span className="text-gray-400">(optional)</span>
+                </label>
+                <input
+                  type="password"
+                  value={defaultAnthropicApiKey}
+                  onChange={(e) => updateDefaultAnthropicApiKey(e.target.value)}
+                  placeholder="sk-ant-..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-300">
+                  Overrides ANTHROPIC_API_KEY env var. Stored securely in session storage (cleared when tab closes).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Model Tier Aliases */}
+          <div className="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Model Tier Aliases</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Map tier names (Opus, Sonnet, Haiku) to specific model IDs. Leave empty to use standard model names.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opus Model</label>
+                <input
+                  type="text"
+                  value={defaultAnthropicOpusModel}
+                  onChange={(e) => updateDefaultAnthropicOpusModel(e.target.value)}
+                  placeholder="e.g., claude-opus-4-5-20250514"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sonnet Model</label>
+                <input
+                  type="text"
+                  value={defaultAnthropicSonnetModel}
+                  onChange={(e) => updateDefaultAnthropicSonnetModel(e.target.value)}
+                  placeholder="e.g., claude-sonnet-4-20250514"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Haiku Model</label>
+                <input
+                  type="text"
+                  value={defaultAnthropicHaikuModel}
+                  onChange={(e) => updateDefaultAnthropicHaikuModel(e.target.value)}
+                  placeholder="e.g., claude-haiku-4-5-20250514"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
@@ -408,6 +498,24 @@ export function DefaultsConfigTab({
             Unlike other interfaces, the API key is stored in your browser's localStorage and never sent to the Karenina
             server. The base URL is saved server-side. Your API key will be passed directly to your custom endpoint with
             each request.
+          </p>
+        </div>
+      )}
+
+      {/* Claude adapter specific notice */}
+      {(defaultInterface === 'claude_tool' || defaultInterface === 'claude_agent_sdk') && (
+        <div className="text-sm text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900 p-3 rounded-md">
+          <p className="font-medium">
+            {defaultInterface === 'claude_tool' ? 'Claude Tool Interface:' : 'Claude Agent SDK Interface:'}
+          </p>
+          <p className="mt-1">
+            {defaultInterface === 'claude_tool'
+              ? 'Uses Anthropic Python SDK directly with native structured output support. Ideal for parsing and template evaluation tasks.'
+              : 'Uses Claude Agent SDK for agentic workflows with MCP tool support. Ideal for complex agent-based tasks.'}
+          </p>
+          <p className="mt-1">
+            The API key is stored in your browser's session storage (cleared when you close the tab) and is never sent
+            to the Karenina server. If not provided, the ANTHROPIC_API_KEY environment variable will be used.
           </p>
         </div>
       )}

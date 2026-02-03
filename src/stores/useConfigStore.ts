@@ -52,6 +52,16 @@ interface ConfigState {
   defaultEndpointBaseUrl: string;
   /** Draft endpoint API key for openai_endpoint interface */
   defaultEndpointApiKey: string;
+  /** Draft Anthropic base URL for claude_tool/claude_agent_sdk interfaces */
+  defaultAnthropicBaseUrl: string;
+  /** Draft Anthropic API key for claude_tool/claude_agent_sdk interfaces (stored in sessionStorage only) */
+  defaultAnthropicApiKey: string;
+  /** Draft Anthropic Opus model tier alias */
+  defaultAnthropicOpusModel: string;
+  /** Draft Anthropic Sonnet model tier alias */
+  defaultAnthropicSonnetModel: string;
+  /** Draft Anthropic Haiku model tier alias */
+  defaultAnthropicHaikuModel: string;
   /** Draft async enabled setting being edited in modal */
   defaultAsyncEnabled: boolean;
   /** Draft async max workers being edited in modal */
@@ -70,6 +80,16 @@ interface ConfigState {
   savedEndpointBaseUrl: string;
   /** Currently saved and active endpoint API key */
   savedEndpointApiKey: string;
+  /** Currently saved and active Anthropic base URL */
+  savedAnthropicBaseUrl: string;
+  /** Currently saved and active Anthropic API key */
+  savedAnthropicApiKey: string;
+  /** Currently saved and active Anthropic Opus model tier alias */
+  savedAnthropicOpusModel: string;
+  /** Currently saved and active Anthropic Sonnet model tier alias */
+  savedAnthropicSonnetModel: string;
+  /** Currently saved and active Anthropic Haiku model tier alias */
+  savedAnthropicHaikuModel: string;
   /** Currently saved and active async enabled setting used by generation components */
   savedAsyncEnabled: boolean;
   /** Currently saved and active async max workers used by generation components */
@@ -84,6 +104,10 @@ interface ConfigState {
     defaultProvider: string;
     defaultModel: string;
     defaultEndpointBaseUrl: string;
+    defaultAnthropicBaseUrl: string;
+    defaultAnthropicOpusModel: string;
+    defaultAnthropicSonnetModel: string;
+    defaultAnthropicHaikuModel: string;
     defaultAsyncEnabled: boolean;
     defaultAsyncMaxWorkers: number | null;
   };
@@ -136,6 +160,16 @@ interface ConfigState {
   updateDefaultEndpointBaseUrl: (url: string) => void;
   /** Update draft endpoint API key */
   updateDefaultEndpointApiKey: (key: string) => void;
+  /** Update draft Anthropic base URL */
+  updateDefaultAnthropicBaseUrl: (url: string) => void;
+  /** Update draft Anthropic API key */
+  updateDefaultAnthropicApiKey: (key: string) => void;
+  /** Update draft Anthropic Opus model tier alias */
+  updateDefaultAnthropicOpusModel: (model: string) => void;
+  /** Update draft Anthropic Sonnet model tier alias */
+  updateDefaultAnthropicSonnetModel: (model: string) => void;
+  /** Update draft Anthropic Haiku model tier alias */
+  updateDefaultAnthropicHaikuModel: (model: string) => void;
   /** Update draft async enabled setting */
   updateDefaultAsyncEnabled: (enabled: boolean) => void;
   /** Update draft async max workers */
@@ -173,6 +207,11 @@ export const useConfigStore = create<ConfigState>()(
       defaultModel: 'claude-haiku-4-5',
       defaultEndpointBaseUrl: '',
       defaultEndpointApiKey: '',
+      defaultAnthropicBaseUrl: '',
+      defaultAnthropicApiKey: '',
+      defaultAnthropicOpusModel: '',
+      defaultAnthropicSonnetModel: '',
+      defaultAnthropicHaikuModel: '',
       defaultAsyncEnabled: true,
       defaultAsyncMaxWorkers: null,
 
@@ -182,6 +221,11 @@ export const useConfigStore = create<ConfigState>()(
       savedModel: 'claude-haiku-4-5',
       savedEndpointBaseUrl: '',
       savedEndpointApiKey: '',
+      savedAnthropicBaseUrl: '',
+      savedAnthropicApiKey: '',
+      savedAnthropicOpusModel: '',
+      savedAnthropicSonnetModel: '',
+      savedAnthropicHaikuModel: '',
       savedAsyncEnabled: true,
       savedAsyncMaxWorkers: null,
 
@@ -190,6 +234,10 @@ export const useConfigStore = create<ConfigState>()(
         defaultProvider: 'anthropic',
         defaultModel: 'claude-haiku-4-5',
         defaultEndpointBaseUrl: '',
+        defaultAnthropicBaseUrl: '',
+        defaultAnthropicOpusModel: '',
+        defaultAnthropicSonnetModel: '',
+        defaultAnthropicHaikuModel: '',
         defaultAsyncEnabled: true,
         defaultAsyncMaxWorkers: null,
       },
@@ -222,6 +270,11 @@ export const useConfigStore = create<ConfigState>()(
           state.defaultModel !== state.originalDefaults.defaultModel ||
           state.defaultEndpointBaseUrl !== state.originalDefaults.defaultEndpointBaseUrl ||
           state.defaultEndpointApiKey !== state.savedEndpointApiKey ||
+          state.defaultAnthropicBaseUrl !== state.originalDefaults.defaultAnthropicBaseUrl ||
+          state.defaultAnthropicApiKey !== state.savedAnthropicApiKey ||
+          state.defaultAnthropicOpusModel !== state.originalDefaults.defaultAnthropicOpusModel ||
+          state.defaultAnthropicSonnetModel !== state.originalDefaults.defaultAnthropicSonnetModel ||
+          state.defaultAnthropicHaikuModel !== state.originalDefaults.defaultAnthropicHaikuModel ||
           state.defaultAsyncEnabled !== state.originalDefaults.defaultAsyncEnabled ||
           state.defaultAsyncMaxWorkers !== state.originalDefaults.defaultAsyncMaxWorkers
         );
@@ -247,6 +300,8 @@ export const useConfigStore = create<ConfigState>()(
 
           // Load endpoint API key from session storage if available
           const storedApiKey = apiKeyStorage.getEndpointApiKey();
+          // Load Anthropic API key from session storage if available
+          const storedAnthropicApiKey = apiKeyStorage.getAnthropicApiKey();
 
           set({
             envVariables,
@@ -256,6 +311,11 @@ export const useConfigStore = create<ConfigState>()(
             defaultModel: defaults.default_model,
             defaultEndpointBaseUrl: defaults.default_endpoint_base_url || '',
             defaultEndpointApiKey: storedApiKey,
+            defaultAnthropicBaseUrl: defaults.default_anthropic_base_url || '',
+            defaultAnthropicApiKey: storedAnthropicApiKey,
+            defaultAnthropicOpusModel: defaults.default_anthropic_opus_model || '',
+            defaultAnthropicSonnetModel: defaults.default_anthropic_sonnet_model || '',
+            defaultAnthropicHaikuModel: defaults.default_anthropic_haiku_model || '',
             defaultAsyncEnabled: defaults.default_async_enabled ?? true,
             defaultAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
             savedInterface: defaults.default_interface,
@@ -263,6 +323,11 @@ export const useConfigStore = create<ConfigState>()(
             savedModel: defaults.default_model,
             savedEndpointBaseUrl: defaults.default_endpoint_base_url || '',
             savedEndpointApiKey: storedApiKey,
+            savedAnthropicBaseUrl: defaults.default_anthropic_base_url || '',
+            savedAnthropicApiKey: storedAnthropicApiKey,
+            savedAnthropicOpusModel: defaults.default_anthropic_opus_model || '',
+            savedAnthropicSonnetModel: defaults.default_anthropic_sonnet_model || '',
+            savedAnthropicHaikuModel: defaults.default_anthropic_haiku_model || '',
             savedAsyncEnabled: defaults.default_async_enabled ?? true,
             savedAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
             originalDefaults: {
@@ -270,6 +335,10 @@ export const useConfigStore = create<ConfigState>()(
               defaultProvider: defaults.default_provider,
               defaultModel: defaults.default_model,
               defaultEndpointBaseUrl: defaults.default_endpoint_base_url || '',
+              defaultAnthropicBaseUrl: defaults.default_anthropic_base_url || '',
+              defaultAnthropicOpusModel: defaults.default_anthropic_opus_model || '',
+              defaultAnthropicSonnetModel: defaults.default_anthropic_sonnet_model || '',
+              defaultAnthropicHaikuModel: defaults.default_anthropic_haiku_model || '',
               defaultAsyncEnabled: defaults.default_async_enabled ?? true,
               defaultAsyncMaxWorkers: defaults.default_async_max_workers ?? null,
             },
@@ -323,6 +392,27 @@ export const useConfigStore = create<ConfigState>()(
         set({ defaultEndpointApiKey: key });
       },
 
+      // Update Anthropic settings
+      updateDefaultAnthropicBaseUrl: (url) => {
+        set({ defaultAnthropicBaseUrl: url });
+      },
+
+      updateDefaultAnthropicApiKey: (key) => {
+        set({ defaultAnthropicApiKey: key });
+      },
+
+      updateDefaultAnthropicOpusModel: (model) => {
+        set({ defaultAnthropicOpusModel: model });
+      },
+
+      updateDefaultAnthropicSonnetModel: (model) => {
+        set({ defaultAnthropicSonnetModel: model });
+      },
+
+      updateDefaultAnthropicHaikuModel: (model) => {
+        set({ defaultAnthropicHaikuModel: model });
+      },
+
       // Update async settings
       updateDefaultAsyncEnabled: (enabled) => {
         set({ defaultAsyncEnabled: enabled });
@@ -342,6 +432,10 @@ export const useConfigStore = create<ConfigState>()(
             default_provider: state.defaultProvider,
             default_model: state.defaultModel,
             default_endpoint_base_url: state.defaultEndpointBaseUrl,
+            default_anthropic_base_url: state.defaultAnthropicBaseUrl || null,
+            default_anthropic_opus_model: state.defaultAnthropicOpusModel || null,
+            default_anthropic_sonnet_model: state.defaultAnthropicSonnetModel || null,
+            default_anthropic_haiku_model: state.defaultAnthropicHaikuModel || null,
             default_async_enabled: state.defaultAsyncEnabled,
             default_async_max_workers: state.defaultAsyncMaxWorkers,
           };
@@ -367,6 +461,13 @@ export const useConfigStore = create<ConfigState>()(
             apiKeyStorage.removeEndpointApiKey();
           }
 
+          // Store Anthropic API key in session storage (if provided)
+          if (state.defaultAnthropicApiKey) {
+            apiKeyStorage.setAnthropicApiKey(state.defaultAnthropicApiKey);
+          } else {
+            apiKeyStorage.removeAnthropicApiKey();
+          }
+
           // Update saved values and original defaults to match current working values
           set({
             savedInterface: state.defaultInterface,
@@ -374,6 +475,11 @@ export const useConfigStore = create<ConfigState>()(
             savedModel: state.defaultModel,
             savedEndpointBaseUrl: state.defaultEndpointBaseUrl,
             savedEndpointApiKey: state.defaultEndpointApiKey,
+            savedAnthropicBaseUrl: state.defaultAnthropicBaseUrl,
+            savedAnthropicApiKey: state.defaultAnthropicApiKey,
+            savedAnthropicOpusModel: state.defaultAnthropicOpusModel,
+            savedAnthropicSonnetModel: state.defaultAnthropicSonnetModel,
+            savedAnthropicHaikuModel: state.defaultAnthropicHaikuModel,
             savedAsyncEnabled: state.defaultAsyncEnabled,
             savedAsyncMaxWorkers: state.defaultAsyncMaxWorkers,
             originalDefaults: {
@@ -381,6 +487,10 @@ export const useConfigStore = create<ConfigState>()(
               defaultProvider: state.defaultProvider,
               defaultModel: state.defaultModel,
               defaultEndpointBaseUrl: state.defaultEndpointBaseUrl,
+              defaultAnthropicBaseUrl: state.defaultAnthropicBaseUrl,
+              defaultAnthropicOpusModel: state.defaultAnthropicOpusModel,
+              defaultAnthropicSonnetModel: state.defaultAnthropicSonnetModel,
+              defaultAnthropicHaikuModel: state.defaultAnthropicHaikuModel,
               defaultAsyncEnabled: state.defaultAsyncEnabled,
               defaultAsyncMaxWorkers: state.defaultAsyncMaxWorkers,
             },
@@ -404,6 +514,11 @@ export const useConfigStore = create<ConfigState>()(
           defaultModel: state.originalDefaults.defaultModel,
           defaultEndpointBaseUrl: state.originalDefaults.defaultEndpointBaseUrl,
           defaultEndpointApiKey: state.savedEndpointApiKey,
+          defaultAnthropicBaseUrl: state.originalDefaults.defaultAnthropicBaseUrl,
+          defaultAnthropicApiKey: state.savedAnthropicApiKey,
+          defaultAnthropicOpusModel: state.originalDefaults.defaultAnthropicOpusModel,
+          defaultAnthropicSonnetModel: state.originalDefaults.defaultAnthropicSonnetModel,
+          defaultAnthropicHaikuModel: state.originalDefaults.defaultAnthropicHaikuModel,
           defaultAsyncEnabled: state.originalDefaults.defaultAsyncEnabled,
           defaultAsyncMaxWorkers: state.originalDefaults.defaultAsyncMaxWorkers,
         });

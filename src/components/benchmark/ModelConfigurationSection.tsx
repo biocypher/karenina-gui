@@ -12,6 +12,8 @@ interface ModelConfiguration {
   system_prompt: string;
   endpoint_base_url?: string;
   endpoint_api_key?: string;
+  anthropic_base_url?: string;
+  anthropic_api_key?: string;
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
   mcp_validated_servers?: Record<string, string>;
@@ -254,6 +256,44 @@ export const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps>
               className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
               placeholder="e.g., claude-sonnet-4-20250514"
             />
+          </div>
+
+          {/* Per-model Anthropic API overrides */}
+          <div className="border-t border-slate-200 dark:border-slate-600 pt-3 mt-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Override global Anthropic settings for this model (leave empty to use defaults)
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Custom Base URL <span className="text-slate-400">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={model.anthropic_base_url || ''}
+                  onChange={(e) => handleUpdate({ anthropic_base_url: e.target.value || undefined })}
+                  disabled={isRunning}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm"
+                  placeholder="Override global base URL"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  API Key <span className="text-slate-400">(optional)</span>
+                </label>
+                <input
+                  type="password"
+                  value={model.anthropic_api_key || ''}
+                  onChange={(e) => handleUpdate({ anthropic_api_key: e.target.value || undefined })}
+                  disabled={isRunning}
+                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm"
+                  placeholder="Override global API key"
+                />
+                <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-300">
+                  Per-model override (not stored server-side)
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

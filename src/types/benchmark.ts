@@ -21,6 +21,9 @@ export interface ModelConfiguration {
   // OpenAI Endpoint configuration
   endpoint_base_url?: string;
   endpoint_api_key?: string;
+  // Anthropic configuration (for claude_tool and claude_agent_sdk interfaces)
+  anthropic_base_url?: string;
+  anthropic_api_key?: string;
   // Extra keyword arguments
   extra_kwargs?: Record<string, unknown>;
   // Agent middleware configuration (only used when mcp_urls_dict is provided)
