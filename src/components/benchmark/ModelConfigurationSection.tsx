@@ -385,7 +385,8 @@ export const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps>
             >
               <Settings className="w-4 h-4" />
               <span>Configure MCP</span>
-              {model.mcp_tool_filter && model.mcp_tool_filter.length > 0 && (
+              {/* Show badge when MCP is configured (either servers or tool filter) */}
+              {model.mcp_urls_dict && Object.keys(model.mcp_urls_dict).length > 0 && (
                 <span className="ml-2 pl-1 pr-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs flex items-center gap-1">
                   <span
                     onClick={(e) => {
@@ -397,7 +398,9 @@ export const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps>
                   >
                     <X className="w-3 h-3" />
                   </span>
-                  {model.mcp_tool_filter.length} tools
+                  {model.mcp_tool_filter && model.mcp_tool_filter.length > 0
+                    ? `${model.mcp_tool_filter.length} tools`
+                    : `${Object.keys(model.mcp_urls_dict).length} server${Object.keys(model.mcp_urls_dict).length === 1 ? '' : 's'}`}
                 </span>
               )}
             </button>
