@@ -15,6 +15,9 @@ export interface ModelConfiguration {
   // MCP (Model Context Protocol) configuration
   mcp_urls_dict?: Record<string, string>;
   mcp_tool_filter?: string[];
+  mcp_validated_servers?: Record<string, string>;
+  use_full_trace_for_template?: boolean;
+  use_full_trace_for_rubric?: boolean;
   // OpenAI Endpoint configuration
   endpoint_base_url?: string;
   endpoint_api_key?: string;
