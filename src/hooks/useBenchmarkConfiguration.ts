@@ -205,28 +205,44 @@ export const useBenchmarkConfiguration = () => {
   };
 
   // Get configuration for API calls
-  const getVerificationConfig = () => ({
-    answering_models: answeringModels,
-    parsing_models: parsingModels,
-    replicate_count: replicateCount,
-    rubric_enabled: rubricEnabled,
-    rubric_evaluation_strategy: rubricEvaluationStrategy,
-    evaluation_mode: evaluationMode,
-    abstention_enabled: abstentionEnabled,
-    sufficiency_enabled: sufficiencyEnabled,
-    deep_judgment_enabled: deepJudgmentTemplateEnabled,
-    deep_judgment_search_enabled: deepJudgmentSearchEnabled,
-    deep_judgment_rubric_mode: deepJudgmentRubricEnabled ? deepJudgmentRubricMode : 'disabled',
-    deep_judgment_rubric_global_excerpts: deepJudgmentRubricExtractExcerpts,
-    few_shot_enabled: fewShotEnabled,
-    few_shot_mode: fewShotMode,
-    few_shot_k: fewShotK,
-  });
+  // Only includes values explicitly set in GUI - omitted values let server use env var defaults
+  const getVerificationConfig = () => {
+    const config: Record<string, unknown> = {
+      // Required fields - always sent
+      answering_models: answeringModels,
+      parsing_models: parsingModels,
+      replicate_count: replicateCount,
+      evaluation_mode: evaluationMode,
 
-  // Get async configuration for API calls
+      // Feature flags - always sent (explicit user choices)
+      rubric_enabled: rubricEnabled,
+      rubric_evaluation_strategy: rubricEvaluationStrategy,
+      abstention_enabled: abstentionEnabled,
+      sufficiency_enabled: sufficiencyEnabled,
+      deep_judgment_enabled: deepJudgmentTemplateEnabled,
+      deep_judgment_search_enabled: deepJudgmentSearchEnabled,
+      deep_judgment_rubric_mode: deepJudgmentRubricEnabled ? deepJudgmentRubricMode : 'disabled',
+      deep_judgment_rubric_global_excerpts: deepJudgmentRubricExtractExcerpts,
+      few_shot_enabled: fewShotEnabled,
+      few_shot_mode: fewShotMode,
+      few_shot_k: fewShotK,
+    };
+
+    // Async execution settings - only include if explicitly configured
+    // Otherwise server uses KARENINA_ASYNC_ENABLED / KARENINA_ASYNC_MAX_WORKERS env vars
+    if (savedAsyncEnabled !== null && savedAsyncEnabled !== undefined) {
+      config.async_enabled = savedAsyncEnabled;
+    }
+    if (savedAsyncMaxWorkers !== null && savedAsyncMaxWorkers !== undefined) {
+      config.async_max_workers = savedAsyncMaxWorkers;
+    }
+
+    return config;
+  };
+
+  // Get async configuration for API calls (kept for backwards compatibility)
   const getAsyncConfig = () => ({
     enabled: savedAsyncEnabled,
-    chunk_size: savedAsyncChunkSize,
     max_workers: savedAsyncMaxWorkers,
   });
 
