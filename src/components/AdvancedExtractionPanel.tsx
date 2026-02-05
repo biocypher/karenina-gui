@@ -21,11 +21,7 @@ export interface MetadataColumnSettings {
   author_email_column?: string;
   author_affiliation_column?: string;
   url_column?: string;
-  // New format: multiple keyword columns with individual separators
   keywords_columns?: KeywordColumnConfig[];
-  // Deprecated: kept for backward compatibility
-  keywords_column?: string;
-  keywords_separator?: string;
 }
 
 export const AdvancedExtractionPanel: React.FC<AdvancedExtractionPanelProps> = ({

@@ -213,6 +213,10 @@ describe('Configuration Integration Tests', () => {
         default_endpoint_base_url: 'http://localhost:11434/v1',
         default_async_enabled: false,
         default_async_max_workers: 2,
+        default_anthropic_base_url: null,
+        default_anthropic_opus_model: null,
+        default_anthropic_sonnet_model: null,
+        default_anthropic_haiku_model: null,
       });
 
       // Verify saved values were updated

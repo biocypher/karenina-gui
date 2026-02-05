@@ -33,8 +33,6 @@ export interface MetadataColumnSettings {
   author_email_column?: string;
   author_affiliation_column?: string;
   url_column?: string;
-  keywords_column?: string;
-  keywords_separator: string;
 }
 
 // Define the template store state interface
@@ -128,9 +126,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   selectedSheet: '',
   currentStep: 'upload',
   advancedVisible: false,
-  metadataSettings: {
-    keywords_separator: ',',
-  },
+  metadataSettings: {},
   extractedQuestions: {},
 
   selectedQuestions: new Set(),
@@ -166,7 +162,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       selectedSheet: '',
       currentStep: 'upload',
       advancedVisible: false,
-      metadataSettings: { keywords_separator: ',' },
+      metadataSettings: {},
       extractedQuestions: {},
     })),
 
@@ -393,7 +389,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       selectedSheet: '',
       currentStep: 'upload',
       advancedVisible: false,
-      metadataSettings: { keywords_separator: ',' },
+      metadataSettings: {},
       extractedQuestions: {},
       selectedQuestions: new Set(),
       hasInitialized: false,
