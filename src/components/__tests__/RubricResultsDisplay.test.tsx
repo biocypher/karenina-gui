@@ -225,9 +225,10 @@ describe('RubricResultsDisplay', () => {
       expect(screen.getByText('Undefined')).toBeInTheDocument();
       expect(screen.getByText('Zero')).toBeInTheDocument();
 
-      // Should show N/A for null/undefined/zero (all falsy values)
-      expect(screen.getAllByText('N/A')).toHaveLength(3);
-      expect(screen.queryByText('0')).not.toBeInTheDocument();
+      // Should show N/A for null/undefined values (nullish, not merely falsy)
+      expect(screen.getAllByText('N/A')).toHaveLength(2);
+      // Zero is a valid score value and should be displayed as '0'
+      expect(screen.getByText('0')).toBeInTheDocument();
     });
 
     it('applies failed styling when less than 50% traits pass', () => {

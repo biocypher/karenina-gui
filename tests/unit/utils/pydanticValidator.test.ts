@@ -228,7 +228,7 @@ describe('pydanticValidator', () => {
 
       const result = validatePydanticClassDefinition(classWithoutMethods);
       expect(result.isValid).toBe(false);
-      expect(result.errors.some((e) => e.message.includes('model_post_init'))).toBe(true);
+      expect(result.errors.some((e) => e.message.includes('ground_truth'))).toBe(true);
       expect(result.errors.some((e) => e.message.includes('verify'))).toBe(true);
     });
 

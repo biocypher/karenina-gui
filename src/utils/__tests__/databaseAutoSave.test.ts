@@ -41,7 +41,7 @@ describe('databaseAutoSave', () => {
       raw_answer: '4',
       answer_template: 'class Answer(BaseModel): result: int',
       finished: true,
-      tags: [],
+      keywords: [],
     },
   };
 

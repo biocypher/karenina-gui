@@ -147,7 +147,6 @@ export const DuplicateQuestionItem: React.FC<DuplicateQuestionItemProps> = ({
               duplicate.new_version.answer_template
             )}
             {renderFieldComparison('Finished Status', duplicate.old_version.finished, duplicate.new_version.finished)}
-            {renderFieldComparison('Tags', duplicate.old_version.tags, duplicate.new_version.tags)}
             {renderFieldComparison('Keywords', duplicate.old_version.keywords, duplicate.new_version.keywords)}
             {renderFieldComparison(
               'Few-shot Examples',

@@ -42,6 +42,14 @@ describe('RubricTraitEditor', () => {
     clearError: vi.fn(),
     reset: vi.fn(),
     applyGeneratedTraits: vi.fn(),
+    updateRegexTrait: vi.fn(),
+    removeRegexTrait: vi.fn(),
+    updateMetricTrait: vi.fn(),
+    removeMetricTrait: vi.fn(),
+    updateLLMTraitClasses: vi.fn(),
+    addClassToLLMTrait: vi.fn(),
+    removeClassFromLLMTrait: vi.fn(),
+    changeLLMTraitKind: vi.fn(),
     ...overrides,
   });
 
@@ -168,10 +176,10 @@ describe('RubricTraitEditor', () => {
 
     it('should change trait kind from boolean to score', async () => {
       const user = userEvent.setup();
-      const mockUpdateTrait = vi.fn();
+      const mockChangeLLMTraitKind = vi.fn();
       mockUseRubricStore.mockReturnValue(
         createMockStore({
-          updateTrait: mockUpdateTrait,
+          changeLLMTraitKind: mockChangeLLMTraitKind,
         })
       );
 
@@ -183,15 +191,15 @@ describe('RubricTraitEditor', () => {
 
       await user.selectOptions(kindSelect, 'score');
 
-      expect(mockUpdateTrait).toHaveBeenCalled();
+      expect(mockChangeLLMTraitKind).toHaveBeenCalled();
     });
 
     it('should change trait kind from score to boolean', async () => {
       const user = userEvent.setup();
-      const mockUpdateTrait = vi.fn();
+      const mockChangeLLMTraitKind = vi.fn();
       mockUseRubricStore.mockReturnValue(
         createMockStore({
-          updateTrait: mockUpdateTrait,
+          changeLLMTraitKind: mockChangeLLMTraitKind,
         })
       );
 
@@ -203,7 +211,7 @@ describe('RubricTraitEditor', () => {
 
       await user.selectOptions(scoreKindSelect, 'boolean');
 
-      expect(mockUpdateTrait).toHaveBeenCalled();
+      expect(mockChangeLLMTraitKind).toHaveBeenCalled();
     });
 
     it('should edit score range for score traits', async () => {

@@ -211,6 +211,10 @@ describe('Configuration Integration Tests', () => {
         default_provider: 'ollama',
         default_model: 'llama2',
         default_endpoint_base_url: 'http://localhost:11434/v1',
+        default_anthropic_base_url: null,
+        default_anthropic_opus_model: null,
+        default_anthropic_sonnet_model: null,
+        default_anthropic_haiku_model: null,
         default_async_enabled: false,
         default_async_max_workers: 2,
       });
