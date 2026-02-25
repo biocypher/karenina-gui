@@ -8,6 +8,7 @@ import {
   processParsingInterfaceSwitch,
   type InterfaceSwitchConfig,
 } from '../utils/modelInterfaceSwitcher';
+import { sanitizeModelConfig } from '../utils/modelConfig';
 
 export interface BenchmarkConfiguration {
   answeringModels: ModelConfiguration[];
@@ -207,10 +208,17 @@ export const useBenchmarkConfiguration = () => {
   // Get configuration for API calls
   // Only includes values explicitly set in GUI - omitted values let server use env var defaults
   const getVerificationConfig = () => {
+    // Sanitize models to strip GUI-only fields (e.g. mcp_validated_servers)
+    const sanitizedAnsweringModels = answeringModels.map(sanitizeModelConfig);
+    const sanitizedParsingModels = parsingModels.map(sanitizeModelConfig);
+
+    // Extract trace settings from answering models (these are top-level VerificationConfig fields)
+    const mcpModel = answeringModels.find((m) => m.mcp_urls_dict && Object.keys(m.mcp_urls_dict).length > 0);
+
     const config: Record<string, unknown> = {
       // Required fields - always sent
-      answering_models: answeringModels,
-      parsing_models: parsingModels,
+      answering_models: sanitizedAnsweringModels,
+      parsing_models: sanitizedParsingModels,
       replicate_count: replicateCount,
       evaluation_mode: evaluationMode,
 
@@ -227,6 +235,14 @@ export const useBenchmarkConfiguration = () => {
       few_shot_mode: fewShotMode,
       few_shot_k: fewShotK,
     };
+
+    // Trace input settings: only include if an MCP model has them configured
+    if (mcpModel?.use_full_trace_for_template !== undefined) {
+      config.use_full_trace_for_template = mcpModel.use_full_trace_for_template;
+    }
+    if (mcpModel?.use_full_trace_for_rubric !== undefined) {
+      config.use_full_trace_for_rubric = mcpModel.use_full_trace_for_rubric;
+    }
 
     // Async execution settings - only include if explicitly configured
     // Otherwise server uses KARENINA_ASYNC_ENABLED / KARENINA_ASYNC_MAX_WORKERS env vars
