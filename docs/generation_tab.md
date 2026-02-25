@@ -30,7 +30,7 @@ Each template is produced as a Python class derived from a base `Answer` model. 
 class Answer(BaseAnswer):
     field_name: type = Field(description="field description")
 
-    def model_post_init(self, __context):
+    def ground_truth(self):
         self.correct = {"field_name": "expected_value"}
 
     def verify(self) -> bool:
