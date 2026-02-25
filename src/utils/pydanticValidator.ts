@@ -73,6 +73,7 @@ const PYDANTIC_RESERVED = [
   'model_parametrized_name',
   'model_rebuild',
   'model_post_init',
+  'ground_truth',
 ];
 
 /**
@@ -150,7 +151,7 @@ export function validatePythonIdentifier(name: string): ValidationResult {
         trimmedName === 'id'
           ? 'The id field is automatically managed'
           : trimmedName === 'correct'
-            ? 'The correct field is set in model_post_init'
+            ? 'The correct field is set in ground_truth'
             : `Use a different name to avoid conflicts with ${trimmedName}`,
     });
   }
@@ -396,10 +397,10 @@ export function validatePydanticClassDefinition(classDef: PydanticClassDefinitio
 
   // Validate required methods
   const methodNames = classDef.methods.map((m) => m.name);
-  if (!methodNames.includes('model_post_init')) {
+  if (!methodNames.includes('ground_truth') && !methodNames.includes('model_post_init')) {
     errors.push({
       type: 'error',
-      message: 'Missing required method: model_post_init',
+      message: 'Missing required method: ground_truth',
       suggestion: 'Enable auto-generation or manually add this method',
     });
   }

@@ -239,7 +239,7 @@ export function generateModelPostInit(
   fields: PydanticFieldDefinition[],
   correctValuePattern?: 'single' | 'multiple'
 ): string {
-  const lines: string[] = ['    def model_post_init(self, __context):'];
+  const lines: string[] = ['    def ground_truth(self):'];
 
   // Separate regular fields from regex fields
   const regularFields = fields.filter((field) => field.type !== 'regex');

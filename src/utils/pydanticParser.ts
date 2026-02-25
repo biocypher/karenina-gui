@@ -329,13 +329,13 @@ function extractDocstring(code: string): string | undefined {
  * Extract correct values from model_post_init method and populate into field definitions
  */
 function extractCorrectValuesIntoFields(fields: PydanticFieldDefinition[], methods: PydanticMethod[]): void {
-  // Find the model_post_init method
-  const modelPostInitMethod = methods.find((m) => m.name === 'model_post_init');
-  if (!modelPostInitMethod) {
-    return; // No model_post_init method found
+  // Find the ground_truth or model_post_init method (prefer ground_truth)
+  const initMethod = methods.find((m) => m.name === 'ground_truth' || m.name === 'model_post_init');
+  if (!initMethod) {
+    return; // No ground_truth/model_post_init method found
   }
 
-  const code = modelPostInitMethod.code;
+  const code = initMethod.code;
 
   // Extract correct values from self.correct assignments
   // Pattern 1: self.correct = { "field": value }  (multiple fields)
@@ -489,8 +489,8 @@ export function validatePydanticClass(classDef: PydanticClassDefinition): string
 
   // Check required methods
   const methodNames = classDef.methods.map((m) => m.name);
-  if (!methodNames.includes('model_post_init')) {
-    errors.push('model_post_init method is required');
+  if (!methodNames.includes('ground_truth') && !methodNames.includes('model_post_init')) {
+    errors.push('ground_truth method is required');
   }
   if (!methodNames.includes('verify')) {
     errors.push('verify method is required');
