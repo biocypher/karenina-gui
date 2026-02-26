@@ -174,6 +174,7 @@ export const QuestionExtractor: React.FC<QuestionExtractorProps> = ({ onQuestion
           author_email_column: metadataSettings.author_email_column || null,
           author_affiliation_column: metadataSettings.author_affiliation_column || null,
           url_column: metadataSettings.url_column || null,
+          answer_notes_column: metadataSettings.answer_notes_column || null,
           // New format: multiple keyword columns with individual separators
           keywords_columns: metadataSettings.keywords_columns
             ? metadataSettings.keywords_columns

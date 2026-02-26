@@ -9,6 +9,7 @@ export interface CheckpointItem {
   // Original question data
   question: string;
   raw_answer: string;
+  answer_notes?: string;
   original_answer_template: string;
 
   // Progress data

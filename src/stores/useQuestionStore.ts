@@ -48,6 +48,7 @@ function buildCompleteCheckpoint(
       completeCheckpoint[questionId] = {
         question: question.question,
         raw_answer: question.raw_answer,
+        answer_notes: question.answer_notes,
         original_answer_template: question.answer_template,
         answer_template: question.answer_template,
         last_modified: now,
@@ -88,6 +89,7 @@ function buildCompleteCheckpoint(
     completeCheckpoint[questionId] = {
       question: question.question,
       raw_answer: question.raw_answer,
+      answer_notes: existingCheckpointItem?.answer_notes ?? question.answer_notes,
       original_answer_template: question.answer_template,
       answer_template: answerTemplate,
       last_modified: lastModified,
@@ -141,7 +143,8 @@ interface QuestionState {
     rawAnswer: string,
     author?: string,
     keywords?: string[],
-    generatedTemplate?: string
+    generatedTemplate?: string,
+    answerNotes?: string
   ) => string;
 
   // Question rubric management
@@ -302,6 +305,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       restoredQuestionData[questionId] = {
         question: checkpointItem.question,
         raw_answer: checkpointItem.raw_answer,
+        answer_notes: checkpointItem.answer_notes,
         answer_template: checkpointItem.original_answer_template,
       };
     });
@@ -435,7 +439,8 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     rawAnswer: string,
     author?: string,
     keywords?: string[],
-    generatedTemplate?: string
+    generatedTemplate?: string,
+    answerNotes?: string
   ) => {
     const state = get();
 
@@ -465,6 +470,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
       question,
       raw_answer: rawAnswer,
       answer_template: templateToUse,
+      ...(answerNotes ? { answer_notes: answerNotes } : {}),
       ...(author || validKeywords
         ? {
             metadata: {
@@ -479,6 +485,7 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
     const newCheckpointItem = {
       question,
       raw_answer: rawAnswer,
+      ...(answerNotes ? { answer_notes: answerNotes } : {}),
       original_answer_template: templateToUse,
       answer_template: templateToUse,
       last_modified: now,

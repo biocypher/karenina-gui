@@ -21,6 +21,7 @@ export interface MetadataColumnSettings {
   author_email_column?: string;
   author_affiliation_column?: string;
   url_column?: string;
+  answer_notes_column?: string;
   keywords_columns?: KeywordColumnConfig[];
 }
 
@@ -189,6 +190,7 @@ export const AdvancedExtractionPanel: React.FC<AdvancedExtractionPanelProps> = (
             <AdditionalMetadataSection
               settings={{
                 url_column: settings.url_column,
+                answer_notes_column: settings.answer_notes_column,
                 keywords_columns: settings.keywords_columns,
               }}
               columns={columns}

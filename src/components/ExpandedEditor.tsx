@@ -308,6 +308,21 @@ export const ExpandedEditor: React.FC<ExpandedEditorProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Answer Notes */}
+          {selectedQuestion.answer_notes && (
+            <div className="lg:col-span-2 flex items-start gap-3">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold min-w-0">
+                <FileText className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-shrink-0">Notes:</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 border border-amber-200 dark:border-amber-800">
+                  {selectedQuestion.answer_notes}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

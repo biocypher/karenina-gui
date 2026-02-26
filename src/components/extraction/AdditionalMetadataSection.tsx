@@ -1,5 +1,5 @@
 import React from 'react';
-import { Globe, Tags } from 'lucide-react';
+import { Globe, Tags, FileText } from 'lucide-react';
 
 export interface KeywordColumnConfig {
   column: string;
@@ -8,13 +8,14 @@ export interface KeywordColumnConfig {
 
 export interface MetadataSettingsForKeywords {
   url_column?: string;
+  answer_notes_column?: string;
   keywords_columns?: KeywordColumnConfig[];
 }
 
 interface AdditionalMetadataSectionProps {
-  settings: Pick<MetadataSettingsForKeywords, 'url_column' | 'keywords_columns'>;
+  settings: Pick<MetadataSettingsForKeywords, 'url_column' | 'answer_notes_column' | 'keywords_columns'>;
   columns: string[];
-  onColumnChange: (field: 'url_column', value: string) => void;
+  onColumnChange: (field: 'url_column' | 'answer_notes_column', value: string) => void;
   onKeywordColumnChange: (index: number, field: 'column' | 'separator', value: string) => void;
   addKeywordColumn: () => void;
   removeKeywordColumn: (index: number) => void;
@@ -83,6 +84,51 @@ export const AdditionalMetadataSection: React.FC<AdditionalMetadataSectionProps>
                       className="inline-block bg-green-100 dark:bg-green-800/50 text-green-800 dark:text-green-200 px-2 py-1 rounded-md text-xs font-mono"
                     >
                       {val.length > 30 ? val.substring(0, 27) + '...' : val}
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Answer Notes */}
+        <div>
+          <label
+            htmlFor="answer-notes-select"
+            className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1"
+          >
+            Answer Notes
+          </label>
+          <select
+            id="answer-notes-select"
+            value={settings.answer_notes_column || ''}
+            onChange={(e) => onColumnChange('answer_notes_column', e.target.value)}
+            className="w-full px-4 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm transition-all hover:border-blue-300 dark:hover:border-blue-600"
+          >
+            <option value="">None (skip)</option>
+            {columns.map((col) => (
+              <option key={col} value={col}>
+                {col}
+              </option>
+            ))}
+          </select>
+          {settings.answer_notes_column && (
+            <div className="mt-2 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg border border-amber-200/50 dark:border-amber-700/50">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1 bg-amber-100 dark:bg-amber-900/30 rounded">
+                  <FileText className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Answer Notes Preview</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {getPreviewValues(settings.answer_notes_column)
+                  .slice(0, 2)
+                  .map((val, i) => (
+                    <span
+                      key={i}
+                      className="inline-block bg-amber-100 dark:bg-amber-800/50 text-amber-800 dark:text-amber-200 px-2 py-1 rounded-md text-xs font-mono"
+                    >
+                      {val.length > 60 ? val.substring(0, 57) + '...' : val}
                     </span>
                   ))}
               </div>

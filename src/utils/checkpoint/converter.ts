@@ -90,6 +90,16 @@ export function v2ToJsonLd(
             name: 'original_answer_template',
             value: item.original_answer_template,
           },
+          // Include answer_notes if present
+          ...(item.answer_notes
+            ? [
+                {
+                  '@type': 'PropertyValue' as const,
+                  name: 'answer_notes',
+                  value: item.answer_notes,
+                },
+              ]
+            : []),
           // Include author as JSON string if present
           ...(item.author
             ? [
@@ -440,6 +450,7 @@ export function jsonLdToV2(
       const originalTemplateProp = question.additionalProperty?.find(
         (prop) => prop.name === 'original_answer_template'
       );
+      const answerNotesProp = question.additionalProperty?.find((prop) => prop.name === 'answer_notes');
       const authorProp = question.additionalProperty?.find((prop) => prop.name === 'author');
       const sourcesProp = question.additionalProperty?.find((prop) => prop.name === 'sources');
       const fewShotProp = question.additionalProperty?.find((prop) => prop.name === 'few_shot_examples');
@@ -562,6 +573,7 @@ export function jsonLdToV2(
       const checkpointItem: CheckpointItem = {
         question: question.text,
         raw_answer: question.acceptedAnswer.text,
+        answer_notes: answerNotesProp ? (answerNotesProp.value as string) : undefined,
         original_answer_template: (originalTemplateProp?.value as string) || '',
         answer_template: question.hasPart.text,
         date_created: dataFeedItem.dateCreated, // Preserve DataFeedItem's dateCreated
