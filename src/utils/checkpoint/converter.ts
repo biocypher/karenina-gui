@@ -33,6 +33,7 @@ import {
   convertRatingToRegexTrait,
   convertRatingToCallableTrait,
   convertRatingToMetricTrait,
+  normalizeAdditionalType,
 } from './traitConverters';
 
 // Re-export types and constants for backward compatibility
@@ -77,8 +78,8 @@ export function v2ToJsonLd(
           name: `${item.question.substring(0, 30)}... Answer Template`,
           text: item.answer_template,
           programmingLanguage: 'Python',
-          codeRepository: 'karenina-benchmarks',
         },
+        keywords: item.keywords,
         additionalProperty: [
           {
             '@type': 'PropertyValue',
@@ -189,7 +190,6 @@ export function v2ToJsonLd(
         dateCreated: item.date_created || item.last_modified, // Use date_created if available, fallback to last_modified
         dateModified: item.last_modified,
         item: question,
-        keywords: item.keywords,
       };
     });
 
@@ -328,14 +328,18 @@ export function jsonLdToV2(
     let globalRubric: Rubric | null = null;
     if (jsonLdCheckpoint.rating && jsonLdCheckpoint.rating.length > 0) {
       // Filter for different trait types
-      const globalLLMRatings = jsonLdCheckpoint.rating.filter(
-        (rating) => rating.additionalType === 'GlobalRubricTrait'
-      );
+      const globalLLMRatings = jsonLdCheckpoint.rating.filter((rating) => {
+        const at = normalizeAdditionalType(rating.additionalType);
+        return at === 'karenina:GlobalRubricTrait' || at === 'karenina:GlobalLLMRubricTrait';
+      });
       const globalRegexRatings = jsonLdCheckpoint.rating.filter(
-        (rating) => rating.additionalType === 'GlobalRegexTrait'
+        (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:GlobalRegexTrait'
       );
       const globalCallableRatings = jsonLdCheckpoint.rating.filter(
-        (rating) => rating.additionalType === 'GlobalCallableTrait'
+        (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:GlobalCallableTrait'
+      );
+      const globalMetricRatings = jsonLdCheckpoint.rating.filter(
+        (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:GlobalMetricRubricTrait'
       );
 
       // Convert LLM traits
@@ -354,11 +358,15 @@ export function jsonLdToV2(
       const callableTraits =
         globalCallableRatings.length > 0 ? globalCallableRatings.map(convertRatingToCallableTrait) : [];
 
-      if (llmTraits.length > 0 || regexTraits.length > 0 || callableTraits.length > 0) {
+      // Convert metric traits
+      const metricTraits = globalMetricRatings.length > 0 ? globalMetricRatings.map(convertRatingToMetricTrait) : [];
+
+      if (llmTraits.length > 0 || regexTraits.length > 0 || callableTraits.length > 0 || metricTraits.length > 0) {
         globalRubric = {
           llm_traits: llmTraits,
           ...(regexTraits.length > 0 && { regex_traits: regexTraits }),
           ...(callableTraits.length > 0 && { callable_traits: callableTraits }),
+          ...(metricTraits.length > 0 && { metric_traits: metricTraits }),
         };
       }
     }
@@ -497,17 +505,18 @@ export function jsonLdToV2(
       let questionRubric: Rubric | undefined;
       if (question.rating && question.rating.length > 0) {
         // Filter for different trait types
-        const questionLLMRatings = question.rating.filter(
-          (rating) => rating.additionalType === 'QuestionSpecificRubricTrait'
-        );
+        const questionLLMRatings = question.rating.filter((rating) => {
+          const at = normalizeAdditionalType(rating.additionalType);
+          return at === 'karenina:QuestionSpecificRubricTrait' || at === 'karenina:QuestionSpecificLLMRubricTrait';
+        });
         const questionRegexRatings = question.rating.filter(
-          (rating) => rating.additionalType === 'QuestionSpecificRegexTrait'
+          (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:QuestionSpecificRegexTrait'
         );
         const questionCallableRatings = question.rating.filter(
-          (rating) => rating.additionalType === 'QuestionSpecificCallableTrait'
+          (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:QuestionSpecificCallableTrait'
         );
         const questionMetricRatings = question.rating.filter(
-          (rating) => rating.additionalType === 'QuestionSpecificMetricRubricTrait'
+          (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:QuestionSpecificMetricRubricTrait'
         );
 
         // Convert LLM traits
@@ -586,7 +595,7 @@ export function jsonLdToV2(
         author: author,
         sources: sources,
         few_shot_examples: fewShotExamples,
-        keywords: dataFeedItem.keywords,
+        keywords: question.keywords ?? (dataFeedItem as { keywords?: string[] }).keywords,
       };
 
       checkpoint[questionId] = checkpointItem;

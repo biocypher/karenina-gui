@@ -5,6 +5,7 @@
 
 import type { JsonLdCheckpoint } from '../../types';
 import { CheckpointConversionError } from './types';
+import { normalizeAdditionalType } from './traitConverters';
 
 /**
  * Validates a JSON-LD checkpoint structure
@@ -57,17 +58,19 @@ export function validateJsonLdCheckpoint(checkpoint: JsonLdCheckpoint): void {
         }
 
         const validAdditionalTypes = [
-          'GlobalRubricTrait',
-          'QuestionSpecificRubricTrait',
-          'GlobalRegexTrait',
-          'QuestionSpecificRegexTrait',
-          'GlobalCallableTrait',
-          'QuestionSpecificCallableTrait',
-          'GlobalMetricRubricTrait',
-          'QuestionSpecificMetricRubricTrait',
+          'karenina:GlobalRubricTrait',
+          'karenina:QuestionSpecificRubricTrait',
+          'karenina:GlobalLLMRubricTrait',
+          'karenina:QuestionSpecificLLMRubricTrait',
+          'karenina:GlobalRegexTrait',
+          'karenina:QuestionSpecificRegexTrait',
+          'karenina:GlobalCallableTrait',
+          'karenina:QuestionSpecificCallableTrait',
+          'karenina:GlobalMetricRubricTrait',
+          'karenina:QuestionSpecificMetricRubricTrait',
         ];
 
-        if (!rating.additionalType || !validAdditionalTypes.includes(rating.additionalType)) {
+        if (!rating.additionalType || !validAdditionalTypes.includes(normalizeAdditionalType(rating.additionalType))) {
           errors.push(
             `Question ${index} rating ${ratingIndex} must have valid additionalType (got: ${rating.additionalType})`
           );

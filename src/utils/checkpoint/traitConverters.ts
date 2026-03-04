@@ -14,6 +14,14 @@ import type {
 import { CheckpointConversionError } from './types';
 
 /**
+ * Normalizes additionalType values by adding karenina: prefix if missing.
+ * This provides backward compatibility with old-format checkpoints.
+ */
+export function normalizeAdditionalType(type: string): string {
+  return type.startsWith('karenina:') ? type : `karenina:${type}`;
+}
+
+/**
  * Validates and normalizes score values for rubric traits
  * @param value - The score value to validate (can be null, undefined, or number)
  * @param defaultValue - Default value to use if score is null/undefined
@@ -104,7 +112,8 @@ export function convertRubricTraitToRating(
   const additionalProperty: SchemaOrgPropertyValue[] = [createHigherIsBetterProperty(trait.higher_is_better)];
 
   if (trait.kind === 'boolean') {
-    const additionalType = rubricType === 'global' ? 'GlobalRubricTrait' : 'QuestionSpecificRubricTrait';
+    const additionalType =
+      rubricType === 'global' ? 'karenina:GlobalRubricTrait' : 'karenina:QuestionSpecificRubricTrait';
     return {
       '@type': 'Rating' as const,
       '@id': `urn:uuid:rating-${trait.name.toLowerCase().replace(/\s+/g, '-')}`,
@@ -119,7 +128,8 @@ export function convertRubricTraitToRating(
   } else if (trait.kind === 'literal') {
     // Literal kind: store kind and classes in additionalProperty
     // Uses GlobalLLMRubricTrait/QuestionSpecificLLMRubricTrait to distinguish from boolean/score
-    const additionalType = rubricType === 'global' ? 'GlobalLLMRubricTrait' : 'QuestionSpecificLLMRubricTrait';
+    const additionalType =
+      rubricType === 'global' ? 'karenina:GlobalLLMRubricTrait' : 'karenina:QuestionSpecificLLMRubricTrait';
 
     // Add kind property to distinguish literal from boolean/score
     additionalProperty.push({
@@ -154,7 +164,8 @@ export function convertRubricTraitToRating(
     };
   } else {
     // Score trait - validate and handle score ranges
-    const additionalType = rubricType === 'global' ? 'GlobalRubricTrait' : 'QuestionSpecificRubricTrait';
+    const additionalType =
+      rubricType === 'global' ? 'karenina:GlobalRubricTrait' : 'karenina:QuestionSpecificRubricTrait';
     const minScore = validateScoreValue(trait.min_score, 1, 'min_score', trait.name);
     const maxScore = validateScoreValue(trait.max_score, 5, 'max_score', trait.name);
 
@@ -189,7 +200,7 @@ export function convertRegexTraitToRating(
   trait: RegexTrait,
   rubricType: 'global' | 'question-specific'
 ): SchemaOrgRating {
-  const additionalType = rubricType === 'global' ? 'GlobalRegexTrait' : 'QuestionSpecificRegexTrait';
+  const additionalType = rubricType === 'global' ? 'karenina:GlobalRegexTrait' : 'karenina:QuestionSpecificRegexTrait';
 
   return {
     '@type': 'Rating' as const,
@@ -230,7 +241,8 @@ export function convertCallableTraitToRating(
   trait: CallableTrait,
   rubricType: 'global' | 'question-specific'
 ): SchemaOrgRating {
-  const additionalType = rubricType === 'global' ? 'GlobalCallableTrait' : 'QuestionSpecificCallableTrait';
+  const additionalType =
+    rubricType === 'global' ? 'karenina:GlobalCallableTrait' : 'karenina:QuestionSpecificCallableTrait';
 
   const additionalProperties: SchemaOrgPropertyValue[] = [
     {
@@ -290,7 +302,8 @@ export function convertMetricTraitToRating(
   trait: MetricRubricTrait,
   rubricType: 'global' | 'question-specific'
 ): SchemaOrgRating {
-  const additionalType = rubricType === 'global' ? 'GlobalMetricRubricTrait' : 'QuestionSpecificMetricRubricTrait';
+  const additionalType =
+    rubricType === 'global' ? 'karenina:GlobalMetricRubricTrait' : 'karenina:QuestionSpecificMetricRubricTrait';
 
   return {
     '@type': 'Rating' as const,

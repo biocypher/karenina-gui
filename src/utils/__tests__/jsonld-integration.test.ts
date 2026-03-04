@@ -120,7 +120,7 @@ describe('JSON-LD Integration Tests', () => {
       // Check root Dataset
       expect(jsonLd['@type']).toBe('DataFeed');
       expect(jsonLd['@context']).toBeDefined();
-      expect(jsonLd['@context']['@vocab']).toBe('http://schema.org/');
+      expect(jsonLd['@context']['@vocab']).toBe('https://schema.org/');
 
       // Check DataFeedItem structure
       const feedItem = jsonLd.dataFeedElement[0];
@@ -140,7 +140,7 @@ describe('JSON-LD Integration Tests', () => {
         expect(rating['@type']).toBe('Rating');
         expect(typeof rating.bestRating).toBe('number');
         expect(typeof rating.worstRating).toBe('number');
-        expect(rating.additionalType).toMatch(/^(GlobalRubricTrait|QuestionSpecificRubricTrait)$/);
+        expect(rating.additionalType).toMatch(/^karenina:(GlobalRubricTrait|QuestionSpecificRubricTrait)$/);
       });
 
       // Check PropertyValue objects (metadata)
@@ -299,7 +299,7 @@ describe('JSON-LD Integration Tests', () => {
 
       expect(softwareCode.text).toContain('class FranceCapitalAnswer');
       expect(softwareCode.programmingLanguage).toBe('Python');
-      expect(softwareCode.codeRepository).toBe('karenina-benchmarks');
+      expect(softwareCode.codeRepository).toBeUndefined();
 
       // Verify original template is preserved in metadata
       const originalTemplateProp = jsonLd.dataFeedElement[0].item.additionalProperty?.find(
