@@ -10,6 +10,7 @@
 
 import { useCallback } from 'react';
 import { useTemplateBuilderStore } from '../../stores/useTemplateBuilderStore';
+import { InfoTooltip } from './InfoTooltip';
 import type { VerifyStrategy } from '../../types';
 
 const SELECT_CLASS =
@@ -287,7 +288,10 @@ export function CompositionRuleBuilder() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Composition Strategy</h3>
+        <span className="inline-flex items-center">
+          <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Composition Strategy</h3>
+          <InfoTooltip text="Controls how individual field results combine into a final pass/fail verdict. Default requires all fields to pass." />
+        </span>
         {strategy !== null && (
           <button
             onClick={handleResetToDefault}

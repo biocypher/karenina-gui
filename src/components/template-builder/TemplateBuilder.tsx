@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useTemplateBuilderStore } from '../../stores/useTemplateBuilderStore';
 import { FieldList } from './FieldList';
 import { VerifiedFieldEditor } from './VerifiedFieldEditor';
 import { CompositionRuleBuilder } from './CompositionRuleBuilder';
-import { CodePreview } from './CodePreview';
 import { ValidationModal } from './ValidationModal';
+import { InfoTooltip } from './InfoTooltip';
 
 interface TemplateBuilderProps {
   code: string;
@@ -17,8 +17,7 @@ export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: Tem
   const [showValidation, setShowValidation] = useState(false);
   const initialParseRef = useRef(false);
 
-  const { spec, setClassName, parseCode, fetchPrimitives, generatedCode, isLoading, lastError } =
-    useTemplateBuilderStore();
+  const { parseCode, fetchPrimitives, generatedCode, isLoading, lastError } = useTemplateBuilderStore();
 
   // On mount: parse provided code and fetch available primitives
   useEffect(() => {
@@ -39,32 +38,14 @@ export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: Tem
     }
   }, [generatedCode, onChange]);
 
-  const handleClassNameChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setClassName(e.target.value);
-    },
-    [setClassName]
-  );
-
-  const handleValidateClick = useCallback(() => {
+  const handleValidateClick = () => {
     setShowValidation(true);
-  }, []);
+  };
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-gray-100">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700 bg-gray-800">
-        <label className="text-sm font-medium text-gray-400 whitespace-nowrap">Class Name:</label>
-        <input
-          type="text"
-          value={spec.class_name ?? ''}
-          onChange={handleClassNameChange}
-          placeholder="MyAnswer"
-          className="flex-1 max-w-xs px-3 py-1.5 text-sm bg-gray-900 border border-gray-600 rounded
-                     text-gray-100 placeholder-gray-500
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-
         <div className="ml-auto flex items-center gap-2">
           {lastError && (
             <span className="text-xs text-red-400 truncate max-w-[200px]" title={lastError}>
@@ -74,24 +55,30 @@ export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: Tem
 
           {isLoading && <span className="text-xs text-gray-500 animate-pulse">Loading...</span>}
 
-          <button
-            onClick={handleValidateClick}
-            className="px-3 py-1.5 text-sm font-medium rounded
-                       bg-emerald-600 hover:bg-emerald-500 text-white
-                       transition-colors"
-          >
-            Validate
-          </button>
+          <span className="inline-flex items-center gap-1">
+            <button
+              onClick={handleValidateClick}
+              className="px-3 py-1.5 text-sm font-medium rounded
+                         bg-emerald-600 hover:bg-emerald-500 text-white
+                         transition-colors"
+            >
+              Validate
+            </button>
+            <InfoTooltip text="Check that the template is well-formed: valid field types, ground truth matches types, and verification primitives are compatible." />
+          </span>
 
           {onSwitchToCode && (
-            <button
-              onClick={onSwitchToCode}
-              className="px-3 py-1.5 text-sm font-medium rounded
-                         bg-gray-700 hover:bg-gray-600 text-gray-200
-                         transition-colors flex items-center gap-1"
-            >
-              <span className="font-mono text-xs">&lt;&gt;</span> Code
-            </button>
+            <span className="inline-flex items-center gap-1">
+              <button
+                onClick={onSwitchToCode}
+                className="px-3 py-1.5 text-sm font-medium rounded
+                           bg-gray-700 hover:bg-gray-600 text-gray-200
+                           transition-colors flex items-center gap-1"
+              >
+                <span className="font-mono text-xs">&lt;&gt;</span> Code
+              </button>
+              <InfoTooltip text="Switch to the Python code editor to view or edit the generated template code directly." />
+            </span>
           )}
 
           {onClose && (
@@ -112,7 +99,6 @@ export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: Tem
         <div className="w-2/5 flex flex-col border-r border-gray-700 overflow-y-auto p-4 gap-4">
           <FieldList />
           <CompositionRuleBuilder />
-          <CodePreview />
         </div>
 
         {/* Right column: field editor */}

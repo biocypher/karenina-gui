@@ -1,4 +1,5 @@
 import { useTemplateBuilderStore } from '../../stores/useTemplateBuilderStore';
+import { InfoTooltip } from './InfoTooltip';
 
 export function FieldList() {
   const fields = useTemplateBuilderStore((s) => s.spec.fields);
@@ -11,7 +12,10 @@ export function FieldList() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Fields ({fields.length})</h3>
+        <span className="inline-flex items-center">
+          <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Fields ({fields.length})</h3>
+          <InfoTooltip text="Each field defines one piece of information the judge LLM will extract from the response and verify against ground truth." />
+        </span>
         <button
           onClick={addField}
           className="px-3 py-1 text-xs font-medium text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/10 transition-colors"

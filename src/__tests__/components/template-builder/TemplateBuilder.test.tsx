@@ -146,13 +146,14 @@ describe('TemplateBuilder integration', () => {
       });
     });
 
-    it('renders the class name input with default value', async () => {
+    it('does not render a class name input (hidden from visual builder)', async () => {
       render(<TemplateBuilder code="" onChange={vi.fn()} />);
 
-      const classNameInput = screen.getByPlaceholderText('MyAnswer');
-      expect(classNameInput).toBeInTheDocument();
-      // Default class_name from the store EMPTY_SPEC is 'Answer'
-      expect(classNameInput).toHaveValue('Answer');
+      await waitFor(() => {
+        expect(screen.getByText('Fields (0)')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByPlaceholderText('MyAnswer')).not.toBeInTheDocument();
     });
   });
 
@@ -426,52 +427,6 @@ describe('TemplateBuilder integration', () => {
   });
 
   // -----------------------------------------------------------------------
-  // 6. Code preview section is present
-  // -----------------------------------------------------------------------
-  describe('code preview section', () => {
-    it('renders the Generated Code toggle button', async () => {
-      render(<TemplateBuilder code="" onChange={vi.fn()} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Generated Code')).toBeInTheDocument();
-      });
-    });
-
-    it('expands code preview when toggle is clicked', async () => {
-      const user = userEvent.setup();
-
-      // Setup fetch to return code on generate
-      vi.mocked(global.fetch).mockImplementation((input: RequestInfo | URL) => {
-        const url = typeof input === 'string' ? input : input.toString();
-        if (url.includes('/parse')) return Promise.resolve(makeParseResponse());
-        if (url.includes('/primitives')) return Promise.resolve(makePrimitivesResponse());
-        if (url.includes('/generate'))
-          return Promise.resolve(makeGenerateResponse('class MyAnswer(BaseAnswer):\n    result: str'));
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) } as unknown as Response);
-      });
-
-      render(<TemplateBuilder code="" onChange={vi.fn()} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Generated Code')).toBeInTheDocument();
-      });
-
-      // Click the toggle to expand
-      await user.click(screen.getByText('Generated Code'));
-
-      // When the panel opens with no generated code yet (isDirty = false), it shows the
-      // "No code generated yet" message. We verify the panel expanded.
-      await waitFor(() => {
-        const noCodeMessage = screen.queryByText(/No code generated yet/);
-        const generatingMessage = screen.queryByText(/Generating code/);
-        const codeContent = screen.queryByText(/class MyAnswer/);
-        // At least one of these should be visible, confirming the panel opened
-        expect(noCodeMessage || generatingMessage || codeContent).toBeTruthy();
-      });
-    });
-  });
-
-  // -----------------------------------------------------------------------
   // Additional integration scenarios
   // -----------------------------------------------------------------------
   describe('optional props', () => {
@@ -553,9 +508,6 @@ describe('TemplateBuilder integration', () => {
         expect(screen.getByText('Fields (1)')).toBeInTheDocument();
         expect(screen.getByText('gene_name')).toBeInTheDocument();
       });
-
-      // Class name input should reflect the parsed class name
-      expect(screen.getByPlaceholderText('MyAnswer')).toHaveValue('GeneAnswer');
     });
   });
 
