@@ -75,3 +75,34 @@ export const DEFAULT_PRIMITIVES: Record<string, VerificationPrimitive> = {
   literal: { type: 'LiteralMatch' },
   date: { type: 'DateMatch' },
 };
+
+/** Template classification mode based on field composition. */
+export type TemplateMode = 'verified' | 'classic' | 'mixed' | 'unknown';
+
+/** Result of parsing template source code into a spec. */
+export interface TemplateParseResult {
+  success: boolean;
+  mode: TemplateMode;
+  spec: TemplateSpec | null;
+  error: string | null;
+}
+
+/** Result of validating generated template code. */
+export interface TemplateValidateResult {
+  success: boolean;
+  valid: boolean;
+  errors: string[];
+  ground_truth_check: boolean | null;
+  verify_check: boolean | null;
+}
+
+/** Result of test-running template against a sample response. */
+export interface TemplateTestResult {
+  success: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  parsed_fields: Record<string, any> | null;
+  verify_result: boolean | null;
+  verify_granular: number | null;
+  field_results: Record<string, boolean> | null;
+  error: string | null;
+}
