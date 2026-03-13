@@ -159,6 +159,9 @@ export const useTemplateBuilderStore = create<TemplateBuilderState>((set, get) =
       isDirty: false,
       generatedCode: null,
       lastError: null,
+      isLoading: false,
+      mode: 'verified',
+      availablePrimitives: [],
     }),
 
   // API actions
