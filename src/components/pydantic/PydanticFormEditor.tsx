@@ -76,9 +76,9 @@ export const PydanticFormEditor = forwardRef<PydanticFormEditorRef, PydanticForm
         if (isAutoGenerateMethods) {
           const methods: PydanticMethod[] = [];
 
-          // Generate model_post_init
+          // Generate ground_truth
           methods.push({
-            name: 'model_post_init',
+            name: 'ground_truth',
             code: generateModelPostInit(
               newClassDef.fields,
               newClassDef.correctValuePattern || defaultCorrectValuePattern

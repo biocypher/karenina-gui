@@ -36,7 +36,7 @@ These features work together to ensure that even the largest benchmarks remain o
 
 ## Editing Templates
 
-The editor is the heart of the curator. It offers two complementary modes. In the **code editor**, templates are displayed as Python classes with syntax highlighting, folding, indentation, and real-time validation. This mode is ideal when you want full control over the logic, such as the `verify` function or the `model_post_init` method. For those who prefer a more visual workflow, the **form editor** represents the same template as a collection of editable fields, where types, descriptions, and default values can be modified without touching the code. Any changes made in one mode are instantly reflected in the other.
+The editor is the heart of the curator. It offers two complementary modes. In the **code editor**, templates are displayed as Python classes with syntax highlighting, folding, indentation, and real-time validation. This mode is ideal when you want full control over the logic, such as the `verify` function or the `ground_truth` method. For those who prefer a more visual workflow, the **form editor** represents the same template as a collection of editable fields, where types, descriptions, and default values can be modified without touching the code. Any changes made in one mode are instantly reflected in the other.
 
 To support careful revision, the editor also includes a **diff view** for comparing the current version against the original or the last saved checkpoint, with clear highlighting of additions and deletions. Automatic syntax and structural checks ensure that code remains valid, while error messages provide guidance for corrections. Unsaved changes are clearly flagged, so you are never at risk of losing progress when navigating away.
 
@@ -44,7 +44,7 @@ For complex work, you can expand the editor to full screen, where all features r
 
 ## Understanding Template Structure
 
-Every curated template follows a standardized Pydantic structure. It defines fields that describe the components of a valid answer, implements a `model_post_init` method to record the correct values, and provides a `verify` function that checks whether candidate answers match expectations. This structure guarantees consistency across benchmarks while leaving room for complex verification logic where needed.
+Every curated template follows a standardized Pydantic structure. It defines fields that describe the components of a valid answer, implements a `ground_truth` method to record the correct values, and provides a `verify` function that checks whether candidate answers match expectations. This structure guarantees consistency across benchmarks while leaving room for complex verification logic where needed.
 
 ## Managing Metadata
 

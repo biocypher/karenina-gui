@@ -9,6 +9,7 @@ export interface CheckpointItem {
   // Original question data
   question: string;
   raw_answer: string;
+  answer_notes?: string;
   original_answer_template: string;
 
   // Progress data
@@ -95,16 +96,16 @@ export interface SchemaOrgRating {
   bestRating: number;
   worstRating: number;
   additionalType:
-    | 'GlobalRubricTrait'
-    | 'QuestionSpecificRubricTrait'
-    | 'GlobalLLMRubricTrait' // For literal kind traits
-    | 'QuestionSpecificLLMRubricTrait' // For literal kind traits
-    | 'GlobalRegexTrait'
-    | 'QuestionSpecificRegexTrait'
-    | 'GlobalCallableTrait'
-    | 'QuestionSpecificCallableTrait'
-    | 'GlobalMetricRubricTrait'
-    | 'QuestionSpecificMetricRubricTrait';
+    | 'karenina:GlobalRubricTrait'
+    | 'karenina:QuestionSpecificRubricTrait'
+    | 'karenina:GlobalLLMRubricTrait' // For literal kind traits
+    | 'karenina:QuestionSpecificLLMRubricTrait' // For literal kind traits
+    | 'karenina:GlobalRegexTrait'
+    | 'karenina:QuestionSpecificRegexTrait'
+    | 'karenina:GlobalCallableTrait'
+    | 'karenina:QuestionSpecificCallableTrait'
+    | 'karenina:GlobalMetricRubricTrait'
+    | 'karenina:QuestionSpecificMetricRubricTrait';
   ratingExplanation?: string;
   // Deep Judgment configuration (for LLM traits only)
   deep_judgment_enabled?: boolean;
@@ -146,6 +147,7 @@ export interface SchemaOrgQuestion {
   hasPart: SchemaOrgSoftwareSourceCode; // Pydantic template
   rating?: SchemaOrgRating[]; // Rubric trait evaluations
   additionalProperty?: SchemaOrgPropertyValue[]; // metadata like finished, original_template
+  keywords?: string[];
 }
 
 export interface SchemaOrgDataFeedItem {
@@ -154,7 +156,6 @@ export interface SchemaOrgDataFeedItem {
   dateCreated?: string;
   dateModified: string; // last_modified from v2.0
   item: SchemaOrgQuestion;
-  keywords?: string[];
 }
 
 export interface SchemaOrgDataFeed extends JsonLdContext {

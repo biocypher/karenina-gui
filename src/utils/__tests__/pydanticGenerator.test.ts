@@ -43,6 +43,7 @@ describe('pydanticGenerator', () => {
       expect(code).toContain('class Answer(BaseAnswer):');
       expect(code).toContain('answer: bool = Field(');
       expect(code).toContain('description="Answer contains whether rofecoxib is withdrawn - true or false"');
+      // The method code is passed through as-is from the classDef
       expect(code).toContain('def model_post_init(self, __context):');
       expect(code).toContain('def verify(self) -> bool:');
     });
@@ -214,7 +215,7 @@ describe('pydanticGenerator', () => {
   });
 
   describe('generateModelPostInit', () => {
-    it('should generate for single field', () => {
+    it('should generate for single field with ground_truth style', () => {
       const fields: PydanticFieldDefinition[] = [
         {
           name: 'answer',
@@ -226,11 +227,12 @@ describe('pydanticGenerator', () => {
 
       const method = generateModelPostInit(fields);
 
-      expect(method).toContain('def model_post_init(self, __context):');
+      expect(method).toContain('def ground_truth(self):');
+      expect(method).not.toContain('__context');
       expect(method).toContain('self.correct = True');
     });
 
-    it('should generate dict for multiple fields', () => {
+    it('should generate dict for multiple fields with ground_truth style', () => {
       const fields: PydanticFieldDefinition[] = [
         { name: 'field1', type: 'str', pythonType: 'str', required: true },
         { name: 'field2', type: 'int', pythonType: 'int', required: true },
@@ -238,6 +240,8 @@ describe('pydanticGenerator', () => {
 
       const method = generateModelPostInit(fields);
 
+      expect(method).toContain('def ground_truth(self):');
+      expect(method).not.toContain('__context');
       expect(method).toContain('self.correct = {');
       expect(method).toContain('"field1": "correct_answer"');
       expect(method).toContain('"field2": 0');

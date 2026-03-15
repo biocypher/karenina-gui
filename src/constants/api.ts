@@ -59,6 +59,13 @@ export const API_ENDPOINTS = {
   CONFIG_ENV_FILE: '/api/v2/config/env-file', // GET, PUT
   CONFIG_DEFAULTS: '/api/v2/config/defaults', // GET, PUT
 
+  // Template Builder endpoints (V2)
+  TEMPLATE_BUILDER_PARSE: '/api/v2/templates/builder/parse',
+  TEMPLATE_BUILDER_GENERATE: '/api/v2/templates/builder/generate',
+  TEMPLATE_BUILDER_VALIDATE: '/api/v2/templates/builder/validate',
+  TEMPLATE_BUILDER_TEST: '/api/v2/templates/builder/test',
+  TEMPLATE_BUILDER_PRIMITIVES: '/api/v2/templates/builder/primitives',
+
   // ADeLe classification endpoints (V2)
   ADELE_TRAITS: '/api/v2/adele/traits', // GET
   ADELE_CLASSIFY: '/api/v2/adele/classify', // POST

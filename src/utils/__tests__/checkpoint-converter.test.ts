@@ -127,7 +127,7 @@ describe('checkpoint-converter', () => {
         description: 'Is the answer factually correct?',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalRubricTrait',
+        additionalType: 'karenina:GlobalRubricTrait',
       });
       // Check additionalProperty contains higher_is_better
       expect(rating.additionalProperty).toContainEqual({
@@ -147,7 +147,7 @@ describe('checkpoint-converter', () => {
         description: 'Does the answer cover all aspects?',
         bestRating: 5,
         worstRating: 1,
-        additionalType: 'QuestionSpecificRubricTrait',
+        additionalType: 'karenina:QuestionSpecificRubricTrait',
       });
       // Check additionalProperty contains higher_is_better
       expect(rating.additionalProperty).toContainEqual({
@@ -161,8 +161,8 @@ describe('checkpoint-converter', () => {
       const globalRating = convertRubricTraitToRating(mockBooleanTrait, 'global');
       const questionRating = convertRubricTraitToRating(mockBooleanTrait, 'question-specific');
 
-      expect(globalRating.additionalType).toBe('GlobalRubricTrait');
-      expect(questionRating.additionalType).toBe('QuestionSpecificRubricTrait');
+      expect(globalRating.additionalType).toBe('karenina:GlobalRubricTrait');
+      expect(questionRating.additionalType).toBe('karenina:QuestionSpecificRubricTrait');
     });
 
     describe('custom score ranges', () => {
@@ -324,7 +324,7 @@ describe('checkpoint-converter', () => {
         description: 'Is the answer correct?',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalRubricTrait',
+        additionalType: 'karenina:GlobalRubricTrait',
       };
 
       const trait = convertRatingToRubricTrait(rating);
@@ -345,7 +345,7 @@ describe('checkpoint-converter', () => {
         description: 'Quality of the answer',
         bestRating: 5,
         worstRating: 1,
-        additionalType: 'QuestionSpecificRubricTrait',
+        additionalType: 'karenina:QuestionSpecificRubricTrait',
       };
 
       const trait = convertRatingToRubricTrait(rating);
@@ -369,7 +369,7 @@ describe('checkpoint-converter', () => {
           description: 'Overall quality',
           bestRating: 10,
           worstRating: 0,
-          additionalType: 'GlobalRubricTrait',
+          additionalType: 'karenina:GlobalRubricTrait',
         };
 
         const trait = convertRatingToRubricTrait(rating);
@@ -391,7 +391,7 @@ describe('checkpoint-converter', () => {
           description: 'How concise is the answer',
           bestRating: 3,
           worstRating: 1,
-          additionalType: 'GlobalRubricTrait',
+          additionalType: 'karenina:GlobalRubricTrait',
         };
 
         const trait = convertRatingToRubricTrait(rating);
@@ -413,7 +413,7 @@ describe('checkpoint-converter', () => {
           description: 'Score with negative values',
           bestRating: 10,
           worstRating: -10,
-          additionalType: 'GlobalRubricTrait',
+          additionalType: 'karenina:GlobalRubricTrait',
         };
 
         const trait = convertRatingToRubricTrait(rating);
@@ -442,7 +442,7 @@ describe('checkpoint-converter', () => {
           name: '',
           bestRating: 5,
           worstRating: 1,
-          additionalType: 'GlobalRubricTrait',
+          additionalType: 'karenina:GlobalRubricTrait',
         } as SchemaOrgRating;
 
         expect(() => convertRatingToRubricTrait(rating)).toThrow(
@@ -456,7 +456,7 @@ describe('checkpoint-converter', () => {
           name: 'Test',
           bestRating: 'five' as unknown as number,
           worstRating: 1,
-          additionalType: 'GlobalRubricTrait',
+          additionalType: 'karenina:GlobalRubricTrait',
         } as SchemaOrgRating;
 
         expect(() => convertRatingToRubricTrait(rating)).toThrow(
@@ -470,7 +470,7 @@ describe('checkpoint-converter', () => {
           name: 'Invalid Range',
           bestRating: 3,
           worstRating: 5,
-          additionalType: 'GlobalRubricTrait',
+          additionalType: 'karenina:GlobalRubricTrait',
         };
 
         expect(() => convertRatingToRubricTrait(rating)).toThrow(
@@ -484,7 +484,7 @@ describe('checkpoint-converter', () => {
           name: 'Equal Range',
           bestRating: 5,
           worstRating: 5,
-          additionalType: 'GlobalRubricTrait',
+          additionalType: 'karenina:GlobalRubricTrait',
         };
 
         expect(() => convertRatingToRubricTrait(rating)).toThrow(
@@ -548,7 +548,7 @@ describe('checkpoint-converter', () => {
       const geoAccuracyRating = question.rating?.find((r) => r.name === 'Geographic Accuracy');
       expect(geoAccuracyRating).toBeDefined();
       expect(geoAccuracyRating?.['@type']).toBe('Rating');
-      expect(geoAccuracyRating?.additionalType).toBe('QuestionSpecificRubricTrait');
+      expect(geoAccuracyRating?.additionalType).toBe('karenina:QuestionSpecificRubricTrait');
 
       // Global rubrics should now be at Dataset level
       expect(jsonLdResult.rating).toBeDefined();
@@ -559,7 +559,7 @@ describe('checkpoint-converter', () => {
       expect(accuracyRating?.['@type']).toBe('Rating');
       expect(accuracyRating?.bestRating).toBe(1);
       expect(accuracyRating?.worstRating).toBe(0);
-      expect(accuracyRating?.additionalType).toBe('GlobalRubricTrait');
+      expect(accuracyRating?.additionalType).toBe('karenina:GlobalRubricTrait');
     });
 
     it('should preserve metadata in additionalProperty', () => {
@@ -579,9 +579,9 @@ describe('checkpoint-converter', () => {
       const completenessRating = jsonLdResult.rating?.find((r) => r.name === 'Completeness');
 
       expect(accuracyRating).toBeDefined();
-      expect(accuracyRating?.additionalType).toBe('GlobalRubricTrait');
+      expect(accuracyRating?.additionalType).toBe('karenina:GlobalRubricTrait');
       expect(completenessRating).toBeDefined();
-      expect(completenessRating?.additionalType).toBe('GlobalRubricTrait');
+      expect(completenessRating?.additionalType).toBe('karenina:GlobalRubricTrait');
 
       // Verify the old JSON string property is no longer present
       const globalRubricProp = jsonLdResult.additionalProperty?.find((p) => p.name === 'global_rubric_traits');
@@ -708,7 +708,7 @@ describe('checkpoint-converter', () => {
       // Note: The validator validates question-level ratings, not global ratings
       const questionRating = checkpoint.dataFeedElement[0].item.rating;
       if (questionRating && questionRating[0]) {
-        questionRating[0].additionalType = 'InvalidType' as 'GlobalRubricTrait';
+        questionRating[0].additionalType = 'InvalidType' as 'karenina:GlobalRubricTrait';
         expect(() => validateJsonLdCheckpoint(checkpoint)).toThrow(CheckpointConversionError);
       } else {
         // If no question ratings exist, this test passes by default
@@ -1153,14 +1153,15 @@ describe('checkpoint-converter', () => {
       });
 
       const dataFeedItem = jsonLd.dataFeedElement[0];
-      expect(dataFeedItem.keywords).toEqual(['machine-learning', 'artificial-intelligence', 'computer-science']);
+      expect(dataFeedItem.item.keywords).toEqual(['machine-learning', 'artificial-intelligence', 'computer-science']);
     });
 
     it('should preserve keywords when converting JSON-LD to v2', () => {
       const jsonLdWithKeywords: JsonLdCheckpoint = {
         '@context': {
           '@version': 1.1,
-          '@vocab': 'http://schema.org/',
+          '@vocab': 'https://schema.org/',
+          karenina: 'urn:karenina:vocab:',
           dataFeedElement: { '@id': 'dataFeedElement', '@container': '@set' },
           keywords: { '@id': 'keywords', '@container': '@set' },
         },
@@ -1241,7 +1242,7 @@ describe('checkpoint-converter', () => {
       });
 
       const dataFeedItem = jsonLd.dataFeedElement[0];
-      expect(dataFeedItem.keywords).toEqual([]);
+      expect(dataFeedItem.item.keywords).toEqual([]);
     });
 
     it('should handle undefined keywords', () => {
@@ -1267,7 +1268,7 @@ describe('checkpoint-converter', () => {
       });
 
       const dataFeedItem = jsonLd.dataFeedElement[0];
-      expect(dataFeedItem.keywords).toBeUndefined();
+      expect(dataFeedItem.item.keywords).toBeUndefined();
     });
 
     it('should round-trip keywords correctly', () => {
@@ -1312,7 +1313,7 @@ describe('checkpoint-converter', () => {
         description: 'Should not contain uncertainty markers',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalRegexTrait',
+        additionalType: 'karenina:GlobalRegexTrait',
         additionalProperty: [
           { '@type': 'PropertyValue', name: 'pattern', value: '\\b(might|possibly|maybe)\\b' },
           { '@type': 'PropertyValue', name: 'case_sensitive', value: false },
@@ -1335,7 +1336,7 @@ describe('checkpoint-converter', () => {
         name: 'Test Regex',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalRegexTrait',
+        additionalType: 'karenina:GlobalRegexTrait',
         additionalProperty: [{ '@type': 'PropertyValue', name: 'pattern', value: 'test' }],
       };
 
@@ -1351,7 +1352,7 @@ describe('checkpoint-converter', () => {
         name: 'Invalid Regex',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalRegexTrait',
+        additionalType: 'karenina:GlobalRegexTrait',
         additionalProperty: [],
       };
 
@@ -1368,7 +1369,7 @@ describe('checkpoint-converter', () => {
         description: 'Checks for citation markers',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalCallableTrait',
+        additionalType: 'karenina:GlobalCallableTrait',
         additionalProperty: [
           { '@type': 'PropertyValue', name: 'callable_code', value: 'base64encodedcode' },
           { '@type': 'PropertyValue', name: 'kind', value: 'boolean' },
@@ -1392,7 +1393,7 @@ describe('checkpoint-converter', () => {
         description: 'Evaluates response quality',
         bestRating: 5,
         worstRating: 1,
-        additionalType: 'GlobalCallableTrait',
+        additionalType: 'karenina:GlobalCallableTrait',
         additionalProperty: [
           { '@type': 'PropertyValue', name: 'callable_code', value: 'base64encodedcode' },
           { '@type': 'PropertyValue', name: 'kind', value: 'score' },
@@ -1414,7 +1415,7 @@ describe('checkpoint-converter', () => {
         name: 'Invalid Callable',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalCallableTrait',
+        additionalType: 'karenina:GlobalCallableTrait',
         additionalProperty: [{ '@type': 'PropertyValue', name: 'kind', value: 'boolean' }],
       };
 
@@ -1428,7 +1429,7 @@ describe('checkpoint-converter', () => {
         name: 'Invalid Callable',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalCallableTrait',
+        additionalType: 'karenina:GlobalCallableTrait',
         additionalProperty: [
           { '@type': 'PropertyValue', name: 'callable_code', value: 'code' },
           { '@type': 'PropertyValue', name: 'kind', value: 'invalid' },

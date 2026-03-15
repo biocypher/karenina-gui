@@ -33,6 +33,7 @@ export interface MetadataColumnSettings {
   author_email_column?: string;
   author_affiliation_column?: string;
   url_column?: string;
+  answer_notes_column?: string;
 }
 
 // Define the template store state interface

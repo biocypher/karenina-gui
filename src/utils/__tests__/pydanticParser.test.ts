@@ -162,6 +162,52 @@ describe('pydanticParser', () => {
       expect(classDef.fields[1].defaultValue).toBe(null);
     });
 
+    it('should parse a class using ground_truth(self) style', () => {
+      const code = `class Answer(BaseAnswer):
+    target: str = Field(description="The identified drug target")
+
+    def ground_truth(self):
+        self.correct = {"target": "BCL2"}
+
+    def verify(self) -> bool:
+        return self.target == self.correct["target"]`;
+
+      const result = parsePydanticClass(code);
+
+      expect(result.success).toBe(true);
+      expect(result.classDefinition).toBeDefined();
+
+      const classDef = result.classDefinition!;
+      expect(classDef.className).toBe('Answer');
+      expect(classDef.fields).toHaveLength(1);
+      expect(classDef.fields[0].name).toBe('target');
+      expect(classDef.fields[0].correctValue).toBe('BCL2');
+
+      expect(classDef.methods.map((m) => m.name)).toContain('ground_truth');
+      expect(classDef.methods.map((m) => m.name)).toContain('verify');
+    });
+
+    it('should extract correct values from ground_truth method with multiple fields', () => {
+      const code = `class Answer(BaseAnswer):
+    phase: str = Field(description="Trial phase")
+    status: str = Field(description="Trial status")
+
+    def ground_truth(self):
+        self.correct = {"phase": "Phase II", "status": "Completed"}
+
+    def verify(self) -> bool:
+        return self.phase == self.correct["phase"] and self.status == self.correct["status"]`;
+
+      const result = parsePydanticClass(code);
+
+      expect(result.success).toBe(true);
+      const classDef = result.classDefinition!;
+
+      expect(classDef.fields).toHaveLength(2);
+      expect(classDef.fields[0].correctValue).toBe('Phase II');
+      expect(classDef.fields[1].correctValue).toBe('Completed');
+    });
+
     it('should handle parsing errors gracefully', () => {
       const invalidCode = `not a valid class`;
 
@@ -174,7 +220,30 @@ describe('pydanticParser', () => {
   });
 
   describe('validatePydanticClass', () => {
-    it('should validate a correct class definition', () => {
+    it('should validate a correct class definition with ground_truth', () => {
+      const classDef = {
+        className: 'Answer',
+        baseClass: 'BaseAnswer',
+        imports: [],
+        fields: [
+          {
+            name: 'answer',
+            type: 'bool' as const,
+            pythonType: 'bool',
+            required: true,
+          },
+        ],
+        methods: [
+          { name: 'ground_truth', code: 'def ground_truth(self): pass' },
+          { name: 'verify', code: 'def verify(self) -> bool: pass' },
+        ],
+      };
+
+      const errors = validatePydanticClass(classDef);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should validate a correct class definition with model_post_init', () => {
       const classDef = {
         className: 'Answer',
         baseClass: 'BaseAnswer',
@@ -217,7 +286,7 @@ describe('pydanticParser', () => {
           },
         ],
         methods: [
-          { name: 'model_post_init', code: 'def model_post_init(self, __context): pass' },
+          { name: 'ground_truth', code: 'def ground_truth(self): pass' },
           { name: 'verify', code: 'def verify(self) -> bool: pass' },
         ],
       };
@@ -240,7 +309,7 @@ describe('pydanticParser', () => {
           },
         ],
         methods: [
-          { name: 'model_post_init', code: 'def model_post_init(self, __context): pass' },
+          { name: 'ground_truth', code: 'def ground_truth(self): pass' },
           { name: 'verify', code: 'def verify(self) -> bool: pass' },
         ],
       };
@@ -269,7 +338,7 @@ describe('pydanticParser', () => {
           },
         ],
         methods: [
-          { name: 'model_post_init', code: 'def model_post_init(self, __context): pass' },
+          { name: 'ground_truth', code: 'def ground_truth(self): pass' },
           { name: 'verify', code: 'def verify(self) -> bool: pass' },
         ],
       };
@@ -293,7 +362,7 @@ describe('pydanticParser', () => {
           },
         ],
         methods: [
-          { name: 'model_post_init', code: 'def model_post_init(self, __context): pass' },
+          { name: 'ground_truth', code: 'def ground_truth(self): pass' },
           { name: 'verify', code: 'def verify(self) -> bool: pass' },
         ],
       };

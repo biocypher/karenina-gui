@@ -670,6 +670,19 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
               </div>
             </div>
 
+            {/* Answer Notes */}
+            {selectedQuestion?.answer_notes && (
+              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  Answer Notes
+                </h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+                  {selectedQuestion.answer_notes}
+                </p>
+              </div>
+            )}
+
             {/* Status and Metadata */}
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
               <div className="mb-4">

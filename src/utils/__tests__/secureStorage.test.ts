@@ -274,8 +274,9 @@ describe('STORAGE_KEYS constant', () => {
   });
 
   it('should have correct key values for all storage keys', () => {
-    expect(Object.keys(STORAGE_KEYS)).toHaveLength(1);
+    expect(Object.keys(STORAGE_KEYS)).toHaveLength(2);
     expect(STORAGE_KEYS.OPENAI_ENDPOINT_API_KEY).toBe('openai_endpoint_api_key');
+    expect(STORAGE_KEYS.ANTHROPIC_API_KEY).toBe('anthropic_api_key');
   });
 });
 
