@@ -8,6 +8,7 @@ import {
   processParsingInterfaceSwitch,
   type InterfaceSwitchConfig,
 } from '../utils/modelInterfaceSwitcher';
+import { sanitizeModelConfig } from '../utils/modelConfig';
 
 export interface BenchmarkConfiguration {
   answeringModels: ModelConfiguration[];
@@ -205,28 +206,59 @@ export const useBenchmarkConfiguration = () => {
   };
 
   // Get configuration for API calls
-  const getVerificationConfig = () => ({
-    answering_models: answeringModels,
-    parsing_models: parsingModels,
-    replicate_count: replicateCount,
-    rubric_enabled: rubricEnabled,
-    rubric_evaluation_strategy: rubricEvaluationStrategy,
-    evaluation_mode: evaluationMode,
-    abstention_enabled: abstentionEnabled,
-    sufficiency_enabled: sufficiencyEnabled,
-    deep_judgment_enabled: deepJudgmentTemplateEnabled,
-    deep_judgment_search_enabled: deepJudgmentSearchEnabled,
-    deep_judgment_rubric_mode: deepJudgmentRubricEnabled ? deepJudgmentRubricMode : 'disabled',
-    deep_judgment_rubric_global_excerpts: deepJudgmentRubricExtractExcerpts,
-    few_shot_enabled: fewShotEnabled,
-    few_shot_mode: fewShotMode,
-    few_shot_k: fewShotK,
-  });
+  // Only includes values explicitly set in GUI - omitted values let server use env var defaults
+  const getVerificationConfig = () => {
+    // Sanitize models to strip GUI-only fields (e.g. mcp_validated_servers)
+    const sanitizedAnsweringModels = answeringModels.map(sanitizeModelConfig);
+    const sanitizedParsingModels = parsingModels.map(sanitizeModelConfig);
 
-  // Get async configuration for API calls
+    // Extract trace settings from answering models (these are top-level VerificationConfig fields)
+    const mcpModel = answeringModels.find((m) => m.mcp_urls_dict && Object.keys(m.mcp_urls_dict).length > 0);
+
+    const config: Record<string, unknown> = {
+      // Required fields - always sent
+      answering_models: sanitizedAnsweringModels,
+      parsing_models: sanitizedParsingModels,
+      replicate_count: replicateCount,
+      evaluation_mode: evaluationMode,
+
+      // Feature flags - always sent (explicit user choices)
+      rubric_enabled: rubricEnabled,
+      rubric_evaluation_strategy: rubricEvaluationStrategy,
+      abstention_enabled: abstentionEnabled,
+      sufficiency_enabled: sufficiencyEnabled,
+      deep_judgment_enabled: deepJudgmentTemplateEnabled,
+      deep_judgment_search_enabled: deepJudgmentSearchEnabled,
+      deep_judgment_rubric_mode: deepJudgmentRubricEnabled ? deepJudgmentRubricMode : 'disabled',
+      deep_judgment_rubric_global_excerpts: deepJudgmentRubricExtractExcerpts,
+      few_shot_enabled: fewShotEnabled,
+      few_shot_mode: fewShotMode,
+      few_shot_k: fewShotK,
+    };
+
+    // Trace input settings: only include if an MCP model has them configured
+    if (mcpModel?.use_full_trace_for_template !== undefined) {
+      config.use_full_trace_for_template = mcpModel.use_full_trace_for_template;
+    }
+    if (mcpModel?.use_full_trace_for_rubric !== undefined) {
+      config.use_full_trace_for_rubric = mcpModel.use_full_trace_for_rubric;
+    }
+
+    // Async execution settings - only include if explicitly configured
+    // Otherwise server uses KARENINA_ASYNC_ENABLED / KARENINA_ASYNC_MAX_WORKERS env vars
+    if (savedAsyncEnabled !== null && savedAsyncEnabled !== undefined) {
+      config.async_enabled = savedAsyncEnabled;
+    }
+    if (savedAsyncMaxWorkers !== null && savedAsyncMaxWorkers !== undefined) {
+      config.async_max_workers = savedAsyncMaxWorkers;
+    }
+
+    return config;
+  };
+
+  // Get async configuration for API calls (kept for backwards compatibility)
   const getAsyncConfig = () => ({
     enabled: savedAsyncEnabled,
-    chunk_size: savedAsyncChunkSize,
     max_workers: savedAsyncMaxWorkers,
   });
 

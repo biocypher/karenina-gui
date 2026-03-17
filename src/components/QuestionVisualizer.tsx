@@ -285,6 +285,16 @@ export const QuestionVisualizer: React.FC<QuestionVisualizerProps> = ({ question
                         </div>
                       </div>
 
+                      {/* Answer Notes */}
+                      {question.answer_notes && (
+                        <div>
+                          <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Answer Notes</span>
+                          <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                            {question.answer_notes}
+                          </p>
+                        </div>
+                      )}
+
                       {/* Metadata Section */}
                       {question.metadata && (
                         <div>

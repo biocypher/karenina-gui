@@ -519,7 +519,7 @@ export const FieldEditor = forwardRef<FieldEditorRef, FieldEditorProps>(
               <label className="block text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-3">
                 Correct Answer Value
                 <span className="ml-2 text-xs font-normal text-emerald-600 dark:text-emerald-400">
-                  (This value will be used in model_post_init for verification)
+                  (This value will be used in ground_truth for verification)
                 </span>
               </label>
               {renderCorrectValueInput()}

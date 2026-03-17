@@ -210,7 +210,7 @@ describe('pydanticValidator', () => {
         },
       ],
       methods: [
-        { name: 'model_post_init', code: 'def model_post_init(self, __context): pass' },
+        { name: 'ground_truth', code: 'def ground_truth(self): pass' },
         { name: 'verify', code: 'def verify(self) -> bool: pass' },
       ],
     };
@@ -228,8 +228,21 @@ describe('pydanticValidator', () => {
 
       const result = validatePydanticClassDefinition(classWithoutMethods);
       expect(result.isValid).toBe(false);
-      expect(result.errors.some((e) => e.message.includes('model_post_init'))).toBe(true);
+      expect(result.errors.some((e) => e.message.includes('ground_truth'))).toBe(true);
       expect(result.errors.some((e) => e.message.includes('verify'))).toBe(true);
+    });
+
+    it('should accept model_post_init as alternative to ground_truth', () => {
+      const classWithModelPostInit: PydanticClassDefinition = {
+        ...validClass,
+        methods: [
+          { name: 'model_post_init', code: 'def model_post_init(self, __context): pass' },
+          { name: 'verify', code: 'def verify(self) -> bool: pass' },
+        ],
+      };
+
+      const result = validatePydanticClassDefinition(classWithModelPostInit);
+      expect(result.isValid).toBe(true);
     });
 
     it('should warn about missing verify_granular for multiple fields', () => {

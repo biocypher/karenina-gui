@@ -202,6 +202,7 @@ describe('QuestionExtractor - Advanced Extraction', () => {
           author_email_column: 'Author_Email',
           author_affiliation_column: null,
           url_column: 'URL',
+          answer_notes_column: null,
           keywords_columns: [{ column: 'Keywords', separator: ',' }],
         }),
       });
@@ -264,6 +265,7 @@ describe('QuestionExtractor - Advanced Extraction', () => {
           author_email_column: null,
           author_affiliation_column: null,
           url_column: null,
+          answer_notes_column: null,
           keywords_columns: null,
         }),
       });

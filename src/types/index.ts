@@ -44,3 +44,17 @@ export * from './trace';
 
 // Export types
 export * from './export';
+
+// Template builder types
+export type {
+  TemplateField,
+  TemplateSpec,
+  VerificationPrimitive,
+  VerifyStrategy,
+  PrimitiveInfo,
+  TemplateMode,
+  TemplateParseResult,
+  TemplateValidateResult,
+  TemplateTestResult,
+} from './templateBuilder';
+export { DEFAULT_FIELD, DEFAULT_PRIMITIVES } from './templateBuilder';

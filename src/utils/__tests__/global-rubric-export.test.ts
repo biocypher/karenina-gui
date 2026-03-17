@@ -48,7 +48,7 @@ describe('Global Rubric Export', () => {
         description: 'Is the answer factually correct?',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'GlobalRubricTrait',
+        additionalType: 'karenina:GlobalRubricTrait',
       });
       // Check for higher_is_better in additionalProperty
       expect(exportedRating.additionalProperty).toContainEqual({
@@ -84,7 +84,7 @@ describe('Global Rubric Export', () => {
         description: 'How complete is the answer?',
         bestRating: 5,
         worstRating: 1,
-        additionalType: 'GlobalRubricTrait',
+        additionalType: 'karenina:GlobalRubricTrait',
       });
       // Check for higher_is_better in additionalProperty
       expect(exportedRating.additionalProperty).toContainEqual({
@@ -133,7 +133,7 @@ describe('Global Rubric Export', () => {
 
       // Verify all have GlobalRubricTrait type
       jsonLdResult.rating!.forEach((rating) => {
-        expect(rating.additionalType).toBe('GlobalRubricTrait');
+        expect(rating.additionalType).toBe('karenina:GlobalRubricTrait');
       });
     });
   });
@@ -285,14 +285,14 @@ describe('Global Rubric Export', () => {
       expect(jsonLdResult.rating).toBeDefined();
       expect(jsonLdResult.rating).toHaveLength(1);
       expect(jsonLdResult.rating![0].name).toBe('Global Accuracy');
-      expect(jsonLdResult.rating![0].additionalType).toBe('GlobalRubricTrait');
+      expect(jsonLdResult.rating![0].additionalType).toBe('karenina:GlobalRubricTrait');
 
       // Check question-specific rubric is at Question level
       const questionItem = jsonLdResult.dataFeedElement[0];
       expect(questionItem.item.rating).toBeDefined();
       expect(questionItem.item.rating).toHaveLength(1);
       expect(questionItem.item.rating![0].name).toBe('Question Depth');
-      expect(questionItem.item.rating![0].additionalType).toBe('QuestionSpecificRubricTrait');
+      expect(questionItem.item.rating![0].additionalType).toBe('karenina:QuestionSpecificRubricTrait');
     });
   });
 });

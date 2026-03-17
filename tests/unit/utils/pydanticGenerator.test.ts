@@ -226,7 +226,7 @@ describe('pydanticGenerator', () => {
 
       const method = generateModelPostInit(fields);
 
-      expect(method).toContain('def model_post_init(self, __context):');
+      expect(method).toContain('def ground_truth(self):');
       expect(method).toContain('self.correct = True');
     });
 

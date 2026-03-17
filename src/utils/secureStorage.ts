@@ -20,6 +20,7 @@ import { logger } from './logger';
  */
 export const STORAGE_KEYS = {
   OPENAI_ENDPOINT_API_KEY: 'openai_endpoint_api_key',
+  ANTHROPIC_API_KEY: 'anthropic_api_key',
 } as const;
 
 /**
@@ -154,5 +155,37 @@ export const apiKeyStorage = {
    */
   hasEndpointApiKey: (): boolean => {
     return SessionSecureStorage.hasItem(STORAGE_KEYS.OPENAI_ENDPOINT_API_KEY);
+  },
+
+  /**
+   * Store the Anthropic API key (for claude_tool and claude_agent_sdk interfaces)
+   */
+  setAnthropicApiKey: (key: string): void => {
+    if (key && key.trim()) {
+      SessionSecureStorage.setItem(STORAGE_KEYS.ANTHROPIC_API_KEY, key.trim());
+    } else {
+      SessionSecureStorage.removeItem(STORAGE_KEYS.ANTHROPIC_API_KEY);
+    }
+  },
+
+  /**
+   * Get the stored Anthropic API key
+   */
+  getAnthropicApiKey: (): string => {
+    return SessionSecureStorage.getItem<string>(STORAGE_KEYS.ANTHROPIC_API_KEY) || '';
+  },
+
+  /**
+   * Remove the stored Anthropic API key
+   */
+  removeAnthropicApiKey: (): void => {
+    SessionSecureStorage.removeItem(STORAGE_KEYS.ANTHROPIC_API_KEY);
+  },
+
+  /**
+   * Check if Anthropic API key is stored
+   */
+  hasAnthropicApiKey: (): boolean => {
+    return SessionSecureStorage.hasItem(STORAGE_KEYS.ANTHROPIC_API_KEY);
   },
 };

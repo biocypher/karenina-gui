@@ -6,6 +6,8 @@ import 'prismjs/components/prism-python';
 import 'prismjs/themes/prism-tomorrow.css';
 import { DiffViewer } from './DiffViewer';
 import { PydanticFormEditor, type PydanticFormEditorRef } from './pydantic/PydanticFormEditor';
+import { TemplateBuilder } from './template-builder';
+import type { TemplateMode } from '../types';
 import { logger } from '../utils/logger';
 
 interface CodeEditorProps {
@@ -33,6 +35,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
     const [showDiff, setShowDiff] = useState(false);
     const [diffMode, setDiffMode] = useState<'original' | 'saved'>('original');
     const [editorMode, setEditorMode] = useState<'code' | 'form'>('form');
+    const [templateMode, setTemplateMode] = useState<TemplateMode | null>(null);
+    const [showVisualBuilder, setShowVisualBuilder] = useState(false);
+    const parseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [scrollInfo, setScrollInfo] = useState({
       scrollLeft: 0,
       scrollTop: 0,
@@ -195,6 +200,49 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
       return () => clearTimeout(timer);
     }, [value]);
 
+    // Detect template mode for visual builder routing
+    useEffect(() => {
+      if (!enableFormEditor || !value?.trim()) {
+        setTemplateMode(null);
+        setShowVisualBuilder(false);
+        return;
+      }
+
+      // Debounce the parse call
+      if (parseTimerRef.current) {
+        clearTimeout(parseTimerRef.current);
+      }
+
+      parseTimerRef.current = setTimeout(async () => {
+        try {
+          const response = await fetch('/api/v2/templates/builder/parse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: value }),
+          });
+          const data = await response.json();
+          const mode = data.mode as TemplateMode;
+          setTemplateMode(mode);
+
+          // Auto-show visual builder for verified/mixed templates in form mode
+          if ((mode === 'verified' || mode === 'mixed') && editorMode === 'form') {
+            setShowVisualBuilder(true);
+          } else {
+            setShowVisualBuilder(false);
+          }
+        } catch {
+          setTemplateMode(null);
+          setShowVisualBuilder(false);
+        }
+      }, 300);
+
+      return () => {
+        if (parseTimerRef.current) {
+          clearTimeout(parseTimerRef.current);
+        }
+      };
+    }, [value, enableFormEditor, editorMode]);
+
     // Determine if diff button should be shown
     const canShowDiff = hasChangesFromOriginal || hasChangesFromSaved;
 
@@ -255,6 +303,36 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
 
     // Form Editor View
     if (enableFormEditor && editorMode === 'form') {
+      // Show TemplateBuilder for verified/mixed templates
+      if (showVisualBuilder && (templateMode === 'verified' || templateMode === 'mixed')) {
+        return (
+          <div className="w-full h-full flex flex-col">
+            {/* Visual Builder Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 border-b border-slate-300 dark:border-slate-600 flex-shrink-0 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setEditorMode('code')}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg"
+                >
+                  <Code className="w-4 h-4" />
+                  Code Editor
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium">
+                  Visual Builder
+                </span>
+              </div>
+            </div>
+            {/* Visual Builder Content */}
+            <div className="flex-1 min-h-0 overflow-auto">
+              <TemplateBuilder code={value} onChange={onChange} onSwitchToCode={() => setEditorMode('code')} />
+            </div>
+          </div>
+        );
+      }
+
+      // PydanticFormEditor for classic/unknown templates
       return (
         <div className="w-full h-full flex flex-col">
           {/* Form Editor Header */}
@@ -267,6 +345,15 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
                 <FileText className="w-4 h-4" />
                 Code Editor
               </button>
+              {templateMode === 'verified' || templateMode === 'mixed' ? (
+                <button
+                  onClick={() => setShowVisualBuilder(true)}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 text-sm font-medium shadow-lg"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Visual Builder
+                </button>
+              ) : null}
 
               {canRevert && (
                 <div className="relative">

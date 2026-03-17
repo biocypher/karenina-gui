@@ -451,7 +451,7 @@ export default function RubricTraitEditor() {
         {/* LLM-based Traits */}
         {(currentRubric.llm_traits || []).map((trait, index) => (
           <RubricLLMTraitCard
-            key={`llm-${trait.name}-${index}`}
+            key={`llm-${index}`}
             trait={trait}
             index={index}
             onTraitChange={handleTraitChange}
@@ -466,7 +466,7 @@ export default function RubricTraitEditor() {
         {/* Regex Traits */}
         {(currentRubric.regex_traits || []).map((trait, index) => (
           <RubricRegexTraitCard
-            key={`regex-${trait.name}-${index}`}
+            key={`regex-${index}`}
             trait={trait}
             index={index}
             onTraitChange={handleRegexTraitChange}
@@ -478,7 +478,7 @@ export default function RubricTraitEditor() {
         {/* Metric (Confusion Matrix) Traits */}
         {(currentRubric.metric_traits || []).map((trait, index) => (
           <RubricMetricTraitCard
-            key={`metric-${trait.name}-${index}`}
+            key={`metric-${index}`}
             trait={trait}
             index={index}
             onTraitChange={handleMetricTraitChange}
@@ -495,7 +495,7 @@ export default function RubricTraitEditor() {
 
         {/* Callable Traits (Read-Only) */}
         {(currentRubric.callable_traits || []).map((trait, index) => (
-          <RubricCallableTraitCard key={`callable-${trait.name}-${index}`} trait={trait} />
+          <RubricCallableTraitCard key={`callable-${index}`} trait={trait} />
         ))}
 
         {/* Add Trait Buttons */}
@@ -603,7 +603,7 @@ export default function RubricTraitEditor() {
             </svg>
             Rubric Summary
           </h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="space-y-3 text-sm">
             <div className="flex items-center">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Total Traits:</span>
               <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">
@@ -613,9 +613,9 @@ export default function RubricTraitEditor() {
                   (currentRubric.metric_traits?.length || 0)}
               </span>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-start">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Types:</span>
-              <div className="ml-2 flex space-x-3">
+              <div className="ml-2 flex flex-wrap gap-x-3 gap-y-1">
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">

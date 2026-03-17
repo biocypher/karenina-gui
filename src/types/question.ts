@@ -7,6 +7,7 @@ export interface Question {
   question: string;
   raw_answer: string;
   answer_template: string;
+  answer_notes?: string;
   metadata?: {
     author?: SchemaOrgPerson;
     url?: string;
