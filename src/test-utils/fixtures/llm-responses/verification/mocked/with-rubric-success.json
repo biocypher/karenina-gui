@@ -88,7 +88,7 @@
           },
           "has_citations": {
             "trait_name": "has_citations",
-            "trait_type": "RegexTrait",
+            "trait_type": "RegexRubricTrait",
             "result": false,
             "reasoning": null,
             "execution_time": 0.001
@@ -184,7 +184,7 @@
           },
           "has_citations": {
             "trait_name": "has_citations",
-            "trait_type": "RegexTrait",
+            "trait_type": "RegexRubricTrait",
             "result": false,
             "reasoning": null,
             "execution_time": 0.001

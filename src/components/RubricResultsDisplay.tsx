@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rubric, LLMRubricTrait, RegexTrait, CallableTrait, MetricRubricTrait } from '../types';
+import { Rubric, LLMRubricTrait, RegexRubricTrait, CallableRubricTrait, MetricRubricTrait } from '../types';
 
 interface RubricResultsDisplayProps {
   rubricResults: Record<string, number | boolean> | undefined;
@@ -13,7 +13,7 @@ interface RubricResultsDisplayProps {
 /**
  * All possible trait types that can be found in a rubric
  */
-type Trait = LLMRubricTrait | RegexTrait | CallableTrait | MetricRubricTrait;
+type Trait = LLMRubricTrait | RegexRubricTrait | CallableRubricTrait | MetricRubricTrait;
 
 /**
  * Trait result info returned by getTraitInfo

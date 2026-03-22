@@ -4,7 +4,7 @@ import { useRubricStore } from '../stores/useRubricStore';
 import { useQuestionStore } from '../stores/useQuestionStore';
 import { useTraitValidation } from '../hooks/useTraitValidation';
 import { useMetricTraits } from '../hooks/useMetricTraits';
-import { RubricTrait, TraitKind, Rubric, RegexTrait, MetricRubricTrait } from '../types';
+import { RubricTrait, TraitKind, Rubric, RegexRubricTrait, MetricRubricTrait } from '../types';
 import { LLMTraitCard } from './rubric/LLMTraitCard';
 import { RegexTraitCard } from './rubric/RegexTraitCard';
 import { MetricTraitCard } from './rubric/MetricTraitCard';
@@ -148,7 +148,7 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
 
       if (newType === 'regex') {
         // Convert to regex trait
-        const convertedTrait: RegexTrait = {
+        const convertedTrait: RegexRubricTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
           pattern: '',
@@ -250,11 +250,11 @@ export default function QuestionRubricEditor({ questionId }: QuestionRubricEdito
     setLastError(null);
   };
 
-  const handleRegexTraitChange = (index: number, field: keyof RegexTrait, value: string | boolean) => {
+  const handleRegexTraitChange = (index: number, field: keyof RegexRubricTrait, value: string | boolean) => {
     if (!questionRubric?.regex_traits || index < 0 || index >= questionRubric.regex_traits.length) return;
 
     const currentTrait = questionRubric.regex_traits[index];
-    const updatedTrait: RegexTrait = { ...currentTrait, [field]: value };
+    const updatedTrait: RegexRubricTrait = { ...currentTrait, [field]: value };
 
     // Check for name conflicts if changing name
     if (field === 'name') {

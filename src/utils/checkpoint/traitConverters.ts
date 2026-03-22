@@ -5,8 +5,8 @@
 
 import type {
   RubricTrait,
-  RegexTrait,
-  CallableTrait,
+  RegexRubricTrait,
+  CallableRubricTrait,
   MetricRubricTrait,
   SchemaOrgRating,
   SchemaOrgPropertyValue,
@@ -197,10 +197,11 @@ export function convertRubricTraitToRating(
  * @returns A Schema.org Rating object
  */
 export function convertRegexTraitToRating(
-  trait: RegexTrait,
+  trait: RegexRubricTrait,
   rubricType: 'global' | 'question-specific'
 ): SchemaOrgRating {
-  const additionalType = rubricType === 'global' ? 'karenina:GlobalRegexTrait' : 'karenina:QuestionSpecificRegexTrait';
+  const additionalType =
+    rubricType === 'global' ? 'karenina:GlobalRegexRubricTrait' : 'karenina:QuestionSpecificRegexRubricTrait';
 
   return {
     '@type': 'Rating' as const,
@@ -238,11 +239,11 @@ export function convertRegexTraitToRating(
  * @returns A Schema.org Rating object
  */
 export function convertCallableTraitToRating(
-  trait: CallableTrait,
+  trait: CallableRubricTrait,
   rubricType: 'global' | 'question-specific'
 ): SchemaOrgRating {
   const additionalType =
-    rubricType === 'global' ? 'karenina:GlobalCallableTrait' : 'karenina:QuestionSpecificCallableTrait';
+    rubricType === 'global' ? 'karenina:GlobalCallableRubricTrait' : 'karenina:QuestionSpecificCallableRubricTrait';
 
   const additionalProperties: SchemaOrgPropertyValue[] = [
     {
@@ -463,7 +464,7 @@ export function convertRatingToRubricTrait(rating: SchemaOrgRating): RubricTrait
  * @param rating - The Rating object to convert
  * @returns A regex trait
  */
-export function convertRatingToRegexTrait(rating: SchemaOrgRating): RegexTrait {
+export function convertRatingToRegexTrait(rating: SchemaOrgRating): RegexRubricTrait {
   // Validate rating object
   if (!rating || typeof rating !== 'object') {
     throw new CheckpointConversionError('Invalid rating object: rating must be a valid object');
@@ -497,7 +498,7 @@ export function convertRatingToRegexTrait(rating: SchemaOrgRating): RegexTrait {
  * @param rating - The Rating object to convert
  * @returns A callable trait
  */
-export function convertRatingToCallableTrait(rating: SchemaOrgRating): CallableTrait {
+export function convertRatingToCallableTrait(rating: SchemaOrgRating): CallableRubricTrait {
   // Validate rating object
   if (!rating || typeof rating !== 'object') {
     throw new CheckpointConversionError('Invalid rating object: rating must be a valid object');

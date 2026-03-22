@@ -100,10 +100,10 @@ export interface SchemaOrgRating {
     | 'karenina:QuestionSpecificRubricTrait'
     | 'karenina:GlobalLLMRubricTrait' // For literal kind traits
     | 'karenina:QuestionSpecificLLMRubricTrait' // For literal kind traits
-    | 'karenina:GlobalRegexTrait'
-    | 'karenina:QuestionSpecificRegexTrait'
-    | 'karenina:GlobalCallableTrait'
-    | 'karenina:QuestionSpecificCallableTrait'
+    | 'karenina:GlobalRegexRubricTrait'
+    | 'karenina:QuestionSpecificRegexRubricTrait'
+    | 'karenina:GlobalCallableRubricTrait'
+    | 'karenina:QuestionSpecificCallableRubricTrait'
     | 'karenina:GlobalMetricRubricTrait'
     | 'karenina:QuestionSpecificMetricRubricTrait';
   ratingExplanation?: string;

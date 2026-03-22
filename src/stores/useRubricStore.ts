@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Rubric, RubricTrait, RegexTrait, MetricRubricTrait, TraitKind } from '../types';
+import { Rubric, RubricTrait, RegexRubricTrait, MetricRubricTrait, TraitKind } from '../types';
 import { logger } from '../utils/logger';
 import { API_ENDPOINTS } from '../constants/api';
 
@@ -28,8 +28,8 @@ interface RubricState {
   changeLLMTraitKind: (index: number, newKind: TraitKind) => void;
 
   // Regex trait actions
-  addRegexTrait: (trait: RegexTrait) => void;
-  updateRegexTrait: (index: number, trait: RegexTrait) => void;
+  addRegexTrait: (trait: RegexRubricTrait) => void;
+  updateRegexTrait: (index: number, trait: RegexRubricTrait) => void;
   removeRegexTrait: (index: number) => void;
 
   // Metric trait actions

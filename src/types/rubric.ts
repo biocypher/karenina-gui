@@ -22,7 +22,7 @@ export interface LLMRubricTrait {
   deep_judgment_search_enabled?: boolean; // Enable search-enhanced hallucination detection (default: false)
 }
 
-export interface RegexTrait {
+export interface RegexRubricTrait {
   name: string;
   description?: string;
   pattern: string; // Regex pattern
@@ -31,7 +31,7 @@ export interface RegexTrait {
   higher_is_better: boolean; // Whether a regex match indicates a positive outcome
 }
 
-export interface CallableTrait {
+export interface CallableRubricTrait {
   name: string;
   description?: string;
   callable_code: string; // Base64-encoded callable code (read-only in GUI)
@@ -54,8 +54,8 @@ export interface MetricRubricTrait {
 
 export interface Rubric {
   llm_traits: LLMRubricTrait[];
-  regex_traits?: RegexTrait[];
-  callable_traits?: CallableTrait[];
+  regex_traits?: RegexRubricTrait[];
+  callable_traits?: CallableRubricTrait[];
   metric_traits?: MetricRubricTrait[];
 }
 
