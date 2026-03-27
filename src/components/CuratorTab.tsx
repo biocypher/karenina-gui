@@ -3,7 +3,6 @@ import {
   ChevronDown,
   Save,
   FileText,
-  Clock,
   Database,
   ChevronLeft,
   ChevronRight,
@@ -11,24 +10,22 @@ import {
   Filter,
   Search,
   Plus,
-  Pencil,
 } from 'lucide-react';
 import { useDatasetStore } from '../stores/useDatasetStore';
 import { useQuestionStore } from '../stores/useQuestionStore';
 import { useRubricStore } from '../stores/useRubricStore';
 import { CodeEditor, type CodeEditorRef } from './CodeEditor';
 import { ExpandedEditor } from './ExpandedEditor';
-import { StatusBadge } from './StatusBadge';
 import { MetadataEditor } from './MetadataEditor';
 import { FewShotExamplesEditor } from './FewShotExamplesEditor';
-import { QuestionActionsPanel } from './QuestionActionsPanel';
 import { AdeleClassificationPanel, AdeleBatchModal } from './adele';
 import { FileManager } from './FileManager';
 import { AddQuestionModal } from './AddQuestionModal';
 import { QuestionContentEditor } from './QuestionContentEditor';
 import QuestionRubricEditor from './QuestionRubricEditor';
+import { StatusMetadataBar } from './StatusMetadataBar';
+import { ContextBar } from './ContextBar';
 import RubricTraitEditor from './RubricTraitEditor';
-import { formatTimestamp } from '../utils/dataLoader';
 import { logger } from '../utils/logger';
 import { CheckpointItem, UnifiedCheckpoint } from '../types';
 import type { ClassificationResult, AdeleClassificationMetadata } from '../types/adele';
@@ -450,6 +447,17 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
   const originalCode = getOriginalCode();
   const savedCode = getSavedCode();
 
+  const unsavedQuestionNumbers = React.useMemo(() => {
+    const questionsWithDrafts = getAllQuestionsWithSessionDrafts();
+    return questionsWithDrafts
+      .map((qId) => {
+        const index = allQuestionIds.indexOf(qId);
+        return index >= 0 ? index + 1 : null;
+      })
+      .filter((num): num is number => num !== null)
+      .sort((a, b) => a - b);
+  }, [getAllQuestionsWithSessionDrafts, allQuestionIds]);
+
   return (
     <>
       {/* Dataset Info Display */}
@@ -624,144 +632,49 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
       </div>
 
       {selectedQuestion && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Left Column - Question Data (1/3 width) */}
-          <div className="space-y-6">
-            {/* Raw Question */}
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                Raw Question
-                <button
-                  onClick={handleOpenQuestionEditor}
-                  className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors"
-                  title="Edit question and answer"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-              </h3>
-              <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
-                <p className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
-                  {selectedQuestion.question}
-                </p>
-              </div>
-            </div>
+        <div className="space-y-4">
+          {/* Panel 1: Status & Metadata Bar */}
+          <StatusMetadataBar
+            finished={checkpointItem?.finished || false}
+            modified={isModified || false}
+            fewShotExamplesCount={checkpointItem?.few_shot_examples?.length || 0}
+            onToggleFinished={handleToggleFinished}
+            onEditMetadata={handleOpenMetadataEditor}
+            onEditFewShotExamples={handleOpenFewShotEditor}
+            lastModified={checkpointItem?.last_modified || null}
+            unsavedQuestionNumbers={unsavedQuestionNumbers}
+          />
 
-            {/* Raw Answer */}
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                Raw Answer
-                <button
-                  onClick={handleOpenQuestionEditor}
-                  className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400 transition-colors"
-                  title="Edit question and answer"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-              </h3>
-              <div className="bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm rounded-xl p-4 border border-slate-100 dark:border-slate-600 shadow-inner">
-                <p
-                  key={`answer-${selectedQuestionId}-${selectedQuestion.raw_answer?.length || 0}`}
-                  className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium"
-                >
-                  {selectedQuestion.raw_answer}
-                </p>
-              </div>
-            </div>
+          {/* Panel 2: Context Bar */}
+          <ContextBar
+            question={selectedQuestion.question}
+            rawAnswer={selectedQuestion.raw_answer}
+            answerNotes={selectedQuestion.answer_notes || null}
+            onEditQuestion={handleOpenQuestionEditor}
+            onDelete={handleDeleteQuestion}
+            onClone={handleCloneQuestion}
+            disabled={!selectedQuestionId}
+          />
 
-            {/* Answer Notes */}
-            {selectedQuestion?.answer_notes && (
-              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                  Answer Notes
-                </h3>
-                <p className="text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-                  {selectedQuestion.answer_notes}
-                </p>
-              </div>
-            )}
-
-            {/* Status and Metadata */}
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Status & Metadata</h3>
-                <StatusBadge
-                  finished={checkpointItem?.finished || false}
-                  modified={isModified || false}
-                  fewShotExamplesCount={checkpointItem?.few_shot_examples?.length || 0}
-                  onToggleFinished={handleToggleFinished}
-                  onEditMetadata={handleOpenMetadataEditor}
-                  onEditFewShotExamples={handleOpenFewShotEditor}
-                />
-              </div>
-
-              {checkpointItem?.last_modified && (
-                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 mt-4 bg-slate-50/50 dark:bg-slate-700/50 rounded-lg p-3">
-                  <Clock className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                  <span className="font-medium">Last modified: {formatTimestamp(checkpointItem.last_modified)}</span>
-                </div>
-              )}
-
-              {/* Unsaved Changes Indicator */}
-              {(() => {
-                const questionsWithDrafts = getAllQuestionsWithSessionDrafts();
-                if (questionsWithDrafts.length === 0) return null;
-
-                const questionNumbers = questionsWithDrafts
-                  .map((qId) => {
-                    const index = allQuestionIds.indexOf(qId);
-                    return index >= 0 ? index + 1 : null;
-                  })
-                  .filter((num): num is number => num !== null)
-                  .sort((a, b) => a - b);
-
-                return (
-                  <div className="flex flex-col gap-2 text-sm text-amber-700 dark:text-amber-400 mt-4 bg-amber-50/80 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200/50 dark:border-amber-700/50">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
-                      Unsaved session changes
-                    </div>
-                    <div className="text-xs text-amber-600 dark:text-amber-500">
-                      Question{questionNumbers.length > 1 ? 's' : ''} with unsaved changes:{' '}
-                      <span className="font-semibold">{questionNumbers.join(', ')}</span>
-                    </div>
-                    <div className="text-xs text-amber-600 dark:text-amber-500">
-                      (Click Save to persist permanently)
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Question Actions Panel */}
-            <QuestionActionsPanel
-              onDelete={handleDeleteQuestion}
-              onClone={handleCloneQuestion}
+          {/* ADeLe Classification (conditional, renders its own card) */}
+          {selectedQuestionId && selectedQuestion && (
+            <AdeleClassificationPanel
+              questionId={selectedQuestionId}
+              questionText={selectedQuestion.question}
+              customMetadata={checkpointItem?.custom_metadata as Record<string, unknown> | undefined}
+              onClassificationUpdate={handleAdeleClassificationUpdate}
               disabled={!selectedQuestionId}
+              onOpenBatchModal={() => setIsAdeleBatchModalOpen(true)}
+              totalQuestionCount={allQuestionIds.length}
             />
+          )}
 
-            {/* ADeLe Classification Panel */}
-            {selectedQuestionId && selectedQuestion && (
-              <AdeleClassificationPanel
-                questionId={selectedQuestionId}
-                questionText={selectedQuestion.question}
-                customMetadata={checkpointItem?.custom_metadata as Record<string, unknown> | undefined}
-                onClassificationUpdate={handleAdeleClassificationUpdate}
-                disabled={!selectedQuestionId}
-                onOpenBatchModal={() => setIsAdeleBatchModalOpen(true)}
-                totalQuestionCount={allQuestionIds.length}
-              />
-            )}
-          </div>
-
-          {/* Right Column - Answer Template Editor (2/3 width) */}
-          <div className="xl:col-span-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
+          {/* Panel 3: Answer Template Editor (full width) */}
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Answer Template</h3>
-                {getAllQuestionsWithSessionDrafts().length > 0 && (
+                {unsavedQuestionNumbers.length > 0 && (
                   <span className="px-2.5 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full animate-pulse" />
                     Unsaved changes
@@ -803,8 +716,8 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
               </div>
             </div>
 
-            {/* Full-height editor */}
-            <div className="h-[600px]">
+            {/* Full-width editor with min-height, auto-expands */}
+            <div className="min-h-[600px]">
               <CodeEditor
                 ref={codeEditorRef}
                 value={currentTemplate}
@@ -823,12 +736,10 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
                 "Show Diff" to compare changes.
               </p>
             </div>
-
-            {/* Question Rubric Editor */}
-            <div className="mt-8">
-              <QuestionRubricEditor questionId={selectedQuestionId} />
-            </div>
           </div>
+
+          {/* Panel 4: Rubric (full width, decoupled) */}
+          <QuestionRubricEditor questionId={selectedQuestionId} />
         </div>
       )}
 
