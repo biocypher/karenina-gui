@@ -22,7 +22,7 @@ const FIELD_TYPES = [
 ] as const;
 
 const INPUT_CLASS =
-  'w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-sm text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none';
+  'w-full px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-base text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none';
 
 export function VerifiedFieldEditor() {
   const selectedFieldIndex = useTemplateBuilderStore((s) => s.selectedFieldIndex);
@@ -65,11 +65,11 @@ export function VerifiedFieldEditor() {
 
   return (
     <div className="space-y-4 p-4">
-      <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Field Properties</h3>
+      <h3 className="text-base font-semibold text-gray-300 uppercase tracking-wider">Field Properties</h3>
 
       {/* Field Name */}
       <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
+        <label className="flex items-center text-sm font-medium text-gray-400 mb-1">
           Name
           <InfoTooltip text="A unique identifier for this field. Use snake_case (e.g., identifies_target, mentions_drug)." />
         </label>
@@ -88,7 +88,7 @@ export function VerifiedFieldEditor() {
 
       {/* Field Type */}
       <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
+        <label className="flex items-center text-sm font-medium text-gray-400 mb-1">
           Type
           <InfoTooltip text="The data type of the value the judge LLM will extract. Determines which verification primitives are available." />
         </label>
@@ -107,22 +107,22 @@ export function VerifiedFieldEditor() {
 
       {/* Description */}
       <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
+        <label className="flex items-center text-sm font-medium text-gray-400 mb-1">
           Description
           <InfoTooltip text="Instructions for the judge LLM explaining what this field should capture. Be specific about edge cases." />
         </label>
         <textarea
           value={field.description}
           onChange={(e) => updateField(selectedFieldIndex, { description: e.target.value })}
-          rows={3}
-          className={`${INPUT_CLASS} resize-none`}
+          rows={12}
+          className={`${INPUT_CLASS}`}
           placeholder="Description for the judge LLM..."
         />
       </div>
 
       {/* Extraction Hint (optional) */}
       <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
+        <label className="flex items-center text-sm font-medium text-gray-400 mb-1">
           Extraction Hint <span className="text-gray-500 ml-1">(optional)</span>
           <InfoTooltip text="Optional post-processing instruction (e.g., 'normalize to uppercase'). Applied after extraction, before verification." />
         </label>
@@ -137,7 +137,7 @@ export function VerifiedFieldEditor() {
 
       {/* Ground Truth */}
       <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
+        <label className="flex items-center text-sm font-medium text-gray-400 mb-1">
           Ground Truth
           <InfoTooltip text="The expected correct value. The extracted field is compared against this using the verification primitive." />
         </label>
@@ -177,7 +177,7 @@ export function VerifiedFieldEditor() {
       {/* Literal Values (only for literal type) */}
       {field.type === 'literal' && (
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1">Allowed Values</label>
+          <label className="block text-sm font-medium text-gray-400 mb-1">Allowed Values</label>
           <input
             type="text"
             value={(field.literal_values || []).join(', ')}
@@ -197,7 +197,7 @@ export function VerifiedFieldEditor() {
 
       {/* Verification Primitive */}
       <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
+        <label className="flex items-center text-sm font-medium text-gray-400 mb-1">
           Verification Primitive
           <InfoTooltip text="The comparison method used to check the extracted value against ground truth (e.g., ExactMatch, BooleanMatch, NumericTolerance)." />
         </label>
@@ -220,7 +220,7 @@ export function VerifiedFieldEditor() {
 
       {/* Weight */}
       <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
+        <label className="flex items-center text-sm font-medium text-gray-400 mb-1">
           Weight <span className="text-gray-500 ml-1">({field.weight})</span>
           <InfoTooltip text="Relative importance of this field in scoring (0 to 1). Higher weight means this field contributes more to the overall score." />
         </label>

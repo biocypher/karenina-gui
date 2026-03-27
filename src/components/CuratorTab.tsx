@@ -656,19 +656,6 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
             disabled={!selectedQuestionId}
           />
 
-          {/* ADeLe Classification (conditional, renders its own card) */}
-          {selectedQuestionId && selectedQuestion && (
-            <AdeleClassificationPanel
-              questionId={selectedQuestionId}
-              questionText={selectedQuestion.question}
-              customMetadata={checkpointItem?.custom_metadata as Record<string, unknown> | undefined}
-              onClassificationUpdate={handleAdeleClassificationUpdate}
-              disabled={!selectedQuestionId}
-              onOpenBatchModal={() => setIsAdeleBatchModalOpen(true)}
-              totalQuestionCount={allQuestionIds.length}
-            />
-          )}
-
           {/* Panel 3: Answer Template Editor (full width) */}
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">
             <div className="flex items-center justify-between mb-6">
@@ -717,7 +704,7 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
             </div>
 
             {/* Full-width editor with min-height, auto-expands */}
-            <div className="min-h-[600px]">
+            <div className="h-[1000px]">
               <CodeEditor
                 ref={codeEditorRef}
                 value={currentTemplate}
@@ -740,6 +727,19 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
 
           {/* Panel 4: Rubric (full width, decoupled) */}
           <QuestionRubricEditor questionId={selectedQuestionId} />
+
+          {/* ADeLe Classification (conditional, at the bottom) */}
+          {selectedQuestionId && selectedQuestion && (
+            <AdeleClassificationPanel
+              questionId={selectedQuestionId}
+              questionText={selectedQuestion.question}
+              customMetadata={checkpointItem?.custom_metadata as Record<string, unknown> | undefined}
+              onClassificationUpdate={handleAdeleClassificationUpdate}
+              disabled={!selectedQuestionId}
+              onOpenBatchModal={() => setIsAdeleBatchModalOpen(true)}
+              totalQuestionCount={allQuestionIds.length}
+            />
+          )}
         </div>
       )}
 

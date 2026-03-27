@@ -251,7 +251,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
       const compareTitle = diffMode === 'saved' ? 'Diff vs Last Saved' : 'Diff vs Original';
 
       return (
-        <div className="w-full h-full min-h-[600px] flex flex-col">
+        <div className="w-full h-full min-h-0 flex flex-col">
           {/* Diff Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 border-b border-slate-300 dark:border-slate-600 flex-shrink-0 rounded-t-2xl">
             <div className="flex items-center gap-3">
@@ -306,7 +306,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
       // Show TemplateBuilder for verified/mixed templates
       if (showVisualBuilder && (templateMode === 'verified' || templateMode === 'mixed')) {
         return (
-          <div className="w-full h-full min-h-[600px] flex flex-col">
+          <div className="w-full h-full min-h-0 flex flex-col">
             {/* Visual Builder Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 border-b border-slate-300 dark:border-slate-600 flex-shrink-0 rounded-t-2xl">
               <div className="flex items-center gap-3">
@@ -334,7 +334,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
 
       // PydanticFormEditor for classic/unknown templates
       return (
-        <div className="w-full h-full min-h-[600px] flex flex-col">
+        <div className="w-full h-full min-h-0 flex flex-col">
           {/* Form Editor Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 border-b border-slate-300 dark:border-slate-600 flex-shrink-0 rounded-t-2xl">
             <div className="flex items-center gap-3">
@@ -412,7 +412,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
     }
 
     return (
-      <div className="w-full h-full min-h-[600px] border border-slate-300 rounded-2xl overflow-hidden bg-slate-900 shadow-xl flex flex-col">
+      <div className="w-full h-full min-h-0 border border-slate-300 rounded-2xl overflow-hidden bg-slate-900 shadow-xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-3">
