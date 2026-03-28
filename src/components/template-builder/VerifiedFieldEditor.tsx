@@ -19,9 +19,12 @@ export function VerifiedFieldEditor() {
   const field = useTemplateBuilderStore((s) => s.getSelectedField());
   const updateField = useTemplateBuilderStore((s) => s.updateField);
   const getApplicablePrimitives = useTemplateBuilderStore((s) => s.getApplicablePrimitives);
+  const strategy = useTemplateBuilderStore((s) => s.spec.verify_strategy);
+  const setStrategy = useTemplateBuilderStore((s) => s.setStrategy);
 
   const [showHint, setShowHint] = useState(false);
   const [showWeight, setShowWeight] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   if (selectedFieldIndex === null || !field) {
     return (
@@ -306,6 +309,68 @@ export function VerifiedFieldEditor() {
               onChange={(e) => updateField(selectedFieldIndex, { weight: parseFloat(e.target.value) })}
               className="w-full accent-amber-500"
             />
+          </div>
+        )}
+      </div>
+
+      {/* Advanced Options */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          {showAdvanced ? '\u2212 Advanced options' : '+ Advanced options'}
+        </button>
+
+        {showAdvanced && (
+          <div className="mt-3 space-y-3 bg-gray-800/30 border border-gray-700/50 rounded-lg p-3">
+            <div>
+              <div className="text-sm font-medium text-gray-400 mb-1">Composition strategy</div>
+              <select
+                value={strategy?.type ?? 'all_of'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'all_of') {
+                    setStrategy(null);
+                  } else {
+                    setStrategy({
+                      type: val as 'any_of' | 'at_least_n',
+                      n: val === 'at_least_n' ? 1 : undefined,
+                      conditions: [],
+                    });
+                  }
+                }}
+                className="w-full px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-base text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+              >
+                <option value="all_of">All fields must pass</option>
+                <option value="any_of">Any field can pass</option>
+                <option value="at_least_n">At least N must pass</option>
+              </select>
+              {strategy?.type === 'at_least_n' && (
+                <input
+                  type="number"
+                  min={1}
+                  value={strategy.n ?? 1}
+                  onChange={(e) => setStrategy({ ...strategy, n: parseInt(e.target.value, 10) || 1 })}
+                  className="w-20 mt-2 px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-base text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                  placeholder="N"
+                />
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="trace-field"
+                checked={field.is_trace}
+                onChange={(e) => updateField(selectedFieldIndex, { is_trace: e.target.checked })}
+                className="rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500"
+              />
+              <label htmlFor="trace-field" className="text-sm text-gray-400">
+                Trace field (evaluate against raw LLM response instead of parsed output)
+              </label>
+            </div>
           </div>
         )}
       </div>

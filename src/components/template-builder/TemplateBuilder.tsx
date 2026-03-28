@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useTemplateBuilderStore } from '../../stores/useTemplateBuilderStore';
 import { FieldList } from './FieldList';
 import { VerifiedFieldEditor } from './VerifiedFieldEditor';
-import { CompositionRuleBuilder } from './CompositionRuleBuilder';
 import { ValidationModal } from './ValidationModal';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -84,10 +83,9 @@ export function TemplateBuilder({ code, onChange, onClose }: TemplateBuilderProp
 
       {/* Two-column layout */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left column: field list, composition rule, code preview */}
+        {/* Left column: field list */}
         <div className="w-2/5 flex flex-col border-r border-gray-700 overflow-y-auto p-4 gap-4">
           <FieldList />
-          <CompositionRuleBuilder />
         </div>
 
         {/* Right column: field editor */}
