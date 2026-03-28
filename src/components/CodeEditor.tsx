@@ -326,7 +326,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(
             </div>
             {/* Visual Builder Content */}
             <div className="flex-1 min-h-0 overflow-auto">
-              <TemplateBuilder code={value} onChange={onChange} onSwitchToCode={() => setEditorMode('code')} />
+              <TemplateBuilder code={value} onChange={onChange} />
             </div>
           </div>
         );

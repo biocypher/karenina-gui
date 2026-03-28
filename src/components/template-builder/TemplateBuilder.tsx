@@ -9,11 +9,10 @@ import { InfoTooltip } from './InfoTooltip';
 interface TemplateBuilderProps {
   code: string;
   onChange: (code: string) => void;
-  onSwitchToCode?: () => void;
   onClose?: () => void;
 }
 
-export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: TemplateBuilderProps) {
+export function TemplateBuilder({ code, onChange, onClose }: TemplateBuilderProps) {
   const [showValidation, setShowValidation] = useState(false);
   const prevCodeRef = useRef<string | null>(null);
 
@@ -70,20 +69,6 @@ export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: Tem
             </button>
             <InfoTooltip text="Check that the template is well-formed: valid field types, ground truth matches types, and verification primitives are compatible." />
           </span>
-
-          {onSwitchToCode && (
-            <span className="inline-flex items-center gap-1">
-              <button
-                onClick={onSwitchToCode}
-                className="px-3 py-1.5 text-sm font-medium rounded
-                           bg-gray-700 hover:bg-gray-600 text-gray-200
-                           transition-colors flex items-center gap-1"
-              >
-                <span className="font-mono text-xs">&lt;&gt;</span> Code
-              </button>
-              <InfoTooltip text="Switch to the Python code editor to view or edit the generated template code directly." />
-            </span>
-          )}
 
           {onClose && (
             <button
