@@ -633,28 +633,29 @@ export function CuratorTab({ codeEditorRef, onLoadCheckpoint, onResetAllData }: 
 
       {selectedQuestion && (
         <div className="space-y-4">
-          {/* Panel 1: Status & Metadata Bar */}
-          <StatusMetadataBar
-            finished={checkpointItem?.finished || false}
-            modified={isModified || false}
-            fewShotExamplesCount={checkpointItem?.few_shot_examples?.length || 0}
-            onToggleFinished={handleToggleFinished}
-            onEditMetadata={handleOpenMetadataEditor}
-            onEditFewShotExamples={handleOpenFewShotEditor}
-            lastModified={checkpointItem?.last_modified || null}
-            unsavedQuestionNumbers={unsavedQuestionNumbers}
-          />
-
-          {/* Panel 2: Context Bar */}
-          <ContextBar
-            question={selectedQuestion.question}
-            rawAnswer={selectedQuestion.raw_answer}
-            answerNotes={selectedQuestion.answer_notes || null}
-            onEditQuestion={handleOpenQuestionEditor}
-            onDelete={handleDeleteQuestion}
-            onClone={handleCloneQuestion}
-            disabled={!selectedQuestionId}
-          />
+          {/* Panel 1: Status + Question Context */}
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 px-6 py-4 space-y-3">
+            <StatusMetadataBar
+              finished={checkpointItem?.finished || false}
+              modified={isModified || false}
+              fewShotExamplesCount={checkpointItem?.few_shot_examples?.length || 0}
+              onToggleFinished={handleToggleFinished}
+              onEditMetadata={handleOpenMetadataEditor}
+              onEditFewShotExamples={handleOpenFewShotEditor}
+              lastModified={checkpointItem?.last_modified || null}
+              unsavedQuestionNumbers={unsavedQuestionNumbers}
+            />
+            <div className="border-t border-slate-200/60 dark:border-slate-700/60" />
+            <ContextBar
+              question={selectedQuestion.question}
+              rawAnswer={selectedQuestion.raw_answer}
+              answerNotes={selectedQuestion.answer_notes || null}
+              onEditQuestion={handleOpenQuestionEditor}
+              onDelete={handleDeleteQuestion}
+              onClone={handleCloneQuestion}
+              disabled={!selectedQuestionId}
+            />
+          </div>
 
           {/* Panel 3: Answer Template Editor (full width) */}
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 p-6">

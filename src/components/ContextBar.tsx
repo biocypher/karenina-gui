@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pencil, Copy, Trash2 } from 'lucide-react';
 
 interface ContextBarProps {
@@ -20,63 +20,35 @@ export const ContextBar: React.FC<ContextBarProps> = ({
   onClone,
   disabled,
 }) => {
-  const [expandedSection, setExpandedSection] = useState<'question' | 'answer' | 'notes' | null>(null);
-
-  const toggleSection = (section: 'question' | 'answer' | 'notes') => {
-    setExpandedSection((prev) => (prev === section ? null : section));
-  };
-
   return (
-    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 dark:border-slate-700/30 px-6 py-3">
-      <div className="flex items-center gap-4">
+    <div>
+      <div className="flex items-start gap-4">
         {/* Raw Question */}
-        <div
-          className="flex-1 min-w-0 flex items-center gap-2"
-          data-expanded={expandedSection === 'question' ? 'true' : 'false'}
-        >
-          <span className="flex-shrink-0 text-xs font-bold uppercase bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">
-            Q
+        <div className="flex-1 min-w-0 flex items-start gap-2">
+          <span className="flex-shrink-0 text-xs font-bold uppercase bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded mt-0.5">
+            Question
           </span>
-          <span
-            className={`text-sm text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 ${
-              expandedSection === 'question' ? 'whitespace-normal' : 'truncate'
-            }`}
-            onClick={() => toggleSection('question')}
-            title={question}
-          >
-            {question}
-          </span>
+          <span className="text-lg text-slate-700 dark:text-slate-300">{question}</span>
           <button
             onClick={onEditQuestion}
-            className="flex-shrink-0 p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors"
+            className="flex-shrink-0 p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors mt-0.5"
             title="Edit question and answer"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="w-px h-6 bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
+        <div className="w-px self-stretch bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
 
         {/* Raw Answer */}
-        <div
-          className="flex-1 min-w-0 flex items-center gap-2"
-          data-expanded={expandedSection === 'answer' ? 'true' : 'false'}
-        >
-          <span className="flex-shrink-0 text-xs font-bold uppercase bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded">
-            A
+        <div className="flex-1 min-w-0 flex items-start gap-2">
+          <span className="flex-shrink-0 text-xs font-bold uppercase bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded mt-0.5">
+            Answer
           </span>
-          <span
-            className={`text-sm text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 ${
-              expandedSection === 'answer' ? 'whitespace-normal' : 'truncate'
-            }`}
-            onClick={() => toggleSection('answer')}
-            title={rawAnswer || ''}
-          >
-            {rawAnswer || '(no answer)'}
-          </span>
+          <span className="text-lg text-slate-700 dark:text-slate-300">{rawAnswer || '(no answer)'}</span>
           <button
             onClick={onEditQuestion}
-            className="flex-shrink-0 p-1 rounded text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400 transition-colors"
+            className="flex-shrink-0 p-1 rounded text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400 transition-colors mt-0.5"
             title="Edit question and answer"
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -86,28 +58,17 @@ export const ContextBar: React.FC<ContextBarProps> = ({
         {/* Answer Notes (conditional) */}
         {answerNotes && (
           <>
-            <div className="w-px h-6 bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
-            <div
-              className="flex-shrink-0 flex items-center gap-2 max-w-[200px]"
-              data-expanded={expandedSection === 'notes' ? 'true' : 'false'}
-            >
-              <span className="flex-shrink-0 text-xs font-bold uppercase bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded">
+            <div className="w-px self-stretch bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
+            <div className="flex-shrink-0 flex items-start gap-2 max-w-[200px]">
+              <span className="flex-shrink-0 text-xs font-bold uppercase bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded mt-0.5">
                 N
               </span>
-              <span
-                className={`text-sm text-amber-700 dark:text-amber-300 cursor-pointer ${
-                  expandedSection === 'notes' ? 'whitespace-normal' : 'truncate'
-                }`}
-                onClick={() => toggleSection('notes')}
-                title={answerNotes}
-              >
-                {answerNotes}
-              </span>
+              <span className="text-sm text-amber-700 dark:text-amber-300">{answerNotes}</span>
             </div>
           </>
         )}
 
-        <div className="w-px h-6 bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
+        <div className="w-px self-stretch bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
