@@ -19,12 +19,9 @@ export function VerifiedFieldEditor() {
   const field = useTemplateBuilderStore((s) => s.getSelectedField());
   const updateField = useTemplateBuilderStore((s) => s.updateField);
   const getApplicablePrimitives = useTemplateBuilderStore((s) => s.getApplicablePrimitives);
-  const strategy = useTemplateBuilderStore((s) => s.spec.verify_strategy);
-  const setStrategy = useTemplateBuilderStore((s) => s.setStrategy);
-
   const [showHint, setShowHint] = useState(false);
   const [showWeight, setShowWeight] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [literalInput, setLiteralInput] = useState<string | null>(null);
 
   if (selectedFieldIndex === null || !field) {
     return (
@@ -34,7 +31,7 @@ export function VerifiedFieldEditor() {
     );
   }
 
-  const applicablePrimitives = getApplicablePrimitives(field.type);
+  const applicablePrimitives = getApplicablePrimitives(field.type).filter((p) => !p.is_trace);
 
   const handleTypeChange = (newType: TemplateField['type']) => {
     const defaultPrimitive = DEFAULT_PRIMITIVES[newType] ?? { type: 'ExactMatch' };
@@ -110,7 +107,7 @@ export function VerifiedFieldEditor() {
           <textarea
             value={field.description}
             onChange={(e) => updateField(selectedFieldIndex, { description: e.target.value })}
-            rows={6}
+            rows={12}
             className={INPUT_CLASS}
             placeholder="Describe what this field should capture and what counts as a correct extraction..."
           />
@@ -153,17 +150,29 @@ export function VerifiedFieldEditor() {
         {field.type === 'literal' && (
           <div className="mb-3">
             <div className={FIELD_LABEL}>Allowed values</div>
+            <div className="text-xs text-gray-500 mb-1.5">
+              Type all allowed options separated by commas, then press Enter or click away to confirm.
+            </div>
             <input
               type="text"
-              value={(field.literal_values ?? []).join(', ')}
-              onChange={(e) =>
-                updateField(selectedFieldIndex, {
-                  literal_values: e.target.value
-                    .split(',')
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                })
-              }
+              value={literalInput ?? (field.literal_values ?? []).join(', ')}
+              onChange={(e) => setLiteralInput(e.target.value)}
+              onBlur={() => {
+                if (literalInput !== null) {
+                  updateField(selectedFieldIndex, {
+                    literal_values: literalInput
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  });
+                  setLiteralInput(null);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
               className={INPUT_CLASS}
               placeholder="low, medium, high (comma-separated)"
             />
@@ -231,6 +240,97 @@ export function VerifiedFieldEditor() {
               <span className="text-xs text-gray-500">
                 (accepts answers within &plusmn;{field.verify_with.tolerance ?? 0.05} of expected)
               </span>
+            </div>
+          </div>
+        )}
+
+        {field.verify_with.type === 'NumericRange' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Accepted range</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step="any"
+                value={field.verify_with.min ?? ''}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: {
+                      ...field.verify_with,
+                      min: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                    },
+                  })
+                }
+                className={`${INPUT_CLASS} w-28`}
+                placeholder="Min"
+              />
+              <span className="text-sm text-gray-500">to</span>
+              <input
+                type="number"
+                step="any"
+                value={field.verify_with.max ?? ''}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: {
+                      ...field.verify_with,
+                      max: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                    },
+                  })
+                }
+                className={`${INPUT_CLASS} w-28`}
+                placeholder="Max"
+              />
+            </div>
+          </div>
+        )}
+
+        {field.verify_with.type === 'DateTolerance' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Allowed difference (days)</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step={1}
+                min={0}
+                value={field.verify_with.tolerance_days ?? 3}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, tolerance_days: parseInt(e.target.value, 10) || 3 },
+                  })
+                }
+                className={`${INPUT_CLASS} w-28`}
+              />
+              <span className="text-xs text-gray-500">
+                (accepts dates within &plusmn;{field.verify_with.tolerance_days ?? 3} days of expected)
+              </span>
+            </div>
+          </div>
+        )}
+
+        {field.verify_with.type === 'DateRange' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Accepted date range</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={field.verify_with.start ?? ''}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, start: e.target.value || undefined },
+                  })
+                }
+                className={`${INPUT_CLASS} w-44`}
+              />
+              <span className="text-sm text-gray-500">to</span>
+              <input
+                type="date"
+                value={field.verify_with.end ?? ''}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, end: e.target.value || undefined },
+                  })
+                }
+                className={`${INPUT_CLASS} w-44`}
+              />
             </div>
           </div>
         )}
@@ -309,68 +409,6 @@ export function VerifiedFieldEditor() {
               onChange={(e) => updateField(selectedFieldIndex, { weight: parseFloat(e.target.value) })}
               className="w-full accent-amber-500"
             />
-          </div>
-        )}
-      </div>
-
-      {/* Advanced Options */}
-      <div className="pt-2">
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-        >
-          {showAdvanced ? '\u2212 Advanced options' : '+ Advanced options'}
-        </button>
-
-        {showAdvanced && (
-          <div className="mt-3 space-y-3 bg-gray-800/30 border border-gray-700/50 rounded-lg p-3">
-            <div>
-              <div className="text-sm font-medium text-gray-400 mb-1">Composition strategy</div>
-              <select
-                value={strategy?.type ?? 'all_of'}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'all_of') {
-                    setStrategy(null);
-                  } else {
-                    setStrategy({
-                      type: val as 'any_of' | 'at_least_n',
-                      n: val === 'at_least_n' ? 1 : undefined,
-                      conditions: [],
-                    });
-                  }
-                }}
-                className="w-full px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-base text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-              >
-                <option value="all_of">All fields must pass</option>
-                <option value="any_of">Any field can pass</option>
-                <option value="at_least_n">At least N must pass</option>
-              </select>
-              {strategy?.type === 'at_least_n' && (
-                <input
-                  type="number"
-                  min={1}
-                  value={strategy.n ?? 1}
-                  onChange={(e) => setStrategy({ ...strategy, n: parseInt(e.target.value, 10) || 1 })}
-                  className="w-20 mt-2 px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-base text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                  placeholder="N"
-                />
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="trace-field"
-                checked={field.is_trace}
-                onChange={(e) => updateField(selectedFieldIndex, { is_trace: e.target.checked })}
-                className="rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500"
-              />
-              <label htmlFor="trace-field" className="text-sm text-gray-400">
-                Trace field (evaluate against raw LLM response instead of parsed output)
-              </label>
-            </div>
           </div>
         )}
       </div>

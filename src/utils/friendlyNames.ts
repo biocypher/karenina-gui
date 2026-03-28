@@ -34,6 +34,9 @@ export const FRIENDLY_PRIMITIVE_NAMES: Record<string, FriendlyPrimitiveName> = {
   DateMatch: { label: 'Exact Date', programmatic: 'DateMatch' },
   DateTolerance: { label: 'Date Within Tolerance', programmatic: 'DateTolerance' },
   DateRange: { label: 'Date Within Range', programmatic: 'DateRange' },
+  TraceRegex: { label: 'Trace Pattern Match', programmatic: 'TraceRegex' },
+  TraceContains: { label: 'Trace Contains Text', programmatic: 'TraceContains' },
+  TraceLength: { label: 'Trace Length Check', programmatic: 'TraceLength' },
 };
 
 export function getFriendlyTypeName(type: string): string {

@@ -26,8 +26,8 @@ describe('FRIENDLY_TYPE_NAMES', () => {
 });
 
 describe('FRIENDLY_PRIMITIVE_NAMES', () => {
-  it('maps all 15 primitives', () => {
-    expect(Object.keys(FRIENDLY_PRIMITIVE_NAMES)).toHaveLength(15);
+  it('maps all 18 primitives', () => {
+    expect(Object.keys(FRIENDLY_PRIMITIVE_NAMES)).toHaveLength(18);
   });
 
   it.each([

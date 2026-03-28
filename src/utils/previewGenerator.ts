@@ -19,24 +19,59 @@ function fmt(v: unknown): string {
   return String(v ?? '');
 }
 
-function placeholderPreview(): PreviewResult {
-  return {
-    expected: '"example"',
-    pass: { output: '"example"', explanation: 'matches expected', verdict: 'pass' },
-    fail: { output: '"other"', explanation: 'does not match', verdict: 'fail' },
-  };
+function num(v: unknown): number {
+  const n = Number(v);
+  return Number.isNaN(n) ? 0 : n;
 }
 
+function str(v: unknown): string {
+  if (typeof v === 'string') return v;
+  return String(v ?? '');
+}
+
+// Default ground truth values used when the user hasn't entered one yet.
+// These produce a meaningful preview for each primitive.
+const PLACEHOLDER_GT: Record<string, unknown> = {
+  BooleanMatch: true,
+  ExactMatch: 'aspirin',
+  NumericExact: 42,
+  NumericTolerance: 3.14,
+  NumericRange: 50,
+  SetContainment: ['BRCA1', 'TP53'],
+  OrderedMatch: ['step 1', 'step 2', 'step 3'],
+  ContainsAll: 'kinase, inhibitor',
+  ContainsAny: 'mutation, variant',
+  SemanticMatch: 'heart attack',
+  RegexMatch: '\\d{4}-\\d{2}-\\d{2}',
+  LiteralMatch: 'high',
+  DateMatch: '2025-01-15',
+  DateTolerance: '2025-01-15',
+  DateRange: '2025-01-15',
+};
+
+const PLACEHOLDER_PARAMS: Record<string, Params> = {
+  NumericTolerance: { tolerance: 0.05 },
+  NumericRange: { min: 40, max: 60 },
+  SemanticMatch: { threshold: 0.8 },
+  LiteralMatch: { literal_values: ['low', 'medium', 'high'] },
+  DateTolerance: { tolerance_days: 3 },
+  DateRange: { start: '2025-01-01', end: '2025-01-31' },
+};
+
 const generators: Record<string, (gt: unknown, params: Params) => PreviewResult> = {
-  BooleanMatch: (gt) => ({
-    expected: gt ? 'Yes' : 'No',
-    pass: { output: gt ? 'Yes' : 'No', explanation: 'matches expected', verdict: 'pass' },
-    fail: { output: gt ? 'No' : 'Yes', explanation: 'does not match', verdict: 'fail' },
-  }),
+  BooleanMatch: (gt) => {
+    const val = Boolean(gt);
+    return {
+      expected: val ? 'Yes' : 'No',
+      pass: { output: val ? 'Yes' : 'No', explanation: 'matches expected', verdict: 'pass' },
+      fail: { output: val ? 'No' : 'Yes', explanation: 'does not match', verdict: 'fail' },
+    };
+  },
 
   ExactMatch: (gt) => {
-    const s = String(gt);
-    const failVal = typeof gt === 'number' ? String(gt + 1) : `"${s.slice(0, Math.max(1, s.length - 3))}..."`;
+    const s = str(gt);
+    const isNum = typeof gt === 'number';
+    const failVal = isNum ? String(num(gt) + 1) : `"${s.length > 3 ? s.slice(0, -3) + '...' : s + '?'}"`;
     return {
       expected: fmt(gt),
       pass: { output: fmt(gt), explanation: `= ${fmt(gt)}`, verdict: 'pass' },
@@ -44,36 +79,41 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
     };
   },
 
-  NumericExact: (gt) => ({
-    expected: String(gt),
-    pass: { output: String(gt), explanation: `= ${gt}`, verdict: 'pass' },
-    fail: { output: String(Number(gt) + 1), explanation: `\u2260 ${gt}`, verdict: 'fail' },
-  }),
+  NumericExact: (gt) => {
+    const n = num(gt);
+    return {
+      expected: String(n),
+      pass: { output: String(n), explanation: `= ${n}`, verdict: 'pass' },
+      fail: { output: String(n + 1), explanation: `\u2260 ${n}`, verdict: 'fail' },
+    };
+  },
 
   NumericTolerance: (gt, params) => {
-    const tol = params.tolerance ?? 0.05;
-    const passVal = +(Number(gt) + tol * 0.4).toFixed(4);
-    const failVal = +(Number(gt) + tol * 7).toFixed(4);
-    const passDiff = +Math.abs(passVal - Number(gt)).toFixed(4);
-    const failDiff = +Math.abs(failVal - Number(gt)).toFixed(4);
+    const n = num(gt);
+    const tol = num(params.tolerance) || 0.05;
+    const passVal = +(n + tol * 0.4).toFixed(4);
+    const failVal = +(n + tol * 7).toFixed(4);
+    const passDiff = +Math.abs(passVal - n).toFixed(4);
+    const failDiff = +Math.abs(failVal - n).toFixed(4);
     return {
-      expected: String(gt),
+      expected: String(n),
       pass: {
         output: String(passVal),
-        explanation: `|${gt} \u2212 ${passVal}| = ${passDiff} \u2264 ${tol}`,
+        explanation: `|${n} \u2212 ${passVal}| = ${passDiff} \u2264 ${tol}`,
         verdict: 'pass',
       },
       fail: {
         output: String(failVal),
-        explanation: `|${gt} \u2212 ${failVal}| = ${failDiff} > ${tol}`,
+        explanation: `|${n} \u2212 ${failVal}| = ${failDiff} > ${tol}`,
         verdict: 'fail',
       },
     };
   },
 
   NumericRange: (gt, params) => {
-    const min = params.min ?? Number(gt) - 10;
-    const max = params.max ?? Number(gt) + 10;
+    const n = num(gt);
+    const min = num(params.min) || n - 10;
+    const max = num(params.max) || n + 10;
     const mid = +((min + max) / 2).toFixed(2);
     return {
       expected: `range [${min}, ${max}]`,
@@ -83,7 +123,7 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
   },
 
   SetContainment: (gt) => {
-    const items = Array.isArray(gt) ? gt : [];
+    const items: string[] = Array.isArray(gt) ? gt.map(str) : [];
     const passItems = [...items, 'extra_item'];
     const failItems = items.length > 1 ? items.slice(1) : ['unrelated'];
     const missing = items.length > 0 ? items[0] : 'item';
@@ -95,7 +135,7 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
   },
 
   OrderedMatch: (gt) => {
-    const items = Array.isArray(gt) ? gt : [];
+    const items: string[] = Array.isArray(gt) ? gt.map(str) : [];
     const swapped = items.length >= 2 ? [items[1], items[0], ...items.slice(2)] : [...items];
     return {
       expected: fmt(items),
@@ -105,7 +145,7 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
   },
 
   ContainsAll: (gt) => {
-    const s = String(gt);
+    const s = str(gt);
     const keywords = s.split(/[,;]\s*/).filter(Boolean);
     const allText = keywords.length > 0 ? `text containing ${keywords.map((k) => `"${k}"`).join(' and ')}` : fmt(gt);
     const missing = keywords.length > 0 ? keywords[keywords.length - 1] : s;
@@ -117,7 +157,7 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
   },
 
   ContainsAny: (gt) => {
-    const s = String(gt);
+    const s = str(gt);
     const keywords = s.split(/[,;]\s*/).filter(Boolean);
     const first = keywords[0] ?? s;
     return {
@@ -128,11 +168,15 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
   },
 
   SemanticMatch: (gt, params) => {
-    const threshold = params.threshold ?? 0.8;
-    const s = String(gt);
+    const threshold = num(params.threshold) || 0.8;
+    const s = str(gt);
     return {
       expected: fmt(gt),
-      pass: { output: fmt(gt), explanation: `similarity("${s}", "${s}") = 1.0 \u2265 ${threshold}`, verdict: 'pass' },
+      pass: {
+        output: fmt(gt),
+        explanation: `similarity("${s}", "${s}") = 1.0 \u2265 ${threshold}`,
+        verdict: 'pass',
+      },
       fail: {
         output: '"unrelated text"',
         explanation: `similarity("${s}", "unrelated text") = 0.2 < ${threshold}`,
@@ -141,24 +185,28 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
     };
   },
 
-  RegexMatch: (gt) => ({
-    expected: fmt(gt),
-    pass: { output: fmt(gt), explanation: 'matches pattern', verdict: 'pass' },
-    fail: { output: '"..."', explanation: 'does not match pattern', verdict: 'fail' },
-  }),
+  RegexMatch: (gt) => {
+    const pattern = str(gt);
+    return {
+      expected: `/${pattern}/`,
+      pass: { output: fmt(gt), explanation: `matches /${pattern}/`, verdict: 'pass' },
+      fail: { output: '"..."', explanation: `does not match /${pattern}/`, verdict: 'fail' },
+    };
+  },
 
   LiteralMatch: (gt, params) => {
-    const allowed = params.literal_values ?? [];
-    const failVal = allowed.find((v: string) => v !== gt) ?? 'invalid_option';
+    const allowed: string[] = Array.isArray(params.literal_values) ? params.literal_values.map(str) : [];
+    const gtStr = str(gt);
+    const failVal = allowed.find((v) => v !== gtStr) ?? 'invalid_option';
     return {
       expected: fmt(gt),
-      pass: { output: fmt(gt), explanation: `"${gt}" is an allowed option`, verdict: 'pass' },
-      fail: { output: fmt(failVal), explanation: `"${failVal}" \u2260 "${gt}"`, verdict: 'fail' },
+      pass: { output: fmt(gt), explanation: `"${gtStr}" is an allowed option`, verdict: 'pass' },
+      fail: { output: fmt(failVal), explanation: `"${failVal}" \u2260 "${gtStr}"`, verdict: 'fail' },
     };
   },
 
   DateMatch: (gt) => {
-    const d = String(gt);
+    const d = str(gt);
     const next = d.replace(/(\d{2})$/, (dd) => String(Number(dd) + 1).padStart(2, '0'));
     return {
       expected: d,
@@ -168,18 +216,26 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
   },
 
   DateTolerance: (gt, params) => {
-    const days = params.tolerance_days ?? 3;
-    const d = String(gt);
+    const days = num(params.tolerance_days) || 3;
+    const d = str(gt);
     return {
       expected: d,
-      pass: { output: `${d} + ${Math.floor(days / 2)}d`, explanation: `within \u00B1${days} days`, verdict: 'pass' },
-      fail: { output: `${d} + ${days * 3}d`, explanation: `${days * 3} days > \u00B1${days} days`, verdict: 'fail' },
+      pass: {
+        output: `${d} + ${Math.floor(days / 2)}d`,
+        explanation: `within \u00B1${days} days`,
+        verdict: 'pass',
+      },
+      fail: {
+        output: `${d} + ${days * 3}d`,
+        explanation: `${days * 3} days > \u00B1${days} days`,
+        verdict: 'fail',
+      },
     };
   },
 
   DateRange: (gt, params) => {
-    const start = params.start ?? String(gt);
-    const end = params.end ?? String(gt);
+    const start = str(params.start) || str(gt);
+    const end = str(params.end) || str(gt);
     return {
       expected: `${start} to ${end}`,
       pass: { output: start, explanation: `within [${start}, ${end}]`, verdict: 'pass' },
@@ -189,18 +245,25 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
 };
 
 export function generatePreview(primitive: string, groundTruth: unknown, params: Params): PreviewResult {
-  if (groundTruth === '' || groundTruth === null || groundTruth === undefined) {
-    return placeholderPreview();
-  }
-
   const gen = generators[primitive];
   if (!gen) {
+    const gt = groundTruth === '' || groundTruth == null ? 'example' : groundTruth;
     return {
-      expected: fmt(groundTruth),
-      pass: { output: fmt(groundTruth), explanation: 'matches expected', verdict: 'pass' },
+      expected: fmt(gt),
+      pass: { output: fmt(gt), explanation: 'matches expected', verdict: 'pass' },
       fail: { output: '"different value"', explanation: 'does not match', verdict: 'fail' },
     };
   }
 
-  return gen(groundTruth, params);
+  // When ground truth is empty, use a primitive-specific placeholder so the
+  // preview still shows how this check type works.
+  const isEmpty =
+    groundTruth === '' ||
+    groundTruth === null ||
+    groundTruth === undefined ||
+    (Array.isArray(groundTruth) && groundTruth.length === 0);
+  const gt = isEmpty ? (PLACEHOLDER_GT[primitive] ?? 'example') : groundTruth;
+  const mergedParams = isEmpty ? { ...PLACEHOLDER_PARAMS[primitive], ...params } : params;
+
+  return gen(gt, mergedParams);
 }
