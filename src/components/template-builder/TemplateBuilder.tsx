@@ -15,15 +15,19 @@ interface TemplateBuilderProps {
 
 export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: TemplateBuilderProps) {
   const [showValidation, setShowValidation] = useState(false);
-  const initialParseRef = useRef(false);
+  const prevCodeRef = useRef<string | null>(null);
 
   const { parseCode, fetchPrimitives, generatedCode, isLoading, lastError } = useTemplateBuilderStore();
 
-  // On mount: parse provided code and fetch available primitives
+  // Parse code on mount and whenever it changes externally (e.g., question navigation).
+  // Skip re-parsing when the change comes from our own generated code propagating back.
   useEffect(() => {
-    if (!initialParseRef.current && code) {
-      parseCode(code);
-      initialParseRef.current = true;
+    if (code && code !== prevCodeRef.current) {
+      prevCodeRef.current = code;
+      const currentGenerated = useTemplateBuilderStore.getState().generatedCode;
+      if (code !== currentGenerated) {
+        parseCode(code);
+      }
     }
   }, [code, parseCode]);
 

@@ -175,7 +175,14 @@ export const useTemplateBuilderStore = create<TemplateBuilderState>((set, get) =
       });
       const data: TemplateParseResult = await response.json();
       if (data.success && data.spec) {
-        set({ spec: data.spec as TemplateSpec, mode: data.mode, isDirty: false });
+        const parsedSpec = data.spec as TemplateSpec;
+        set({
+          spec: parsedSpec,
+          mode: data.mode,
+          isDirty: false,
+          generatedCode: null,
+          selectedFieldIndex: parsedSpec.fields.length > 0 ? 0 : null,
+        });
       }
       set({ mode: data.mode, isLoading: false });
       return data;
