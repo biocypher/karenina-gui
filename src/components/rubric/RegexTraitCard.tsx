@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { TrashIcon, QuestionMarkCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import type { RegexTrait } from '../../types';
+import type { RegexRubricTrait } from '../../types';
 
 type TraitType = 'boolean' | 'score' | 'regex' | 'metric';
 
 interface RegexTraitCardProps {
-  trait: RegexTrait;
+  trait: RegexRubricTrait;
   index: number;
-  onTraitChange: (index: number, field: keyof RegexTrait, value: string | boolean) => void;
+  onTraitChange: (index: number, field: keyof RegexRubricTrait, value: string | boolean) => void;
   onRemove: (index: number) => void;
   onTypeChange: (index: number, newType: TraitType, isRegex: boolean) => void;
 }

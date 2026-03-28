@@ -12,8 +12,8 @@ import type {
   SchemaOrgPropertyValue,
   CheckpointItem,
   Rubric,
-  RegexTrait,
-  CallableTrait,
+  RegexRubricTrait,
+  CallableRubricTrait,
   MetricRubricTrait,
   DatasetMetadata,
   SchemaOrgPerson,
@@ -333,10 +333,10 @@ export function jsonLdToV2(
         return at === 'karenina:GlobalRubricTrait' || at === 'karenina:GlobalLLMRubricTrait';
       });
       const globalRegexRatings = jsonLdCheckpoint.rating.filter(
-        (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:GlobalRegexTrait'
+        (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:GlobalRegexRubricTrait'
       );
       const globalCallableRatings = jsonLdCheckpoint.rating.filter(
-        (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:GlobalCallableTrait'
+        (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:GlobalCallableRubricTrait'
       );
       const globalMetricRatings = jsonLdCheckpoint.rating.filter(
         (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:GlobalMetricRubricTrait'
@@ -372,7 +372,7 @@ export function jsonLdToV2(
     }
 
     // Extract global regex_traits from additionalProperty (legacy format)
-    let globalRegexTraits: RegexTrait[] | undefined;
+    let globalRegexTraits: RegexRubricTrait[] | undefined;
     const globalRegexTraitsProp = jsonLdCheckpoint.additionalProperty?.find(
       (prop) => prop.name === 'global_regex_rubric_traits'
     );
@@ -380,7 +380,7 @@ export function jsonLdToV2(
       try {
         globalRegexTraits = JSON.parse(globalRegexTraitsProp.value);
         // Normalize legacy "invert" field to "invert_result"
-        globalRegexTraits?.forEach((trait: RegexTrait & { invert?: boolean }) => {
+        globalRegexTraits?.forEach((trait: RegexRubricTrait & { invert?: boolean }) => {
           if (trait.invert !== undefined && trait.invert_result === undefined) {
             trait.invert_result = trait.invert;
             delete trait.invert;
@@ -401,7 +401,7 @@ export function jsonLdToV2(
     }
 
     // Extract global callable_traits from additionalProperty (legacy format)
-    let globalCallableTraits: CallableTrait[] | undefined;
+    let globalCallableTraits: CallableRubricTrait[] | undefined;
     const globalCallableTraitsProp = jsonLdCheckpoint.additionalProperty?.find(
       (prop) => prop.name === 'global_callable_rubric_traits'
     );
@@ -510,10 +510,10 @@ export function jsonLdToV2(
           return at === 'karenina:QuestionSpecificRubricTrait' || at === 'karenina:QuestionSpecificLLMRubricTrait';
         });
         const questionRegexRatings = question.rating.filter(
-          (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:QuestionSpecificRegexTrait'
+          (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:QuestionSpecificRegexRubricTrait'
         );
         const questionCallableRatings = question.rating.filter(
-          (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:QuestionSpecificCallableTrait'
+          (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:QuestionSpecificCallableRubricTrait'
         );
         const questionMetricRatings = question.rating.filter(
           (rating) => normalizeAdditionalType(rating.additionalType) === 'karenina:QuestionSpecificMetricRubricTrait'

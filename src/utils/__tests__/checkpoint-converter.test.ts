@@ -16,8 +16,8 @@ import type {
   UnifiedCheckpoint,
   JsonLdCheckpoint,
   RubricTrait,
-  RegexTrait,
-  CallableTrait,
+  RegexRubricTrait,
+  CallableRubricTrait,
   SchemaOrgRating,
 } from '../../types';
 
@@ -1306,14 +1306,14 @@ describe('checkpoint-converter', () => {
   });
 
   describe('convertRatingToRegexTrait', () => {
-    it('should convert regex rating to RegexTrait', () => {
+    it('should convert regex rating to RegexRubricTrait', () => {
       const rating: SchemaOrgRating = {
         '@type': 'Rating',
         name: 'No Uncertainty',
         description: 'Should not contain uncertainty markers',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'karenina:GlobalRegexTrait',
+        additionalType: 'karenina:GlobalRegexRubricTrait',
         additionalProperty: [
           { '@type': 'PropertyValue', name: 'pattern', value: '\\b(might|possibly|maybe)\\b' },
           { '@type': 'PropertyValue', name: 'case_sensitive', value: false },
@@ -1321,7 +1321,7 @@ describe('checkpoint-converter', () => {
         ],
       };
 
-      const regexTrait: RegexTrait = convertRatingToRegexTrait(rating);
+      const regexTrait: RegexRubricTrait = convertRatingToRegexTrait(rating);
 
       expect(regexTrait.name).toBe('No Uncertainty');
       expect(regexTrait.description).toBe('Should not contain uncertainty markers');
@@ -1336,11 +1336,11 @@ describe('checkpoint-converter', () => {
         name: 'Test Regex',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'karenina:GlobalRegexTrait',
+        additionalType: 'karenina:GlobalRegexRubricTrait',
         additionalProperty: [{ '@type': 'PropertyValue', name: 'pattern', value: 'test' }],
       };
 
-      const regexTrait: RegexTrait = convertRatingToRegexTrait(rating);
+      const regexTrait: RegexRubricTrait = convertRatingToRegexTrait(rating);
 
       expect(regexTrait.case_sensitive).toBe(true); // default
       expect(regexTrait.invert_result).toBe(false); // default
@@ -1352,7 +1352,7 @@ describe('checkpoint-converter', () => {
         name: 'Invalid Regex',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'karenina:GlobalRegexTrait',
+        additionalType: 'karenina:GlobalRegexRubricTrait',
         additionalProperty: [],
       };
 
@@ -1362,14 +1362,14 @@ describe('checkpoint-converter', () => {
   });
 
   describe('convertRatingToCallableTrait', () => {
-    it('should convert boolean callable rating to CallableTrait', () => {
+    it('should convert boolean callable rating to CallableRubricTrait', () => {
       const rating: SchemaOrgRating = {
         '@type': 'Rating',
         name: 'Contains Citations',
         description: 'Checks for citation markers',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'karenina:GlobalCallableTrait',
+        additionalType: 'karenina:GlobalCallableRubricTrait',
         additionalProperty: [
           { '@type': 'PropertyValue', name: 'callable_code', value: 'base64encodedcode' },
           { '@type': 'PropertyValue', name: 'kind', value: 'boolean' },
@@ -1377,7 +1377,7 @@ describe('checkpoint-converter', () => {
         ],
       };
 
-      const callableTrait: CallableTrait = convertRatingToCallableTrait(rating);
+      const callableTrait: CallableRubricTrait = convertRatingToCallableTrait(rating);
 
       expect(callableTrait.name).toBe('Contains Citations');
       expect(callableTrait.description).toBe('Checks for citation markers');
@@ -1393,7 +1393,7 @@ describe('checkpoint-converter', () => {
         description: 'Evaluates response quality',
         bestRating: 5,
         worstRating: 1,
-        additionalType: 'karenina:GlobalCallableTrait',
+        additionalType: 'karenina:GlobalCallableRubricTrait',
         additionalProperty: [
           { '@type': 'PropertyValue', name: 'callable_code', value: 'base64encodedcode' },
           { '@type': 'PropertyValue', name: 'kind', value: 'score' },
@@ -1402,7 +1402,7 @@ describe('checkpoint-converter', () => {
         ],
       };
 
-      const callableTrait: CallableTrait = convertRatingToCallableTrait(rating);
+      const callableTrait: CallableRubricTrait = convertRatingToCallableTrait(rating);
 
       expect(callableTrait.kind).toBe('score');
       expect(callableTrait.min_score).toBe(1);
@@ -1415,7 +1415,7 @@ describe('checkpoint-converter', () => {
         name: 'Invalid Callable',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'karenina:GlobalCallableTrait',
+        additionalType: 'karenina:GlobalCallableRubricTrait',
         additionalProperty: [{ '@type': 'PropertyValue', name: 'kind', value: 'boolean' }],
       };
 
@@ -1429,7 +1429,7 @@ describe('checkpoint-converter', () => {
         name: 'Invalid Callable',
         bestRating: 1,
         worstRating: 0,
-        additionalType: 'karenina:GlobalCallableTrait',
+        additionalType: 'karenina:GlobalCallableRubricTrait',
         additionalProperty: [
           { '@type': 'PropertyValue', name: 'callable_code', value: 'code' },
           { '@type': 'PropertyValue', name: 'kind', value: 'invalid' },

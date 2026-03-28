@@ -590,9 +590,9 @@ describe('Verification Workflow', () => {
         expect(trait.reasoning).toBeDefined();
       });
 
-      // Check for RegexTrait type (may not have reasoning)
-      const regexTraits = Object.values(traits).filter((t) => t.trait_type === 'RegexTrait');
-      // RegexTrait might exist or not depending on fixture
+      // Check for RegexRubricTrait type (may not have reasoning)
+      const regexTraits = Object.values(traits).filter((t) => t.trait_type === 'RegexRubricTrait');
+      // RegexRubricTrait might exist or not depending on fixture
       if (regexTraits.length > 0) {
         regexTraits.forEach((trait) => {
           // result should be boolean for regex traits
@@ -634,7 +634,7 @@ describe('Verification Workflow', () => {
 
       if (traits.has_citations) {
         // This one might be false (as per fixture)
-        expect(traits.has_citations.trait_type).toBe('RegexTrait');
+        expect(traits.has_citations.trait_type).toBe('RegexRubricTrait');
       }
     });
 

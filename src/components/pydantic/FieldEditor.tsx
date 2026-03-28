@@ -318,7 +318,7 @@ export const FieldEditor = forwardRef<FieldEditorRef, FieldEditorProps>(
               <textarea
                 value={localField.description || ''}
                 onChange={(e) => handleLocalFieldChange({ description: e.target.value })}
-                rows={3}
+                rows={10}
                 className="block w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-3"
                 placeholder="Describe what this field represents..."
               />

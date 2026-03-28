@@ -15,7 +15,7 @@ import { useQuestionStore } from '../../../stores/useQuestionStore';
 import { useDatasetStore } from '../../../stores/useDatasetStore';
 import { useRubricStore } from '../../../stores/useRubricStore';
 import type { UnifiedCheckpoint } from '../../../types';
-import type { LLMRubricTrait, RegexTrait, Rubric } from '../../../types';
+import type { LLMRubricTrait, RegexRubricTrait, Rubric } from '../../../types';
 import sampleTraitsFixture from '../../../test-utils/fixtures/rubric/sample-traits.json';
 
 // Helper to create a mock checkpoint with questions
@@ -301,7 +301,7 @@ describe('Rubric Management Integration Tests', () => {
       useQuestionStore.getState().loadCheckpoint(checkpoint);
       useDatasetStore.getState().markBenchmarkAsInitialized();
 
-      const regexTrait: RegexTrait = {
+      const regexTrait: RegexRubricTrait = {
         name: 'has_date_format',
         description: 'Response contains a date in YYYY-MM-DD format',
         pattern: '\\d{4}-\\d{2}-\\d{2}',

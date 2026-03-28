@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PlusIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { useRubricStore } from '../stores/useRubricStore';
-import { LLMRubricTrait, TraitKind, RegexTrait, MetricRubricTrait } from '../types';
+import { LLMRubricTrait, TraitKind, RegexRubricTrait, MetricRubricTrait } from '../types';
 import { RubricLLMTraitCard } from './rubric/RubricLLMTraitCard';
 import { RubricRegexTraitCard } from './rubric/RubricRegexTraitCard';
 import { RubricMetricTraitCard } from './rubric/RubricMetricTraitCard';
@@ -237,7 +237,7 @@ export default function RubricTraitEditor() {
 
       if (newType === 'manual') {
         // Convert to manual trait
-        const convertedTrait: RegexTrait = {
+        const convertedTrait: RegexRubricTrait = {
           name: metricTrait.name,
           description: metricTrait.description || '',
           pattern: '',
@@ -274,7 +274,7 @@ export default function RubricTraitEditor() {
 
       if (newType === 'manual') {
         // Convert to manual trait, preserving higher_is_better if it exists
-        const convertedTrait: RegexTrait = {
+        const convertedTrait: RegexRubricTrait = {
           name: llmTrait.name,
           description: llmTrait.description || '',
           pattern: '',
@@ -326,11 +326,11 @@ export default function RubricTraitEditor() {
     updateTrait(index, updatedTrait);
   };
 
-  const handleRegexTraitChange = (index: number, field: keyof RegexTrait, value: string | boolean) => {
+  const handleRegexTraitChange = (index: number, field: keyof RegexRubricTrait, value: string | boolean) => {
     if (!currentRubric?.regex_traits || index < 0 || index >= currentRubric.regex_traits.length) return;
 
     const currentTrait = currentRubric.regex_traits[index];
-    const updatedTrait: RegexTrait = { ...currentTrait, [field]: value };
+    const updatedTrait: RegexRubricTrait = { ...currentTrait, [field]: value };
 
     updateRegexTrait(index, updatedTrait);
   };

@@ -430,21 +430,6 @@ describe('TemplateBuilder integration', () => {
   // Additional integration scenarios
   // -----------------------------------------------------------------------
   describe('optional props', () => {
-    it('renders "Code" button when onSwitchToCode is provided', () => {
-      render(<TemplateBuilder code="" onChange={vi.fn()} onSwitchToCode={vi.fn()} />);
-
-      expect(screen.getByText('Code')).toBeInTheDocument();
-    });
-
-    it('calls onSwitchToCode when "Code" button is clicked', async () => {
-      const user = userEvent.setup();
-      const onSwitchToCode = vi.fn();
-      render(<TemplateBuilder code="" onChange={vi.fn()} onSwitchToCode={onSwitchToCode} />);
-
-      await user.click(screen.getByText('Code'));
-      expect(onSwitchToCode).toHaveBeenCalledOnce();
-    });
-
     it('renders close button when onClose is provided', () => {
       render(<TemplateBuilder code="" onChange={vi.fn()} onClose={vi.fn()} />);
 

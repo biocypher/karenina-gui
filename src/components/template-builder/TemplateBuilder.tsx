@@ -9,21 +9,24 @@ import { InfoTooltip } from './InfoTooltip';
 interface TemplateBuilderProps {
   code: string;
   onChange: (code: string) => void;
-  onSwitchToCode?: () => void;
   onClose?: () => void;
 }
 
-export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: TemplateBuilderProps) {
+export function TemplateBuilder({ code, onChange, onClose }: TemplateBuilderProps) {
   const [showValidation, setShowValidation] = useState(false);
-  const initialParseRef = useRef(false);
+  const prevCodeRef = useRef<string | null>(null);
 
   const { parseCode, fetchPrimitives, generatedCode, isLoading, lastError } = useTemplateBuilderStore();
 
-  // On mount: parse provided code and fetch available primitives
+  // Parse code on mount and whenever it changes externally (e.g., question navigation).
+  // Skip re-parsing when the change comes from our own generated code propagating back.
   useEffect(() => {
-    if (!initialParseRef.current && code) {
-      parseCode(code);
-      initialParseRef.current = true;
+    if (code && code !== prevCodeRef.current) {
+      prevCodeRef.current = code;
+      const currentGenerated = useTemplateBuilderStore.getState().generatedCode;
+      if (code !== currentGenerated) {
+        parseCode(code);
+      }
     }
   }, [code, parseCode]);
 
@@ -67,20 +70,6 @@ export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: Tem
             <InfoTooltip text="Check that the template is well-formed: valid field types, ground truth matches types, and verification primitives are compatible." />
           </span>
 
-          {onSwitchToCode && (
-            <span className="inline-flex items-center gap-1">
-              <button
-                onClick={onSwitchToCode}
-                className="px-3 py-1.5 text-sm font-medium rounded
-                           bg-gray-700 hover:bg-gray-600 text-gray-200
-                           transition-colors flex items-center gap-1"
-              >
-                <span className="font-mono text-xs">&lt;&gt;</span> Code
-              </button>
-              <InfoTooltip text="Switch to the Python code editor to view or edit the generated template code directly." />
-            </span>
-          )}
-
           {onClose && (
             <button
               onClick={onClose}
@@ -95,14 +84,14 @@ export function TemplateBuilder({ code, onChange, onSwitchToCode, onClose }: Tem
 
       {/* Two-column layout */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left column: field list, composition rule, code preview */}
-        <div className="w-2/5 flex flex-col border-r border-gray-700 overflow-y-auto p-4 gap-4">
+        {/* Left column: field list, composition rule (resizable) */}
+        <div className="w-1/4 min-w-[200px] max-w-[40%] resize-x overflow-y-auto border-r border-gray-700 p-4 gap-4 flex flex-col">
           <FieldList />
           <CompositionRuleBuilder />
         </div>
 
         {/* Right column: field editor */}
-        <div className="w-3/5 flex flex-col overflow-y-auto p-4">
+        <div className="flex-1 flex flex-col overflow-y-auto p-4">
           <VerifiedFieldEditor />
         </div>
       </div>

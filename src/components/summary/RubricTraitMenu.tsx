@@ -4,9 +4,9 @@ import type {
   Rubric,
   TraitLetterMap,
   BadgeVisibilityFilter,
-  RegexTrait,
+  RegexRubricTrait,
   LLMRubricTrait,
-  CallableTrait,
+  CallableRubricTrait,
 } from '../../types';
 import { Modal } from '../ui/Modal';
 import { logger } from '../../utils/logger';
@@ -30,7 +30,7 @@ interface TraitItem {
   description?: string;
   kind: 'boolean' | 'score';
   // Original trait data for details popover
-  originalTrait: LLMRubricTrait | RegexTrait | CallableTrait;
+  originalTrait: LLMRubricTrait | RegexRubricTrait | CallableRubricTrait;
 }
 
 /**
@@ -74,7 +74,7 @@ const TraitDetailsContent = ({ trait }: { trait: TraitItem }) => {
   }
 
   if (trait.type === 'regex') {
-    const regexTrait = trait.originalTrait as RegexTrait;
+    const regexTrait = trait.originalTrait as RegexRubricTrait;
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-2">
@@ -96,7 +96,7 @@ const TraitDetailsContent = ({ trait }: { trait: TraitItem }) => {
   }
 
   if (trait.type === 'callable') {
-    const callableTrait = trait.originalTrait as CallableTrait;
+    const callableTrait = trait.originalTrait as CallableRubricTrait;
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-2">
