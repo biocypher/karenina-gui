@@ -1,252 +1,416 @@
-/**
- * VerifiedFieldEditor: right-column detail editor for a single template field.
- *
- * Allows editing field name, type, description, ground truth, extraction hint,
- * verification primitive selection, and weight. Reads the selected field from
- * the template builder store.
- */
-
-import { useTemplateBuilderStore } from '../../stores/useTemplateBuilderStore';
-import { InfoTooltip } from './InfoTooltip';
-import { DEFAULT_PRIMITIVES } from '../../types';
+// src/components/template-builder/VerifiedFieldEditor.tsx
+import { useState } from 'react';
+import { useTemplateBuilderStore, DEFAULT_PRIMITIVES } from '../../stores/useTemplateBuilderStore';
+import { DynamicGroundTruth } from './DynamicGroundTruth';
+import { FRIENDLY_TYPE_NAMES, FRIENDLY_PRIMITIVE_NAMES } from '../../utils/friendlyNames';
+import { generatePreview } from '../../utils/previewGenerator';
 import type { TemplateField } from '../../types';
 
-const FIELD_TYPES = [
-  { value: 'bool', label: 'Boolean' },
-  { value: 'str', label: 'String' },
-  { value: 'int', label: 'Integer' },
-  { value: 'float', label: 'Float' },
-  { value: 'list_str', label: 'List of Strings' },
-  { value: 'literal', label: 'Literal (enum)' },
-  { value: 'date', label: 'Date' },
-] as const;
+const FIELD_TYPES = ['bool', 'str', 'int', 'float', 'list_str', 'literal', 'date'] as const;
 
 const INPUT_CLASS =
-  'w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-sm text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none';
+  'w-full px-3 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-base text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none';
+
+const SECTION_LABEL = 'text-[11px] font-semibold uppercase tracking-wider mb-3';
+const FIELD_LABEL = 'text-sm font-medium text-gray-400 mb-1';
 
 export function VerifiedFieldEditor() {
   const selectedFieldIndex = useTemplateBuilderStore((s) => s.selectedFieldIndex);
   const field = useTemplateBuilderStore((s) => s.getSelectedField());
   const updateField = useTemplateBuilderStore((s) => s.updateField);
   const getApplicablePrimitives = useTemplateBuilderStore((s) => s.getApplicablePrimitives);
+  const [showHint, setShowHint] = useState(false);
+  const [showWeight, setShowWeight] = useState(false);
+  const [literalInput, setLiteralInput] = useState<string | null>(null);
 
   if (selectedFieldIndex === null || !field) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-        Select a field to edit its properties
+      <div className="flex items-center justify-center h-full text-gray-500 text-base">
+        Select a field to edit its properties.
       </div>
     );
   }
 
-  const applicablePrimitives = getApplicablePrimitives(field.type);
+  const applicablePrimitives = getApplicablePrimitives(field.type).filter((p) => !p.is_trace);
 
   const handleTypeChange = (newType: TemplateField['type']) => {
-    const defaultPrimitive = DEFAULT_PRIMITIVES[newType] || { type: 'ExactMatch' };
-    const updates: Partial<TemplateField> = {
-      type: newType,
-      verify_with: { ...defaultPrimitive },
-    };
-    // Reset ground truth to a type-appropriate default
-    if (newType === 'bool') updates.ground_truth = true;
-    else if (newType === 'int' || newType === 'float') updates.ground_truth = 0;
-    else if (newType === 'list_str') updates.ground_truth = [];
-    else updates.ground_truth = '';
-
-    if (newType !== 'literal') updates.literal_values = null;
-
-    updateField(selectedFieldIndex, updates);
-  };
-
-  const handlePrimitiveChange = (primitiveName: string) => {
+    const defaultPrimitive = DEFAULT_PRIMITIVES[newType] ?? { type: 'ExactMatch' };
     updateField(selectedFieldIndex, {
-      verify_with: { type: primitiveName },
+      type: newType,
+      ground_truth: newType === 'bool' ? false : newType === 'list_str' ? [] : '',
+      verify_with: defaultPrimitive,
+      literal_values: newType === 'literal' ? [] : null,
     });
   };
 
+  const handleNameChange = (raw: string) => {
+    const sanitized = raw.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    updateField(selectedFieldIndex, { name: sanitized });
+  };
+
+  const preview = generatePreview(field.verify_with.type, field.ground_truth, {
+    ...field.verify_with,
+    literal_values: field.literal_values,
+  });
+
   return (
-    <div className="space-y-4 p-4">
-      <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Field Properties</h3>
+    <div className="space-y-6 p-4 overflow-y-auto">
+      {/* SECTION 1: Identity */}
+      <div className="border-l-[3px] border-blue-400 pl-4">
+        <div className={`${SECTION_LABEL} text-blue-400`}>Identity</div>
 
-      {/* Field Name */}
-      <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
-          Name
-          <InfoTooltip text="A unique identifier for this field. Use snake_case (e.g., identifies_target, mentions_drug)." />
-        </label>
-        <input
-          type="text"
-          value={field.name}
-          onChange={(e) =>
-            updateField(selectedFieldIndex, {
-              name: e.target.value.replace(/[^a-z0-9_]/gi, '_').toLowerCase(),
-            })
-          }
-          className={INPUT_CLASS}
-          placeholder="field_name"
-        />
-      </div>
-
-      {/* Field Type */}
-      <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
-          Type
-          <InfoTooltip text="The data type of the value the judge LLM will extract. Determines which verification primitives are available." />
-        </label>
-        <select
-          value={field.type}
-          onChange={(e) => handleTypeChange(e.target.value as TemplateField['type'])}
-          className={INPUT_CLASS}
-        >
-          {FIELD_TYPES.map((ft) => (
-            <option key={ft.value} value={ft.value}>
-              {ft.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Description */}
-      <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
-          Description
-          <InfoTooltip text="Instructions for the judge LLM explaining what this field should capture. Be specific about edge cases." />
-        </label>
-        <textarea
-          value={field.description}
-          onChange={(e) => updateField(selectedFieldIndex, { description: e.target.value })}
-          rows={3}
-          className={`${INPUT_CLASS} resize-none`}
-          placeholder="Description for the judge LLM..."
-        />
-      </div>
-
-      {/* Extraction Hint (optional) */}
-      <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
-          Extraction Hint <span className="text-gray-500 ml-1">(optional)</span>
-          <InfoTooltip text="Optional post-processing instruction (e.g., 'normalize to uppercase'). Applied after extraction, before verification." />
-        </label>
-        <input
-          type="text"
-          value={field.extraction_hint || ''}
-          onChange={(e) => updateField(selectedFieldIndex, { extraction_hint: e.target.value || null })}
-          className={INPUT_CLASS}
-          placeholder="e.g., Normalize to uppercase gene symbol"
-        />
-      </div>
-
-      {/* Ground Truth */}
-      <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
-          Ground Truth
-          <InfoTooltip text="The expected correct value. The extracted field is compared against this using the verification primitive." />
-        </label>
-        {field.type === 'bool' ? (
-          <label className="flex items-center gap-2 text-sm text-gray-200">
-            <input
-              type="checkbox"
-              checked={!!field.ground_truth}
-              onChange={(e) => updateField(selectedFieldIndex, { ground_truth: e.target.checked })}
-              className="rounded border-gray-600 bg-gray-800"
-            />
-            {field.ground_truth ? 'True' : 'False'}
-          </label>
-        ) : field.type === 'int' || field.type === 'float' ? (
-          <input
-            type="number"
-            value={field.ground_truth ?? 0}
-            step={field.type === 'float' ? 0.01 : 1}
-            onChange={(e) =>
-              updateField(selectedFieldIndex, {
-                ground_truth: field.type === 'int' ? parseInt(e.target.value) : parseFloat(e.target.value),
-              })
-            }
-            className={INPUT_CLASS}
-          />
-        ) : (
+        <div className="mb-3">
+          <div className={FIELD_LABEL}>Field Name</div>
           <input
             type="text"
-            value={typeof field.ground_truth === 'string' ? field.ground_truth : JSON.stringify(field.ground_truth)}
-            onChange={(e) => updateField(selectedFieldIndex, { ground_truth: e.target.value })}
+            value={field.name}
+            onChange={(e) => handleNameChange(e.target.value)}
             className={INPUT_CLASS}
-            placeholder="Expected correct value"
+            placeholder="field_name"
           />
+        </div>
+
+        <div>
+          <div className={FIELD_LABEL}>What type of answer is this?</div>
+          <div className="flex gap-2 flex-wrap">
+            {FIELD_TYPES.map((t) => {
+              const friendly = FRIENDLY_TYPE_NAMES[t];
+              const isSelected = field.type === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => handleTypeChange(t)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                    isSelected
+                      ? 'bg-blue-700 border-blue-500 text-white'
+                      : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-500'
+                  }`}
+                >
+                  {friendly?.label ?? t}{' '}
+                  <span className={`text-xs ${isSelected ? 'opacity-50' : 'opacity-40'}`}>
+                    ({friendly?.programmatic ?? t})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 2: Instructions for the Judge */}
+      <div className="border-l-[3px] border-purple-400 pl-4">
+        <div className={`${SECTION_LABEL} text-purple-400`}>Instructions for the Judge</div>
+
+        <div className="mb-3">
+          <div className={FIELD_LABEL}>What should the judge look for?</div>
+          <textarea
+            value={field.description}
+            onChange={(e) => updateField(selectedFieldIndex, { description: e.target.value })}
+            rows={12}
+            className={INPUT_CLASS}
+            placeholder="Describe what this field should capture and what counts as a correct extraction..."
+          />
+        </div>
+
+        {!showHint && !field.extraction_hint && (
+          <button
+            type="button"
+            onClick={() => setShowHint(true)}
+            className="text-sm text-purple-400/70 hover:text-purple-300 transition-colors"
+          >
+            + Add extraction hint
+          </button>
+        )}
+
+        {(showHint || field.extraction_hint) && (
+          <div className="mt-2">
+            <div className="text-xs text-gray-400 leading-relaxed mb-2 bg-gray-800/30 border-l-2 border-purple-400/40 rounded-r-lg px-3 py-2">
+              Text added here is{' '}
+              <strong className="text-purple-300">optionally attached to the judge&apos;s parsing instructions</strong>.
+              Inclusion can be <strong className="text-purple-300">toggled on/off during verification</strong> via{' '}
+              <code className="text-xs text-purple-400">include_extraction_hints</code>, letting you measure the impact
+              of additional instructions on judge accuracy.
+            </div>
+            <input
+              type="text"
+              value={field.extraction_hint ?? ''}
+              onChange={(e) => updateField(selectedFieldIndex, { extraction_hint: e.target.value || null })}
+              className={INPUT_CLASS}
+              placeholder='e.g., "normalize gene names to HGNC symbols"'
+            />
+          </div>
         )}
       </div>
 
-      {/* Literal Values (only for literal type) */}
-      {field.type === 'literal' && (
+      {/* SECTION 3: Expected Answer */}
+      <div className="border-l-[3px] border-emerald-400 pl-4">
+        <div className={`${SECTION_LABEL} text-emerald-400`}>Expected Answer</div>
+
+        {field.type === 'literal' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Allowed values</div>
+            <div className="text-xs text-gray-500 mb-1.5">
+              Type all allowed options separated by commas, then press Enter or click away to confirm.
+            </div>
+            <input
+              type="text"
+              value={literalInput ?? (field.literal_values ?? []).join(', ')}
+              onChange={(e) => setLiteralInput(e.target.value)}
+              onBlur={() => {
+                if (literalInput !== null) {
+                  updateField(selectedFieldIndex, {
+                    literal_values: literalInput
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  });
+                  setLiteralInput(null);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className={INPUT_CLASS}
+              placeholder="low, medium, high (comma-separated)"
+            />
+          </div>
+        )}
+
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1">Allowed Values</label>
-          <input
-            type="text"
-            value={(field.literal_values || []).join(', ')}
-            onChange={(e) =>
-              updateField(selectedFieldIndex, {
-                literal_values: e.target.value
-                  .split(',')
-                  .map((v) => v.trim())
-                  .filter(Boolean),
-              })
-            }
-            className={INPUT_CLASS}
-            placeholder="value1, value2, value3"
+          <div className={FIELD_LABEL}>What is the correct answer?</div>
+          <DynamicGroundTruth
+            fieldType={field.type}
+            value={field.ground_truth}
+            onChange={(val) => updateField(selectedFieldIndex, { ground_truth: val })}
+            literalValues={field.literal_values}
           />
         </div>
-      )}
-
-      {/* Verification Primitive */}
-      <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
-          Verification Primitive
-          <InfoTooltip text="The comparison method used to check the extracted value against ground truth (e.g., ExactMatch, BooleanMatch, NumericTolerance)." />
-        </label>
-        <select
-          value={field.verify_with.type}
-          onChange={(e) => handlePrimitiveChange(e.target.value)}
-          className={INPUT_CLASS}
-        >
-          {applicablePrimitives.length > 0 ? (
-            applicablePrimitives.map((p) => (
-              <option key={p.name} value={p.name}>
-                {p.name}
-              </option>
-            ))
-          ) : (
-            <option value={field.verify_with.type}>{field.verify_with.type}</option>
-          )}
-        </select>
       </div>
 
-      {/* Weight */}
-      <div>
-        <label className="flex items-center text-xs font-medium text-gray-400 mb-1">
-          Weight <span className="text-gray-500 ml-1">({field.weight})</span>
-          <InfoTooltip text="Relative importance of this field in scoring (0 to 1). Higher weight means this field contributes more to the overall score." />
-        </label>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.1}
-          value={field.weight}
-          onChange={(e) => updateField(selectedFieldIndex, { weight: parseFloat(e.target.value) })}
-          className="w-full"
-        />
-      </div>
+      {/* SECTION 4: How to Verify */}
+      <div className="border-l-[3px] border-amber-400 pl-4">
+        <div className={`${SECTION_LABEL} text-amber-400`}>How to Verify</div>
 
-      {/* Trace Field Toggle */}
-      <div>
-        <label className="flex items-center gap-2 text-sm text-gray-200">
-          <input
-            type="checkbox"
-            checked={field.is_trace}
-            onChange={(e) => updateField(selectedFieldIndex, { is_trace: e.target.checked })}
-            className="rounded border-gray-600 bg-gray-800"
-          />
-          Trace field
-          <InfoTooltip text="When enabled, the judge evaluates this field against the raw LLM response instead of the parsed output." />
-        </label>
+        <div className="mb-3">
+          <div className={FIELD_LABEL}>How should the answer be checked?</div>
+          <div className="flex gap-2 flex-wrap">
+            {applicablePrimitives.map((p) => {
+              const friendly = FRIENDLY_PRIMITIVE_NAMES[p.name];
+              const isSelected = field.verify_with.type === p.name;
+              return (
+                <button
+                  key={p.name}
+                  type="button"
+                  onClick={() => updateField(selectedFieldIndex, { verify_with: { type: p.name } })}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                    isSelected
+                      ? 'bg-amber-800 border-amber-500 text-amber-200'
+                      : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-500'
+                  }`}
+                >
+                  {friendly?.label ?? p.name}{' '}
+                  <span className={`text-xs ${isSelected ? 'opacity-50' : 'opacity-40'}`}>
+                    ({friendly?.programmatic ?? p.name})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Primitive-specific parameters */}
+        {field.verify_with.type === 'NumericTolerance' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Allowed difference</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step="any"
+                value={field.verify_with.tolerance ?? 0.05}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, tolerance: parseFloat(e.target.value) || 0.05 },
+                  })
+                }
+                className={`${INPUT_CLASS} w-28`}
+              />
+              <span className="text-xs text-gray-500">
+                (accepts answers within &plusmn;{field.verify_with.tolerance ?? 0.05} of expected)
+              </span>
+            </div>
+          </div>
+        )}
+
+        {field.verify_with.type === 'NumericRange' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Accepted range</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step="any"
+                value={field.verify_with.min ?? ''}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: {
+                      ...field.verify_with,
+                      min: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                    },
+                  })
+                }
+                className={`${INPUT_CLASS} w-28`}
+                placeholder="Min"
+              />
+              <span className="text-sm text-gray-500">to</span>
+              <input
+                type="number"
+                step="any"
+                value={field.verify_with.max ?? ''}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: {
+                      ...field.verify_with,
+                      max: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                    },
+                  })
+                }
+                className={`${INPUT_CLASS} w-28`}
+                placeholder="Max"
+              />
+            </div>
+          </div>
+        )}
+
+        {field.verify_with.type === 'DateTolerance' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Allowed difference (days)</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step={1}
+                min={0}
+                value={field.verify_with.tolerance_days ?? 3}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, tolerance_days: parseInt(e.target.value, 10) || 3 },
+                  })
+                }
+                className={`${INPUT_CLASS} w-28`}
+              />
+              <span className="text-xs text-gray-500">
+                (accepts dates within &plusmn;{field.verify_with.tolerance_days ?? 3} days of expected)
+              </span>
+            </div>
+          </div>
+        )}
+
+        {field.verify_with.type === 'DateRange' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Accepted date range</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={field.verify_with.start ?? ''}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, start: e.target.value || undefined },
+                  })
+                }
+                className={`${INPUT_CLASS} w-44`}
+              />
+              <span className="text-sm text-gray-500">to</span>
+              <input
+                type="date"
+                value={field.verify_with.end ?? ''}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, end: e.target.value || undefined },
+                  })
+                }
+                className={`${INPUT_CLASS} w-44`}
+              />
+            </div>
+          </div>
+        )}
+
+        {field.verify_with.type === 'SemanticMatch' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Minimum similarity</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step="0.05"
+                min="0"
+                max="1"
+                value={field.verify_with.threshold ?? 0.8}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, threshold: parseFloat(e.target.value) || 0.8 },
+                  })
+                }
+                className={`${INPUT_CLASS} w-28`}
+              />
+              <span className="text-xs text-gray-500">(0 = any match, 1 = identical)</span>
+            </div>
+          </div>
+        )}
+
+        {/* Live preview */}
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 mb-3">
+          <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">Preview: how this check works</div>
+          <div className="font-mono text-sm leading-loose">
+            <div className="text-gray-300">
+              Expected: <span className="text-blue-400">{preview.expected}</span>
+            </div>
+            <div className="text-green-400">
+              LLM says <span className="text-blue-400">{preview.pass.output}</span> &rarr; {preview.pass.explanation}{' '}
+              &rarr; <strong>Pass &#10003;</strong>
+            </div>
+            <div className="text-red-400">
+              LLM says <span className="text-blue-400">{preview.fail.output}</span> &rarr; {preview.fail.explanation}{' '}
+              &rarr; <strong>Fail &#10007;</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Weight (hidden by default) */}
+        {!showWeight && field.weight === 1.0 && (
+          <button
+            type="button"
+            onClick={() => setShowWeight(true)}
+            className="text-sm text-amber-400/70 hover:text-amber-300 transition-colors"
+          >
+            + Adjust field importance
+          </button>
+        )}
+
+        {(showWeight || field.weight !== 1.0) && (
+          <div className="mt-2">
+            <div className="text-xs text-gray-400 leading-relaxed mb-2 bg-gray-800/30 border-l-2 border-amber-400/40 rounded-r-lg px-3 py-2">
+              The weight controls how much this field contributes to the{' '}
+              <strong className="text-amber-300">granular score</strong>. This only matters when using{' '}
+              <strong className="text-amber-300">granular verification</strong> (
+              <code className="text-xs text-amber-400">verify_granular()</code>), which computes a weighted average
+              across all fields instead of a simple pass/fail. Default is{' '}
+              <strong className="text-amber-300">1.0</strong> (normal importance).
+            </div>
+            <div className="flex items-center justify-between mb-1">
+              <span className={FIELD_LABEL}>Weight</span>
+              <span className="text-sm text-gray-200 font-medium">{field.weight}</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={0.1}
+              value={field.weight}
+              onChange={(e) => updateField(selectedFieldIndex, { weight: parseFloat(e.target.value) })}
+              className="w-full accent-amber-500"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
