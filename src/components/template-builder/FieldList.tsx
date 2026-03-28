@@ -13,7 +13,7 @@ export function FieldList() {
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-3">
         <span className="inline-flex items-center">
-          <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Fields ({fields.length})</h3>
+          <h3 className="text-base font-semibold text-gray-300 uppercase tracking-wider">Fields ({fields.length})</h3>
           <InfoTooltip text="Each field defines one piece of information the judge LLM will extract from the response and verify against ground truth." />
         </span>
         <button
@@ -69,15 +69,15 @@ export function FieldList() {
               {/* Field info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-200 truncate">{field.name || 'unnamed'}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-400 font-mono">
+                  <span className="text-base font-medium text-gray-200 truncate">{field.name || 'unnamed'}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-400 font-mono">
                     {field.type}
                   </span>
                   {field.is_trace && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">trace</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">trace</span>
                   )}
                 </div>
-                {field.description && <p className="text-xs text-gray-500 truncate mt-0.5">{field.description}</p>}
+                {field.description && <p className="text-sm text-gray-500 truncate mt-0.5">{field.description}</p>}
               </div>
 
               {/* Remove button */}
