@@ -24,6 +24,8 @@ export const FRIENDLY_PRIMITIVE_NAMES: Record<string, FriendlyPrimitiveName> = {
   NumericTolerance: { label: 'Close Enough', programmatic: 'NumericTolerance' },
   NumericExact: { label: 'Exact Number', programmatic: 'NumericExact' },
   NumericRange: { label: 'Within Range', programmatic: 'NumericRange' },
+  NumericMinimum: { label: 'At Least', programmatic: 'NumericMinimum' },
+  NumericMaximum: { label: 'At Most', programmatic: 'NumericMaximum' },
   ContainsAll: { label: 'Contains All Keywords', programmatic: 'ContainsAll' },
   ContainsAny: { label: 'Contains Any Keyword', programmatic: 'ContainsAny' },
   SemanticMatch: { label: 'Similar Meaning', programmatic: 'SemanticMatch' },

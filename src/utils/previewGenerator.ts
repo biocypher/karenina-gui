@@ -37,6 +37,8 @@ const PLACEHOLDER_GT: Record<string, unknown> = {
   NumericExact: 42,
   NumericTolerance: 3.14,
   NumericRange: 50,
+  NumericMinimum: 50,
+  NumericMaximum: 50,
   SetContainment: ['BRCA1', 'TP53'],
   OrderedMatch: ['step 1', 'step 2', 'step 3'],
   ContainsAll: 'kinase, inhibitor',
@@ -52,6 +54,8 @@ const PLACEHOLDER_GT: Record<string, unknown> = {
 const PLACEHOLDER_PARAMS: Record<string, Params> = {
   NumericTolerance: { tolerance: 0.05 },
   NumericRange: { min: 40, max: 60 },
+  NumericMinimum: {},
+  NumericMaximum: {},
   SemanticMatch: { threshold: 0.8 },
   LiteralMatch: { literal_values: ['low', 'medium', 'high'] },
   DateTolerance: { tolerance_days: 3 },
@@ -119,6 +123,24 @@ const generators: Record<string, (gt: unknown, params: Params) => PreviewResult>
       expected: `range [${min}, ${max}]`,
       pass: { output: String(mid), explanation: `${min} \u2264 ${mid} \u2264 ${max}`, verdict: 'pass' },
       fail: { output: String(max + 1), explanation: `${max + 1} > ${max}`, verdict: 'fail' },
+    };
+  },
+
+  NumericMinimum: (gt) => {
+    const n = num(gt);
+    return {
+      expected: `\u2265 ${n}`,
+      pass: { output: String(n + 5), explanation: `${n + 5} \u2265 ${n}`, verdict: 'pass' },
+      fail: { output: String(n - 1), explanation: `${n - 1} < ${n}`, verdict: 'fail' },
+    };
+  },
+
+  NumericMaximum: (gt) => {
+    const n = num(gt);
+    return {
+      expected: `\u2264 ${n}`,
+      pass: { output: String(n - 5), explanation: `${n - 5} \u2264 ${n}`, verdict: 'pass' },
+      fail: { output: String(n + 1), explanation: `${n + 1} > ${n}`, verdict: 'fail' },
     };
   },
 
