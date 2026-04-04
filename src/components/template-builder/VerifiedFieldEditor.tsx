@@ -283,6 +283,42 @@ export function VerifiedFieldEditor() {
           </div>
         )}
 
+        {field.verify_with.type === 'NumericMinimum' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Boundary mode</div>
+            <label className="flex items-center gap-1 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={field.verify_with.exclusive ?? false}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, exclusive: e.target.checked },
+                  })
+                }
+              />
+              Exclusive (strict &gt;)
+            </label>
+          </div>
+        )}
+
+        {field.verify_with.type === 'NumericMaximum' && (
+          <div className="mb-3">
+            <div className={FIELD_LABEL}>Boundary mode</div>
+            <label className="flex items-center gap-1 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={field.verify_with.exclusive ?? false}
+                onChange={(e) =>
+                  updateField(selectedFieldIndex, {
+                    verify_with: { ...field.verify_with, exclusive: e.target.checked },
+                  })
+                }
+              />
+              Exclusive (strict &lt;)
+            </label>
+          </div>
+        )}
+
         {field.verify_with.type === 'DateTolerance' && (
           <div className="mb-3">
             <div className={FIELD_LABEL}>Allowed difference (days)</div>
