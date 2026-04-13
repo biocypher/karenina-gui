@@ -51,6 +51,11 @@ export interface VerificationResultMetadata {
   run_name?: string;
   job_id?: string;
   replicate?: number;
+  // Scenario linking fields
+  scenario_id?: string;
+  scenario_node?: string;
+  scenario_turn?: number;
+  scenario_path?: string[];
 }
 
 /**
