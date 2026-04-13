@@ -3,6 +3,10 @@
  * Data structures for human review judgments on verification results
  */
 
+import type { Checkpoint } from './checkpoint';
+import type { VerificationResult } from './verification';
+import type { ScenarioDefinition, ScenarioExecutionResult } from './scenario';
+
 export type JudgmentValue = 'agree' | 'disagree' | 'uncertain';
 
 export interface TraitJudgment {
@@ -62,4 +66,24 @@ export interface ScenarioCurationEntry {
       rubric_judgments: Record<string, TraitJudgment>;
     }
   >;
+}
+
+/** Self-contained session export (v2.0): checkpoint + results + judgments. */
+export interface CurationSessionExport {
+  format_version: '2.0';
+  metadata: {
+    export_timestamp: string;
+    karenina_version: string;
+    source_checkpoint: string;
+    source_results_job_id: string;
+  };
+  session_data: {
+    checkpoint: Checkpoint;
+    results: VerificationResult[];
+    scenario_definitions: ScenarioDefinition[];
+    scenario_results: ScenarioExecutionResult[];
+  };
+  curators: Curator[];
+  judgments: CurationJudgmentEntry[];
+  scenario_judgments: ScenarioCurationEntry[];
 }

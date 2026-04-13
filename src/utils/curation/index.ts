@@ -1,7 +1,14 @@
-export { computeResultStatus, computeStatusCounts } from './statusComputer';
+export {
+  computeResultStatus,
+  computeStatusCounts,
+  computeScenarioStatus,
+  computeScenarioStatusCounts,
+} from './statusComputer';
 export type { StatusCounts } from './statusComputer';
-export { buildCurationExport } from './exportCuration';
-export { parseCurationJSON, isCurationExport } from './importCuration';
+export { buildCurationExport, buildSessionExport } from './exportCuration';
+export type { ExportInput, SessionExportInput } from './exportCuration';
+export { parseCurationJSON, parseSessionJSON, isCurationExport, isSessionExport } from './importCuration';
+export type { ParsedCuration, ParsedSession } from './importCuration';
 export { resolveVerdict } from './resolveVerdict';
 export { groupScenarioResults } from './groupScenarioResults';
 export type { GroupedResults } from './groupScenarioResults';

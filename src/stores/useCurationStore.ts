@@ -53,6 +53,22 @@ interface CurationState {
     sourceMetadata: CurationState['sourceMetadata']
   ) => void;
 
+  // Actions: session loading (atomic data + judgments)
+  loadSession: (
+    checkpoint: Checkpoint,
+    results: VerificationResult[],
+    scenarioDefinitions: ScenarioDefinition[],
+    scenarioResults: ScenarioExecutionResult[],
+    sourceMetadata: CurationState['sourceMetadata'],
+    curators: Curator[],
+    templateJudgments: CurationState['templateJudgments'],
+    rubricJudgments: CurationState['rubricJudgments'],
+    curatedFlags: CurationState['curatedFlags'],
+    scenarioTemplateJudgments: CurationState['scenarioTemplateJudgments'],
+    scenarioRubricJudgments: CurationState['scenarioRubricJudgments'],
+    scenarioCuratedFlags: CurationState['scenarioCuratedFlags']
+  ) => void;
+
   // Actions: QA judgments
   setTemplateJudgment: (resultId: string, fieldName: string, judgment: TraitJudgment) => void;
   clearTemplateJudgment: (resultId: string, fieldName: string) => void;
@@ -179,6 +195,42 @@ export const useCurationStore = create<CurationState>((set, get) => ({
       scenarioDefinitions,
       scenarioResults,
       sourceMetadata,
+      selectedResultId: null,
+      selectedScenarioId: null,
+      selectedNodeId: null,
+      currentPage: 1,
+    });
+  },
+
+  loadSession: (
+    checkpoint,
+    results,
+    scenarioDefinitions,
+    scenarioResults,
+    sourceMetadata,
+    curators,
+    templateJudgments,
+    rubricJudgments,
+    curatedFlags,
+    scenarioTemplateJudgments,
+    scenarioRubricJudgments,
+    scenarioCuratedFlags
+  ) => {
+    set({
+      checkpoint,
+      results,
+      scenarioDefinitions,
+      scenarioResults,
+      sourceMetadata,
+      curators,
+      activeCuratorId: curators[0]?.id ?? null,
+      templateJudgments,
+      rubricJudgments,
+      curatedFlags,
+      scenarioTemplateJudgments,
+      scenarioRubricJudgments,
+      scenarioCuratedFlags,
+      hasBeenExported: true,
       selectedResultId: null,
       selectedScenarioId: null,
       selectedNodeId: null,

@@ -1,12 +1,16 @@
 import type {
   CurationExport,
+  CurationSessionExport,
   CurationJudgmentEntry,
   ScenarioCurationEntry,
   Curator,
   TraitJudgment,
 } from '../../types/curation';
+import type { Checkpoint } from '../../types/checkpoint';
+import type { VerificationResult } from '../../types/verification';
+import type { ScenarioDefinition, ScenarioExecutionResult } from '../../types/scenario';
 
-interface ExportInput {
+export interface ExportInput {
   curators: Curator[];
   templateJudgments: Record<string, Record<string, Record<string, TraitJudgment>>>;
   rubricJudgments: Record<string, Record<string, Record<string, TraitJudgment>>>;
@@ -87,5 +91,30 @@ export function buildCurationExport(input: ExportInput): CurationExport {
     curators: input.curators,
     judgments,
     scenario_judgments: scenarioJudgments,
+  };
+}
+
+export interface SessionExportInput extends ExportInput {
+  checkpoint: Checkpoint;
+  results: VerificationResult[];
+  scenarioDefinitions: ScenarioDefinition[];
+  scenarioResults: ScenarioExecutionResult[];
+}
+
+/** Build a self-contained v2.0 session export with checkpoint, results, and judgments. */
+export function buildSessionExport(input: SessionExportInput): CurationSessionExport {
+  const v1 = buildCurationExport(input);
+  return {
+    format_version: '2.0',
+    metadata: v1.metadata,
+    session_data: {
+      checkpoint: input.checkpoint,
+      results: input.results,
+      scenario_definitions: input.scenarioDefinitions,
+      scenario_results: input.scenarioResults,
+    },
+    curators: v1.curators,
+    judgments: v1.judgments,
+    scenario_judgments: v1.scenario_judgments,
   };
 }
