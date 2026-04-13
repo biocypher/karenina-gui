@@ -37,25 +37,23 @@ export function CurationDetailPanel({
 
   return (
     <div data-testid="curation-detail-panel" className="py-3 px-3 space-y-4">
-      {/* QUESTION section */}
-      <div className="border-l-[3px] border-l-teal-500 bg-slate-50 dark:bg-gray-700/70 rounded-r px-4 py-3">
-        <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-                Question
+      {/* Metadata bar */}
+      <div className="border-l-[3px] border-l-teal-500 bg-slate-50 dark:bg-gray-700/70 rounded-r px-4 py-2">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+              {scenarioId ? 'Node' : 'Question'}
+            </span>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${verdictStyle}`}>
+              {passed === true ? 'PASS' : passed === false ? 'FAIL' : 'NO VERDICT'}
+            </span>
+            {!meta.completed_without_errors && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700">
+                ERROR
               </span>
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${verdictStyle}`}>
-                {passed === true ? 'PASS' : passed === false ? 'FAIL' : 'NO VERDICT'}
-              </span>
-              {!meta.completed_without_errors && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700">
-                  ERROR
-                </span>
-              )}
-            </div>
-            <div className="text-sm text-slate-800 dark:text-gray-100 leading-relaxed">{meta.question_text}</div>
-            <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-slate-400 dark:text-gray-500 mt-1.5">
+            )}
+            <span className="text-slate-300 dark:text-gray-600">|</span>
+            <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-slate-400 dark:text-gray-500">
               <span className="text-slate-600 dark:text-gray-300">{meta.answering.model_name}</span>
               {meta.answering.model_name !== meta.parsing.model_name && <span>parser: {meta.parsing.model_name}</span>}
               <span>{meta.execution_time.toFixed(1)}s</span>
