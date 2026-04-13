@@ -59,7 +59,15 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
             return (
               <tr
                 key={resultId}
+                tabIndex={0}
+                role="row"
                 onClick={() => setSelectedResult(isSelected ? null : resultId)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedResult(isSelected ? null : resultId);
+                  }
+                }}
                 className={`border-b border-gray-700/50 cursor-pointer transition-colors ${
                   isSelected ? 'bg-gray-700/50' : 'hover:bg-gray-700/30'
                 }`}

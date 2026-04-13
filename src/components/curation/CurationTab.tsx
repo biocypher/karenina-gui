@@ -24,14 +24,23 @@ export function CurationTab() {
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       const hasJudgments =
-        Object.keys(store.templateJudgments).length > 0 || Object.keys(store.rubricJudgments).length > 0;
+        Object.keys(store.templateJudgments).length > 0 ||
+        Object.keys(store.rubricJudgments).length > 0 ||
+        Object.keys(store.scenarioTemplateJudgments).length > 0 ||
+        Object.keys(store.scenarioRubricJudgments).length > 0;
       if (hasJudgments && !store.hasBeenExported) {
         e.preventDefault();
       }
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
-  }, [store.templateJudgments, store.rubricJudgments, store.hasBeenExported]);
+  }, [
+    store.templateJudgments,
+    store.rubricJudgments,
+    store.scenarioTemplateJudgments,
+    store.scenarioRubricJudgments,
+    store.hasBeenExported,
+  ]);
 
   // Pending checkpoint stored in ref (not exposed on window)
   const pendingCheckpoint = useRef<{ checkpoint: Checkpoint; name: string } | null>(null);
