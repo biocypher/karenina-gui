@@ -9,7 +9,7 @@ interface CurationContextZoneProps {
 }
 
 export function CurationContextZone({ result }: CurationContextZoneProps) {
-  const [traceMode, setTraceMode] = useState<'raw' | 'structured'>('raw');
+  const [traceMode, setTraceMode] = useState<'raw' | 'structured'>('structured');
 
   const template = result.template;
   const traceMessages = template?.trace_messages as TraceMessage[] | undefined;
