@@ -7,3 +7,5 @@ export { CurationJudgmentZone } from './CurationJudgmentZone';
 export { CurationJudgmentRow } from './CurationJudgmentRow';
 export { CuratorManager } from './CuratorManager';
 export { CurationExportDialog } from './CurationExportDialog';
+export { CurationScenarioDetail } from './CurationScenarioDetail';
+// CurationScenarioDAG is lazy-loaded, not exported directly
