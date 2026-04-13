@@ -5,11 +5,13 @@ import { parseCurationJSON } from '../../utils/curation/importCuration';
 import { parseVerificationResultsJSON } from '../../utils/import';
 import { isJsonLdCheckpoint } from '../../utils/checkpoint/validators';
 import { jsonLdToV2 } from '../../utils/checkpoint/converter';
+import { extractScenarioDefinitions } from '../../utils/checkpoint/scenarioExtractor';
 import { CurationHeader } from './CurationHeader';
 import { CurationResultList } from './CurationResultList';
 import { CurationDetailPanel } from './CurationDetailPanel';
 import { CurationExportDialog } from './CurationExportDialog';
 import type { VerificationResult } from '../../types/verification';
+import type { ScenarioDefinition } from '../../types/scenario';
 import type { Checkpoint } from '../../types/checkpoint';
 
 export function CurationTab() {
@@ -43,7 +45,11 @@ export function CurationTab() {
   ]);
 
   // Pending checkpoint stored in ref (not exposed on window)
-  const pendingCheckpoint = useRef<{ checkpoint: Checkpoint; name: string } | null>(null);
+  const pendingCheckpoint = useRef<{
+    checkpoint: Checkpoint;
+    name: string;
+    scenarioDefinitions: ScenarioDefinition[];
+  } | null>(null);
 
   const handleLoadCheckpointAndResults = useCallback(() => {
     checkpointInputRef.current?.click();
@@ -60,7 +66,12 @@ export function CurationTab() {
         return;
       }
       const converted = jsonLdToV2(parsed);
-      pendingCheckpoint.current = { checkpoint: converted.checkpoint, name: parsed.name ?? file.name };
+      const scenarioDefinitions = extractScenarioDefinitions(parsed);
+      pendingCheckpoint.current = {
+        checkpoint: converted.checkpoint,
+        name: parsed.name ?? file.name,
+        scenarioDefinitions,
+      };
       resultsInputRef.current?.click();
     } catch (err) {
       setError(`Failed to parse checkpoint: ${err instanceof Error ? err.message : String(err)}`);
@@ -85,11 +96,17 @@ export function CurationTab() {
         // the store expects VerificationResult[]
         const resultsArray = Object.values(parsed.results) as VerificationResult[];
 
-        store.loadData(pendingCheckpoint.current.checkpoint, resultsArray, [], [], {
-          checkpointName: pendingCheckpoint.current.name,
-          jobId: parsed.metadata?.job_id ?? 'unknown',
-          kareninaVersion: parsed.metadata?.karenina_version ?? 'unknown',
-        });
+        store.loadData(
+          pendingCheckpoint.current.checkpoint,
+          resultsArray,
+          pendingCheckpoint.current.scenarioDefinitions,
+          [],
+          {
+            checkpointName: pendingCheckpoint.current.name,
+            jobId: parsed.metadata?.job_id ?? 'unknown',
+            kareninaVersion: parsed.metadata?.karenina_version ?? 'unknown',
+          }
+        );
 
         pendingCheckpoint.current = null;
         setError(null);
