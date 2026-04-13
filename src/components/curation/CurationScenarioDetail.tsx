@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { useCurationStore } from '../../stores/useCurationStore';
+import { resolveVerdict } from '../../utils/curation';
 import { CurationDetailPanel } from './CurationDetailPanel';
 import type { ScenarioDefinition, ScenarioExecutionResult } from '../../types/scenario';
 import type { VerificationResult } from '../../types/verification';
@@ -26,13 +27,7 @@ export function CurationScenarioDetail({ scenarioResult, definition, turnResults
   for (const tr of turnResults) {
     const nodeId = tr.metadata.scenario_node;
     if (nodeId) {
-      const vr = tr.template?.verify_result;
-      nodeResults[nodeId] =
-        typeof vr === 'boolean'
-          ? vr
-          : vr && typeof vr === 'object'
-            ? ((vr as { completed_without_errors?: boolean }).completed_without_errors ?? null)
-            : null;
+      nodeResults[nodeId] = resolveVerdict(tr);
     }
   }
 

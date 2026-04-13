@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCurationStore } from '../../stores/useCurationStore';
-import { computeResultStatus } from '../../utils/curation';
+import { computeResultStatus, resolveVerdict } from '../../utils/curation';
 import { parseCurationJSON } from '../../utils/curation/importCuration';
 import { parseVerificationResultsJSON } from '../../utils/import';
 import { isJsonLdCheckpoint } from '../../utils/checkpoint/validators';
@@ -137,13 +137,7 @@ export function CurationTab() {
     }
 
     if (store.filters.passStatus !== 'all') {
-      const vr = r.template?.verify_result;
-      const passed =
-        typeof vr === 'boolean'
-          ? vr
-          : vr && typeof vr === 'object'
-            ? (vr as { completed_without_errors?: boolean }).completed_without_errors
-            : null;
+      const passed = resolveVerdict(r);
       if (store.filters.passStatus === 'error' && r.metadata.completed_without_errors) return false;
       if (store.filters.passStatus === 'pass' && passed !== true) return false;
       if (store.filters.passStatus === 'fail' && passed !== false) return false;
