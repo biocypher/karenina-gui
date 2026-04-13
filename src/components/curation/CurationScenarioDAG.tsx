@@ -49,10 +49,12 @@ function ScenarioNodeComponent({ data }: NodeProps<ScenarioNode>) {
       {isSelected && <div style={{ fontSize: 9, color: '#ffd740' }}>VIEWING</div>}
       <div style={{ fontSize: 12, color: '#e0e0e0', fontWeight: 500 }}>{label}</div>
       {passed !== null && (
-        <div style={{ fontSize: 9, color: passed ? '#4caf50' : '#f44336' }}>{passed ? 'Pass' : 'Fail'}</div>
+        <div style={{ fontSize: 10, color: passed ? '#69f0ae' : '#ff8a80', fontWeight: 600 }}>
+          {passed ? 'Pass' : 'Fail'}
+        </div>
       )}
-      {passed === null && <div style={{ fontSize: 9, color: '#888' }}>No result</div>}
-      {isEnd && <div style={{ fontSize: 9, color: '#888' }}>END</div>}
+      {passed === null && <div style={{ fontSize: 10, color: '#b0bec5' }}>No result</div>}
+      {isEnd && <div style={{ fontSize: 9, color: '#b0bec5' }}>END</div>}
       <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
     </div>
   );
