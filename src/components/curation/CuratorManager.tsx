@@ -29,7 +29,7 @@ export function CuratorManager() {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="relative flex items-center gap-2">
       <span className="text-xs text-gray-500">Curator:</span>
       {curators.length > 0 ? (
         <select

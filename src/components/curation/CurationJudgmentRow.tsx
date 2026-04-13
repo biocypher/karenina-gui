@@ -99,7 +99,12 @@ export function CurationJudgmentRow({
               className="flex items-center gap-1 bg-gray-800 px-2 py-1 rounded border border-gray-600"
               title="1 = not confident, 5 = very confident"
             >
-              <span className="text-[10px] text-gray-500 mr-1">Confidence:</span>
+              <span
+                className="text-[10px] text-gray-500 mr-1 cursor-pointer hover:text-gray-300"
+                onClick={() => setConfidenceExpanded(false)}
+              >
+                Confidence:
+              </span>
               <button
                 onClick={handleConfidenceClear}
                 className="text-gray-500 hover:text-gray-300 text-xs px-1"

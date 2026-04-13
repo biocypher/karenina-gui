@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { buildCurationExport } from '../../utils/curation';
 import { downloadJSON } from '../../utils/fileDownload';
@@ -9,6 +10,15 @@ interface CurationExportDialogProps {
 
 export function CurationExportDialog({ open, onClose }: CurationExportDialogProps) {
   const store = useCurationStore();
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -43,8 +53,11 @@ export function CurationExportDialog({ open, onClose }: CurationExportDialogProp
     );
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-600">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+      <div
+        className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-600"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-sm font-medium text-gray-200 mb-3">Export Curation</h3>
         <div className="text-xs text-gray-400 space-y-1 mb-4">
           <p>
