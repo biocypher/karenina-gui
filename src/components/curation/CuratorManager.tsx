@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { UserCircle } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 
@@ -39,12 +40,12 @@ export function CuratorManager() {
 
   return (
     <div className="relative flex items-center gap-2">
-      <span className="text-xs text-slate-400 dark:text-gray-500">Curator:</span>
+      <UserCircle className="w-4 h-4 text-slate-400 dark:text-gray-500" />
       {curators.length > 0 ? (
         <select
           value={activeCuratorId ?? ''}
           onChange={(e) => setActiveCurator(e.target.value)}
-          className="bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-600 rounded px-2 py-1 text-xs text-teal-600 dark:text-teal-400"
+          className="bg-white dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-1 text-xs font-medium text-teal-600 dark:text-teal-400"
           title="Each curator's judgments are independent. You cannot see other curators' assessments to avoid anchoring bias."
         >
           {curators.map((c) => (
@@ -54,12 +55,16 @@ export function CuratorManager() {
           ))}
         </select>
       ) : (
-        <span className="text-xs text-slate-400 dark:text-gray-600 italic">No curators</span>
+        <span className="text-xs text-amber-500 dark:text-amber-400 italic">No curator set</span>
       )}
 
       <button
         onClick={() => setShowAddForm(!showAddForm)}
-        className="bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 px-2 py-1 text-xs rounded hover:bg-slate-200 dark:hover:bg-gray-600"
+        className={`px-2 py-1 text-xs rounded transition-colors ${
+          curators.length === 0
+            ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-400/40 hover:bg-amber-500/30 font-medium'
+            : 'bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-600'
+        }`}
       >
         + Add
       </button>
@@ -88,6 +93,9 @@ export function CuratorManager() {
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAdd();
+            }}
             placeholder="Curator name (required)"
             className="w-full bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-1 text-xs text-slate-800 dark:text-gray-200 mb-2"
             autoFocus

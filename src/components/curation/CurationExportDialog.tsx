@@ -67,7 +67,7 @@ export function CurationExportDialog({ open, onClose }: CurationExportDialogProp
             Total judgments: <span className="text-slate-800 dark:text-gray-200">{totalJudgments}</span>
           </p>
           <p>
-            Format: <span className="text-slate-800 dark:text-gray-200">Standalone Curation JSON v1.0</span>
+            Format: <span className="text-slate-800 dark:text-gray-200">Judgments only (v1.0)</span>
           </p>
         </div>
         <div className="flex justify-end gap-2">
