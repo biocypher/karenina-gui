@@ -4,6 +4,8 @@ import { TemplateGenerationTab } from './TemplateGenerationTab';
 import { BenchmarkTab } from './BenchmarkTab';
 import { DocsTab } from './DocsTab';
 import { ConfigurationModal } from './ConfigurationModal';
+// TODO: Uncomment when CurationTab is created (Task 9)
+// import { CurationTab } from './curation';
 import { Checkpoint, QuestionData, VerificationResult } from '../types';
 
 export interface AppRouterProps {
@@ -56,6 +58,9 @@ export function AppRouter({
           setBenchmarkResults={onSetBenchmarkResults}
         />
       )}
+
+      {/* Review Tab - TODO: Uncomment when CurationTab is created (Task 9) */}
+      {/* {activeTab === 'review' && <CurationTab />} */}
 
       {/* Docs Tab */}
       {activeTab === 'docs' && <DocsTab />}
