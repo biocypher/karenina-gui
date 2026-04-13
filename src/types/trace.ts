@@ -31,4 +31,7 @@ export interface TraceMessage {
   tool_result?: ToolResultMeta;
   thinking?: ThinkingMeta;
   model?: string;
+  // Frontend-only annotations (set by curation trace enrichment, not from backend)
+  _isCurrentTurn?: boolean;
+  _isInjected?: boolean;
 }

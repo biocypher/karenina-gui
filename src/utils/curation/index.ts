@@ -14,3 +14,5 @@ export { groupScenarioResults } from './groupScenarioResults';
 export type { GroupedResults } from './groupScenarioResults';
 export { parseTemplateFields } from './parseTemplateFields';
 export type { TemplateFieldMeta } from './parseTemplateFields';
+export { buildEnrichedTrace } from './enrichTrace';
+export type { EnrichedTraceResult } from './enrichTrace';
