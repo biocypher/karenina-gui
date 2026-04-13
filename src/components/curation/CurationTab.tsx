@@ -9,7 +9,6 @@ import { jsonLdToV2 } from '../../utils/checkpoint/converter';
 import { extractScenarioDefinitions } from '../../utils/checkpoint/scenarioExtractor';
 import { CurationHeader } from './CurationHeader';
 import { CurationResultList } from './CurationResultList';
-import { CurationDetailPanel } from './CurationDetailPanel';
 import { CurationExportDialog } from './CurationExportDialog';
 import { CurationScenarioSection } from './CurationScenarioSection';
 import type { VerificationResult } from '../../types/verification';
@@ -182,20 +181,6 @@ export function CurationTab() {
 
   const allResultIds = store.results.map((r) => r.metadata.result_id ?? r.metadata.template_id);
 
-  const selectedResult = store.selectedResultId
-    ? (store.results.find((r) => (r.metadata.result_id ?? r.metadata.template_id) === store.selectedResultId) ?? null)
-    : null;
-
-  const selectedIndex = selectedResult ? filteredResults.indexOf(selectedResult) : -1;
-
-  const navigateResult = (delta: number) => {
-    const newIndex = selectedIndex + delta;
-    if (newIndex >= 0 && newIndex < filteredResults.length) {
-      const r = filteredResults[newIndex];
-      store.setSelectedResult(r.metadata.result_id ?? r.metadata.template_id);
-    }
-  };
-
   return (
     <div className="p-4">
       <input
@@ -209,7 +194,7 @@ export function CurationTab() {
       <input ref={curationInputRef} type="file" accept=".json" className="hidden" onChange={handleCurationFile} />
 
       {error && (
-        <div className="bg-red-900/30 border border-red-700 rounded p-2 mb-3 text-xs text-red-300 flex justify-between">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded p-2 mb-3 text-xs text-red-300 flex justify-between">
           {error}
           <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200">
             Dismiss
@@ -228,7 +213,7 @@ export function CurationTab() {
       />
 
       {store.results.length === 0 && store.scenarioResults.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-gray-500">
+        <div className="flex flex-col items-center justify-center py-24 text-slate-400 dark:text-gray-500">
           <div className="text-lg mb-2">No data loaded</div>
           <div className="text-xs">
             Load a checkpoint + results file, or a previous curation session to get started.
@@ -237,20 +222,7 @@ export function CurationTab() {
       ) : (
         <>
           {store.scenarioResults.length > 0 && <CurationScenarioSection />}
-          {store.results.length > 0 && (
-            <>
-              <CurationResultList filteredResults={filteredResults} />
-              {selectedResult && (
-                <CurationDetailPanel
-                  result={selectedResult}
-                  onPrev={() => navigateResult(-1)}
-                  onNext={() => navigateResult(1)}
-                  hasPrev={selectedIndex > 0}
-                  hasNext={selectedIndex < filteredResults.length - 1}
-                />
-              )}
-            </>
-          )}
+          {store.results.length > 0 && <CurationResultList filteredResults={filteredResults} />}
         </>
       )}
 

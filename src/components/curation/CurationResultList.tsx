@@ -1,6 +1,8 @@
+import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { computeResultStatus, resolveVerdict } from '../../utils/curation';
+import { CurationDetailPanel } from './CurationDetailPanel';
 import type { VerificationResult } from '../../types/verification';
 import type { CurationStatus } from '../../types/curation';
 
@@ -31,6 +33,7 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
     currentPage,
     pageSize,
     setCurrentPage,
+    checkpoint,
   } = useCurationStore(
     useShallow((s) => ({
       activeCuratorId: s.activeCuratorId,
@@ -42,6 +45,7 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
       currentPage: s.currentPage,
       pageSize: s.pageSize,
       setCurrentPage: s.setCurrentPage,
+      checkpoint: s.checkpoint,
     }))
   );
 
@@ -49,10 +53,10 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
   const pageResults = filteredResults.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="bg-gray-800 rounded mb-3">
+    <div data-testid="curation-result-list" className="bg-white dark:bg-gray-800 rounded mb-3">
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-gray-500 border-b border-gray-700">
+          <tr className="text-slate-400 dark:text-gray-500 border-b border-slate-200 dark:border-gray-700">
             <th className="text-left p-2 w-12">Status</th>
             <th className="text-left p-2">Question</th>
             <th className="text-left p-2 w-40">Model</th>
@@ -69,57 +73,86 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
             const isSelected = selectedResultId === resultId;
             const passed = resolveVerdict(result);
 
+            const selectedIndex = isSelected ? pageResults.indexOf(result) : -1;
+
             return (
-              <tr
-                key={resultId}
-                tabIndex={0}
-                role="row"
-                onClick={() => setSelectedResult(isSelected ? null : resultId)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setSelectedResult(isSelected ? null : resultId);
-                  }
-                }}
-                className={`border-b border-gray-700/50 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-gray-700/50' : 'hover:bg-gray-700/30'
-                }`}
-              >
-                <td className="p-2">
-                  <div className={`w-3 h-3 rounded-full ${STATUS_COLORS[status]}`} title={STATUS_TOOLTIPS[status]} />
-                </td>
-                <td className="p-2 text-gray-300 truncate max-w-md">{result.metadata.question_text}</td>
-                <td className="p-2 text-gray-400">{result.metadata.answering.model_name}</td>
-                <td className="p-2">
-                  {!result.metadata.completed_without_errors ? (
-                    <span className="text-amber-400">Error</span>
-                  ) : passed === true ? (
-                    <span className="text-green-400">Pass</span>
-                  ) : passed === false ? (
-                    <span className="text-red-400">Fail</span>
-                  ) : (
-                    <span className="text-gray-500">{'\u2014'}</span>
-                  )}
-                </td>
-                <td className="p-2">
-                  {curatedFlags[activeCuratorId ?? '']?.[resultId] ? (
-                    <span className="text-green-400">Yes</span>
-                  ) : (
-                    <span className="text-gray-600">{'\u2014'}</span>
-                  )}
-                </td>
-              </tr>
+              <React.Fragment key={resultId}>
+                <tr
+                  tabIndex={0}
+                  role="row"
+                  onClick={() => setSelectedResult(isSelected ? null : resultId)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedResult(isSelected ? null : resultId);
+                    }
+                  }}
+                  className={`border-b border-slate-200/60 dark:border-gray-700/50 cursor-pointer transition-colors ${
+                    isSelected ? 'bg-slate-200/60 dark:bg-gray-700/50' : 'hover:bg-slate-100 dark:hover:bg-gray-700/30'
+                  }`}
+                >
+                  <td className="p-2">
+                    <div className={`w-3 h-3 rounded-full ${STATUS_COLORS[status]}`} title={STATUS_TOOLTIPS[status]} />
+                  </td>
+                  <td className="p-2 text-slate-700 dark:text-gray-300 truncate max-w-md">
+                    {result.metadata.question_text}
+                  </td>
+                  <td className="p-2 text-slate-500 dark:text-gray-400">{result.metadata.answering.model_name}</td>
+                  <td className="p-2">
+                    {!result.metadata.completed_without_errors ? (
+                      <span className="text-amber-400">Error</span>
+                    ) : passed === true ? (
+                      <span className="text-green-400">Pass</span>
+                    ) : passed === false ? (
+                      <span className="text-red-400">Fail</span>
+                    ) : (
+                      <span className="text-gray-500">{'\u2014'}</span>
+                    )}
+                  </td>
+                  <td className="p-2">
+                    {curatedFlags[activeCuratorId ?? '']?.[resultId] ? (
+                      <span className="text-green-400">Yes</span>
+                    ) : (
+                      <span className="text-slate-400 dark:text-gray-600">{'\u2014'}</span>
+                    )}
+                  </td>
+                </tr>
+                {isSelected && (
+                  <tr>
+                    <td colSpan={5} className="p-0">
+                      <CurationDetailPanel
+                        result={result}
+                        answerTemplateSource={checkpoint?.[result.metadata.question_id]?.answer_template}
+                        onPrev={() => {
+                          if (selectedIndex > 0) {
+                            const prev = pageResults[selectedIndex - 1];
+                            setSelectedResult(prev.metadata.result_id ?? prev.metadata.template_id);
+                          }
+                        }}
+                        onNext={() => {
+                          if (selectedIndex < pageResults.length - 1) {
+                            const next = pageResults[selectedIndex + 1];
+                            setSelectedResult(next.metadata.result_id ?? next.metadata.template_id);
+                          }
+                        }}
+                        hasPrev={selectedIndex > 0}
+                        hasNext={selectedIndex < pageResults.length - 1}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             );
           })}
         </tbody>
       </table>
 
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 p-2 text-xs text-gray-400">
+        <div className="flex justify-center items-center gap-2 p-2 text-xs text-slate-500 dark:text-gray-400">
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage <= 1}
-            className="hover:text-gray-200 disabled:opacity-30"
+            className="hover:text-slate-800 dark:hover:text-gray-200 disabled:opacity-30"
           >
             Prev
           </button>
@@ -136,7 +169,7 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-2 py-0.5 rounded ${page === currentPage ? 'bg-gray-600 text-gray-200' : 'hover:text-gray-200'}`}
+                className={`px-2 py-0.5 rounded ${page === currentPage ? 'bg-slate-300 dark:bg-gray-600 text-slate-800 dark:text-gray-200' : 'hover:text-slate-800 dark:hover:text-gray-200'}`}
               >
                 {page}
               </button>
@@ -145,7 +178,7 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
           <button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage >= totalPages}
-            className="hover:text-gray-200 disabled:opacity-30"
+            className="hover:text-slate-800 dark:hover:text-gray-200 disabled:opacity-30"
           >
             Next
           </button>

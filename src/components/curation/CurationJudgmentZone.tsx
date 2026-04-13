@@ -1,15 +1,19 @@
+import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { CurationJudgmentRow } from './CurationJudgmentRow';
+import { parseTemplateFields } from '../../utils/curation/parseTemplateFields';
+import type { TemplateFieldMeta } from '../../utils/curation/parseTemplateFields';
 import type { VerificationResult } from '../../types/verification';
 
 interface CurationJudgmentZoneProps {
   result: VerificationResult;
   scenarioId?: string;
   nodeId?: string;
+  answerTemplateSource?: string;
 }
 
-export function CurationJudgmentZone({ result, scenarioId, nodeId }: CurationJudgmentZoneProps) {
+export function CurationJudgmentZone({ result, scenarioId, nodeId, answerTemplateSource }: CurationJudgmentZoneProps) {
   const {
     activeCuratorId,
     activeTab,
@@ -57,6 +61,15 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId }: CurationJud
   const isScenarioMode = scenarioId != null && nodeId != null;
   const resultId = result.metadata.result_id ?? result.metadata.template_id;
 
+  // Parse template field metadata from checkpoint source code
+  const fieldMetaMap = useMemo(() => {
+    if (!answerTemplateSource) return {} as Record<string, TemplateFieldMeta>;
+    const fields = parseTemplateFields(answerTemplateSource);
+    const map: Record<string, TemplateFieldMeta> = {};
+    for (const f of fields) map[f.name] = f;
+    return map;
+  }, [answerTemplateSource]);
+
   const isCurated = activeCuratorId
     ? isScenarioMode
       ? (scenarioCuratedFlags[activeCuratorId]?.[scenarioId] ?? false)
@@ -95,38 +108,46 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId }: CurationJud
   const rubricTraitCount = Object.keys(allTraitScores).length + metricTraitCount;
 
   return (
-    <div className="bg-gray-800 rounded p-3">
-      {/* Tab header + curated flag */}
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex gap-1">
-          <button
-            onClick={() => setActiveTab('template')}
-            className={`px-3 py-1.5 rounded text-xs ${
-              activeTab === 'template'
-                ? 'bg-blue-900/50 text-teal-400 border-b-2 border-teal-400'
-                : 'bg-gray-700 text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            Template Fields ({templateFieldCount})
-          </button>
-          <button
-            onClick={() => setActiveTab('rubric')}
-            className={`px-3 py-1.5 rounded text-xs ${
-              activeTab === 'rubric'
-                ? 'bg-blue-900/50 text-teal-400 border-b-2 border-teal-400'
-                : 'bg-gray-700 text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            Rubric Traits ({rubricTraitCount})
-          </button>
+    <div
+      data-testid="curation-judgment-zone"
+      className="border-l-[3px] border-l-violet-400 bg-slate-50 dark:bg-gray-700/70 rounded-r px-4 py-3"
+    >
+      {/* Section label + curated flag */}
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+            Curation
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab('template')}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                activeTab === 'template'
+                  ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300'
+                  : 'text-slate-400 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Template Fields ({templateFieldCount})
+            </button>
+            <button
+              onClick={() => setActiveTab('rubric')}
+              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                activeTab === 'rubric'
+                  ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300'
+                  : 'text-slate-400 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Rubric Traits ({rubricTraitCount})
+            </button>
+          </div>
         </div>
         <button
           onClick={() => (isScenarioMode ? toggleScenarioCurated(scenarioId) : toggleCurated(resultId))}
           title="Mark this result as fully reviewed. Your individual trait judgments are saved automatically."
-          className={`px-3 py-1.5 rounded text-xs transition-colors ${
+          className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
             isCurated
-              ? 'bg-green-700 text-white border border-green-500'
-              : 'bg-gray-700 text-gray-400 border border-gray-600 hover:border-gray-400'
+              ? 'bg-green-600 dark:bg-green-700 text-white border border-green-500'
+              : 'bg-white dark:bg-gray-700 text-slate-500 dark:text-gray-400 border border-slate-300 dark:border-gray-600 hover:border-violet-400 dark:hover:border-violet-400'
           }`}
         >
           {isCurated ? 'Curated' : 'Flag as Curated'}
@@ -137,7 +158,7 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId }: CurationJud
       {activeTab === 'template' && (
         <div className="flex flex-col gap-2">
           {!hasTemplate ? (
-            <div className="text-xs text-gray-500 italic flex items-center gap-1.5 py-4 justify-center">
+            <div className="text-xs text-slate-400 dark:text-gray-500 italic flex items-center gap-1.5 py-4 justify-center">
               No template verification was performed for this result
             </div>
           ) : (
@@ -148,6 +169,7 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId }: CurationJud
                 fieldScore !== undefined ? (passed ? 'Pass' : `Fail (${fieldScore.toFixed(2)})`) : 'N/A';
               const gt = parsedGt[fieldName];
               const llm = parsedLlm[fieldName];
+              const meta = fieldMetaMap[fieldName];
               const curJudgment = activeCuratorId
                 ? isScenarioMode
                   ? (scenarioTemplateJudgments[activeCuratorId]?.[scenarioId]?.[nodeId]?.[fieldName] ?? null)
@@ -160,7 +182,11 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId }: CurationJud
                   name={fieldName}
                   verdictLabel={verdictLabel}
                   verdictPassed={passed}
-                  detailLine={`GT: ${gt !== undefined ? JSON.stringify(gt) : '\u2014'} | LLM: ${llm !== undefined ? JSON.stringify(llm) : '\u2014'}`}
+                  gtValue={gt !== undefined ? JSON.stringify(gt) : undefined}
+                  llmValue={llm !== undefined ? JSON.stringify(llm) : undefined}
+                  fieldType={meta?.type}
+                  fieldDescription={meta?.description}
+                  verifyWith={meta?.verifyWith}
                   judgment={curJudgment}
                   onJudgmentChange={(j) =>
                     isScenarioMode
@@ -183,7 +209,7 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId }: CurationJud
       {activeTab === 'rubric' && (
         <div className="flex flex-col gap-2">
           {!hasRubric ? (
-            <div className="text-xs text-gray-500 italic flex items-center gap-1.5 py-4 justify-center">
+            <div className="text-xs text-slate-400 dark:text-gray-500 italic flex items-center gap-1.5 py-4 justify-center">
               No rubric evaluation was performed for this result
             </div>
           ) : (

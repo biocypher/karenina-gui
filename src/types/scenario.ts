@@ -12,6 +12,7 @@ export interface ScenarioNode {
     text: string;
     raw_answer?: string;
   };
+  answer_template?: string;
   model_override?: {
     answering_model?: Record<string, unknown> | null;
     parsing_model?: Record<string, unknown> | null;

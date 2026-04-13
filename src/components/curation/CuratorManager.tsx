@@ -39,12 +39,12 @@ export function CuratorManager() {
 
   return (
     <div className="relative flex items-center gap-2">
-      <span className="text-xs text-gray-500">Curator:</span>
+      <span className="text-xs text-slate-400 dark:text-gray-500">Curator:</span>
       {curators.length > 0 ? (
         <select
           value={activeCuratorId ?? ''}
           onChange={(e) => setActiveCurator(e.target.value)}
-          className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-teal-400"
+          className="bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-600 rounded px-2 py-1 text-xs text-teal-600 dark:text-teal-400"
           title="Each curator's judgments are independent. You cannot see other curators' assessments to avoid anchoring bias."
         >
           {curators.map((c) => (
@@ -54,12 +54,12 @@ export function CuratorManager() {
           ))}
         </select>
       ) : (
-        <span className="text-xs text-gray-600 italic">No curators</span>
+        <span className="text-xs text-slate-400 dark:text-gray-600 italic">No curators</span>
       )}
 
       <button
         onClick={() => setShowAddForm(!showAddForm)}
-        className="bg-gray-700 text-gray-300 px-2 py-1 text-xs rounded hover:bg-gray-600"
+        className="bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 px-2 py-1 text-xs rounded hover:bg-slate-200 dark:hover:bg-gray-600"
       >
         + Add
       </button>
@@ -75,7 +75,7 @@ export function CuratorManager() {
               removeCurator(activeCuratorId);
             }
           }}
-          className="text-gray-500 hover:text-red-400 text-xs px-1"
+          className="text-slate-400 dark:text-gray-500 hover:text-red-400 text-xs px-1"
           title="Remove current curator"
         >
           Remove
@@ -83,17 +83,17 @@ export function CuratorManager() {
       )}
 
       {showAddForm && (
-        <div className="absolute top-full right-0 mt-1 bg-gray-800 border border-gray-600 rounded p-3 shadow-lg z-10 min-w-64">
+        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-600 rounded p-3 shadow-lg z-10 min-w-64">
           <input
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Curator name (required)"
-            className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 mb-2"
+            className="w-full bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-1 text-xs text-slate-800 dark:text-gray-200 mb-2"
             autoFocus
           />
           {metadataPairs.map(([k, v], i) => (
-            <div key={i} className="text-xs text-gray-400 mb-1">
+            <div key={i} className="text-xs text-slate-500 dark:text-gray-400 mb-1">
               {k}: {v}
             </div>
           ))}
@@ -102,15 +102,18 @@ export function CuratorManager() {
               value={newMetaKey}
               onChange={(e) => setNewMetaKey(e.target.value)}
               placeholder="Key"
-              className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-0.5 text-xs text-gray-200"
+              className="flex-1 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-0.5 text-xs text-slate-800 dark:text-gray-200"
             />
             <input
               value={newMetaValue}
               onChange={(e) => setNewMetaValue(e.target.value)}
               placeholder="Value"
-              className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-0.5 text-xs text-gray-200"
+              className="flex-1 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-0.5 text-xs text-slate-800 dark:text-gray-200"
             />
-            <button onClick={handleAddMetaPair} className="text-xs text-gray-400 hover:text-gray-200 px-1">
+            <button
+              onClick={handleAddMetaPair}
+              className="text-xs text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 px-1"
+            >
               +
             </button>
           </div>
@@ -118,7 +121,10 @@ export function CuratorManager() {
             <button onClick={handleAdd} className="bg-teal-700 text-white px-3 py-1 text-xs rounded hover:bg-teal-600">
               Add
             </button>
-            <button onClick={() => setShowAddForm(false)} className="text-gray-400 text-xs hover:text-gray-200">
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="text-slate-500 dark:text-gray-400 text-xs hover:text-slate-800 dark:hover:text-gray-200"
+            >
               Cancel
             </button>
           </div>

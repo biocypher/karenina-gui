@@ -11,7 +11,14 @@ interface CurationDetailPanelProps {
   hasNext: boolean;
   scenarioId?: string;
   nodeId?: string;
+  answerTemplateSource?: string;
 }
+
+const VERDICT_STYLES = {
+  pass: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700',
+  fail: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700',
+  none: 'bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 border-slate-300 dark:border-gray-600',
+};
 
 export function CurationDetailPanel({
   result,
@@ -21,50 +28,68 @@ export function CurationDetailPanel({
   hasNext,
   scenarioId,
   nodeId,
+  answerTemplateSource,
 }: CurationDetailPanelProps) {
   const meta = result.metadata;
   const passed = resolveVerdict(result);
+  const verdictStyle =
+    passed === true ? VERDICT_STYLES.pass : passed === false ? VERDICT_STYLES.fail : VERDICT_STYLES.none;
 
   return (
-    <div className="border border-gray-700 rounded p-4 mt-2">
-      {/* Result header bar */}
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <div className="text-sm text-teal-400">{meta.question_text}</div>
-          <div className="text-xs text-gray-500 mt-1">
-            <span className={passed === true ? 'text-green-400' : passed === false ? 'text-red-400' : 'text-gray-400'}>
-              {passed === true ? 'Pass' : passed === false ? 'Fail' : 'No verdict'}
-            </span>
-            {' | '}Answering: <span className="text-gray-300">{meta.answering.model_name}</span> Parsing:{' '}
-            <span className="text-gray-300">{meta.parsing.model_name}</span>
-            {meta.replicate != null && (
-              <>
-                {' '}
-                Replicate: <span className="text-gray-300">{meta.replicate}</span>
-              </>
-            )}
+    <div data-testid="curation-detail-panel" className="py-3 px-3 space-y-4">
+      {/* QUESTION section */}
+      <div className="border-l-[3px] border-l-teal-500 bg-slate-50 dark:bg-gray-700/70 rounded-r px-4 py-3">
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                Question
+              </span>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${verdictStyle}`}>
+                {passed === true ? 'PASS' : passed === false ? 'FAIL' : 'NO VERDICT'}
+              </span>
+              {!meta.completed_without_errors && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700">
+                  ERROR
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-slate-800 dark:text-gray-100 leading-relaxed">{meta.question_text}</div>
+            <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-slate-400 dark:text-gray-500 mt-1.5">
+              <span className="text-slate-600 dark:text-gray-300">{meta.answering.model_name}</span>
+              {meta.answering.model_name !== meta.parsing.model_name && <span>parser: {meta.parsing.model_name}</span>}
+              <span>{meta.execution_time.toFixed(1)}s</span>
+              <span>{meta.timestamp}</span>
+              {meta.answering.tools.length > 0 && <span>tools: {meta.answering.tools.join(', ')}</span>}
+              {meta.replicate != null && <span>replicate {meta.replicate}</span>}
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2 flex-shrink-0">
-          <button
-            onClick={onPrev}
-            disabled={!hasPrev}
-            className="px-3 py-1 bg-gray-700 text-xs rounded disabled:opacity-30 hover:bg-gray-600"
-          >
-            Prev
-          </button>
-          <button
-            onClick={onNext}
-            disabled={!hasNext}
-            className="px-3 py-1 bg-gray-700 text-xs rounded disabled:opacity-30 hover:bg-gray-600"
-          >
-            Next
-          </button>
+          <div className="flex gap-1 flex-shrink-0 ml-3">
+            <button
+              onClick={onPrev}
+              disabled={!hasPrev}
+              className="px-2 py-0.5 text-[11px] text-slate-400 dark:text-gray-500 rounded disabled:opacity-20 hover:text-slate-800 dark:hover:text-gray-200"
+            >
+              Prev
+            </button>
+            <button
+              onClick={onNext}
+              disabled={!hasNext}
+              className="px-2 py-0.5 text-[11px] text-slate-400 dark:text-gray-500 rounded disabled:opacity-20 hover:text-slate-800 dark:hover:text-gray-200"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
       <CurationContextZone result={result} />
-      <CurationJudgmentZone result={result} scenarioId={scenarioId} nodeId={nodeId} />
+      <CurationJudgmentZone
+        result={result}
+        scenarioId={scenarioId}
+        nodeId={nodeId}
+        answerTemplateSource={answerTemplateSource}
+      />
     </div>
   );
 }

@@ -43,40 +43,40 @@ export function CurationHeader({
   const parsingModels = [...new Set(results.map((r) => r.metadata.parsing.model_name))];
 
   return (
-    <div className="bg-gray-800 rounded p-3 mb-3">
+    <div data-testid="curation-header" className="bg-white dark:bg-gray-800 rounded p-3 mb-3">
       {/* Row 1: Upload buttons + curator selector */}
       <div className="flex justify-between items-center mb-2">
         <div className="flex gap-2 items-center">
           <button
             onClick={onLoadCheckpoint}
-            className={`px-3 py-1.5 text-xs rounded border hover:border-gray-400 ${
+            className={`px-3 py-1.5 text-xs rounded border hover:border-slate-400 dark:hover:border-gray-400 ${
               checkpointLoaded
-                ? 'bg-green-900/30 text-green-300 border-green-700'
-                : 'bg-blue-900/50 text-gray-300 border-gray-600'
+                ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
+                : 'bg-blue-50 dark:bg-blue-900/50 text-slate-700 dark:text-gray-300 border-slate-300 dark:border-gray-600'
             }`}
           >
             {checkpointLoaded ? 'Checkpoint loaded' : 'Load Checkpoint'}
           </button>
           <button
             onClick={onLoadResults}
-            className={`px-3 py-1.5 text-xs rounded border hover:border-gray-400 ${
+            className={`px-3 py-1.5 text-xs rounded border hover:border-slate-400 dark:hover:border-gray-400 ${
               resultsLoaded
-                ? 'bg-green-900/30 text-green-300 border-green-700'
-                : 'bg-blue-900/50 text-gray-300 border-gray-600'
+                ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
+                : 'bg-blue-50 dark:bg-blue-900/50 text-slate-700 dark:text-gray-300 border-slate-300 dark:border-gray-600'
             }`}
           >
             {resultsLoaded ? 'Results loaded' : 'Load Results'}
           </button>
           <button
             onClick={onLoadCuration}
-            className="bg-blue-900/50 text-gray-300 px-3 py-1.5 text-xs rounded border border-gray-600 hover:border-gray-400"
+            className="bg-blue-50 dark:bg-blue-900/50 text-slate-700 dark:text-gray-300 px-3 py-1.5 text-xs rounded border border-slate-300 dark:border-gray-600 hover:border-slate-400 dark:hover:border-gray-400"
           >
             Load Previous Curation
           </button>
           {results.length > 0 && (
             <button
               onClick={onExport}
-              className="bg-green-900/50 text-gray-300 px-3 py-1.5 text-xs rounded border border-gray-600 hover:border-gray-400"
+              className="bg-green-50 dark:bg-green-900/50 text-slate-700 dark:text-gray-300 px-3 py-1.5 text-xs rounded border border-slate-300 dark:border-gray-600 hover:border-slate-400 dark:hover:border-gray-400"
             >
               Export Curation
             </button>
@@ -101,11 +101,11 @@ export function CurationHeader({
               Pending: <span className="text-red-400">{counts.pending}</span>
             </span>
           </div>
-          <span className="text-gray-600">|</span>
+          <span className="text-slate-400 dark:text-gray-600">|</span>
           <select
             value={filters.status}
             onChange={(e) => setFilters({ status: e.target.value as typeof filters.status })}
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-0.5 text-xs text-gray-300"
+            className="bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-0.5 text-xs text-slate-700 dark:text-gray-300"
           >
             <option value="all">All Status</option>
             <option value="curated">Curated</option>
@@ -115,7 +115,7 @@ export function CurationHeader({
           <select
             value={filters.passStatus}
             onChange={(e) => setFilters({ passStatus: e.target.value as typeof filters.passStatus })}
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-0.5 text-xs text-gray-300"
+            className="bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-0.5 text-xs text-slate-700 dark:text-gray-300"
           >
             <option value="all">All Results</option>
             <option value="pass">Pass</option>
@@ -125,7 +125,7 @@ export function CurationHeader({
           <select
             value={filters.answeringModel ?? ''}
             onChange={(e) => setFilters({ answeringModel: e.target.value || null })}
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-0.5 text-xs text-gray-300"
+            className="bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-0.5 text-xs text-slate-700 dark:text-gray-300"
           >
             <option value="">All Answering Models</option>
             {answeringModels.map((m) => (
@@ -137,7 +137,7 @@ export function CurationHeader({
           <select
             value={filters.parsingModel ?? ''}
             onChange={(e) => setFilters({ parsingModel: e.target.value || null })}
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-0.5 text-xs text-gray-300"
+            className="bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-0.5 text-xs text-slate-700 dark:text-gray-300"
           >
             <option value="">All Parsing Models</option>
             {parsingModels.map((m) => (
@@ -151,7 +151,7 @@ export function CurationHeader({
             value={filters.searchQuery}
             onChange={(e) => setFilters({ searchQuery: e.target.value })}
             placeholder="Search questions..."
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-0.5 text-xs text-gray-300 placeholder-gray-500 w-48"
+            className="bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 rounded px-2 py-0.5 text-xs text-slate-700 dark:text-gray-300 placeholder-slate-400 dark:placeholder-gray-500 w-48"
           />
           {(filters.status !== 'all' ||
             filters.passStatus !== 'all' ||
@@ -168,7 +168,7 @@ export function CurationHeader({
                   searchQuery: '',
                 })
               }
-              className="text-gray-400 hover:text-gray-200 text-xs"
+              className="text-slate-500 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 text-xs"
             >
               Clear filters
             </button>

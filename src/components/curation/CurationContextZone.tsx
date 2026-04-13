@@ -9,7 +9,6 @@ interface CurationContextZoneProps {
 }
 
 export function CurationContextZone({ result }: CurationContextZoneProps) {
-  const [collapsed, setCollapsed] = useState(false);
   const [traceMode, setTraceMode] = useState<'raw' | 'structured'>('raw');
 
   const meta = result.metadata;
@@ -17,83 +16,55 @@ export function CurationContextZone({ result }: CurationContextZoneProps) {
   const rawAnswer = meta.raw_answer ?? template?.raw_llm_response ?? '';
   const traceMessages = template?.trace_messages as TraceMessage[] | undefined;
 
-  if (collapsed) {
-    return (
-      <div className="bg-gray-900/50 border border-gray-700 rounded p-2 mb-3">
-        <button onClick={() => setCollapsed(false)} className="text-xs text-gray-400 hover:text-gray-200">
-          &#9654; Show response context
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-gray-900/50 border border-gray-700 rounded p-3 mb-3">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-xs text-teal-400 font-bold">RESPONSE CONTEXT</span>
-        <button onClick={() => setCollapsed(true)} className="text-xs text-gray-500 hover:text-gray-300">
-          &#9660; Collapse
-        </button>
-      </div>
-
-      {/* Metadata row */}
-      <div className="flex gap-4 text-xs text-gray-500 mb-2 px-2 py-1 bg-gray-800 rounded">
-        <span>
-          Execution: <span className="text-gray-300">{meta.execution_time.toFixed(1)}s</span>
-        </span>
-        <span>
-          Timestamp: <span className="text-gray-300">{meta.timestamp}</span>
-        </span>
-        {meta.answering.tools.length > 0 && (
-          <span>
-            Tools: <span className="text-gray-300">{meta.answering.tools.join(', ')}</span>
-          </span>
-        )}
-        <span>
-          Errors:{' '}
-          <span className={meta.completed_without_errors ? 'text-green-400' : 'text-red-400'}>
-            {meta.completed_without_errors ? 'None' : (meta.error ?? 'Error')}
-          </span>
-        </span>
-      </div>
-
-      {/* Raw answer */}
-      <div className="mb-2">
-        <div className="text-xs text-gray-500 mb-1">RAW ANSWER</div>
-        <div className="bg-gray-800 rounded p-2 text-xs text-gray-300 max-h-32 overflow-auto whitespace-pre-wrap">
-          {rawAnswer || <span className="text-gray-600 italic">No answer recorded</span>}
+    <div data-testid="curation-context-zone" className="space-y-4">
+      {/* Raw Ground Truth Answer */}
+      <div
+        data-testid="context-raw-gt-answer"
+        className="border-l-[3px] border-l-amber-400 bg-slate-50 dark:bg-gray-700/70 rounded-r px-4 py-2.5"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1">
+          Ground Truth Answer
+        </div>
+        <div className="text-sm text-slate-800 dark:text-gray-200 max-h-24 overflow-auto whitespace-pre-wrap font-mono">
+          {rawAnswer || <span className="text-slate-400 dark:text-gray-600 italic font-sans">No answer recorded</span>}
         </div>
       </div>
 
-      {/* Trace */}
+      {/* Answering Trace */}
       {(template?.raw_llm_response || traceMessages) && (
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-gray-500">ANSWERING TRACE</span>
+        <div
+          data-testid="context-answering-trace"
+          className="border-l-[3px] border-l-blue-400 bg-slate-50 dark:bg-gray-700/70 rounded-r overflow-hidden"
+        >
+          <div className="flex justify-between items-center px-4 py-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              Answering Trace
+            </span>
             <div className="flex gap-1">
               <button
                 onClick={() => setTraceMode('raw')}
-                className={`text-xs px-2 py-0.5 rounded ${traceMode === 'raw' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300'}`}
+                className={`text-[11px] px-2.5 py-0.5 rounded ${traceMode === 'raw' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'text-slate-400 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-300'}`}
               >
                 Raw
               </button>
               {traceMessages && traceMessages.length > 0 && (
                 <button
                   onClick={() => setTraceMode('structured')}
-                  className={`text-xs px-2 py-0.5 rounded ${traceMode === 'structured' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300'}`}
+                  className={`text-[11px] px-2.5 py-0.5 rounded ${traceMode === 'structured' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'text-slate-400 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-300'}`}
                 >
                   Structured
                 </button>
               )}
             </div>
           </div>
-          <div className="max-h-64 overflow-auto rounded">
+          <div className="max-h-[48rem] overflow-auto min-w-0">
             {traceMode === 'raw' && template?.raw_llm_response ? (
               <TraceHighlightedTextDisplay text={template.raw_llm_response} className="text-xs" />
             ) : traceMessages && traceMessages.length > 0 ? (
               <TraceStructuredDisplay traceMessages={traceMessages} className="text-xs" />
             ) : (
-              <div className="text-xs text-gray-600 italic p-2">No trace available</div>
+              <div className="text-xs text-slate-400 dark:text-gray-600 italic px-4 py-3">No trace available</div>
             )}
           </div>
         </div>

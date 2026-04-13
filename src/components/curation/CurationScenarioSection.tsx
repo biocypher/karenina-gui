@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { resolveVerdict } from '../../utils/curation';
@@ -99,10 +100,6 @@ export function CurationScenarioSection() {
     return true;
   });
 
-  const selectedScenario = selectedScenarioId
-    ? (filteredScenarios.find((s) => s.scenario_id === selectedScenarioId) ?? null)
-    : null;
-
   const findDefinition = (scenarioId: string) => {
     return (
       scenarioDefinitions.find((d) => d.name === scenarioId) ??
@@ -110,11 +107,14 @@ export function CurationScenarioSection() {
     );
   };
 
-  const selectedDefinition = selectedScenario ? findDefinition(selectedScenario.scenario_id) : undefined;
+  const PAGE_SIZE = 25;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredScenarios.length / PAGE_SIZE));
+  const pageScenarios = filteredScenarios.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <div className="mb-4">
-      <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+    <div data-testid="curation-scenario-section" className="mb-4">
+      <div className="text-xs text-slate-400 dark:text-gray-500 uppercase tracking-wide mb-2">
         Scenarios (
         {filteredScenarios.length === scenarioResults.length
           ? scenarioResults.length
@@ -122,27 +122,68 @@ export function CurationScenarioSection() {
         )
       </div>
 
-      <div className="bg-gray-800 rounded max-h-60 overflow-y-auto">
-        {filteredScenarios.map((scenario) => (
-          <ScenarioCard
-            key={scenario.scenario_id}
-            scenario={scenario}
-            name={findDefinition(scenario.scenario_id)?.name ?? scenario.scenario_id}
-            isSelected={selectedScenarioId === scenario.scenario_id}
-            isCurated={
-              activeCuratorId ? (scenarioCuratedFlags[activeCuratorId]?.[scenario.scenario_id] ?? false) : false
-            }
-            onClick={() => setSelectedScenario(scenario.scenario_id)}
-          />
-        ))}
+      <div className="bg-white dark:bg-gray-800 rounded overflow-hidden">
+        {pageScenarios.map((scenario) => {
+          const isSelected = selectedScenarioId === scenario.scenario_id;
+          return (
+            <div key={scenario.scenario_id} data-testid={`scenario-card-${scenario.scenario_id}`}>
+              <ScenarioCard
+                scenario={scenario}
+                name={findDefinition(scenario.scenario_id)?.name ?? scenario.scenario_id}
+                isSelected={isSelected}
+                isCurated={
+                  activeCuratorId ? (scenarioCuratedFlags[activeCuratorId]?.[scenario.scenario_id] ?? false) : false
+                }
+                onClick={() => setSelectedScenario(isSelected ? null : scenario.scenario_id)}
+              />
+              {isSelected && (
+                <CurationScenarioDetail
+                  scenarioResult={scenario}
+                  definition={findDefinition(scenario.scenario_id)}
+                  turnResults={scenario.turn_results}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {selectedScenario && (
-        <CurationScenarioDetail
-          scenarioResult={selectedScenario}
-          definition={selectedDefinition}
-          turnResults={selectedScenario.turn_results}
-        />
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 p-2 text-xs text-slate-500 dark:text-gray-400">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage <= 1}
+            className="hover:text-slate-800 dark:hover:text-gray-200 disabled:opacity-30"
+          >
+            Prev
+          </button>
+          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+            const page =
+              totalPages <= 7
+                ? i + 1
+                : currentPage <= 4
+                  ? i + 1
+                  : currentPage >= totalPages - 3
+                    ? totalPages - 6 + i
+                    : currentPage - 3 + i;
+            return (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-2 py-0.5 rounded ${page === currentPage ? 'bg-slate-300 dark:bg-gray-600 text-slate-800 dark:text-gray-200' : 'hover:text-slate-800 dark:hover:text-gray-200'}`}
+              >
+                {page}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage >= totalPages}
+            className="hover:text-slate-800 dark:hover:text-gray-200 disabled:opacity-30"
+          >
+            Next
+          </button>
+        </div>
       )}
     </div>
   );
@@ -170,8 +211,10 @@ function ScenarioCard({ scenario, name, isSelected, isCurated, onClick }: Scenar
           onClick();
         }
       }}
-      className={`flex items-center gap-3 px-3 py-2 border-b border-gray-700/50 cursor-pointer transition-colors ${
-        isSelected ? 'bg-gray-700/50 border-l-2 border-l-teal-500' : 'hover:bg-gray-700/30'
+      className={`flex items-center gap-3 px-3 py-2 border-b border-slate-200/60 dark:border-gray-700/50 cursor-pointer transition-colors ${
+        isSelected
+          ? 'bg-slate-200/60 dark:bg-gray-700/50 border-l-2 border-l-teal-500'
+          : 'hover:bg-slate-100 dark:hover:bg-gray-700/30'
       }`}
     >
       <div
@@ -180,10 +223,10 @@ function ScenarioCard({ scenario, name, isSelected, isCurated, onClick }: Scenar
       />
 
       <div className="flex-1 min-w-0">
-        <span className="text-sm text-gray-300 truncate block">{name}</span>
+        <span className="text-sm text-slate-700 dark:text-gray-300 truncate block">{name}</span>
       </div>
 
-      <span className="text-xs text-gray-500 flex-shrink-0">
+      <span className="text-xs text-slate-400 dark:text-gray-500 flex-shrink-0">
         {scenario.turn_count} {scenario.turn_count === 1 ? 'turn' : 'turns'}
       </span>
 

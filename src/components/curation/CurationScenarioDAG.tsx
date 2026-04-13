@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { ReactFlow, Background, Controls, type Node, type Edge, type NodeProps, Handle, Position } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useTheme } from '../../hooks/useTheme';
 import type { ScenarioDefinition } from '../../types/scenario';
 
 interface CurationScenarioDAGProps {
@@ -23,10 +24,48 @@ type ScenarioNodeData = {
 
 type ScenarioNode = Node<ScenarioNodeData, 'scenario'>;
 
+const DARK_COLORS = {
+  nodeBg: '#0f3460',
+  nodeSelectedBg: '#1a237e',
+  borderOnPath: '#64ffda',
+  borderSelected: '#ffd740',
+  borderOff: '#555',
+  label: '#e0e0e0',
+  entry: '#64ffda',
+  viewing: '#ffd740',
+  pass: '#69f0ae',
+  fail: '#ff8a80',
+  muted: '#b0bec5',
+  edgeOnPath: '#64ffda',
+  edgeOff: '#555',
+  containerBg: '#16213e',
+  gridColor: '#333',
+};
+
+const LIGHT_COLORS = {
+  nodeBg: '#ffffff',
+  nodeSelectedBg: '#e8eaf6',
+  borderOnPath: '#0d9488',
+  borderSelected: '#f59e0b',
+  borderOff: '#cbd5e1',
+  label: '#334155',
+  entry: '#0d9488',
+  viewing: '#d97706',
+  pass: '#166534',
+  fail: '#dc2626',
+  muted: '#64748b',
+  edgeOnPath: '#0d9488',
+  edgeOff: '#cbd5e1',
+  containerBg: '#f1f5f9',
+  gridColor: '#e2e8f0',
+};
+
 function ScenarioNodeComponent({ data }: NodeProps<ScenarioNode>) {
   const { label, isEntry, isEnd, onPath, isSelected, passed } = data;
+  const { theme } = useTheme();
+  const c = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
 
-  const borderColor = isSelected ? '#ffd740' : onPath ? '#64ffda' : '#555';
+  const borderColor = isSelected ? c.borderSelected : onPath ? c.borderOnPath : c.borderOff;
   const opacity = onPath ? 1 : 0.4;
   const borderStyle = onPath ? 'solid' : 'dashed';
 
@@ -37,7 +76,7 @@ function ScenarioNodeComponent({ data }: NodeProps<ScenarioNode>) {
         border: `2px ${borderStyle} ${borderColor}`,
         borderRadius: 6,
         padding: '8px 16px',
-        background: isSelected ? '#1a237e' : '#0f3460',
+        background: isSelected ? c.nodeSelectedBg : c.nodeBg,
         textAlign: 'center',
         minWidth: 130,
         boxShadow: isSelected ? `0 0 12px ${borderColor}44` : 'none',
@@ -45,16 +84,14 @@ function ScenarioNodeComponent({ data }: NodeProps<ScenarioNode>) {
       }}
     >
       <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
-      {isEntry && <div style={{ fontSize: 9, color: '#64ffda' }}>ENTRY</div>}
-      {isSelected && <div style={{ fontSize: 9, color: '#ffd740' }}>VIEWING</div>}
-      <div style={{ fontSize: 12, color: '#e0e0e0', fontWeight: 500 }}>{label}</div>
+      {isEntry && <div style={{ fontSize: 9, color: c.entry }}>ENTRY</div>}
+      {isSelected && <div style={{ fontSize: 9, color: c.viewing }}>VIEWING</div>}
+      <div style={{ fontSize: 12, color: c.label, fontWeight: 500 }}>{label}</div>
       {passed !== null && (
-        <div style={{ fontSize: 10, color: passed ? '#69f0ae' : '#ff8a80', fontWeight: 600 }}>
-          {passed ? 'Pass' : 'Fail'}
-        </div>
+        <div style={{ fontSize: 10, color: passed ? c.pass : c.fail, fontWeight: 600 }}>{passed ? 'Pass' : 'Fail'}</div>
       )}
-      {passed === null && <div style={{ fontSize: 10, color: '#b0bec5' }}>No result</div>}
-      {isEnd && <div style={{ fontSize: 9, color: '#b0bec5' }}>END</div>}
+      {passed === null && <div style={{ fontSize: 10, color: c.muted }}>No result</div>}
+      {isEnd && <div style={{ fontSize: 9, color: c.muted }}>END</div>}
       <Handle type="source" position={Position.Bottom} style={{ visibility: 'hidden' }} />
     </div>
   );
@@ -69,6 +106,9 @@ export function CurationScenarioDAG({
   selectedNodeId,
   onNodeClick,
 }: CurationScenarioDAGProps) {
+  const { theme } = useTheme();
+  const c = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+
   const takenSet = useMemo(() => new Set(takenPath), [takenPath]);
 
   const takenEdges = useMemo(() => {
@@ -159,7 +199,7 @@ export function CurationScenarioDAG({
             source: e.source,
             target: e.target,
             style: {
-              stroke: onPath ? '#64ffda' : '#555',
+              stroke: onPath ? c.edgeOnPath : c.edgeOff,
               strokeWidth: onPath ? 2 : 1,
               strokeDasharray: onPath ? undefined : '5,5',
               opacity: onPath ? 1 : 0.4,
@@ -167,7 +207,7 @@ export function CurationScenarioDAG({
             animated: onPath,
           };
         }),
-    [definition.edges, takenEdges]
+    [definition.edges, takenEdges, c]
   );
 
   const handleNodeClick = useCallback(
@@ -178,7 +218,7 @@ export function CurationScenarioDAG({
   );
 
   return (
-    <div style={{ height: 420, background: '#16213e', borderRadius: 4 }}>
+    <div data-testid="curation-scenario-dag" style={{ height: 420, background: c.containerBg, borderRadius: 4 }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -189,7 +229,7 @@ export function CurationScenarioDAG({
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#333" gap={16} />
+        <Background color={c.gridColor} gap={16} />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>

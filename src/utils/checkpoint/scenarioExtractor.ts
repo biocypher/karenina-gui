@@ -30,6 +30,7 @@ export function extractScenarioDefinitions(checkpoint: JsonLdCheckpoint): Scenar
             text: snode.question.text,
             raw_answer: snode.question.acceptedAnswer?.text,
           },
+          answer_template: snode.questionData?.answer_template ?? undefined,
           model_override: snode.modelOverride ?? undefined,
           agent_identity: snode.agentIdentity ?? undefined,
           metadata: snode.metadata,
