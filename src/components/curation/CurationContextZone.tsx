@@ -11,26 +11,11 @@ interface CurationContextZoneProps {
 export function CurationContextZone({ result }: CurationContextZoneProps) {
   const [traceMode, setTraceMode] = useState<'raw' | 'structured'>('raw');
 
-  const meta = result.metadata;
   const template = result.template;
-  const rawAnswer = meta.raw_answer ?? template?.raw_llm_response ?? '';
   const traceMessages = template?.trace_messages as TraceMessage[] | undefined;
 
   return (
     <div data-testid="curation-context-zone" className="space-y-4">
-      {/* Raw Ground Truth Answer */}
-      <div
-        data-testid="context-raw-gt-answer"
-        className="border-l-[3px] border-l-amber-400 bg-slate-50 dark:bg-gray-700/70 rounded-r px-4 py-2.5"
-      >
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1">
-          Ground Truth Answer
-        </div>
-        <div className="text-sm text-slate-800 dark:text-gray-200 max-h-24 overflow-auto whitespace-pre-wrap font-mono">
-          {rawAnswer || <span className="text-slate-400 dark:text-gray-600 italic font-sans">No answer recorded</span>}
-        </div>
-      </div>
-
       {/* Answering Trace */}
       {(template?.raw_llm_response || traceMessages) && (
         <div
