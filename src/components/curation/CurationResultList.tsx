@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { computeResultStatus, resolveVerdict } from '../../utils/curation';
 import type { VerificationResult } from '../../types/verification';
@@ -30,7 +31,19 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
     currentPage,
     pageSize,
     setCurrentPage,
-  } = useCurationStore();
+  } = useCurationStore(
+    useShallow((s) => ({
+      activeCuratorId: s.activeCuratorId,
+      templateJudgments: s.templateJudgments,
+      rubricJudgments: s.rubricJudgments,
+      curatedFlags: s.curatedFlags,
+      selectedResultId: s.selectedResultId,
+      setSelectedResult: s.setSelectedResult,
+      currentPage: s.currentPage,
+      pageSize: s.pageSize,
+      setCurrentPage: s.setCurrentPage,
+    }))
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / pageSize));
   const pageResults = filteredResults.slice((currentPage - 1) * pageSize, currentPage * pageSize);

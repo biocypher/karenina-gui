@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { computeStatusCounts } from '../../utils/curation';
 import { CuratorManager } from './CuratorManager';
@@ -16,7 +17,17 @@ export function CurationHeader({
   onExport,
 }: CurationHeaderProps) {
   const { activeCuratorId, templateJudgments, rubricJudgments, curatedFlags, filters, setFilters, results } =
-    useCurationStore();
+    useCurationStore(
+      useShallow((s) => ({
+        activeCuratorId: s.activeCuratorId,
+        templateJudgments: s.templateJudgments,
+        rubricJudgments: s.rubricJudgments,
+        curatedFlags: s.curatedFlags,
+        filters: s.filters,
+        setFilters: s.setFilters,
+        results: s.results,
+      }))
+    );
 
   const counts = activeCuratorId
     ? computeStatusCounts(resultIds, activeCuratorId, templateJudgments, rubricJudgments, curatedFlags)

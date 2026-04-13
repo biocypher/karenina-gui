@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { CurationJudgmentRow } from './CurationJudgmentRow';
 import type { VerificationResult } from '../../types/verification';
@@ -19,7 +20,21 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
     setRubricJudgment,
     clearRubricJudgment,
     toggleCurated,
-  } = useCurationStore();
+  } = useCurationStore(
+    useShallow((s) => ({
+      activeCuratorId: s.activeCuratorId,
+      activeTab: s.activeTab,
+      setActiveTab: s.setActiveTab,
+      templateJudgments: s.templateJudgments,
+      rubricJudgments: s.rubricJudgments,
+      curatedFlags: s.curatedFlags,
+      setTemplateJudgment: s.setTemplateJudgment,
+      clearTemplateJudgment: s.clearTemplateJudgment,
+      setRubricJudgment: s.setRubricJudgment,
+      clearRubricJudgment: s.clearRubricJudgment,
+      toggleCurated: s.toggleCurated,
+    }))
+  );
 
   const resultId = result.metadata.result_id ?? result.metadata.template_id;
   const isCurated = activeCuratorId ? (curatedFlags[activeCuratorId]?.[resultId] ?? false) : false;

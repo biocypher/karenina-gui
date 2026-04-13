@@ -1,8 +1,17 @@
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 
 export function CuratorManager() {
-  const { curators, activeCuratorId, addCurator, removeCurator, setActiveCurator } = useCurationStore();
+  const { curators, activeCuratorId, addCurator, removeCurator, setActiveCurator } = useCurationStore(
+    useShallow((s) => ({
+      curators: s.curators,
+      activeCuratorId: s.activeCuratorId,
+      addCurator: s.addCurator,
+      removeCurator: s.removeCurator,
+      setActiveCurator: s.setActiveCurator,
+    }))
+  );
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newMetaKey, setNewMetaKey] = useState('');
