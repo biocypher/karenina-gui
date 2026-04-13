@@ -81,12 +81,14 @@ function extractStringArg(args: string, paramName: string): string {
   if (parenMatch) {
     const parenStart = parenMatch.index + parenMatch[0].length;
     const inner = extractBalancedArgs(args + ')', parenStart);
-    // Concatenate all quoted fragments
+    // Concatenate all quoted fragments (match double- and single-quoted
+    // strings separately so apostrophes inside double-quoted strings
+    // don't terminate the match early)
     const fragments: string[] = [];
-    const fragPattern = /["']((?:[^"'\\]|\\.)*)["']/g;
+    const fragPattern = /"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/g;
     let fragMatch;
     while ((fragMatch = fragPattern.exec(inner)) !== null) {
-      fragments.push(fragMatch[1]);
+      fragments.push(fragMatch[1] ?? fragMatch[2]);
     }
     return fragments.join('');
   }
