@@ -68,12 +68,12 @@ function extractStringArg(args: string, paramName: string): string {
   // Try quoted string: description="..."
   const quotedPattern = new RegExp(`${paramName}\\s*=\\s*"((?:[^"\\\\]|\\\\.)*)"`);
   const quotedMatch = args.match(quotedPattern);
-  if (quotedMatch) return quotedMatch[1].replace(/\\"/g, '"');
+  if (quotedMatch) return quotedMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
 
   // Try single-quoted: description='...'
   const singlePattern = new RegExp(`${paramName}\\s*=\\s*'((?:[^'\\\\]|\\\\.)*)'`);
   const singleMatch = args.match(singlePattern);
-  if (singleMatch) return singleMatch[1].replace(/\\'/g, "'");
+  if (singleMatch) return singleMatch[1].replace(/\\'/g, "'").replace(/\\n/g, '\n');
 
   // Try parenthesized multi-line string: description=(\n"..."\n)
   const parenPattern = new RegExp(`${paramName}\\s*=\\s*\\(`);
@@ -90,7 +90,7 @@ function extractStringArg(args: string, paramName: string): string {
     while ((fragMatch = fragPattern.exec(inner)) !== null) {
       fragments.push(fragMatch[1] ?? fragMatch[2]);
     }
-    return fragments.join('');
+    return fragments.join('').replace(/\\n/g, '\n');
   }
 
   return '';

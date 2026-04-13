@@ -166,7 +166,9 @@ export function CurationJudgmentRow({
           <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
             Attribute Description
           </span>
-          <div className="text-[11px] text-slate-400 dark:text-gray-500 mt-0.5 leading-relaxed">{fieldDescription}</div>
+          <div className="text-[11px] text-slate-400 dark:text-gray-500 mt-0.5 leading-relaxed whitespace-pre-line">
+            {fieldDescription}
+          </div>
         </div>
       )}
 
