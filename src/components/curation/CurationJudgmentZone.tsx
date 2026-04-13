@@ -59,11 +59,16 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
     ...rubricResult?.callable_trait_scores,
   };
 
+  const metricTraitScores = rubricResult?.metric_trait_scores ?? {};
+  const metricTraitCount = Object.keys(metricTraitScores).length;
+
   const hasTemplate = result.template?.template_verification_performed !== false && templateFieldNames.length > 0;
-  const hasRubric = rubricResult?.rubric_evaluation_performed !== false && Object.keys(allTraitScores).length > 0;
+  const hasRubric =
+    rubricResult?.rubric_evaluation_performed !== false &&
+    (Object.keys(allTraitScores).length > 0 || metricTraitCount > 0);
 
   const templateFieldCount = templateFieldNames.length;
-  const rubricTraitCount = Object.keys(allTraitScores).length;
+  const rubricTraitCount = Object.keys(allTraitScores).length + metricTraitCount;
 
   return (
     <div className="bg-gray-800 rounded p-3">
@@ -148,26 +153,51 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
               No rubric evaluation was performed for this result
             </div>
           ) : (
-            Object.entries(allTraitScores).map(([traitName, score]) => {
-              const passed = typeof score === 'boolean' ? score : score >= 3;
-              const label = typeof score === 'boolean' ? (score ? 'True' : 'False') : String(score);
-              const curJudgment = activeCuratorId
-                ? (rubricJudgments[activeCuratorId]?.[resultId]?.[traitName] ?? null)
-                : null;
+            <>
+              {Object.entries(allTraitScores).map(([traitName, score]) => {
+                const passed = typeof score === 'boolean' ? score : score >= 3;
+                const label = typeof score === 'boolean' ? (score ? 'True' : 'False') : String(score);
+                const curJudgment = activeCuratorId
+                  ? (rubricJudgments[activeCuratorId]?.[resultId]?.[traitName] ?? null)
+                  : null;
 
-              return (
-                <CurationJudgmentRow
-                  key={traitName}
-                  name={traitName}
-                  verdictLabel={label}
-                  verdictPassed={passed}
-                  detailLine={typeof score === 'boolean' ? 'Boolean trait' : `Score: ${score}`}
-                  judgment={curJudgment}
-                  onJudgmentChange={(j) => setRubricJudgment(resultId, traitName, j)}
-                  onJudgmentClear={() => clearRubricJudgment(resultId, traitName)}
-                />
-              );
-            })
+                return (
+                  <CurationJudgmentRow
+                    key={traitName}
+                    name={traitName}
+                    verdictLabel={label}
+                    verdictPassed={passed}
+                    detailLine={typeof score === 'boolean' ? 'Boolean trait' : `Score: ${score}`}
+                    judgment={curJudgment}
+                    onJudgmentChange={(j) => setRubricJudgment(resultId, traitName, j)}
+                    onJudgmentClear={() => clearRubricJudgment(resultId, traitName)}
+                  />
+                );
+              })}
+              {Object.entries(metricTraitScores).map(([traitName, metrics]) => {
+                const f1 = metrics.f1;
+                const primaryScore = f1 ?? Object.values(metrics)[0] ?? 0;
+                const curJudgment = activeCuratorId
+                  ? (rubricJudgments[activeCuratorId]?.[resultId]?.[traitName] ?? null)
+                  : null;
+
+                return (
+                  <CurationJudgmentRow
+                    key={`metric-${traitName}`}
+                    name={traitName}
+                    verdictLabel={`F1: ${(f1 ?? primaryScore).toFixed(2)}`}
+                    verdictPassed={null}
+                    detailLine={Object.entries(metrics)
+                      .map(([m, v]) => `${m}: ${v.toFixed(2)}`)
+                      .join(', ')}
+                    metaLine="metric"
+                    judgment={curJudgment}
+                    onJudgmentChange={(j) => setRubricJudgment(resultId, traitName, j)}
+                    onJudgmentClear={() => clearRubricJudgment(resultId, traitName)}
+                  />
+                );
+              })}
+            </>
           )}
         </div>
       )}
