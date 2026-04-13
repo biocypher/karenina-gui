@@ -102,6 +102,8 @@ export function CurationScenarioDetail({ scenarioResult, definition, turnResults
           {selectedNodeResult ? (
             <CurationDetailPanel
               result={selectedNodeResult}
+              scenarioId={scenarioResult.scenario_id}
+              nodeId={selectedNodeId ?? undefined}
               onPrev={() => {
                 if (selectedNodeIndex > 0) {
                   const prev = turnResults[selectedNodeIndex - 1];

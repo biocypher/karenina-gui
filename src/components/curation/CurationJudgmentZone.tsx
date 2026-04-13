@@ -5,9 +5,11 @@ import type { VerificationResult } from '../../types/verification';
 
 interface CurationJudgmentZoneProps {
   result: VerificationResult;
+  scenarioId?: string;
+  nodeId?: string;
 }
 
-export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
+export function CurationJudgmentZone({ result, scenarioId, nodeId }: CurationJudgmentZoneProps) {
   const {
     activeCuratorId,
     activeTab,
@@ -20,6 +22,14 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
     setRubricJudgment,
     clearRubricJudgment,
     toggleCurated,
+    scenarioTemplateJudgments,
+    scenarioRubricJudgments,
+    scenarioCuratedFlags,
+    setScenarioTemplateJudgment,
+    clearScenarioTemplateJudgment,
+    setScenarioRubricJudgment,
+    clearScenarioRubricJudgment,
+    toggleScenarioCurated,
   } = useCurationStore(
     useShallow((s) => ({
       activeCuratorId: s.activeCuratorId,
@@ -33,11 +43,25 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
       setRubricJudgment: s.setRubricJudgment,
       clearRubricJudgment: s.clearRubricJudgment,
       toggleCurated: s.toggleCurated,
+      scenarioTemplateJudgments: s.scenarioTemplateJudgments,
+      scenarioRubricJudgments: s.scenarioRubricJudgments,
+      scenarioCuratedFlags: s.scenarioCuratedFlags,
+      setScenarioTemplateJudgment: s.setScenarioTemplateJudgment,
+      clearScenarioTemplateJudgment: s.clearScenarioTemplateJudgment,
+      setScenarioRubricJudgment: s.setScenarioRubricJudgment,
+      clearScenarioRubricJudgment: s.clearScenarioRubricJudgment,
+      toggleScenarioCurated: s.toggleScenarioCurated,
     }))
   );
 
+  const isScenarioMode = scenarioId != null && nodeId != null;
   const resultId = result.metadata.result_id ?? result.metadata.template_id;
-  const isCurated = activeCuratorId ? (curatedFlags[activeCuratorId]?.[resultId] ?? false) : false;
+
+  const isCurated = activeCuratorId
+    ? isScenarioMode
+      ? (scenarioCuratedFlags[activeCuratorId]?.[scenarioId] ?? false)
+      : (curatedFlags[activeCuratorId]?.[resultId] ?? false)
+    : false;
 
   // Template fields: use granular breakdown if available, fall back to parsed responses
   const granular = result.template?.verify_granular_result;
@@ -97,7 +121,7 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
           </button>
         </div>
         <button
-          onClick={() => toggleCurated(resultId)}
+          onClick={() => (isScenarioMode ? toggleScenarioCurated(scenarioId) : toggleCurated(resultId))}
           title="Mark this result as fully reviewed. Your individual trait judgments are saved automatically."
           className={`px-3 py-1.5 rounded text-xs transition-colors ${
             isCurated
@@ -125,7 +149,9 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
               const gt = parsedGt[fieldName];
               const llm = parsedLlm[fieldName];
               const curJudgment = activeCuratorId
-                ? (templateJudgments[activeCuratorId]?.[resultId]?.[fieldName] ?? null)
+                ? isScenarioMode
+                  ? (scenarioTemplateJudgments[activeCuratorId]?.[scenarioId]?.[nodeId]?.[fieldName] ?? null)
+                  : (templateJudgments[activeCuratorId]?.[resultId]?.[fieldName] ?? null)
                 : null;
 
               return (
@@ -136,8 +162,16 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
                   verdictPassed={passed}
                   detailLine={`GT: ${gt !== undefined ? JSON.stringify(gt) : '\u2014'} | LLM: ${llm !== undefined ? JSON.stringify(llm) : '\u2014'}`}
                   judgment={curJudgment}
-                  onJudgmentChange={(j) => setTemplateJudgment(resultId, fieldName, j)}
-                  onJudgmentClear={() => clearTemplateJudgment(resultId, fieldName)}
+                  onJudgmentChange={(j) =>
+                    isScenarioMode
+                      ? setScenarioTemplateJudgment(scenarioId, nodeId, fieldName, j)
+                      : setTemplateJudgment(resultId, fieldName, j)
+                  }
+                  onJudgmentClear={() =>
+                    isScenarioMode
+                      ? clearScenarioTemplateJudgment(scenarioId, nodeId, fieldName)
+                      : clearTemplateJudgment(resultId, fieldName)
+                  }
                 />
               );
             })
@@ -158,7 +192,9 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
                 const passed = typeof score === 'boolean' ? score : score >= 3;
                 const label = typeof score === 'boolean' ? (score ? 'True' : 'False') : String(score);
                 const curJudgment = activeCuratorId
-                  ? (rubricJudgments[activeCuratorId]?.[resultId]?.[traitName] ?? null)
+                  ? isScenarioMode
+                    ? (scenarioRubricJudgments[activeCuratorId]?.[scenarioId]?.[nodeId]?.[traitName] ?? null)
+                    : (rubricJudgments[activeCuratorId]?.[resultId]?.[traitName] ?? null)
                   : null;
 
                 return (
@@ -169,8 +205,16 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
                     verdictPassed={passed}
                     detailLine={typeof score === 'boolean' ? 'Boolean trait' : `Score: ${score}`}
                     judgment={curJudgment}
-                    onJudgmentChange={(j) => setRubricJudgment(resultId, traitName, j)}
-                    onJudgmentClear={() => clearRubricJudgment(resultId, traitName)}
+                    onJudgmentChange={(j) =>
+                      isScenarioMode
+                        ? setScenarioRubricJudgment(scenarioId, nodeId, traitName, j)
+                        : setRubricJudgment(resultId, traitName, j)
+                    }
+                    onJudgmentClear={() =>
+                      isScenarioMode
+                        ? clearScenarioRubricJudgment(scenarioId, nodeId, traitName)
+                        : clearRubricJudgment(resultId, traitName)
+                    }
                   />
                 );
               })}
@@ -178,7 +222,9 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
                 const f1 = metrics.f1;
                 const primaryScore = f1 ?? Object.values(metrics)[0] ?? 0;
                 const curJudgment = activeCuratorId
-                  ? (rubricJudgments[activeCuratorId]?.[resultId]?.[traitName] ?? null)
+                  ? isScenarioMode
+                    ? (scenarioRubricJudgments[activeCuratorId]?.[scenarioId]?.[nodeId]?.[traitName] ?? null)
+                    : (rubricJudgments[activeCuratorId]?.[resultId]?.[traitName] ?? null)
                   : null;
 
                 return (
@@ -192,8 +238,16 @@ export function CurationJudgmentZone({ result }: CurationJudgmentZoneProps) {
                       .join(', ')}
                     metaLine="metric"
                     judgment={curJudgment}
-                    onJudgmentChange={(j) => setRubricJudgment(resultId, traitName, j)}
-                    onJudgmentClear={() => clearRubricJudgment(resultId, traitName)}
+                    onJudgmentChange={(j) =>
+                      isScenarioMode
+                        ? setScenarioRubricJudgment(scenarioId, nodeId, traitName, j)
+                        : setRubricJudgment(resultId, traitName, j)
+                    }
+                    onJudgmentClear={() =>
+                      isScenarioMode
+                        ? clearScenarioRubricJudgment(scenarioId, nodeId, traitName)
+                        : clearRubricJudgment(resultId, traitName)
+                    }
                   />
                 );
               })}

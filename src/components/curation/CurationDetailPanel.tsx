@@ -9,9 +9,19 @@ interface CurationDetailPanelProps {
   onNext: () => void;
   hasPrev: boolean;
   hasNext: boolean;
+  scenarioId?: string;
+  nodeId?: string;
 }
 
-export function CurationDetailPanel({ result, onPrev, onNext, hasPrev, hasNext }: CurationDetailPanelProps) {
+export function CurationDetailPanel({
+  result,
+  onPrev,
+  onNext,
+  hasPrev,
+  hasNext,
+  scenarioId,
+  nodeId,
+}: CurationDetailPanelProps) {
   const meta = result.metadata;
   const passed = resolveVerdict(result);
 
@@ -54,7 +64,7 @@ export function CurationDetailPanel({ result, onPrev, onNext, hasPrev, hasNext }
       </div>
 
       <CurationContextZone result={result} />
-      <CurationJudgmentZone result={result} />
+      <CurationJudgmentZone result={result} scenarioId={scenarioId} nodeId={nodeId} />
     </div>
   );
 }
