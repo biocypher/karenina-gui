@@ -10,6 +10,8 @@ interface TraceMessageBlockProps {
   message: TraceMessage;
   searchQuery?: string;
   isCurrentMatch?: boolean;
+  isCurrentTurn?: boolean;
+  collapsible?: boolean;
 }
 
 const ROLE_STYLES: Record<string, { bg: string; badge: string; label: string }> = {
@@ -147,24 +149,65 @@ function buildMarkdownComponents(searchQuery?: string) {
   };
 }
 
-export const TraceMessageBlock: React.FC<TraceMessageBlockProps> = ({ message, searchQuery, isCurrentMatch }) => {
+export const TraceMessageBlock: React.FC<TraceMessageBlockProps> = ({
+  message,
+  searchQuery,
+  isCurrentMatch,
+  isCurrentTurn,
+  collapsible,
+}) => {
+  const [collapsed, setCollapsed] = React.useState(true);
   const style = ROLE_STYLES[message.role] || ROLE_STYLES.system;
   const components = useMemo(() => buildMarkdownComponents(searchQuery), [searchQuery]);
 
   const ringClass = isCurrentMatch ? 'ring-2 ring-yellow-400 dark:ring-yellow-500' : '';
+  const turnClass = isCurrentTurn ? 'border-l-[3px] border-l-teal-500' : '';
+  const isCollapsible = collapsible && message.role === 'system';
+
+  const contentPreview =
+    isCollapsible && collapsed && message.content
+      ? message.content.slice(0, 150) + (message.content.length > 150 ? '...' : '')
+      : null;
 
   return (
-    <div className={`rounded-lg border p-3 ${style.bg} ${ringClass} transition-shadow`}>
+    <div className={`rounded-lg border p-3 ${style.bg} ${ringClass} ${turnClass} transition-shadow`}>
       <div className="flex items-center gap-2 mb-1">
         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${style.badge}`}>{style.label}</span>
+        {isCurrentTurn && (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300">
+            Current Turn
+          </span>
+        )}
+        {message._isInjected && <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">injected</span>}
         {message.model && <span className="text-[10px] text-slate-400 dark:text-slate-500">{message.model}</span>}
       </div>
 
       {/* Thinking block (SDK extended thinking) */}
       {message.thinking && <TraceThinkingBlock thinking={message.thinking} />}
 
-      {/* Tool result (for tool messages, rendered instead of generic content to avoid duplication) */}
-      {message.role === 'tool' && message.tool_result ? (
+      {/* Collapsible system message */}
+      {isCollapsible ? (
+        <div className="mt-1">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-xs text-slate-500 dark:text-slate-400 hover:underline flex items-center gap-1"
+          >
+            <span>{collapsed ? '\u25B6' : '\u25BC'}</span>
+            <span>{collapsed ? 'Show system prompt' : 'Hide system prompt'}</span>
+          </button>
+          {collapsed && contentPreview && (
+            <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate">{contentPreview}</div>
+          )}
+          {!collapsed && message.content && (
+            <div className="text-sm text-slate-800 dark:text-slate-200 mt-1">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                {message.content}
+              </ReactMarkdown>
+            </div>
+          )}
+        </div>
+      ) : message.role === 'tool' && message.tool_result ? (
+        /* Tool result (for tool messages, rendered instead of generic content to avoid duplication) */
         <TraceToolResultBlock content={message.content} toolResult={message.tool_result} />
       ) : (
         <>

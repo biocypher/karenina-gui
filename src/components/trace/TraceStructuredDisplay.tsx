@@ -6,6 +6,8 @@ import { TraceMessageBlock } from './TraceMessageBlock';
 interface TraceStructuredDisplayProps {
   traceMessages: TraceMessage[];
   className?: string;
+  currentTurnIndex?: number;
+  collapsibleSystem?: boolean;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -15,7 +17,12 @@ const ROLE_LABELS: Record<string, string> = {
   system: 'System',
 };
 
-export const TraceStructuredDisplay: React.FC<TraceStructuredDisplayProps> = ({ traceMessages, className = '' }) => {
+export const TraceStructuredDisplay: React.FC<TraceStructuredDisplayProps> = ({
+  traceMessages,
+  className = '',
+  currentTurnIndex,
+  collapsibleSystem,
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFinalOnly, setShowFinalOnly] = useState(false);
   const [currentMatchIdx, setCurrentMatchIdx] = useState(0);
@@ -259,6 +266,8 @@ export const TraceStructuredDisplay: React.FC<TraceStructuredDisplayProps> = ({ 
               message={msg}
               searchQuery={searchQuery}
               isCurrentMatch={idx === currentMatchMessageIdx || idx === focusedIdx}
+              isCurrentTurn={currentTurnIndex != null && idx === currentTurnIndex}
+              collapsible={collapsibleSystem && msg.role === 'system'}
             />
           </div>
         ))}
