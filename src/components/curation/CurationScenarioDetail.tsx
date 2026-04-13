@@ -72,60 +72,56 @@ export function CurationScenarioDetail({ scenarioResult, definition, turnResults
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <div className="flex-shrink-0 w-72">
-          <div className="text-xs text-gray-500 mb-1">SCENARIO GRAPH (click node to inspect)</div>
-          {definition ? (
-            <Suspense
-              fallback={
-                <div className="h-72 bg-gray-800 rounded flex items-center justify-center text-xs text-gray-500">
-                  Loading graph...
-                </div>
-              }
-            >
-              <CurationScenarioDAG
-                definition={definition}
-                takenPath={scenarioResult.path}
-                nodeResults={nodeResults}
-                selectedNodeId={selectedNodeId}
-                onNodeClick={setSelectedNode}
-              />
-            </Suspense>
-          ) : (
-            <div className="h-72 bg-gray-800 rounded flex items-center justify-center text-xs text-gray-500">
-              Scenario definition not available in checkpoint
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1">
-          {selectedNodeResult ? (
-            <CurationDetailPanel
-              result={selectedNodeResult}
-              scenarioId={scenarioResult.scenario_id}
-              nodeId={selectedNodeId ?? undefined}
-              onPrev={() => {
-                if (selectedNodeIndex > 0) {
-                  const prev = turnResults[selectedNodeIndex - 1];
-                  setSelectedNode(prev.metadata.scenario_node ?? null);
-                }
-              }}
-              onNext={() => {
-                if (selectedNodeIndex < turnResults.length - 1) {
-                  const next = turnResults[selectedNodeIndex + 1];
-                  setSelectedNode(next.metadata.scenario_node ?? null);
-                }
-              }}
-              hasPrev={selectedNodeIndex > 0}
-              hasNext={selectedNodeIndex < turnResults.length - 1}
+      <div className="mb-3">
+        <div className="text-xs text-gray-500 mb-1">SCENARIO GRAPH (click node to inspect)</div>
+        {definition ? (
+          <Suspense
+            fallback={
+              <div className="h-96 bg-gray-800 rounded flex items-center justify-center text-xs text-gray-500">
+                Loading graph...
+              </div>
+            }
+          >
+            <CurationScenarioDAG
+              definition={definition}
+              takenPath={scenarioResult.path}
+              nodeResults={nodeResults}
+              selectedNodeId={selectedNodeId}
+              onNodeClick={setSelectedNode}
             />
-          ) : (
-            <div className="flex items-center justify-center h-48 text-xs text-gray-500">
-              Click a node in the graph to inspect its results
-            </div>
-          )}
-        </div>
+          </Suspense>
+        ) : (
+          <div className="h-32 bg-gray-800 rounded flex items-center justify-center text-xs text-gray-500">
+            Scenario definition not available in checkpoint
+          </div>
+        )}
       </div>
+
+      {selectedNodeResult ? (
+        <CurationDetailPanel
+          result={selectedNodeResult}
+          scenarioId={scenarioResult.scenario_id}
+          nodeId={selectedNodeId ?? undefined}
+          onPrev={() => {
+            if (selectedNodeIndex > 0) {
+              const prev = turnResults[selectedNodeIndex - 1];
+              setSelectedNode(prev.metadata.scenario_node ?? null);
+            }
+          }}
+          onNext={() => {
+            if (selectedNodeIndex < turnResults.length - 1) {
+              const next = turnResults[selectedNodeIndex + 1];
+              setSelectedNode(next.metadata.scenario_node ?? null);
+            }
+          }}
+          hasPrev={selectedNodeIndex > 0}
+          hasNext={selectedNodeIndex < turnResults.length - 1}
+        />
+      ) : (
+        <div className="flex items-center justify-center h-16 text-xs text-gray-500 bg-gray-800/50 rounded">
+          Click a node in the graph to inspect its results
+        </div>
+      )}
     </div>
   );
 }

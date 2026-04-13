@@ -166,13 +166,38 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
     metadata = unified.metadata as ExportMetadata;
 
     logger.debugLog('IMPORT', 'Detected legacy unified export format with metadata wrapper', 'import.ts');
+  } else if (parsedObj.runs && typeof parsedObj.runs === 'object' && !Array.isArray(parsedObj.runs)) {
+    // Runs format: { runs: { run_name: [VerificationResult, ...], ... } }
+    const runs = parsedObj.runs as Record<string, unknown>;
+    const runNames = Object.keys(runs);
+
+    // Validate each run value is an array and flatten
+    const allResults: unknown[] = [];
+    for (const [runName, runResults] of Object.entries(runs)) {
+      if (!Array.isArray(runResults)) {
+        throw new ImportValidationError(`Run "${runName}" must be an array of results, got ${typeof runResults}`);
+      }
+      allResults.push(...runResults);
+    }
+
+    resultsArray = allResults;
+    metadata = {
+      job_id: runNames.join(', '),
+      karenina_version: 'unknown',
+    } as ExportMetadata;
+
+    logger.debugLog(
+      'IMPORT',
+      `Detected runs format with ${runNames.length} run(s): ${runNames.join(', ')}`,
+      'import.ts'
+    );
   } else if (Array.isArray(parsed)) {
     // Legacy array format (old frontend exports)
     resultsArray = parsed;
     logger.debugLog('IMPORT', 'Detected legacy array export format', 'import.ts');
   } else {
     throw new ImportValidationError(
-      'Unrecognized format. Expected v2.0 format {format_version: "2.0", ...}, unified format {metadata, results}, or legacy array format'
+      'Unrecognized format. Expected v2.0 format {format_version: "2.0", ...}, unified format {metadata, results}, runs format {runs: {...}}, or legacy array format'
     );
   }
 

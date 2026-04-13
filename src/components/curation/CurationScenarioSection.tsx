@@ -1,0 +1,193 @@
+import { useShallow } from 'zustand/react/shallow';
+import { useCurationStore } from '../../stores/useCurationStore';
+import { resolveVerdict } from '../../utils/curation';
+import { CurationScenarioDetail } from './CurationScenarioDetail';
+import type { ScenarioExecutionResult } from '../../types/scenario';
+import type { VerificationResult } from '../../types/verification';
+
+type OverallStatus = 'pass' | 'fail' | 'error' | 'unknown';
+
+/** Strip scenario ID prefixes (e.g. "guardrail_000_" or "q1_") to match across naming conventions. */
+function scenarioSuffix(id: string): string {
+  return id.replace(/^(?:q\d+_|guardrail_\d+_|scenario_\d+_)/, '');
+}
+
+function deriveOverallStatus(turnResults: VerificationResult[]): OverallStatus {
+  if (turnResults.length === 0) return 'unknown';
+
+  let allPass = true;
+  for (const tr of turnResults) {
+    if (!tr.metadata.completed_without_errors) return 'error';
+    const verdict = resolveVerdict(tr);
+    if (verdict === false) return 'fail';
+    if (verdict !== true) allPass = false;
+  }
+  return allPass ? 'pass' : 'unknown';
+}
+
+const STATUS_COLORS: Record<OverallStatus, string> = {
+  pass: 'text-green-400',
+  fail: 'text-red-400',
+  error: 'text-amber-400',
+  unknown: 'text-gray-500',
+};
+
+const STATUS_LABELS: Record<OverallStatus, string> = {
+  pass: 'Pass',
+  fail: 'Fail',
+  error: 'Error',
+  unknown: '\u2014',
+};
+
+export function CurationScenarioSection() {
+  const {
+    scenarioResults,
+    scenarioDefinitions,
+    selectedScenarioId,
+    activeCuratorId,
+    scenarioCuratedFlags,
+    filters,
+    setSelectedScenario,
+  } = useCurationStore(
+    useShallow((s) => ({
+      scenarioResults: s.scenarioResults,
+      scenarioDefinitions: s.scenarioDefinitions,
+      selectedScenarioId: s.selectedScenarioId,
+      activeCuratorId: s.activeCuratorId,
+      scenarioCuratedFlags: s.scenarioCuratedFlags,
+      filters: s.filters,
+      setSelectedScenario: s.setSelectedScenario,
+    }))
+  );
+
+  const filteredScenarios = scenarioResults.filter((scenario) => {
+    // Curation status filter
+    if (filters.status !== 'all' && activeCuratorId) {
+      const isCurated = scenarioCuratedFlags[activeCuratorId]?.[scenario.scenario_id] ?? false;
+      if (filters.status === 'curated' && !isCurated) return false;
+      if (filters.status === 'pending' && isCurated) return false;
+      // 'partial' doesn't apply to scenarios (they're curated or not), treat as show-all
+    }
+
+    // Pass/fail filter
+    if (filters.passStatus !== 'all') {
+      const status = deriveOverallStatus(scenario.turn_results);
+      if (filters.passStatus === 'pass' && status !== 'pass') return false;
+      if (filters.passStatus === 'fail' && status !== 'fail') return false;
+      if (filters.passStatus === 'error' && status !== 'error') return false;
+    }
+
+    // Model filter (check first turn's answering model)
+    if (filters.answeringModel && scenario.turn_results.length > 0) {
+      if (scenario.turn_results[0].metadata.answering.model_name !== filters.answeringModel) return false;
+    }
+    if (filters.parsingModel && scenario.turn_results.length > 0) {
+      if (scenario.turn_results[0].metadata.parsing.model_name !== filters.parsingModel) return false;
+    }
+
+    // Search query: match against scenario id or any turn's question text
+    if (filters.searchQuery) {
+      const q = filters.searchQuery.toLowerCase();
+      if (
+        !scenario.scenario_id.toLowerCase().includes(q) &&
+        !scenario.turn_results.some((tr) => tr.metadata.question_text.toLowerCase().includes(q))
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const selectedScenario = selectedScenarioId
+    ? (filteredScenarios.find((s) => s.scenario_id === selectedScenarioId) ?? null)
+    : null;
+
+  const findDefinition = (scenarioId: string) => {
+    return (
+      scenarioDefinitions.find((d) => d.name === scenarioId) ??
+      scenarioDefinitions.find((d) => scenarioSuffix(d.name) === scenarioSuffix(scenarioId))
+    );
+  };
+
+  const selectedDefinition = selectedScenario ? findDefinition(selectedScenario.scenario_id) : undefined;
+
+  return (
+    <div className="mb-4">
+      <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+        Scenarios (
+        {filteredScenarios.length === scenarioResults.length
+          ? scenarioResults.length
+          : `${filteredScenarios.length} / ${scenarioResults.length}`}
+        )
+      </div>
+
+      <div className="bg-gray-800 rounded max-h-60 overflow-y-auto">
+        {filteredScenarios.map((scenario) => (
+          <ScenarioCard
+            key={scenario.scenario_id}
+            scenario={scenario}
+            name={findDefinition(scenario.scenario_id)?.name ?? scenario.scenario_id}
+            isSelected={selectedScenarioId === scenario.scenario_id}
+            isCurated={
+              activeCuratorId ? (scenarioCuratedFlags[activeCuratorId]?.[scenario.scenario_id] ?? false) : false
+            }
+            onClick={() => setSelectedScenario(scenario.scenario_id)}
+          />
+        ))}
+      </div>
+
+      {selectedScenario && (
+        <CurationScenarioDetail
+          scenarioResult={selectedScenario}
+          definition={selectedDefinition}
+          turnResults={selectedScenario.turn_results}
+        />
+      )}
+    </div>
+  );
+}
+
+interface ScenarioCardProps {
+  scenario: ScenarioExecutionResult;
+  name: string;
+  isSelected: boolean;
+  isCurated: boolean;
+  onClick: () => void;
+}
+
+function ScenarioCard({ scenario, name, isSelected, isCurated, onClick }: ScenarioCardProps) {
+  const status = deriveOverallStatus(scenario.turn_results);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`flex items-center gap-3 px-3 py-2 border-b border-gray-700/50 cursor-pointer transition-colors ${
+        isSelected ? 'bg-gray-700/50 border-l-2 border-l-teal-500' : 'hover:bg-gray-700/30'
+      }`}
+    >
+      <div
+        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isCurated ? 'bg-green-500' : 'bg-gray-600'}`}
+        title={isCurated ? 'Curated' : 'Not curated'}
+      />
+
+      <div className="flex-1 min-w-0">
+        <span className="text-sm text-gray-300 truncate block">{name}</span>
+      </div>
+
+      <span className="text-xs text-gray-500 flex-shrink-0">
+        {scenario.turn_count} {scenario.turn_count === 1 ? 'turn' : 'turns'}
+      </span>
+
+      <span className={`text-xs flex-shrink-0 ${STATUS_COLORS[status]}`}>{STATUS_LABELS[status]}</span>
+    </div>
+  );
+}

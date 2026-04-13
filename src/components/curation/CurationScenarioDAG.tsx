@@ -36,10 +36,10 @@ function ScenarioNodeComponent({ data }: NodeProps<ScenarioNode>) {
         opacity,
         border: `2px ${borderStyle} ${borderColor}`,
         borderRadius: 6,
-        padding: '6px 14px',
+        padding: '8px 16px',
         background: isSelected ? '#1a237e' : '#0f3460',
         textAlign: 'center',
-        minWidth: 100,
+        minWidth: 130,
         boxShadow: isSelected ? `0 0 12px ${borderColor}44` : 'none',
         cursor: 'pointer',
       }}
@@ -47,7 +47,7 @@ function ScenarioNodeComponent({ data }: NodeProps<ScenarioNode>) {
       <Handle type="target" position={Position.Top} style={{ visibility: 'hidden' }} />
       {isEntry && <div style={{ fontSize: 9, color: '#64ffda' }}>ENTRY</div>}
       {isSelected && <div style={{ fontSize: 9, color: '#ffd740' }}>VIEWING</div>}
-      <div style={{ fontSize: 11, color: '#e0e0e0' }}>{label}</div>
+      <div style={{ fontSize: 12, color: '#e0e0e0', fontWeight: 500 }}>{label}</div>
       {passed !== null && (
         <div style={{ fontSize: 9, color: passed ? '#4caf50' : '#f44336' }}>{passed ? 'Pass' : 'Fail'}</div>
       )}
@@ -86,13 +86,56 @@ export function CurationScenarioDAG({
 
   const nodes: ScenarioNode[] = useMemo(() => {
     const nodeIds = Object.keys(definition.nodes);
-    const cols = Math.ceil(Math.sqrt(nodeIds.length));
-    return nodeIds.map((id, i) => ({
+
+    // BFS from entry node to assign depth (y) and sibling index (x)
+    const children: Record<string, string[]> = {};
+    for (const e of definition.edges) {
+      if (e.target === '__end__') continue;
+      if (!children[e.source]) children[e.source] = [];
+      children[e.source].push(e.target);
+    }
+
+    const depth: Record<string, number> = {};
+    const queue: string[] = [definition.entry_node];
+    depth[definition.entry_node] = 0;
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      for (const child of children[current] ?? []) {
+        if (depth[child] === undefined) {
+          depth[child] = depth[current] + 1;
+          queue.push(child);
+        }
+      }
+    }
+    // Assign unreachable nodes to depth 0
+    for (const id of nodeIds) {
+      if (depth[id] === undefined) depth[id] = 0;
+    }
+
+    // Group by depth, assign x position within each level
+    const levels: Record<number, string[]> = {};
+    for (const id of nodeIds) {
+      const d = depth[id];
+      if (!levels[d]) levels[d] = [];
+      levels[d].push(id);
+    }
+
+    const positions: Record<string, { x: number; y: number }> = {};
+    for (const [d, ids] of Object.entries(levels)) {
+      const spacing = 300;
+      const levelWidth = ids.length * spacing;
+      const startX = -levelWidth / 2 + spacing / 2;
+      ids.forEach((id, i) => {
+        positions[id] = { x: startX + i * spacing, y: Number(d) * 180 };
+      });
+    }
+
+    return nodeIds.map((id) => ({
       id,
       type: 'scenario' as const,
-      position: { x: (i % cols) * 180, y: Math.floor(i / cols) * 120 },
+      position: positions[id] ?? { x: 0, y: 0 },
       data: {
-        label: `${id}${definition.nodes[id].question?.text ? ': ' + definition.nodes[id].question.text.slice(0, 20) : ''}`,
+        label: `${id}${definition.nodes[id].question?.text ? ': ' + definition.nodes[id].question.text.slice(0, 30) : ''}`,
         nodeId: id,
         isEntry: id === definition.entry_node,
         isEnd: terminalNodes.has(id),
@@ -133,7 +176,7 @@ export function CurationScenarioDAG({
   );
 
   return (
-    <div style={{ height: 300, background: '#16213e', borderRadius: 4 }}>
+    <div style={{ height: 420, background: '#16213e', borderRadius: 4 }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}

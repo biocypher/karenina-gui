@@ -5,16 +5,22 @@ import { CuratorManager } from './CuratorManager';
 
 interface CurationHeaderProps {
   resultIds: string[];
-  onLoadCheckpointAndResults: () => void;
+  onLoadCheckpoint: () => void;
+  onLoadResults: () => void;
   onLoadCuration: () => void;
   onExport: () => void;
+  checkpointLoaded: boolean;
+  resultsLoaded: boolean;
 }
 
 export function CurationHeader({
   resultIds,
-  onLoadCheckpointAndResults,
+  onLoadCheckpoint,
+  onLoadResults,
   onLoadCuration,
   onExport,
+  checkpointLoaded,
+  resultsLoaded,
 }: CurationHeaderProps) {
   const { activeCuratorId, templateJudgments, rubricJudgments, curatedFlags, filters, setFilters, results } =
     useCurationStore(
@@ -40,12 +46,26 @@ export function CurationHeader({
     <div className="bg-gray-800 rounded p-3 mb-3">
       {/* Row 1: Upload buttons + curator selector */}
       <div className="flex justify-between items-center mb-2">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button
-            onClick={onLoadCheckpointAndResults}
-            className="bg-blue-900/50 text-gray-300 px-3 py-1.5 text-xs rounded border border-gray-600 hover:border-gray-400"
+            onClick={onLoadCheckpoint}
+            className={`px-3 py-1.5 text-xs rounded border hover:border-gray-400 ${
+              checkpointLoaded
+                ? 'bg-green-900/30 text-green-300 border-green-700'
+                : 'bg-blue-900/50 text-gray-300 border-gray-600'
+            }`}
           >
-            Load Checkpoint + Results
+            {checkpointLoaded ? 'Checkpoint loaded' : 'Load Checkpoint'}
+          </button>
+          <button
+            onClick={onLoadResults}
+            className={`px-3 py-1.5 text-xs rounded border hover:border-gray-400 ${
+              resultsLoaded
+                ? 'bg-green-900/30 text-green-300 border-green-700'
+                : 'bg-blue-900/50 text-gray-300 border-gray-600'
+            }`}
+          >
+            {resultsLoaded ? 'Results loaded' : 'Load Results'}
           </button>
           <button
             onClick={onLoadCuration}

@@ -83,7 +83,7 @@ export function CuratorManager() {
       )}
 
       {showAddForm && (
-        <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded p-3 shadow-lg z-10 min-w-64">
+        <div className="absolute top-full right-0 mt-1 bg-gray-800 border border-gray-600 rounded p-3 shadow-lg z-10 min-w-64">
           <input
             type="text"
             value={newName}

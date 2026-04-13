@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { computeResultStatus, resolveVerdict } from '../../utils/curation';
 import { parseCurationJSON } from '../../utils/curation/importCuration';
+import { groupScenarioResults } from '../../utils/curation/groupScenarioResults';
 import { parseVerificationResultsJSON } from '../../utils/import';
 import { isJsonLdCheckpoint } from '../../utils/checkpoint/validators';
 import { jsonLdToV2 } from '../../utils/checkpoint/converter';
@@ -10,6 +11,7 @@ import { CurationHeader } from './CurationHeader';
 import { CurationResultList } from './CurationResultList';
 import { CurationDetailPanel } from './CurationDetailPanel';
 import { CurationExportDialog } from './CurationExportDialog';
+import { CurationScenarioSection } from './CurationScenarioSection';
 import type { VerificationResult } from '../../types/verification';
 import type { ScenarioDefinition } from '../../types/scenario';
 import type { Checkpoint } from '../../types/checkpoint';
@@ -44,15 +46,20 @@ export function CurationTab() {
     store.hasBeenExported,
   ]);
 
-  // Pending checkpoint stored in ref (not exposed on window)
-  const pendingCheckpoint = useRef<{
+  // Loaded checkpoint stored in ref, with state flag for UI feedback
+  const loadedCheckpoint = useRef<{
     checkpoint: Checkpoint;
     name: string;
     scenarioDefinitions: ScenarioDefinition[];
   } | null>(null);
+  const [checkpointLoaded, setCheckpointLoaded] = useState(false);
 
-  const handleLoadCheckpointAndResults = useCallback(() => {
+  const handleLoadCheckpoint = useCallback(() => {
     checkpointInputRef.current?.click();
+  }, []);
+
+  const handleLoadResults = useCallback(() => {
+    resultsInputRef.current?.click();
   }, []);
 
   const handleCheckpointFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,12 +74,13 @@ export function CurationTab() {
       }
       const converted = jsonLdToV2(parsed);
       const scenarioDefinitions = extractScenarioDefinitions(parsed);
-      pendingCheckpoint.current = {
+      loadedCheckpoint.current = {
         checkpoint: converted.checkpoint,
         name: parsed.name ?? file.name,
         scenarioDefinitions,
       };
-      resultsInputRef.current?.click();
+      setCheckpointLoaded(true);
+      setError(null);
     } catch (err) {
       setError(`Failed to parse checkpoint: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -86,29 +94,21 @@ export function CurationTab() {
       try {
         const text = await file.text();
         const parsed = parseVerificationResultsJSON(text);
-
-        if (!pendingCheckpoint.current) {
-          setError('No checkpoint loaded. Please load a checkpoint first.');
-          return;
-        }
-
-        // parseVerificationResultsJSON returns Record<string, VerificationResult>;
-        // the store expects VerificationResult[]
         const resultsArray = Object.values(parsed.results) as VerificationResult[];
+        const { standaloneResults, scenarioResults } = groupScenarioResults(resultsArray);
 
         store.loadData(
-          pendingCheckpoint.current.checkpoint,
-          resultsArray,
-          pendingCheckpoint.current.scenarioDefinitions,
-          [],
+          loadedCheckpoint.current?.checkpoint ?? ({} as Checkpoint),
+          standaloneResults,
+          loadedCheckpoint.current?.scenarioDefinitions ?? [],
+          scenarioResults,
           {
-            checkpointName: pendingCheckpoint.current.name,
+            checkpointName: loadedCheckpoint.current?.name ?? 'unknown',
             jobId: parsed.metadata?.job_id ?? 'unknown',
             kareninaVersion: parsed.metadata?.karenina_version ?? 'unknown',
           }
         );
 
-        pendingCheckpoint.current = null;
         setError(null);
       } catch (err) {
         setError(`Failed to parse results: ${err instanceof Error ? err.message : String(err)}`);
@@ -198,7 +198,13 @@ export function CurationTab() {
 
   return (
     <div className="p-4">
-      <input ref={checkpointInputRef} type="file" accept=".json" className="hidden" onChange={handleCheckpointFile} />
+      <input
+        ref={checkpointInputRef}
+        type="file"
+        accept=".json,.jsonld"
+        className="hidden"
+        onChange={handleCheckpointFile}
+      />
       <input ref={resultsInputRef} type="file" accept=".json" className="hidden" onChange={handleResultsFile} />
       <input ref={curationInputRef} type="file" accept=".json" className="hidden" onChange={handleCurationFile} />
 
@@ -213,12 +219,15 @@ export function CurationTab() {
 
       <CurationHeader
         resultIds={allResultIds}
-        onLoadCheckpointAndResults={handleLoadCheckpointAndResults}
+        onLoadCheckpoint={handleLoadCheckpoint}
+        onLoadResults={handleLoadResults}
         onLoadCuration={handleLoadCuration}
         onExport={() => setExportOpen(true)}
+        checkpointLoaded={checkpointLoaded}
+        resultsLoaded={store.results.length > 0 || store.scenarioResults.length > 0}
       />
 
-      {store.results.length === 0 ? (
+      {store.results.length === 0 && store.scenarioResults.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-gray-500">
           <div className="text-lg mb-2">No data loaded</div>
           <div className="text-xs">
@@ -227,15 +236,20 @@ export function CurationTab() {
         </div>
       ) : (
         <>
-          <CurationResultList filteredResults={filteredResults} />
-          {selectedResult && (
-            <CurationDetailPanel
-              result={selectedResult}
-              onPrev={() => navigateResult(-1)}
-              onNext={() => navigateResult(1)}
-              hasPrev={selectedIndex > 0}
-              hasNext={selectedIndex < filteredResults.length - 1}
-            />
+          {store.scenarioResults.length > 0 && <CurationScenarioSection />}
+          {store.results.length > 0 && (
+            <>
+              <CurationResultList filteredResults={filteredResults} />
+              {selectedResult && (
+                <CurationDetailPanel
+                  result={selectedResult}
+                  onPrev={() => navigateResult(-1)}
+                  onNext={() => navigateResult(1)}
+                  hasPrev={selectedIndex > 0}
+                  hasNext={selectedIndex < filteredResults.length - 1}
+                />
+              )}
+            </>
           )}
         </>
       )}
