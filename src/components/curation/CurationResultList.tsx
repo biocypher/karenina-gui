@@ -3,24 +3,12 @@ import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { computeResultStatus, resolveVerdict } from '../../utils/curation';
 import { CurationDetailPanel } from './CurationDetailPanel';
+import { CurationStatusBadge } from './CurationStatusBadge';
 import type { VerificationResult } from '../../types/verification';
-import type { CurationStatus } from '../../types/curation';
 
 interface CurationResultListProps {
   filteredResults: VerificationResult[];
 }
-
-const STATUS_COLORS: Record<CurationStatus, string> = {
-  curated: 'bg-green-500',
-  partial: 'bg-amber-500',
-  pending: 'bg-red-500',
-};
-
-const STATUS_TOOLTIPS: Record<CurationStatus, string> = {
-  curated: 'Flagged as curated',
-  partial: 'Some judgments entered but not flagged as curated',
-  pending: 'No judgments yet',
-};
 
 export function CurationResultList({ filteredResults }: CurationResultListProps) {
   const {
@@ -92,7 +80,7 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
                   }`}
                 >
                   <td className="p-2">
-                    <div className={`w-3 h-3 rounded-full ${STATUS_COLORS[status]}`} title={STATUS_TOOLTIPS[status]} />
+                    <CurationStatusBadge status={status} />
                   </td>
                   <td className="p-2 text-slate-700 dark:text-gray-300 truncate max-w-md">
                     {result.metadata.question_text}

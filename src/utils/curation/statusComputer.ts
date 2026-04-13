@@ -36,3 +36,35 @@ export function computeStatusCounts(
   }
   return counts;
 }
+
+type ScenarioJudgmentMap = Record<string, Record<string, Record<string, Record<string, TraitJudgment>>>>;
+
+export function computeScenarioStatus(
+  scenarioId: string,
+  curatorId: string,
+  scenarioTemplateJudgments: ScenarioJudgmentMap,
+  scenarioRubricJudgments: ScenarioJudgmentMap,
+  scenarioCuratedFlags: FlagMap
+): CurationStatus {
+  if (scenarioCuratedFlags[curatorId]?.[scenarioId]) return 'curated';
+  const hasTemplate = Object.keys(scenarioTemplateJudgments[curatorId]?.[scenarioId] ?? {}).length > 0;
+  const hasRubric = Object.keys(scenarioRubricJudgments[curatorId]?.[scenarioId] ?? {}).length > 0;
+  if (hasTemplate || hasRubric) return 'partial';
+  return 'pending';
+}
+
+export function computeScenarioStatusCounts(
+  scenarioIds: string[],
+  curatorId: string,
+  scenarioTemplateJudgments: ScenarioJudgmentMap,
+  scenarioRubricJudgments: ScenarioJudgmentMap,
+  scenarioCuratedFlags: FlagMap
+): StatusCounts {
+  const counts: StatusCounts = { curated: 0, partial: 0, pending: 0 };
+  for (const id of scenarioIds) {
+    counts[
+      computeScenarioStatus(id, curatorId, scenarioTemplateJudgments, scenarioRubricJudgments, scenarioCuratedFlags)
+    ]++;
+  }
+  return counts;
+}

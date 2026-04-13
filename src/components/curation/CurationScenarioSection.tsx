@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
-import { resolveVerdict } from '../../utils/curation';
+import { resolveVerdict, computeScenarioStatus } from '../../utils/curation';
 import { CurationScenarioDetail } from './CurationScenarioDetail';
+import { CurationStatusBadge } from './CurationStatusBadge';
 import type { ScenarioExecutionResult } from '../../types/scenario';
 import type { VerificationResult } from '../../types/verification';
+import type { CurationStatus } from '../../types/curation';
 
 type OverallStatus = 'pass' | 'fail' | 'error' | 'unknown';
 
@@ -46,6 +48,8 @@ export function CurationScenarioSection() {
     scenarioDefinitions,
     selectedScenarioId,
     activeCuratorId,
+    scenarioTemplateJudgments,
+    scenarioRubricJudgments,
     scenarioCuratedFlags,
     filters,
     setSelectedScenario,
@@ -55,19 +59,30 @@ export function CurationScenarioSection() {
       scenarioDefinitions: s.scenarioDefinitions,
       selectedScenarioId: s.selectedScenarioId,
       activeCuratorId: s.activeCuratorId,
+      scenarioTemplateJudgments: s.scenarioTemplateJudgments,
+      scenarioRubricJudgments: s.scenarioRubricJudgments,
       scenarioCuratedFlags: s.scenarioCuratedFlags,
       filters: s.filters,
       setSelectedScenario: s.setSelectedScenario,
     }))
   );
 
+  const getScenarioCurationStatus = (scenarioId: string): CurationStatus => {
+    if (!activeCuratorId) return 'pending';
+    return computeScenarioStatus(
+      scenarioId,
+      activeCuratorId,
+      scenarioTemplateJudgments,
+      scenarioRubricJudgments,
+      scenarioCuratedFlags
+    );
+  };
+
   const filteredScenarios = scenarioResults.filter((scenario) => {
     // Curation status filter
     if (filters.status !== 'all' && activeCuratorId) {
-      const isCurated = scenarioCuratedFlags[activeCuratorId]?.[scenario.scenario_id] ?? false;
-      if (filters.status === 'curated' && !isCurated) return false;
-      if (filters.status === 'pending' && isCurated) return false;
-      // 'partial' doesn't apply to scenarios (they're curated or not), treat as show-all
+      const status = getScenarioCurationStatus(scenario.scenario_id);
+      if (status !== filters.status) return false;
     }
 
     // Pass/fail filter
@@ -131,9 +146,7 @@ export function CurationScenarioSection() {
                 scenario={scenario}
                 name={findDefinition(scenario.scenario_id)?.name ?? scenario.scenario_id}
                 isSelected={isSelected}
-                isCurated={
-                  activeCuratorId ? (scenarioCuratedFlags[activeCuratorId]?.[scenario.scenario_id] ?? false) : false
-                }
+                curationStatus={getScenarioCurationStatus(scenario.scenario_id)}
                 onClick={() => setSelectedScenario(isSelected ? null : scenario.scenario_id)}
               />
               {isSelected && (
@@ -193,11 +206,11 @@ interface ScenarioCardProps {
   scenario: ScenarioExecutionResult;
   name: string;
   isSelected: boolean;
-  isCurated: boolean;
+  curationStatus: CurationStatus;
   onClick: () => void;
 }
 
-function ScenarioCard({ scenario, name, isSelected, isCurated, onClick }: ScenarioCardProps) {
+function ScenarioCard({ scenario, name, isSelected, curationStatus, onClick }: ScenarioCardProps) {
   const status = deriveOverallStatus(scenario.turn_results);
 
   return (
@@ -217,10 +230,7 @@ function ScenarioCard({ scenario, name, isSelected, isCurated, onClick }: Scenar
           : 'hover:bg-slate-100 dark:hover:bg-gray-700/30'
       }`}
     >
-      <div
-        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isCurated ? 'bg-green-500' : 'bg-gray-600'}`}
-        title={isCurated ? 'Curated' : 'Not curated'}
-      />
+      <CurationStatusBadge status={curationStatus} />
 
       <div className="flex-1 min-w-0">
         <span className="text-sm text-slate-700 dark:text-gray-300 truncate block">{name}</span>
