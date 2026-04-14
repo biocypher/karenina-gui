@@ -61,7 +61,7 @@ export function CurationHeader({
 
   const resultCounts = activeCuratorId
     ? computeStatusCounts(resultIds, activeCuratorId, templateJudgments, rubricJudgments, curatedFlags)
-    : { curated: 0, partial: 0, pending: 0 };
+    : { curated: 0, partial: 0, pending: resultIds.length };
 
   const scenarioIds = scenarioResults.map((s) => s.scenario_id);
   const scenarioCounts = activeCuratorId
@@ -72,7 +72,7 @@ export function CurationHeader({
         scenarioRubricJudgments,
         scenarioCuratedFlags
       )
-    : { curated: 0, partial: 0, pending: 0 };
+    : { curated: 0, partial: 0, pending: scenarioIds.length };
 
   const counts = {
     curated: resultCounts.curated + scenarioCounts.curated,
