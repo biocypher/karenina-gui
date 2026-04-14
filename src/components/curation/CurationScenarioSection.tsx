@@ -28,6 +28,20 @@ function deriveOverallStatus(turnResults: VerificationResult[]): OverallStatus {
   return allPass ? 'pass' : 'unknown';
 }
 
+function deriveOutcomeCounts(outcomes: Record<string, boolean | number>): { pass: number; fail: number } | null {
+  let pass = 0;
+  let fail = 0;
+  let hasBoolean = false;
+  for (const v of Object.values(outcomes)) {
+    if (typeof v === 'boolean') {
+      hasBoolean = true;
+      if (v) pass++;
+      else fail++;
+    }
+  }
+  return hasBoolean ? { pass, fail } : null;
+}
+
 const STATUS_COLORS: Record<OverallStatus, string> = {
   pass: 'text-green-400',
   fail: 'text-red-400',
@@ -212,6 +226,7 @@ interface ScenarioCardProps {
 
 function ScenarioCard({ scenario, name, isSelected, curationStatus, onClick }: ScenarioCardProps) {
   const status = deriveOverallStatus(scenario.turn_results);
+  const counts = deriveOutcomeCounts(scenario.outcome_results);
 
   return (
     <div
@@ -240,7 +255,15 @@ function ScenarioCard({ scenario, name, isSelected, curationStatus, onClick }: S
         {scenario.turn_count} {scenario.turn_count === 1 ? 'turn' : 'turns'}
       </span>
 
-      <span className={`text-xs flex-shrink-0 ${STATUS_COLORS[status]}`}>{STATUS_LABELS[status]}</span>
+      {counts ? (
+        <span className="text-xs flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-green-500 dark:text-green-400">{counts.pass} pass</span>
+          <span className="text-slate-300 dark:text-gray-600">·</span>
+          <span className="text-red-500 dark:text-red-400">{counts.fail} fail</span>
+        </span>
+      ) : (
+        <span className={`text-xs flex-shrink-0 ${STATUS_COLORS[status]}`}>{STATUS_LABELS[status]}</span>
+      )}
     </div>
   );
 }

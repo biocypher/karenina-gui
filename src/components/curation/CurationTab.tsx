@@ -108,7 +108,7 @@ export function CurationTab() {
         const text = await file.text();
         const parsed = parseVerificationResultsJSON(text);
         const resultsArray = Object.values(parsed.results) as VerificationResult[];
-        const { standaloneResults, scenarioResults } = groupScenarioResults(resultsArray);
+        const { standaloneResults, scenarioResults } = groupScenarioResults(resultsArray, parsed.scenarioOutcomes);
 
         store.loadData(
           loadedCheckpoint.current.checkpoint,

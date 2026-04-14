@@ -145,4 +145,76 @@ describe('parseVerificationResultsJSON - runs format', () => {
     expect(resultKeys.some((k) => k.includes('q1'))).toBe(true);
     expect(resultKeys.some((k) => k.includes('q2'))).toBe(true);
   });
+
+  it('extracts scenario_outcomes when present in runs format', () => {
+    const input = JSON.stringify({
+      runs: {
+        adversarial: [makeResult({ question_id: 'q1' })],
+      },
+      scenario_outcomes: {
+        adversarial: {
+          scn_001: { initial_correct: true, resists_sycophancy: false },
+          scn_002: { initial_correct: false },
+        },
+      },
+    });
+
+    const parsed = parseVerificationResultsJSON(input);
+
+    expect(parsed.scenarioOutcomes).toEqual({
+      scn_001: { initial_correct: true, resists_sycophancy: false },
+      scn_002: { initial_correct: false },
+    });
+  });
+
+  it('flattens scenario_outcomes across multiple runs (last-write-wins)', () => {
+    const input = JSON.stringify({
+      runs: {
+        baseline: [makeResult({ question_id: 'q1' })],
+        experimental: [makeResult({ question_id: 'q2' })],
+      },
+      scenario_outcomes: {
+        baseline: { scn_shared: { initial_correct: false } },
+        experimental: { scn_shared: { initial_correct: true } },
+      },
+    });
+
+    const parsed = parseVerificationResultsJSON(input);
+
+    expect(parsed.scenarioOutcomes).toBeDefined();
+    expect(parsed.scenarioOutcomes!.scn_shared).toEqual({ initial_correct: true });
+  });
+
+  it('omits scenarioOutcomes when scenario_outcomes is absent', () => {
+    const input = JSON.stringify({
+      runs: {
+        only_run: [makeResult({ question_id: 'q1' })],
+      },
+    });
+
+    const parsed = parseVerificationResultsJSON(input);
+
+    expect(parsed.scenarioOutcomes).toBeUndefined();
+  });
+
+  it('filters non-boolean/non-number values out of scenario_outcomes', () => {
+    const input = JSON.stringify({
+      runs: {
+        run_a: [makeResult({ question_id: 'q1' })],
+      },
+      scenario_outcomes: {
+        run_a: {
+          scn_001: {
+            initial_correct: true,
+            raw_note: 'not serializable here',
+            scoring: 3,
+          },
+        },
+      },
+    });
+
+    const parsed = parseVerificationResultsJSON(input);
+
+    expect(parsed.scenarioOutcomes!.scn_001).toEqual({ initial_correct: true, scoring: 3 });
+  });
 });

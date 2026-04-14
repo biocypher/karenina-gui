@@ -310,4 +310,38 @@ describe('groupScenarioResults', () => {
     expect(standaloneResults).toEqual([]);
     expect(scenarioResults).toEqual([]);
   });
+
+  it('populates outcome_results from the outcomes map when provided', () => {
+    const results = [
+      makeResult({ question_id: 'q1', scenario_id: 'sA', scenario_node: 'n1', scenario_turn: 0 }),
+      makeResult({ question_id: 'q2', scenario_id: 'sB', scenario_node: 'n1', scenario_turn: 0 }),
+    ];
+    const outcomes = {
+      sA: { initial_correct: true, resists_sycophancy: false },
+      sB: { initial_correct: false },
+    };
+
+    const { scenarioResults } = groupScenarioResults(results, outcomes);
+
+    const sA = scenarioResults.find((s) => s.scenario_id === 'sA')!;
+    const sB = scenarioResults.find((s) => s.scenario_id === 'sB')!;
+    expect(sA.outcome_results).toEqual({ initial_correct: true, resists_sycophancy: false });
+    expect(sB.outcome_results).toEqual({ initial_correct: false });
+  });
+
+  it('defaults outcome_results to empty object when outcomes map is omitted', () => {
+    const results = [makeResult({ question_id: 'q1', scenario_id: 's1', scenario_node: 'n1', scenario_turn: 0 })];
+
+    const { scenarioResults } = groupScenarioResults(results);
+
+    expect(scenarioResults[0].outcome_results).toEqual({});
+  });
+
+  it('defaults outcome_results to empty object when scenario has no entry in the map', () => {
+    const results = [makeResult({ question_id: 'q1', scenario_id: 's1', scenario_node: 'n1', scenario_turn: 0 })];
+
+    const { scenarioResults } = groupScenarioResults(results, { other: { x: true } });
+
+    expect(scenarioResults[0].outcome_results).toEqual({});
+  });
 });

@@ -11,6 +11,11 @@ export interface ParsedImportResult {
   metadata?: ExportMetadata;
   /** Shared rubric definition from v2.0 format (stored once, not per-result) */
   sharedRubricDefinition?: Record<string, unknown>;
+  /**
+   * Per-scenario outcome_results, flattened across runs.
+   * Present only when the source file includes the runs-format `scenario_outcomes` key.
+   */
+  scenarioOutcomes?: Record<string, Record<string, boolean | number>>;
   stats: {
     totalResults: number;
     questions: Set<string>;
@@ -136,6 +141,7 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
   let resultsArray: unknown[];
   let metadata: ExportMetadata | undefined;
   let sharedData: SharedData | undefined;
+  let scenarioOutcomes: Record<string, Record<string, boolean | number>> | undefined;
 
   // Detect format: v2.0, Unified (legacy), or legacy array
   const parsedObj = parsed as Record<string, unknown>;
@@ -167,7 +173,7 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
 
     logger.debugLog('IMPORT', 'Detected legacy unified export format with metadata wrapper', 'import.ts');
   } else if (parsedObj.runs && typeof parsedObj.runs === 'object' && !Array.isArray(parsedObj.runs)) {
-    // Runs format: { runs: { run_name: [VerificationResult, ...], ... } }
+    // Runs format: { runs: { run_name: [VerificationResult, ...], ... }, scenario_outcomes?: {...} }
     const runs = parsedObj.runs as Record<string, unknown>;
     const runNames = Object.keys(runs);
 
@@ -185,6 +191,30 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
       job_id: runNames.join(', '),
       karenina_version: 'unknown',
     } as ExportMetadata;
+
+    // Flatten optional per-run scenario_outcomes into a single scenario_id -> outcomes map
+    const rawOutcomes = parsedObj.scenario_outcomes;
+    if (rawOutcomes && typeof rawOutcomes === 'object' && !Array.isArray(rawOutcomes)) {
+      const flat: Record<string, Record<string, boolean | number>> = {};
+      for (const [, perScenario] of Object.entries(rawOutcomes as Record<string, unknown>)) {
+        if (!perScenario || typeof perScenario !== 'object') continue;
+        for (const [scenarioId, outcomes] of Object.entries(perScenario as Record<string, unknown>)) {
+          if (!outcomes || typeof outcomes !== 'object') continue;
+          const cleaned: Record<string, boolean | number> = {};
+          for (const [name, value] of Object.entries(outcomes as Record<string, unknown>)) {
+            if (typeof value === 'boolean' || typeof value === 'number') {
+              cleaned[name] = value;
+            }
+          }
+          if (Object.keys(cleaned).length > 0) {
+            flat[scenarioId] = cleaned;
+          }
+        }
+      }
+      if (Object.keys(flat).length > 0) {
+        scenarioOutcomes = flat;
+      }
+    }
 
     logger.debugLog(
       'IMPORT',
@@ -236,6 +266,7 @@ export function parseVerificationResultsJSON(jsonString: string): ParsedImportRe
     metadata,
     // Include shared rubric definition from v2.0 format if available
     sharedRubricDefinition: sharedData?.rubric_definition,
+    scenarioOutcomes,
     stats: {
       totalResults: resultsArray.length,
       questions,

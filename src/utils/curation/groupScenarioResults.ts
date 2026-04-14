@@ -15,8 +15,15 @@ export interface GroupedResults {
  * sorted by scenario_turn within each group, and assembled into
  * ScenarioExecutionResult structures. All other results are returned
  * as standaloneResults unchanged.
+ *
+ * If outcomesByScenario is provided, each grouped scenario receives
+ * the matching outcome_results map (keyed by scenario_id). Missing
+ * entries fall back to an empty object.
  */
-export function groupScenarioResults(results: VerificationResult[]): GroupedResults {
+export function groupScenarioResults(
+  results: VerificationResult[],
+  outcomesByScenario?: Record<string, Record<string, boolean | number>>
+): GroupedResults {
   const standaloneResults: VerificationResult[] = [];
   const scenarioMap = new Map<string, VerificationResult[]>();
 
@@ -98,7 +105,7 @@ export function groupScenarioResults(results: VerificationResult[]): GroupedResu
         accumulated: {},
         node_results: {},
       },
-      outcome_results: {},
+      outcome_results: outcomesByScenario?.[scenarioId] ?? {},
     });
   }
 
