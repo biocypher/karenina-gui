@@ -6,13 +6,71 @@ export interface EnrichedTraceResult {
 }
 
 /**
- * Enrich a trace by prepending the system message (if missing),
- * ensuring the current question appears as a user message, and
- * flagging it as the current turn.
+ * Build an enriched trace for the curation detail view.
  *
- * Returns a new array (never mutates the input).
+ * When conversation_context is available (new results), it contains the full
+ * LLM input (system + prior turns + current question). We concatenate it with
+ * trace_messages (the response) and re-index block_index sequentially.
+ *
+ * When conversation_context is absent (old results), we fall back to injecting
+ * the system prompt and question from metadata.
+ *
+ * The current turn's user message is flagged with _isCurrentTurn.
  */
 export function buildEnrichedTrace(
+  traceMessages: TraceMessage[] | undefined,
+  questionText: string,
+  systemPrompt?: string,
+  rawResponse?: string,
+  conversationContext?: TraceMessage[]
+): EnrichedTraceResult {
+  // Prefer conversation_context when available (new backend data)
+  if (conversationContext && conversationContext.length > 0) {
+    return buildFromConversationContext(conversationContext, traceMessages ?? [], questionText);
+  }
+
+  // Fallback: inject from metadata (old results without conversation_context)
+  return buildFromMetadata(traceMessages, questionText, systemPrompt, rawResponse);
+}
+
+function buildFromConversationContext(
+  context: TraceMessage[],
+  trace: TraceMessage[],
+  questionText: string
+): EnrichedTraceResult {
+  // Concatenate context (input) + trace (response) and re-index
+  const combined: TraceMessage[] = [...context.map((m) => ({ ...m })), ...trace.map((m) => ({ ...m }))];
+
+  for (let i = 0; i < combined.length; i++) {
+    combined[i].block_index = i;
+  }
+
+  // Current turn = last user message in the context portion (before the response)
+  const trimmedQ = questionText.trim();
+  let currentTurnIndex: number | undefined;
+
+  // Search within the context portion (indices 0..context.length-1)
+  for (let i = context.length - 1; i >= 0; i--) {
+    if (combined[i].role === 'user') {
+      // Prefer exact match, but accept the last user message as fallback
+      if (combined[i].content.trim() === trimmedQ) {
+        currentTurnIndex = i;
+        break;
+      }
+      if (currentTurnIndex === undefined) {
+        currentTurnIndex = i;
+      }
+    }
+  }
+
+  if (currentTurnIndex !== undefined) {
+    combined[currentTurnIndex] = { ...combined[currentTurnIndex], _isCurrentTurn: true };
+  }
+
+  return { messages: combined, currentTurnIndex };
+}
+
+function buildFromMetadata(
   traceMessages: TraceMessage[] | undefined,
   questionText: string,
   systemPrompt?: string,
@@ -20,7 +78,7 @@ export function buildEnrichedTrace(
 ): EnrichedTraceResult {
   const messages: TraceMessage[] = traceMessages ? traceMessages.map((m) => ({ ...m })) : [];
 
-  // 1. Prepend system message if not already present
+  // Prepend system message if not already present
   if (systemPrompt && (messages.length === 0 || messages[0].role !== 'system')) {
     messages.unshift({
       role: 'system',
@@ -30,7 +88,7 @@ export function buildEnrichedTrace(
     });
   }
 
-  // 2. Find the current turn's user message (search from end for last match)
+  // Find the current turn's user message (search from end for last match)
   const trimmedQ = questionText.trim();
   let currentTurnIndex: number | undefined;
 
@@ -41,7 +99,7 @@ export function buildEnrichedTrace(
     }
   }
 
-  // 3. If no exact match, try substring match (handles minor formatting differences)
+  // Substring match fallback
   if (currentTurnIndex === undefined && trimmedQ) {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === 'user' && messages[i].content.includes(trimmedQ)) {
@@ -51,7 +109,7 @@ export function buildEnrichedTrace(
     }
   }
 
-  // 4. If still not found, inject the question as a user message
+  // Inject the question if not found in the trace
   if (currentTurnIndex === undefined && trimmedQ) {
     const injected: TraceMessage = {
       role: 'user',
@@ -60,7 +118,6 @@ export function buildEnrichedTrace(
       _isInjected: true,
     };
 
-    // Insert before the first assistant message, or at the end
     const firstAssistantIdx = messages.findIndex((m) => m.role === 'assistant');
     if (firstAssistantIdx > 0) {
       messages.splice(firstAssistantIdx, 0, injected);
@@ -71,14 +128,13 @@ export function buildEnrichedTrace(
     }
   }
 
-  // 5. Mark the identified message
+  // Mark the current turn
   if (currentTurnIndex !== undefined) {
     messages[currentTurnIndex] = { ...messages[currentTurnIndex], _isCurrentTurn: true };
   }
 
-  // 6. If trace was empty and we have a raw response, build minimal structured trace
+  // Build minimal structured trace from raw response if trace was empty
   if ((!traceMessages || traceMessages.length === 0) && rawResponse) {
-    // Only add if no assistant message exists yet
     if (!messages.some((m) => m.role === 'assistant')) {
       messages.push({
         role: 'assistant',

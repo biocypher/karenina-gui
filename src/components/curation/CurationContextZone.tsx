@@ -15,15 +15,24 @@ export function CurationContextZone({ result }: CurationContextZoneProps) {
   const template = result.template;
   const traceMessages = template?.trace_messages as TraceMessage[] | undefined;
 
+  const conversationContext = template?.conversation_context as TraceMessage[] | undefined;
+
   const enriched = useMemo(
     () =>
       buildEnrichedTrace(
         traceMessages,
         result.metadata.question_text,
         result.metadata.answering_system_prompt,
-        template?.raw_llm_response
+        template?.raw_llm_response,
+        conversationContext
       ),
-    [traceMessages, result.metadata.question_text, result.metadata.answering_system_prompt, template?.raw_llm_response]
+    [
+      traceMessages,
+      result.metadata.question_text,
+      result.metadata.answering_system_prompt,
+      template?.raw_llm_response,
+      conversationContext,
+    ]
   );
 
   const hasStructured = enriched.messages.length > 0;

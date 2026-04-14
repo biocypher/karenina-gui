@@ -64,6 +64,7 @@ export interface VerificationResultMetadata {
 export interface VerificationResultTemplate {
   raw_llm_response: string;
   trace_messages?: TraceMessage[];
+  conversation_context?: TraceMessage[];
   parsed_gt_response?: Record<string, unknown>;
   parsed_llm_response?: Record<string, unknown>;
   template_verification_performed?: boolean;
