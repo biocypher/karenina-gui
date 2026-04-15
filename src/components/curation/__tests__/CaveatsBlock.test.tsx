@@ -64,4 +64,78 @@ describe('CaveatsBlock', () => {
     );
     expect(screen.getByTestId('caveat-partial_content')).toHaveTextContent('16 chars');
   });
+
+  it('formats token totals from template.usage_metadata, excluding the synthetic total stage', () => {
+    render(
+      <CaveatsBlock
+        caveats={[]}
+        metadata={makeMetadata()}
+        expanded={true}
+        template={{
+          raw_llm_response: '',
+          usage_metadata: {
+            answering: { input_tokens: 1000, output_tokens: 500, total_tokens: 1500 },
+            parsing: { input_tokens: 200, output_tokens: 50, total_tokens: 250 },
+            // 'total' is a synthetic aggregate emitted by some pipelines; it
+            // must not be double-counted here.
+            total: { input_tokens: 1200, output_tokens: 550, total_tokens: 1750 },
+          },
+        }}
+      />
+    );
+    const tokens = screen.getByTestId('caveat-info-tokens');
+    expect(tokens).toHaveTextContent('1,200 in');
+    expect(tokens).toHaveTextContent('550 out');
+  });
+
+  it('formats agent metrics from template.agent_metrics', () => {
+    render(
+      <CaveatsBlock
+        caveats={[]}
+        metadata={makeMetadata()}
+        expanded={true}
+        template={{
+          raw_llm_response: '',
+          agent_metrics: { iterations: 5, tool_calls: 3 },
+        }}
+      />
+    );
+    const agent = screen.getByTestId('caveat-info-agent');
+    expect(agent).toHaveTextContent('5 iter');
+    expect(agent).toHaveTextContent('3 tools');
+  });
+
+  it('lists performed pipeline stages from template flags', () => {
+    render(
+      <CaveatsBlock
+        caveats={[]}
+        metadata={makeMetadata()}
+        expanded={true}
+        template={{
+          raw_llm_response: '',
+          embedding_check_performed: true,
+          abstention_check_performed: true,
+          sufficiency_check_performed: false,
+        }}
+      />
+    );
+    const pipeline = screen.getByTestId('caveat-info-pipeline');
+    expect(pipeline).toHaveTextContent('embedding check');
+    expect(pipeline).toHaveTextContent('abstention check');
+    expect(pipeline).not.toHaveTextContent('sufficiency check');
+  });
+
+  it('includes deep judgment in pipeline stages when performed', () => {
+    render(
+      <CaveatsBlock
+        caveats={[]}
+        metadata={makeMetadata()}
+        expanded={true}
+        template={{ raw_llm_response: '' }}
+        deepJudgment={{ deep_judgment_performed: true }}
+      />
+    );
+    const pipeline = screen.getByTestId('caveat-info-pipeline');
+    expect(pipeline).toHaveTextContent('deep judgment');
+  });
 });

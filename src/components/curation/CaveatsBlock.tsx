@@ -1,4 +1,9 @@
-import type { Caveat, VerificationResultMetadata } from '../../types/verification';
+import type {
+  Caveat,
+  VerificationResultDeepJudgment,
+  VerificationResultMetadata,
+  VerificationResultTemplate,
+} from '../../types/verification';
 
 const CAVEAT_LABEL: Record<Caveat, string> = {
   retries_used: 'Retries used',
@@ -24,23 +29,53 @@ function caveatDetail(c: Caveat, md: VerificationResultMetadata): string {
   }
 }
 
-// Token / agent / pipeline fields live on VerificationResultTemplate, not
-// VerificationResultMetadata, so we cannot surface them here from the
-// metadata subobject alone; keep the slots but leave them blank. They
-// render as "--" via the InfoLine fallback.
-function formatTokens(): string {
-  return '';
+function formatTokens(template: VerificationResultTemplate | undefined): string {
+  const usage = template?.usage_metadata;
+  if (!usage) return '';
+  // The pipeline may emit a synthetic 'total' aggregate alongside per-stage
+  // entries; skip it so we don't double-count.
+  const entries = Object.entries(usage).filter(([stage]) => stage.toLowerCase() !== 'total');
+  if (entries.length === 0) return '';
+  const totals = entries.reduce(
+    (acc, [, m]) => ({
+      input: acc.input + (m.input_tokens ?? 0),
+      output: acc.output + (m.output_tokens ?? 0),
+    }),
+    { input: 0, output: 0 }
+  );
+  if (totals.input === 0 && totals.output === 0) return '';
+  return `${totals.input.toLocaleString()} in \u00b7 ${totals.output.toLocaleString()} out`;
 }
 
-function formatAgent(): string {
-  return '';
+function formatAgent(template: VerificationResultTemplate | undefined): string {
+  const m = template?.agent_metrics;
+  if (!m) return '';
+  const parts: string[] = [];
+  if (m.iterations != null) parts.push(`${m.iterations} iter`);
+  if (m.tool_calls != null) parts.push(`${m.tool_calls} tools`);
+  if ((m.suspect_failed_tool_calls ?? 0) > 0) parts.push(`${m.suspect_failed_tool_calls} failed`);
+  return parts.join(' \u00b7 ');
 }
 
-function formatPipeline(): string {
-  // Same reasoning as above: the pipeline toggles (deep_judgment_enabled,
-  // abstention_check_performed, sufficiency_check_performed,
-  // embedding_check_performed) live on VerificationResultTemplate.
-  return '';
+const PIPELINE_LABELS: Array<[keyof VerificationResultTemplate, string]> = [
+  ['abstention_check_performed', 'abstention check'],
+  ['sufficiency_check_performed', 'sufficiency check'],
+  ['embedding_check_performed', 'embedding check'],
+  ['regex_validations_performed', 'regex checks'],
+];
+
+function formatPipeline(
+  template: VerificationResultTemplate | undefined,
+  deepJudgment: VerificationResultDeepJudgment | undefined
+): string {
+  const parts: string[] = [];
+  if (template) {
+    for (const [flag, label] of PIPELINE_LABELS) {
+      if (template[flag]) parts.push(label);
+    }
+  }
+  if (deepJudgment?.deep_judgment_performed) parts.push('deep judgment');
+  return parts.join(' \u00b7 ');
 }
 
 function formatRun(md: VerificationResultMetadata): string {
@@ -72,9 +107,11 @@ interface CaveatsBlockProps {
   caveats: Caveat[];
   metadata: VerificationResultMetadata;
   expanded: boolean;
+  template?: VerificationResultTemplate;
+  deepJudgment?: VerificationResultDeepJudgment;
 }
 
-export function CaveatsBlock({ caveats, metadata, expanded }: CaveatsBlockProps) {
+export function CaveatsBlock({ caveats, metadata, expanded, template, deepJudgment }: CaveatsBlockProps) {
   const hasCaveats = caveats.length > 0;
   if (!hasCaveats && !expanded) return null;
   return (
@@ -90,9 +127,14 @@ export function CaveatsBlock({ caveats, metadata, expanded }: CaveatsBlockProps)
       ))}
       {expanded && (
         <>
-          <InfoLine testId="caveat-info-tokens" labelColor="blue" label="Tokens" value={formatTokens()} />
-          <InfoLine testId="caveat-info-agent" labelColor="blue" label="Agent" value={formatAgent()} />
-          <InfoLine testId="caveat-info-pipeline" labelColor="blue" label="Pipeline" value={formatPipeline()} />
+          <InfoLine testId="caveat-info-tokens" labelColor="blue" label="Tokens" value={formatTokens(template)} />
+          <InfoLine testId="caveat-info-agent" labelColor="blue" label="Agent" value={formatAgent(template)} />
+          <InfoLine
+            testId="caveat-info-pipeline"
+            labelColor="blue"
+            label="Pipeline"
+            value={formatPipeline(template, deepJudgment)}
+          />
           <InfoLine testId="caveat-info-run" labelColor="blue" label="Run" value={formatRun(metadata)} />
         </>
       )}

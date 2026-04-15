@@ -75,7 +75,13 @@ export function CurationDetailPanel({
             </button>
           </div>
         </div>
-        <CaveatsBlock caveats={meta.caveats} metadata={meta} expanded={detailsOpen} />
+        <CaveatsBlock
+          caveats={meta.caveats}
+          metadata={meta}
+          expanded={detailsOpen}
+          template={result.template}
+          deepJudgment={result.deep_judgment}
+        />
       </div>
 
       <CurationContextZone result={result} />
