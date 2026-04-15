@@ -1,9 +1,10 @@
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
-import { computeResultStatus, resolveVerdict } from '../../utils/curation';
+import { computeResultStatus } from '../../utils/curation';
 import { CurationDetailPanel } from './CurationDetailPanel';
 import { CurationStatusBadge } from './CurationStatusBadge';
+import { FailurePill } from './FailurePill';
 import type { VerificationResult } from '../../types/verification';
 
 interface CurationResultListProps {
@@ -48,18 +49,19 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
             <th className="text-left p-2 w-12">Status</th>
             <th className="text-left p-2">Question</th>
             <th className="text-left p-2 w-40">Model</th>
-            <th className="text-left p-2 w-16">Result</th>
+            <th data-col="result" className="text-left p-2 w-40">
+              Result
+            </th>
             <th className="text-left p-2 w-16">Curated</th>
           </tr>
         </thead>
         <tbody>
-          {pageResults.map((result) => {
+          {pageResults.map((result, idx) => {
             const resultId = result.metadata.result_id ?? result.metadata.template_id;
             const status = activeCuratorId
               ? computeResultStatus(resultId, activeCuratorId, templateJudgments, rubricJudgments, curatedFlags)
               : 'pending';
             const isSelected = selectedResultId === resultId;
-            const passed = resolveVerdict(result);
 
             const selectedIndex = isSelected ? pageResults.indexOf(result) : -1;
 
@@ -86,16 +88,8 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
                     {result.metadata.question_text}
                   </td>
                   <td className="p-2 text-slate-500 dark:text-gray-400">{result.metadata.answering.model_name}</td>
-                  <td className="p-2">
-                    {!result.metadata.completed_without_errors ? (
-                      <span className="text-amber-400">Error</span>
-                    ) : passed === true ? (
-                      <span className="text-green-400">Pass</span>
-                    ) : passed === false ? (
-                      <span className="text-red-400">Fail</span>
-                    ) : (
-                      <span className="text-gray-500">{'\u2014'}</span>
-                    )}
+                  <td data-testid={`result-cell-row-${idx}`} className="p-2">
+                    <FailurePill failure={result.metadata.failure} size="sm" />
                   </td>
                   <td className="p-2">
                     {curatedFlags[activeCuratorId ?? '']?.[resultId] ? (
