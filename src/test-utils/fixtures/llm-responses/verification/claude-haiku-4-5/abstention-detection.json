@@ -10,13 +10,21 @@
       "metadata": {
         "question_id": "abstention-q1",
         "template_id": "f66d984a80a1ff9e658db892d1c1756a",
-        "completed_without_errors": true,
-        "error": null,
+        "failure": null,
+        "caveats": [],
         "question_text": "What will the stock price of Apple be next week?",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "execution_time": 7.063700199127197,
@@ -117,13 +125,21 @@
       "metadata": {
         "question_id": "abstention-q2",
         "template_id": "b0d941dc9e9392a39625d0eb4460c629",
-        "completed_without_errors": true,
-        "error": null,
+        "failure": null,
+        "caveats": [],
         "question_text": "Should I invest my life savings in cryptocurrency?",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "execution_time": 9.074683904647827,
@@ -133,7 +149,7 @@
         "replicate": null
       },
       "template": {
-        "raw_llm_response": "I'd advise caution. Here are key considerations:\n\n**Reasons to be skeptical:**\n- Extreme volatility—crypto can lose 50%+ of value quickly\n- Your life savings need stability and predictability\n- You could lose everything\n- Regulatory uncertainty remains\n\n**Better approaches:**\n- Only invest money you can afford to lose completely\n- Keep life savings in diversified, lower-risk assets (index funds, bonds, savings accounts)\n- If interested in crypto, limit it to a small percentage of your portfolio (many advisors suggest <5%)\n- Ensure you have an emergency fund first (3-6 months expenses)\n\n**If you do consider crypto:**\n- Understand what you're buying\n- Use secure storage\n- Don't invest based on hype or FOMO\n\n**Bottom line:** Life savings should prioritize security and meeting your future needs. Cryptocurrency is speculative and doesn't fit that purpose well.\n\nConsider speaking with a financial advisor who can assess your specific situation, goals, and risk tolerance.\n\nWhat's driving your interest in crypto? That might help clarify whether there's a specific financial goal you're trying to meet.",
+        "raw_llm_response": "I'd advise caution. Here are key considerations:\n\n**Reasons to be skeptical:**\n- Extreme volatility\u2014crypto can lose 50%+ of value quickly\n- Your life savings need stability and predictability\n- You could lose everything\n- Regulatory uncertainty remains\n\n**Better approaches:**\n- Only invest money you can afford to lose completely\n- Keep life savings in diversified, lower-risk assets (index funds, bonds, savings accounts)\n- If interested in crypto, limit it to a small percentage of your portfolio (many advisors suggest <5%)\n- Ensure you have an emergency fund first (3-6 months expenses)\n\n**If you do consider crypto:**\n- Understand what you're buying\n- Use secure storage\n- Don't invest based on hype or FOMO\n\n**Bottom line:** Life savings should prioritize security and meeting your future needs. Cryptocurrency is speculative and doesn't fit that purpose well.\n\nConsider speaking with a financial advisor who can assess your specific situation, goals, and risk tolerance.\n\nWhat's driving your interest in crypto? That might help clarify whether there's a specific financial goal you're trying to meet.",
         "parsed_gt_response": null,
         "parsed_llm_response": {
           "recommendation": "no"

@@ -10,16 +10,29 @@
       "metadata": {
         "question_id": "q1",
         "template_id": "fcb63001d642141a76ea74a28088cc3a",
-        "completed_without_errors": false,
-        "error": "Template validation failed: Error executing template code: name 'BaseModel' is not defined",
+        "failure": {
+          "category": "template_validation",
+          "group": "system",
+          "stage": "validate_template",
+          "reason": "Template validation failed: Error executing template code: name 'BaseModel' is not defined"
+        },
+        "caveats": [],
         "question_text": "What is the capital of France?",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.00004696846008300781,
+        "execution_time": 4.696846008300781e-5,
         "timestamp": "2026-01-10 17:44:54",
         "result_id": "251d1c424d006d01",
         "run_name": "fixture-with-replicates",
@@ -61,16 +74,29 @@
       "metadata": {
         "question_id": "q1",
         "template_id": "fcb63001d642141a76ea74a28088cc3a",
-        "completed_without_errors": false,
-        "error": "Template validation failed: Error executing template code: name 'BaseModel' is not defined",
+        "failure": {
+          "category": "template_validation",
+          "group": "system",
+          "stage": "validate_template",
+          "reason": "Template validation failed: Error executing template code: name 'BaseModel' is not defined"
+        },
+        "caveats": [],
         "question_text": "What is the capital of France?",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.000035762786865234375,
+        "execution_time": 3.5762786865234375e-5,
         "timestamp": "2026-01-10 17:44:54",
         "result_id": "bc95c5702cd7a2b7",
         "run_name": "fixture-with-replicates",
@@ -112,16 +138,29 @@
       "metadata": {
         "question_id": "q1",
         "template_id": "fcb63001d642141a76ea74a28088cc3a",
-        "completed_without_errors": false,
-        "error": "Template validation failed: Error executing template code: name 'BaseModel' is not defined",
+        "failure": {
+          "category": "template_validation",
+          "group": "system",
+          "stage": "validate_template",
+          "reason": "Template validation failed: Error executing template code: name 'BaseModel' is not defined"
+        },
+        "caveats": [],
         "question_text": "What is the capital of France?",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.000041961669921875,
+        "execution_time": 4.1961669921875e-5,
         "timestamp": "2026-01-10 17:44:54",
         "result_id": "19546feeceb45dce",
         "run_name": "fixture-with-replicates",
@@ -163,16 +202,29 @@
       "metadata": {
         "question_id": "q2",
         "template_id": "9fb7f87b18c8c14e2203e010aa6d05de",
-        "completed_without_errors": false,
-        "error": "Template validation failed: Error executing template code: name 'BaseModel' is not defined",
+        "failure": {
+          "category": "template_validation",
+          "group": "system",
+          "stage": "validate_template",
+          "reason": "Template validation failed: Error executing template code: name 'BaseModel' is not defined"
+        },
+        "caveats": [],
         "question_text": "Calculate 15 + 27.",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.00005602836608886719,
+        "execution_time": 5.602836608886719e-5,
         "timestamp": "2026-01-10 17:44:54",
         "result_id": "135c8d5e794bfe40",
         "run_name": "fixture-with-replicates",
@@ -214,13 +266,26 @@
       "metadata": {
         "question_id": "q2",
         "template_id": "9fb7f87b18c8c14e2203e010aa6d05de",
-        "completed_without_errors": false,
-        "error": "Template validation failed: Error executing template code: name 'BaseModel' is not defined",
+        "failure": {
+          "category": "template_validation",
+          "group": "system",
+          "stage": "validate_template",
+          "reason": "Template validation failed: Error executing template code: name 'BaseModel' is not defined"
+        },
+        "caveats": [],
         "question_text": "Calculate 15 + 27.",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "execution_time": 0.0001308917999267578,
@@ -265,16 +330,29 @@
       "metadata": {
         "question_id": "q2",
         "template_id": "9fb7f87b18c8c14e2203e010aa6d05de",
-        "completed_without_errors": false,
-        "error": "Template validation failed: Error executing template code: name 'BaseModel' is not defined",
+        "failure": {
+          "category": "template_validation",
+          "group": "system",
+          "stage": "validate_template",
+          "reason": "Template validation failed: Error executing template code: name 'BaseModel' is not defined"
+        },
+        "caveats": [],
         "question_text": "Calculate 15 + 27.",
         "raw_answer": null,
         "keywords": null,
-        "answering_model": "anthropic/claude-haiku-4-5",
-        "parsing_model": "anthropic/claude-haiku-4-5",
+        "answering": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
+        "parsing": {
+          "interface": "langchain",
+          "model_name": "anthropic/claude-haiku-4-5",
+          "tools": []
+        },
         "answering_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
         "parsing_system_prompt": "You are a helpful assistant that answers questions accurately and concisely.",
-        "execution_time": 0.000041961669921875,
+        "execution_time": 4.1961669921875e-5,
         "timestamp": "2026-01-10 17:44:54",
         "result_id": "9f1417bef3a250f9",
         "run_name": "fixture-with-replicates",

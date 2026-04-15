@@ -11,8 +11,8 @@
       "metadata": {
         "question_id": "q1",
         "template_id": "fcb63001d642141a76ea74a28088cc3a",
-        "completed_without_errors": true,
-        "error": null,
+        "failure": null,
+        "caveats": [],
         "question_text": "What is the capital of France?",
         "raw_answer": "The capital of France is Paris.",
         "keywords": null,
