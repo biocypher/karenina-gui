@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useShallow } from 'zustand/react/shallow';
 import { useCurationStore } from '../../stores/useCurationStore';
 import { CurationJudgmentRow } from './CurationJudgmentRow';
@@ -6,14 +8,56 @@ import { parseTemplateFields } from '../../utils/curation/parseTemplateFields';
 import type { TemplateFieldMeta } from '../../utils/curation/parseTemplateFields';
 import type { VerificationResult } from '../../types/verification';
 
+const PREVIEW_CHARS = 180;
+
+function CollapsibleMarkdown({ label, text, labelColor }: { label: string; text: string; labelColor: string }) {
+  const trimmed = text.trim();
+  const needsCollapse = trimmed.length > PREVIEW_CHARS;
+  const preview = needsCollapse ? trimmed.slice(0, PREVIEW_CHARS).replace(/\s+\S*$/, '') + '…' : trimmed;
+
+  return (
+    <details className="group bg-white/50 dark:bg-gray-800/40 rounded px-3 py-2">
+      <summary className="cursor-pointer list-none flex items-start gap-2 text-[11px] leading-snug">
+        <span className={`font-semibold uppercase tracking-wider shrink-0 mt-0.5 w-20 ${labelColor}`}>{label}</span>
+        <span className="text-slate-600 dark:text-slate-300 group-open:hidden flex-1 min-w-0 break-words">
+          {preview}
+        </span>
+        {needsCollapse && (
+          <span className="text-slate-400 dark:text-gray-500 shrink-0 mt-0.5 group-open:rotate-90 transition-transform">
+            ▸
+          </span>
+        )}
+      </summary>
+      <div className="hidden group-open:block mt-2 text-xs text-slate-700 dark:text-slate-300 prose prose-sm prose-slate dark:prose-invert max-w-none break-words">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{trimmed}</ReactMarkdown>
+      </div>
+    </details>
+  );
+}
+
 interface CurationJudgmentZoneProps {
   result: VerificationResult;
   scenarioId?: string;
   nodeId?: string;
   answerTemplateSource?: string;
+  rawAnswer?: string;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
-export function CurationJudgmentZone({ result, scenarioId, nodeId, answerTemplateSource }: CurationJudgmentZoneProps) {
+export function CurationJudgmentZone({
+  result,
+  scenarioId,
+  nodeId,
+  answerTemplateSource,
+  rawAnswer,
+  onPrev,
+  onNext,
+  hasPrev,
+  hasNext,
+}: CurationJudgmentZoneProps) {
   const {
     activeCuratorId,
     activeTab,
@@ -107,6 +151,8 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId, answerTemplat
   const templateFieldCount = templateFieldNames.length;
   const rubricTraitCount = Object.keys(allTraitScores).length + metricTraitCount;
 
+  const autoFailStage = result.metadata.failed_stage?.endsWith('AutoFail') ? result.metadata.failed_stage : null;
+
   return (
     <div
       data-testid="curation-judgment-zone"
@@ -154,12 +200,39 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId, answerTemplat
         </button>
       </div>
 
+      {/* Reminder: question + raw answer */}
+      {(() => {
+        const effectiveRaw = rawAnswer ?? result.raw_answer;
+        if (!result.metadata.question_text && !effectiveRaw) return null;
+        return (
+          <div className="flex flex-col gap-1.5 mb-3">
+            {result.metadata.question_text && (
+              <CollapsibleMarkdown
+                label="Question"
+                text={result.metadata.question_text}
+                labelColor="text-amber-600 dark:text-amber-400"
+              />
+            )}
+            {effectiveRaw && (
+              <CollapsibleMarkdown
+                label="Raw Answer"
+                text={effectiveRaw}
+                labelColor="text-emerald-600 dark:text-emerald-400"
+              />
+            )}
+          </div>
+        );
+      })()}
+
       {/* Template Fields tab */}
       {activeTab === 'template' && (
         <div className="flex flex-col gap-2">
           {!hasTemplate ? (
             <div className="text-xs text-slate-400 dark:text-gray-500 italic flex items-center gap-1.5 py-4 justify-center">
               No template verification was performed for this result
+              {autoFailStage && (
+                <span className="text-orange-500 dark:text-orange-400"> (auto-failed at {autoFailStage})</span>
+              )}
             </div>
           ) : (
             templateFieldNames.map((fieldName) => {
@@ -211,6 +284,9 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId, answerTemplat
           {!hasRubric ? (
             <div className="text-xs text-slate-400 dark:text-gray-500 italic flex items-center gap-1.5 py-4 justify-center">
               No rubric evaluation was performed for this result
+              {autoFailStage && (
+                <span className="text-orange-500 dark:text-orange-400"> (auto-failed at {autoFailStage})</span>
+              )}
             </div>
           ) : (
             <>
@@ -279,6 +355,25 @@ export function CurationJudgmentZone({ result, scenarioId, nodeId, answerTemplat
               })}
             </>
           )}
+        </div>
+      )}
+
+      {(onPrev || onNext) && (
+        <div className="flex justify-end gap-1 mt-3 pt-2 border-t border-slate-200 dark:border-gray-600/50">
+          <button
+            onClick={onPrev}
+            disabled={!hasPrev}
+            className="px-2 py-0.5 text-[11px] text-slate-400 dark:text-gray-500 rounded disabled:opacity-20 hover:text-slate-800 dark:hover:text-gray-200"
+          >
+            Prev
+          </button>
+          <button
+            onClick={onNext}
+            disabled={!hasNext}
+            className="px-2 py-0.5 text-[11px] text-slate-400 dark:text-gray-500 rounded disabled:opacity-20 hover:text-slate-800 dark:hover:text-gray-200"
+          >
+            Next
+          </button>
         </div>
       )}
     </div>

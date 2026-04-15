@@ -42,7 +42,7 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
 
   return (
     <div data-testid="curation-result-list" className="bg-white dark:bg-gray-800 rounded mb-3">
-      <table className="w-full text-xs">
+      <table className="w-full text-xs table-fixed">
         <thead>
           <tr className="text-slate-400 dark:text-gray-500 border-b border-slate-200 dark:border-gray-700">
             <th className="text-left p-2 w-12">Status</th>
@@ -110,7 +110,15 @@ export function CurationResultList({ filteredResults }: CurationResultListProps)
                     <td colSpan={5} className="p-0">
                       <CurationDetailPanel
                         result={result}
-                        answerTemplateSource={checkpoint?.[result.metadata.question_id]?.answer_template}
+                        answerTemplateSource={
+                          checkpoint?.[result.metadata.question_id]?.answer_template ??
+                          checkpoint?.[result.metadata.question_id.replace(/^urn:uuid:/, '')]?.answer_template
+                        }
+                        rawAnswer={
+                          result.raw_answer ??
+                          checkpoint?.[result.metadata.question_id]?.raw_answer ??
+                          checkpoint?.[result.metadata.question_id.replace(/^urn:uuid:/, '')]?.raw_answer
+                        }
                         onPrev={() => {
                           if (selectedIndex > 0) {
                             const prev = pageResults[selectedIndex - 1];

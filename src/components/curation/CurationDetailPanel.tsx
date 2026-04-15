@@ -12,6 +12,7 @@ interface CurationDetailPanelProps {
   scenarioId?: string;
   nodeId?: string;
   answerTemplateSource?: string;
+  rawAnswer?: string;
 }
 
 const VERDICT_STYLES = {
@@ -29,20 +30,28 @@ export function CurationDetailPanel({
   scenarioId,
   nodeId,
   answerTemplateSource,
+  rawAnswer,
 }: CurationDetailPanelProps) {
   const meta = result.metadata;
   const passed = resolveVerdict(result);
   const verdictStyle =
     passed === true ? VERDICT_STYLES.pass : passed === false ? VERDICT_STYLES.fail : VERDICT_STYLES.none;
 
+  const autoFailLabel = meta.failed_stage?.endsWith('AutoFail')
+    ? meta.failed_stage
+        .replace(/AutoFail$/, '')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .toLowerCase()
+    : null;
+
   return (
-    <div data-testid="curation-detail-panel" className="py-3 px-3 space-y-4">
+    <div data-testid="curation-detail-panel" className="py-3 px-3 space-y-4 min-w-0">
       {/* Metadata bar */}
       <div className="border-l-[3px] border-l-teal-500 bg-slate-50 dark:bg-gray-700/70 rounded-r px-4 py-2">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-              {scenarioId ? 'Node' : 'Question'}
+              Status
             </span>
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${verdictStyle}`}>
               {passed === true ? 'PASS' : passed === false ? 'FAIL' : 'NO VERDICT'}
@@ -50,6 +59,14 @@ export function CurationDetailPanel({
             {!meta.completed_without_errors && (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700">
                 ERROR
+              </span>
+            )}
+            {autoFailLabel && (
+              <span
+                title={`Pipeline auto-failed at stage: ${meta.failed_stage}`}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-700"
+              >
+                AUTO-FAIL: {autoFailLabel}
               </span>
             )}
             <span className="text-slate-300 dark:text-gray-600">|</span>
@@ -87,6 +104,11 @@ export function CurationDetailPanel({
         scenarioId={scenarioId}
         nodeId={nodeId}
         answerTemplateSource={answerTemplateSource}
+        rawAnswer={rawAnswer}
+        onPrev={onPrev}
+        onNext={onNext}
+        hasPrev={hasPrev}
+        hasNext={hasNext}
       />
     </div>
   );
