@@ -125,6 +125,30 @@ describe('CaveatsBlock', () => {
     expect(pipeline).not.toHaveTextContent('sufficiency check');
   });
 
+  it('shows the standard template stage when template verification ran', () => {
+    render(
+      <CaveatsBlock
+        caveats={[]}
+        metadata={makeMetadata()}
+        expanded={true}
+        template={{ raw_llm_response: '', template_verification_performed: true }}
+      />
+    );
+    expect(screen.getByTestId('caveat-info-pipeline')).toHaveTextContent('template');
+  });
+
+  it('shows the rubric stage when rubric evaluation ran', () => {
+    render(
+      <CaveatsBlock
+        caveats={[]}
+        metadata={makeMetadata()}
+        expanded={true}
+        rubric={{ rubric_evaluation_performed: true }}
+      />
+    );
+    expect(screen.getByTestId('caveat-info-pipeline')).toHaveTextContent('rubric');
+  });
+
   it('includes deep judgment in pipeline stages when performed', () => {
     render(
       <CaveatsBlock

@@ -80,6 +80,7 @@ export function CurationDetailPanel({
           metadata={meta}
           expanded={detailsOpen}
           template={result.template}
+          rubric={result.rubric}
           deepJudgment={result.deep_judgment}
         />
       </div>

@@ -2,6 +2,7 @@ import type {
   Caveat,
   VerificationResultDeepJudgment,
   VerificationResultMetadata,
+  VerificationResultRubric,
   VerificationResultTemplate,
 } from '../../types/verification';
 
@@ -57,24 +58,29 @@ function formatAgent(template: VerificationResultTemplate | undefined): string {
   return parts.join(' \u00b7 ');
 }
 
-const PIPELINE_LABELS: Array<[keyof VerificationResultTemplate, string]> = [
+// Listed in pipeline-execution order so the joined string reads as a
+// timeline of what actually ran for this result.
+const TEMPLATE_PIPELINE_LABELS: Array<[keyof VerificationResultTemplate, string]> = [
   ['abstention_check_performed', 'abstention check'],
   ['sufficiency_check_performed', 'sufficiency check'],
+  ['template_verification_performed', 'template'],
   ['embedding_check_performed', 'embedding check'],
   ['regex_validations_performed', 'regex checks'],
 ];
 
 function formatPipeline(
   template: VerificationResultTemplate | undefined,
+  rubric: VerificationResultRubric | undefined,
   deepJudgment: VerificationResultDeepJudgment | undefined
 ): string {
   const parts: string[] = [];
   if (template) {
-    for (const [flag, label] of PIPELINE_LABELS) {
+    for (const [flag, label] of TEMPLATE_PIPELINE_LABELS) {
       if (template[flag]) parts.push(label);
     }
   }
   if (deepJudgment?.deep_judgment_performed) parts.push('deep judgment');
+  if (rubric?.rubric_evaluation_performed) parts.push('rubric');
   return parts.join(' \u00b7 ');
 }
 
@@ -108,10 +114,11 @@ interface CaveatsBlockProps {
   metadata: VerificationResultMetadata;
   expanded: boolean;
   template?: VerificationResultTemplate;
+  rubric?: VerificationResultRubric;
   deepJudgment?: VerificationResultDeepJudgment;
 }
 
-export function CaveatsBlock({ caveats, metadata, expanded, template, deepJudgment }: CaveatsBlockProps) {
+export function CaveatsBlock({ caveats, metadata, expanded, template, rubric, deepJudgment }: CaveatsBlockProps) {
   const hasCaveats = caveats.length > 0;
   if (!hasCaveats && !expanded) return null;
   return (
@@ -133,7 +140,7 @@ export function CaveatsBlock({ caveats, metadata, expanded, template, deepJudgme
             testId="caveat-info-pipeline"
             labelColor="blue"
             label="Pipeline"
-            value={formatPipeline(template, deepJudgment)}
+            value={formatPipeline(template, rubric, deepJudgment)}
           />
           <InfoLine testId="caveat-info-run" labelColor="blue" label="Run" value={formatRun(metadata)} />
         </>
