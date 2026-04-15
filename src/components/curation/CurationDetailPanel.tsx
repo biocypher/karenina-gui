@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { VerificationResult } from '../../types/verification';
+import { CaveatsBlock } from './CaveatsBlock';
 import { CurationContextZone } from './CurationContextZone';
 import { CurationJudgmentZone } from './CurationJudgmentZone';
 import { FailurePill } from './FailurePill';
@@ -74,6 +75,7 @@ export function CurationDetailPanel({
             </button>
           </div>
         </div>
+        <CaveatsBlock caveats={meta.caveats} metadata={meta} expanded={detailsOpen} />
       </div>
 
       <CurationContextZone result={result} />
