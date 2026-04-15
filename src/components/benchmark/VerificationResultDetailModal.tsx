@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Checkpoint, VerificationResult, Rubric } from '../../types';
 import { TraceHighlightedTextDisplay } from '../TraceHighlightedTextDisplay';
 import { TraceStructuredDisplay } from '../trace/TraceStructuredDisplay';
@@ -13,6 +13,7 @@ import { ResultMetadata } from './verification/ResultMetadata';
 import { EmbeddingCheckResults } from './verification/EmbeddingCheckResults';
 import { AbstentionDetectionResults } from './verification/AbstentionDetectionResults';
 import { SufficiencyDetectionResults } from './verification/SufficiencyDetectionResults';
+import { FailurePill } from '../curation/FailurePill';
 
 interface VerificationResultDetailModalProps {
   result: VerificationResult | null;
@@ -72,23 +73,17 @@ export const VerificationResultDetailModal: React.FC<VerificationResultDetailMod
                 <div className="space-y-4">
                   {/* Status */}
                   <div>
-                    <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Completed Without Errors</h4>
-                    <div
-                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                        result.metadata.completed_without_errors
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                      }`}
-                    >
-                      {result.metadata.completed_without_errors ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4" />
-                      )}
-                      {result.metadata.completed_without_errors ? 'true' : 'false'}
-                    </div>
-                    {result.metadata.error && (
-                      <p className="text-red-600 dark:text-red-400 mt-2">{result.metadata.error}</p>
+                    <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-2">Status</h4>
+                    <FailurePill failure={result.metadata.failure} />
+                    {result.metadata.failure && (
+                      <p className="text-red-600 dark:text-red-400 mt-2">
+                        {result.metadata.failure.reason} (stage: {result.metadata.failure.stage})
+                      </p>
+                    )}
+                    {result.metadata.caveats.length > 0 && (
+                      <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">
+                        Caveats: {result.metadata.caveats.join(', ')}
+                      </p>
                     )}
                   </div>
 

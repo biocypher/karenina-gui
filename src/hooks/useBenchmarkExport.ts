@@ -36,8 +36,8 @@ export function useBenchmarkExport({
     const filteredResults = Object.values(benchmarkResults) as ExportableResult[];
     return {
       total_questions: new Set(filteredResults.map((r) => r.metadata.question_id)).size,
-      successful_count: filteredResults.filter((r) => r.metadata.completed_without_errors).length,
-      failed_count: filteredResults.filter((r) => !r.metadata.completed_without_errors).length,
+      successful_count: filteredResults.filter((r) => r.metadata.failure === null).length,
+      failed_count: filteredResults.filter((r) => r.metadata.failure !== null).length,
       start_time: progress?.start_time,
       end_time: progress?.end_time,
       total_duration: progress?.duration_seconds,

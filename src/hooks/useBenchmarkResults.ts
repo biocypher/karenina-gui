@@ -53,8 +53,8 @@ export function useBenchmarkResults({ benchmarkResults }: UseBenchmarkResultsOpt
     const uniqueModels = new Set(results.map((r) => formatModelIdentityDisplay(r.metadata.answering))).size;
 
     // Count successful/failed based on completion status
-    const successfulCount = results.filter((r) => r.metadata.completed_without_errors).length;
-    const failedCount = results.filter((r) => !r.metadata.completed_without_errors).length;
+    const successfulCount = results.filter((r) => r.metadata.failure === null).length;
+    const failedCount = results.filter((r) => r.metadata.failure !== null).length;
 
     // Count confusion matrix values
     const truePositives = results.filter((r) =>

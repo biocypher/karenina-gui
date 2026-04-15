@@ -925,9 +925,9 @@ export const BenchmarkTab: React.FC<BenchmarkTabProps> = ({ checkpoint, benchmar
                 const filters: ColumnFiltersState = [];
 
                 if (filter.type === 'completed') {
-                  filters.push({ id: 'completed_without_errors', value: true });
+                  filters.push({ id: 'success', value: true });
                 } else if (filter.type === 'errors') {
-                  filters.push({ id: 'completed_without_errors', value: false });
+                  filters.push({ id: 'success', value: false });
                 } else if (filter.type === 'passed') {
                   filters.push({ id: 'verify_result', value: true });
                 } else if (filter.type === 'failed') {
