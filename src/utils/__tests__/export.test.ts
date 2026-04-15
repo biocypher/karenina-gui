@@ -18,7 +18,8 @@ describe('Export Utils', () => {
       metadata: {
         question_id: 'q1',
         template_id: 'q1-template',
-        completed_without_errors: true,
+        failure: null,
+        caveats: [],
         question_text: 'What is 2+2?',
         answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
         parsing: { interface: 'langchain', model_name: 'gpt-4-parser', tools: [] },
@@ -55,11 +56,16 @@ describe('Export Utils', () => {
       metadata: {
         question_id: 'q2',
         template_id: 'q2-template',
-        completed_without_errors: false,
+        failure: {
+          category: 'parsing',
+          group: 'system',
+          stage: 'parse_template',
+          reason: 'Parse error',
+        },
+        caveats: [],
         question_text: 'What is "hello, world"?',
         answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
         parsing: { interface: 'langchain', model_name: 'gpt-4-parser', tools: [] },
-        error: 'Parse error',
         execution_time: 0.8,
         timestamp: '2023-01-01T00:01:00Z',
         replicate: 1,
@@ -189,7 +195,7 @@ describe('Export Utils', () => {
       expect(parsed.results).toEqual([]);
     });
 
-    it('should replace completed_without_errors with "abstained" when abstention is detected in JSON export', () => {
+    it('should emit success/failure fields reflecting abstention and failure state in JSON export', () => {
       const resultsWithAbstention: ExportableResult[] = [
         {
           metadata: {
@@ -198,7 +204,13 @@ describe('Export Utils', () => {
             question_text: 'Test question',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: true,
+            failure: {
+              category: 'abstention',
+              group: 'abstained',
+              stage: 'abstention_check',
+              reason: 'Model refused to answer',
+            },
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
           },
@@ -217,7 +229,13 @@ describe('Export Utils', () => {
             question_text: 'Normal question',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: false,
+            failure: {
+              category: 'content',
+              group: 'content',
+              stage: 'verify_template',
+              reason: 'verify_template returned False',
+            },
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
           },
@@ -233,11 +251,21 @@ describe('Export Utils', () => {
       const json = exportToJSON(resultsWithAbstention);
       const parsed = JSON.parse(json);
 
-      // First result should show "abstained" instead of true
-      expect(parsed.results[0].metadata).toHaveProperty('completed_without_errors', 'abstained');
+      // Abstained result surfaces failure category + group
+      expect(parsed.results[0]).toMatchObject({
+        success: false,
+        failure_category: 'abstention',
+        failure_group: 'abstained',
+        failure_stage: 'abstention_check',
+      });
 
-      // Second result should show normal boolean
-      expect(parsed.results[1].metadata).toHaveProperty('completed_without_errors', false);
+      // Content-failed result surfaces failure category + group
+      expect(parsed.results[1]).toMatchObject({
+        success: false,
+        failure_category: 'content',
+        failure_group: 'content',
+        failure_stage: 'verify_template',
+      });
     });
   });
 
@@ -260,7 +288,8 @@ describe('Export Utils', () => {
             question_text: 'What is "hello, world"?',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: true,
+            failure: null,
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
           },
@@ -294,12 +323,12 @@ describe('Export Utils', () => {
             question_text: 'Test question',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: true,
+            failure: null,
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
             // Optional fields left undefined
             run_name: undefined,
-            error: undefined,
           },
           template: {
             raw_llm_response: 'Test response',
@@ -343,7 +372,8 @@ describe('Export Utils', () => {
             question_text: 'Test question',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: true,
+            failure: null,
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
           },
@@ -391,7 +421,8 @@ describe('Export Utils', () => {
             question_text: 'Test question',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: true,
+            failure: null,
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
           },
@@ -412,7 +443,8 @@ describe('Export Utils', () => {
             question_text: 'Test question 2',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: true,
+            failure: null,
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
           },
@@ -472,7 +504,7 @@ describe('Export Utils', () => {
       expect(lines[2]).toContain('true'); // embedding_override_applied for second result (this one was overridden)
     });
 
-    it('should replace completed_without_errors with "abstained" when abstention is detected in CSV export', () => {
+    it('should emit success/failure columns reflecting abstention and success in CSV export', () => {
       const resultsWithAbstention: ExportableResult[] = [
         {
           metadata: {
@@ -481,7 +513,13 @@ describe('Export Utils', () => {
             question_text: 'Test question',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: true,
+            failure: {
+              category: 'abstention',
+              group: 'abstained',
+              stage: 'abstention_check',
+              reason: 'Model refused to answer',
+            },
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
           },
@@ -500,7 +538,8 @@ describe('Export Utils', () => {
             question_text: 'Normal question',
             answering: { interface: 'langchain', model_name: 'test-model', tools: [] },
             parsing: { interface: 'langchain', model_name: 'test-parser', tools: [] },
-            completed_without_errors: true,
+            failure: null,
+            caveats: [],
             execution_time: 1.0,
             timestamp: '2023-01-01T00:00:00Z',
           },
@@ -521,14 +560,22 @@ describe('Export Utils', () => {
       const firstRow = lines[1].split(',');
       const secondRow = lines[2].split(',');
 
-      const completedWithoutErrorsIndex = headers.indexOf('completed_without_errors');
-      expect(completedWithoutErrorsIndex).toBeGreaterThan(-1);
+      const successIndex = headers.indexOf('success');
+      const failureCategoryIndex = headers.indexOf('failure_category');
+      const failureGroupIndex = headers.indexOf('failure_group');
+      expect(successIndex).toBeGreaterThan(-1);
+      expect(failureCategoryIndex).toBeGreaterThan(-1);
+      expect(failureGroupIndex).toBeGreaterThan(-1);
 
-      // First result should show "abstained" instead of true for completed_without_errors field
-      expect(firstRow[completedWithoutErrorsIndex]).toBe('abstained');
+      // First result (abstained): success=false, category/group surface abstention
+      expect(firstRow[successIndex]).toBe('false');
+      expect(firstRow[failureCategoryIndex]).toBe('abstention');
+      expect(firstRow[failureGroupIndex]).toBe('abstained');
 
-      // Second result should show true for completed_without_errors field
-      expect(secondRow[completedWithoutErrorsIndex]).toBe('true');
+      // Second result (success): success=true, empty failure columns
+      expect(secondRow[successIndex]).toBe('true');
+      expect(secondRow[failureCategoryIndex]).toBe('');
+      expect(secondRow[failureGroupIndex]).toBe('');
     });
   });
 

@@ -10,7 +10,8 @@ describe('BenchmarkTable - Deep-Judgment Column', () => {
     metadata: {
       question_id: 'q1',
       template_id: 'q1-template',
-      completed_without_errors: true,
+      failure: null,
+      caveats: [],
       question_text: 'Test question',
       raw_answer: 'ground truth',
       keywords: ['test'],

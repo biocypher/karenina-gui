@@ -26,7 +26,8 @@ describe('VerificationResultDetailModal', () => {
     metadata: {
       question_id: 'q1',
       template_id: 'q1-template',
-      completed_without_errors: true,
+      failure: null,
+      caveats: [],
       question_text: 'Test question',
       raw_answer: 'Expected raw answer',
       keywords: ['test', 'keyword'],
@@ -75,9 +76,8 @@ describe('VerificationResultDetailModal', () => {
     );
 
     expect(screen.getByText('Detailed Answering Trace')).toBeInTheDocument();
-    expect(screen.getByText('Completed Without Errors')).toBeInTheDocument();
-    // "true" appears multiple times on page, check that at least one exists
-    expect(screen.getAllByText('true').length).toBeGreaterThan(0);
+    // FailurePill renders PASS for a successful result (failure === null)
+    expect(screen.getByText('PASS')).toBeInTheDocument();
     expect(screen.getByText('Test question')).toBeInTheDocument();
   });
 
@@ -112,12 +112,16 @@ describe('VerificationResultDetailModal', () => {
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it('displays error message when success is false', () => {
+  it('displays error message when failure is present', () => {
     const result = createMockResult({
       metadata: {
         ...createMockResult().metadata,
-        completed_without_errors: false,
-        error: 'Test error message',
+        failure: {
+          category: 'unexpected_error',
+          group: 'system',
+          stage: 'unknown',
+          reason: 'Test error message',
+        },
       },
     });
     render(
@@ -129,8 +133,11 @@ describe('VerificationResultDetailModal', () => {
       />
     );
 
-    expect(screen.getByText('false')).toBeInTheDocument();
-    expect(screen.getByText('Test error message')).toBeInTheDocument();
+    // FailurePill renders FAIL + humanized category when a failure is present
+    expect(screen.getByText('FAIL')).toBeInTheDocument();
+    // Reason and stage render in the red-accented caption below the pill
+    expect(screen.getByText(/Test error message/)).toBeInTheDocument();
+    expect(screen.getByText(/stage:\s*unknown/)).toBeInTheDocument();
   });
 
   it('displays raw answer from checkpoint', () => {

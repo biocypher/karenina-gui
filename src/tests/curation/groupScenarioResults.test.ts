@@ -17,7 +17,8 @@ function makeResult(
     metadata: {
       question_id: 'q1',
       template_id: 'tpl1',
-      completed_without_errors: true,
+      failure: null,
+      caveats: [],
       question_text: 'What is 2+2?',
       answering: {
         model_name: 'claude-3-opus',

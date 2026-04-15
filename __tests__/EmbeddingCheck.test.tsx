@@ -48,7 +48,8 @@ const createMockResult = (
     metadata: {
       question_id: 'test-question-1',
       template_id: 'test-question-1-template',
-      completed_without_errors: true,
+      failure: null,
+      caveats: [],
       question_text: 'What is 2+2?',
       answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
       parsing: { interface: 'langchain', model_name: 'gpt-3.5-turbo', tools: [] },
@@ -138,7 +139,14 @@ describe('EmbeddingCheck UI Components', () => {
     it('should show override success message when embedding check overrode the result', async () => {
       const user = userEvent.setup();
       const mockResult = createMockResult({
-        metadata: { completed_without_errors: false },
+        metadata: {
+          failure: {
+            category: 'content',
+            group: 'content',
+            stage: 'verify_template',
+            reason: 'verify_template returned False',
+          },
+        },
         template: {
           verify_result: false,
           embedding_check_performed: true,
