@@ -6,7 +6,15 @@ import { useCurationStore } from '../../stores/useCurationStore';
 import { CurationJudgmentRow } from './CurationJudgmentRow';
 import { parseTemplateFields } from '../../utils/curation/parseTemplateFields';
 import type { TemplateFieldMeta } from '../../utils/curation/parseTemplateFields';
-import type { VerificationResult } from '../../types/verification';
+import type { FailureCategory, VerificationResult } from '../../types/verification';
+import { humanizeCategory } from '../../utils/failure';
+
+const AUTOFAIL_CATEGORIES = new Set<FailureCategory>([
+  'recursion_limit',
+  'trace_validation',
+  'deep_judgment',
+  'deep_judgment_rubric',
+]);
 
 const PREVIEW_CHARS = 180;
 
@@ -151,7 +159,9 @@ export function CurationJudgmentZone({
   const templateFieldCount = templateFieldNames.length;
   const rubricTraitCount = Object.keys(allTraitScores).length + metricTraitCount;
 
-  const autoFailStage = result.metadata.failed_stage?.endsWith('AutoFail') ? result.metadata.failed_stage : null;
+  const isAutoFail = result.metadata.failure ? AUTOFAIL_CATEGORIES.has(result.metadata.failure.category) : false;
+  const autoFailLabel =
+    isAutoFail && result.metadata.failure ? humanizeCategory(result.metadata.failure.category) : null;
 
   return (
     <div
@@ -230,8 +240,8 @@ export function CurationJudgmentZone({
           {!hasTemplate ? (
             <div className="text-xs text-slate-400 dark:text-gray-500 italic flex items-center gap-1.5 py-4 justify-center">
               No template verification was performed for this result
-              {autoFailStage && (
-                <span className="text-orange-500 dark:text-orange-400"> (auto-failed at {autoFailStage})</span>
+              {autoFailLabel && (
+                <span className="text-orange-500 dark:text-orange-400"> (auto-failed: {autoFailLabel})</span>
               )}
             </div>
           ) : (
@@ -284,8 +294,8 @@ export function CurationJudgmentZone({
           {!hasRubric ? (
             <div className="text-xs text-slate-400 dark:text-gray-500 italic flex items-center gap-1.5 py-4 justify-center">
               No rubric evaluation was performed for this result
-              {autoFailStage && (
-                <span className="text-orange-500 dark:text-orange-400"> (auto-failed at {autoFailStage})</span>
+              {autoFailLabel && (
+                <span className="text-orange-500 dark:text-orange-400"> (auto-failed: {autoFailLabel})</span>
               )}
             </div>
           ) : (

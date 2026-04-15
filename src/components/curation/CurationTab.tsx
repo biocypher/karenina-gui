@@ -242,7 +242,10 @@ export function CurationTab() {
 
     if (store.filters.passStatus !== 'all') {
       const passed = resolveVerdict(r);
-      if (store.filters.passStatus === 'error' && r.metadata.completed_without_errors) return false;
+      // Legacy: r.metadata.completed_without_errors -> r.metadata.failure === null.
+      // The "error" pass-status filter keeps rows whose pipeline did not complete
+      // cleanly, i.e. any row carrying a failure.
+      if (store.filters.passStatus === 'error' && r.metadata.failure === null) return false;
       if (store.filters.passStatus === 'pass' && passed !== true) return false;
       if (store.filters.passStatus === 'fail' && passed !== false) return false;
     }

@@ -20,7 +20,8 @@ function deriveOverallStatus(turnResults: VerificationResult[]): OverallStatus {
 
   let allPass = true;
   for (const tr of turnResults) {
-    if (!tr.metadata.completed_without_errors) return 'error';
+    // Legacy: !completed_without_errors -> "error". Map straight to failure === null inverse.
+    if (tr.metadata.failure !== null) return 'error';
     const verdict = resolveVerdict(tr);
     if (verdict === false) return 'fail';
     if (verdict !== true) allPass = false;
