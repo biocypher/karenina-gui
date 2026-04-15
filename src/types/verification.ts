@@ -8,6 +8,54 @@ import type { SearchResultItem } from './search';
 import type { TraceMessage } from './trace';
 
 /**
+ * Top-level grouping of failure categories for aggregation and UI.
+ * Mirrors the Python FailureGroup enum in karenina.schemas.results.failure.
+ */
+export type FailureGroup = 'content' | 'autofail' | 'retry' | 'abstained' | 'system';
+
+/**
+ * Leaf category identifying a specific failure mode.
+ * Mirrors the Python FailureCategory enum in karenina.schemas.results.failure.
+ */
+export type FailureCategory =
+  | 'content'
+  | 'recursion_limit'
+  | 'trace_validation'
+  | 'deep_judgment'
+  | 'deep_judgment_rubric'
+  | 'timeout'
+  | 'connection'
+  | 'rate_limit'
+  | 'server_error'
+  | 'abstention'
+  | 'sufficiency'
+  | 'template_validation'
+  | 'parsing'
+  | 'unexpected_error';
+
+/**
+ * Informational flags attached to a verification result regardless of verdict.
+ * Mirrors the Python Caveat enum in karenina.schemas.results.caveat.
+ */
+export type Caveat = 'partial_content' | 'embedding_override' | 'retries_used';
+
+/**
+ * Structured non-pass verdict for a verification run.
+ * Mirrors the Python Failure model in karenina.schemas.results.failure.
+ *
+ * The `group` field is a computed projection of `category` on the Python side;
+ * the server serializes it into the wire format, so it is exposed as a regular
+ * field here.
+ */
+export interface Failure {
+  category: FailureCategory;
+  group: FailureGroup;
+  stage: string;
+  reason: string;
+  details?: Record<string, unknown> | null;
+}
+
+/**
  * Model identity - composite identifier for a model configuration.
  * Replaces flat answering_model/parsing_model strings with structured data.
  */
@@ -37,9 +85,11 @@ export interface VerificationResultMetadata {
   question_id: string;
   template_id: string;
   result_id?: string; // Deterministic hash ID computed from verification parameters
-  completed_without_errors: boolean;
-  error?: string;
-  failed_stage?: string | null;
+  failure: Failure | null;
+  caveats: Caveat[];
+  warnings?: string[];
+  partial_content?: string | null;
+  retry_counts?: Record<string, { used: number; budget: number }> | null;
   question_text: string;
   raw_answer?: string; // Ground truth answer from checkpoint
   keywords?: string[];
@@ -50,8 +100,12 @@ export interface VerificationResultMetadata {
   execution_time: number;
   timestamp: string;
   run_name?: string;
-  job_id?: string;
+  job_id?: string; // GUI-only: not present on Python metadata; frontend pairs results to jobs.
   replicate?: number;
+  // Provenance metadata
+  few_shot_enabled?: boolean;
+  few_shot_example_count?: number;
+  evaluation_mode?: string | null;
   // Scenario linking fields
   scenario_id?: string;
   scenario_node?: string;
