@@ -593,10 +593,10 @@ describe('E2E: Feature Toggles', () => {
 
       // Use helper to extract first result from nested structure
       const firstResult = getFirstResult(result.results) as {
-        metadata?: { completed_without_errors: boolean };
+        metadata?: { failure: Record<string, unknown> | null };
       };
       // Complete trace should pass
-      expect(firstResult.metadata?.completed_without_errors).toBe(true);
+      expect(firstResult.metadata?.failure).toBeNull();
     });
   });
 
