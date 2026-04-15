@@ -118,9 +118,9 @@ export const TraceStructuredDisplay: React.FC<TraceStructuredDisplayProps> = ({
   const currentMatchMessageIdx = matchingIndices[currentMatchIdx] ?? -1;
 
   return (
-    <div className={`${className}`}>
+    <div className={`min-w-0 ${className}`}>
       {/* Toolbar */}
-      <div className="sticky top-0 z-10 bg-slate-50 dark:bg-gray-700/90 backdrop-blur-sm border-b border-slate-200 dark:border-gray-600 px-3 py-2 space-y-1.5">
+      <div className="sticky top-0 z-10 bg-slate-50 dark:bg-gray-700/90 backdrop-blur-sm border-b border-slate-200 dark:border-gray-600 px-3 py-2 space-y-1.5 min-w-0">
         {/* Row 1: search + final response */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
@@ -197,7 +197,7 @@ export const TraceStructuredDisplay: React.FC<TraceStructuredDisplayProps> = ({
 
         {/* Row 2: message stepper + jump-to */}
         {displayMessages.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             {/* Prev/Next stepper */}
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
