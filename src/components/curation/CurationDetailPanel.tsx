@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import type { VerificationResult } from '../../types/verification';
-import { resolveVerdict } from '../../utils/curation';
 import { CurationContextZone } from './CurationContextZone';
 import { CurationJudgmentZone } from './CurationJudgmentZone';
+import { FailurePill } from './FailurePill';
 
 interface CurationDetailPanelProps {
   result: VerificationResult;
@@ -15,12 +16,6 @@ interface CurationDetailPanelProps {
   rawAnswer?: string;
 }
 
-const VERDICT_STYLES = {
-  pass: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700',
-  fail: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700',
-  none: 'bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 border-slate-300 dark:border-gray-600',
-};
-
 export function CurationDetailPanel({
   result,
   onPrev,
@@ -33,16 +28,7 @@ export function CurationDetailPanel({
   rawAnswer,
 }: CurationDetailPanelProps) {
   const meta = result.metadata;
-  const passed = resolveVerdict(result);
-  const verdictStyle =
-    passed === true ? VERDICT_STYLES.pass : passed === false ? VERDICT_STYLES.fail : VERDICT_STYLES.none;
-
-  const autoFailLabel = meta.failed_stage?.endsWith('AutoFail')
-    ? meta.failed_stage
-        .replace(/AutoFail$/, '')
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .toLowerCase()
-    : null;
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   return (
     <div data-testid="curation-detail-panel" className="py-3 px-3 space-y-4 min-w-0">
@@ -53,22 +39,7 @@ export function CurationDetailPanel({
             <span className="text-[10px] font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">
               Status
             </span>
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${verdictStyle}`}>
-              {passed === true ? 'PASS' : passed === false ? 'FAIL' : 'NO VERDICT'}
-            </span>
-            {!meta.completed_without_errors && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700">
-                ERROR
-              </span>
-            )}
-            {autoFailLabel && (
-              <span
-                title={`Pipeline auto-failed at stage: ${meta.failed_stage}`}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-700"
-              >
-                AUTO-FAIL: {autoFailLabel}
-              </span>
-            )}
+            <FailurePill failure={meta.failure} />
             <span className="text-slate-300 dark:text-gray-600">|</span>
             <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-slate-400 dark:text-gray-500">
               <span className="text-slate-600 dark:text-gray-300">{meta.answering.model_name}</span>
@@ -80,6 +51,13 @@ export function CurationDetailPanel({
             </div>
           </div>
           <div className="flex gap-1 flex-shrink-0 ml-3">
+            <button
+              onClick={() => setDetailsOpen((v) => !v)}
+              aria-expanded={detailsOpen}
+              className="px-2 py-0.5 text-[11px] text-slate-400 dark:text-gray-500 rounded hover:text-slate-800 dark:hover:text-gray-200"
+            >
+              {detailsOpen ? 'Hide details' : 'Details'}
+            </button>
             <button
               onClick={onPrev}
               disabled={!hasPrev}
