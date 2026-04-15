@@ -39,6 +39,7 @@ export interface VerificationResultMetadata {
   result_id?: string; // Deterministic hash ID computed from verification parameters
   completed_without_errors: boolean;
   error?: string;
+  failed_stage?: string | null;
   question_text: string;
   raw_answer?: string; // Ground truth answer from checkpoint
   keywords?: string[];
