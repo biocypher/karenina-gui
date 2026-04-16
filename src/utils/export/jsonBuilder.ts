@@ -52,22 +52,19 @@ export function exportToJSON(
 }
 
 /**
- * Process results for export (handle abstention display and field filtering)
+ * Process results for export (emit harmonized failure/caveats columns and field filtering)
  */
 function processResults(results: ExportableResult[], selectedFields?: string[]): ExportableResult[] {
   return results.map((result) => {
-    // Replace completed_without_errors boolean with "abstained" string when abstention is detected
-    const completedWithoutErrorsValue =
-      result.template?.abstention_detected && result.template?.abstention_override_applied
-        ? 'abstained'
-        : result.metadata.completed_without_errors;
-
+    const md = result.metadata;
     const processedResult = {
       ...result,
-      metadata: {
-        ...result.metadata,
-        completed_without_errors: completedWithoutErrorsValue,
-      },
+      success: md.failure === null,
+      failure_category: md.failure?.category ?? '',
+      failure_group: md.failure?.group ?? '',
+      failure_stage: md.failure?.stage ?? '',
+      failure_reason: md.failure?.reason ?? '',
+      caveats: md.caveats.join(','),
     };
 
     if (selectedFields) {

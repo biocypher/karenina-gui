@@ -45,6 +45,12 @@ export * from './trace';
 // Export types
 export * from './export';
 
+// Scenario types
+export * from './scenario';
+
+// Curation types
+export * from './curation';
+
 // Template builder types
 export type {
   TemplateField,

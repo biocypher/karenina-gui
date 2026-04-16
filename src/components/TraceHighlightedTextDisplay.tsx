@@ -192,7 +192,10 @@ export const TraceHighlightedTextDisplay: React.FC<TraceHighlightedTextDisplayPr
       />
 
       {/* Text Display with Highlighting */}
-      <div ref={containerRef} className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 max-h-[32rem] overflow-y-auto">
+      <div
+        ref={containerRef}
+        className="bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg p-3 max-h-[48rem] overflow-y-auto"
+      >
         {renderHighlightedText()}
       </div>
     </div>

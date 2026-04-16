@@ -221,8 +221,8 @@ describe('TemplateBuilder integration', () => {
       // Add a field (auto-selects it)
       await user.click(screen.getByRole('button', { name: /Add Field/ }));
 
-      // The VerifiedFieldEditor should now show "Field Properties"
-      expect(screen.getByText('Field Properties')).toBeInTheDocument();
+      // The VerifiedFieldEditor should now show the "Identity" section heading
+      expect(screen.getByText('Identity')).toBeInTheDocument();
       // Should display the field name input with value "new_field"
       expect(screen.getByPlaceholderText('field_name')).toHaveValue('new_field');
     });
@@ -237,9 +237,9 @@ describe('TemplateBuilder integration', () => {
 
       await user.click(screen.getByRole('button', { name: /Add Field/ }));
 
-      // The type selector should be visible with the current type 'str' -> 'String'
-      const typeSelect = screen.getByDisplayValue('String');
-      expect(typeSelect).toBeInTheDocument();
+      // The type selector uses buttons with friendly names; the label
+      // "What type of answer is this?" introduces the type button group
+      expect(screen.getByText('What type of answer is this?')).toBeInTheDocument();
     });
 
     it('shows description, ground truth, and weight controls', async () => {
@@ -252,10 +252,14 @@ describe('TemplateBuilder integration', () => {
 
       await user.click(screen.getByRole('button', { name: /Add Field/ }));
 
-      expect(screen.getByPlaceholderText('Description for the judge LLM...')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Expected correct value')).toBeInTheDocument();
-      // Weight label shows the current weight value
-      expect(screen.getByText(/Weight/)).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(
+          'Describe what this field should capture and what counts as a correct extraction...'
+        )
+      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter the expected answer...')).toBeInTheDocument();
+      // Weight is hidden by default; the "Adjust field importance" button is shown instead
+      expect(screen.getByText(/Adjust field importance/)).toBeInTheDocument();
     });
 
     it('switches editor content when clicking a different field', async () => {
@@ -321,7 +325,7 @@ describe('TemplateBuilder integration', () => {
 
       // Add a single field (auto-selected)
       await user.click(screen.getByRole('button', { name: /Add Field/ }));
-      expect(screen.getByText('Field Properties')).toBeInTheDocument();
+      expect(screen.getByText('Identity')).toBeInTheDocument();
 
       // Remove the only field
       const removeButton = screen.getByTitle('Remove field');

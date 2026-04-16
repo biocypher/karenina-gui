@@ -4,6 +4,7 @@ import { TemplateGenerationTab } from './TemplateGenerationTab';
 import { BenchmarkTab } from './BenchmarkTab';
 import { DocsTab } from './DocsTab';
 import { ConfigurationModal } from './ConfigurationModal';
+import { CurationTab } from './curation';
 import { Checkpoint, QuestionData, VerificationResult } from '../types';
 
 export interface AppRouterProps {
@@ -56,6 +57,9 @@ export function AppRouter({
           setBenchmarkResults={onSetBenchmarkResults}
         />
       )}
+
+      {/* Review Tab */}
+      {activeTab === 'review' && <CurationTab />}
 
       {/* Docs Tab */}
       {activeTab === 'docs' && <DocsTab />}

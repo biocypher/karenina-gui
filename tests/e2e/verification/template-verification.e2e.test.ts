@@ -205,11 +205,11 @@ describe('E2E: Template Verification', () => {
 
       // Use helper to extract first result from nested structure
       const firstResult = getFirstResult(result.results) as {
-        metadata: { completed_without_errors: boolean };
+        metadata: { failure: Record<string, unknown> | null };
         template: { verify_result: boolean };
       };
       expect(firstResult.metadata).toBeDefined();
-      expect(firstResult.metadata.completed_without_errors).toBe(true);
+      expect(firstResult.metadata.failure).toBeNull();
     });
 
     it('should handle type coercion (string->int)', async () => {
@@ -246,7 +246,7 @@ describe('E2E: Template Verification', () => {
       // Use helper to extract first result from nested structure
       const firstResult = getFirstResult(result.results) as {
         template?: { parsed_output?: { result: number }; verify_result?: boolean };
-        metadata?: { completed_without_errors?: boolean };
+        metadata?: { failure?: Record<string, unknown> | null };
       };
       expect(firstResult.template).toBeDefined();
 
@@ -257,7 +257,7 @@ describe('E2E: Template Verification', () => {
         expect(firstResult.template.parsed_output.result).toBe(105);
       } else {
         // If parsed_output is missing, still ensure the job completed and template was evaluated
-        expect(firstResult.metadata?.completed_without_errors !== undefined).toBe(true);
+        expect(firstResult.metadata?.failure !== undefined).toBe(true);
       }
     });
   });
@@ -297,7 +297,7 @@ describe('E2E: Template Verification', () => {
       // Use helper to extract first result from nested structure
       const firstResult = getFirstResult(result.results) as {
         template?: { parsed_output?: Record<string, unknown>; verify_result?: boolean };
-        metadata?: { completed_without_errors?: boolean };
+        metadata?: { failure?: Record<string, unknown> | null };
       };
       expect(firstResult.template).toBeDefined();
 
@@ -309,7 +309,7 @@ describe('E2E: Template Verification', () => {
         expect(parsed).toHaveProperty('fahrenheit');
       } else {
         // If parsed_output is missing, still ensure the job completed
-        expect(firstResult.metadata?.completed_without_errors !== undefined).toBe(true);
+        expect(firstResult.metadata?.failure !== undefined).toBe(true);
       }
     });
 
@@ -347,7 +347,7 @@ describe('E2E: Template Verification', () => {
       // Use helper to extract first result from nested structure
       const firstResult = getFirstResult(result.results) as {
         template?: { parsed_output?: Record<string, unknown>; verify_result?: boolean };
-        metadata?: { completed_without_errors?: boolean };
+        metadata?: { failure?: Record<string, unknown> | null };
       };
       expect(firstResult.template).toBeDefined();
 
@@ -360,7 +360,7 @@ describe('E2E: Template Verification', () => {
         expect(parsed).toHaveProperty('commander');
       } else {
         // If parsed_output is missing, still ensure the job completed
-        expect(firstResult.metadata?.completed_without_errors !== undefined).toBe(true);
+        expect(firstResult.metadata?.failure !== undefined).toBe(true);
       }
     });
   });
@@ -439,7 +439,7 @@ describe('E2E: Template Verification', () => {
       // Use helper to extract first result from nested structure
       const firstResult = getFirstResult(result.results) as {
         template?: { verify_result?: boolean; parsed_output?: Record<string, unknown> };
-        metadata?: { completed_without_errors?: boolean };
+        metadata?: { failure?: Record<string, unknown> | null };
       };
       expect(firstResult.template).toBeDefined();
 

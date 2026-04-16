@@ -4,7 +4,7 @@
  */
 
 import type { UsageMetadata } from './index';
-import type { ModelIdentity } from './verification';
+import type { Caveat, Failure, ModelIdentity } from './verification';
 
 /**
  * Job summary metadata for exports
@@ -76,8 +76,11 @@ export interface ExportableResultMetadata {
   question_id: string;
   template_id: string;
   result_id?: string; // Deterministic hash ID computed from verification parameters
-  completed_without_errors: boolean;
-  error?: string;
+  failure: Failure | null;
+  caveats: Caveat[];
+  warnings?: string[];
+  partial_content?: string | null;
+  retry_counts?: Record<string, { used: number; budget: number }> | null;
   question_text: string;
   raw_answer?: string;
   keywords?: string[];
@@ -88,8 +91,12 @@ export interface ExportableResultMetadata {
   execution_time: number;
   timestamp: string;
   run_name?: string;
-  job_id?: string;
+  job_id?: string; // GUI-only: not present on Python metadata; frontend pairs results to jobs.
   replicate?: number;
+  // Provenance metadata
+  few_shot_enabled?: boolean;
+  few_shot_example_count?: number;
+  evaluation_mode?: string | null;
 }
 
 /**

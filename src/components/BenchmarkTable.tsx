@@ -103,8 +103,8 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
           filterFn: 'includesString',
         }
       ),
-      columnHelper.accessor((row) => row.metadata.completed_without_errors, {
-        id: 'completed_without_errors',
+      columnHelper.accessor((row) => row.metadata.failure === null, {
+        id: 'success',
         header: 'Completed Without Errors',
         cell: (info) => {
           const row = info.row.original;
@@ -638,7 +638,7 @@ export const BenchmarkTable: React.FC<BenchmarkTableProps> = ({
                                 placeholder={`All ${header.id.includes('model') ? 'models' : header.id === 'run_name' ? 'runs' : ''}`}
                               />
                             )}
-                            {header.id === 'completed_without_errors' && (
+                            {header.id === 'success' && (
                               <MultiSelectFilter
                                 options={['true', 'false', 'abstained']}
                                 selectedValues={(() => {

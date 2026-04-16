@@ -51,7 +51,8 @@ const mockVerificationResults = {
     metadata: {
       question_id: 'q1',
       template_id: 'q1-template',
-      completed_without_errors: true,
+      failure: null,
+      caveats: [],
       question_text: 'What is 2+2?',
       raw_answer: 'The answer is 4',
       answering: { interface: 'langchain', model_name: 'gemini-2.0-flash', tools: [] },
@@ -68,12 +69,17 @@ const mockVerificationResults = {
     metadata: {
       question_id: 'q2',
       template_id: 'q2-template',
-      completed_without_errors: false,
+      failure: {
+        category: 'parsing',
+        group: 'system',
+        stage: 'parse_template',
+        reason: 'Parse error',
+      },
+      caveats: [],
       question_text: 'What is the capital of France?',
       raw_answer: 'The capital of France is Paris',
       answering: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
       parsing: { interface: 'langchain', model_name: 'gpt-4', tools: [] },
-      error: 'Parse error',
     },
     template: {
       raw_llm_response: 'Paris is the capital',
@@ -86,7 +92,8 @@ const mockVerificationResults = {
     metadata: {
       question_id: 'q3',
       template_id: 'q3-template',
-      completed_without_errors: true,
+      failure: null,
+      caveats: [],
       question_text: 'What is Python?',
       raw_answer: 'Python is a high-level programming language',
       answering: { interface: 'langchain', model_name: 'claude-3', tools: [] },
@@ -182,8 +189,8 @@ describe('BenchmarkTab Filters and Export', () => {
       const allResults = Object.values(mockVerificationResults);
 
       // Test template validity filter
-      const validResults = allResults.filter((result) => result.metadata.completed_without_errors);
-      const invalidResults = allResults.filter((result) => !result.metadata.completed_without_errors);
+      const validResults = allResults.filter((result) => result.metadata.failure === null);
+      const invalidResults = allResults.filter((result) => result.metadata.failure !== null);
 
       expect(validResults).toHaveLength(2); // q1 and q3 are successful
       expect(invalidResults).toHaveLength(1); // q2 is unsuccessful
@@ -288,14 +295,7 @@ describe('BenchmarkTab Filters and Export', () => {
     });
 
     it('creates correct CSV export format', () => {
-      const headers = [
-        'question_id',
-        'question_text',
-        'answering_model',
-        'parsing_model',
-        'completed_without_errors',
-        'verify_result',
-      ];
+      const headers = ['question_id', 'question_text', 'answering_model', 'parsing_model', 'success', 'verify_result'];
       const csvRows = [headers.join(',')];
 
       Object.values(mockVerificationResults).forEach((result) => {
@@ -304,7 +304,7 @@ describe('BenchmarkTab Filters and Export', () => {
           `"${result.metadata.question_text.replace(/"/g, '""')}"`,
           `${result.metadata.answering.interface}:${result.metadata.answering.model_name}`,
           `${result.metadata.parsing.interface}:${result.metadata.parsing.model_name}`,
-          result.metadata.completed_without_errors,
+          result.metadata.failure === null,
           result.template?.verify_result !== undefined ? result.template?.verify_result : 'N/A',
         ];
         csvRows.push(row.join(','));
@@ -326,8 +326,7 @@ describe('BenchmarkTab Filters and Export', () => {
     it('handles empty results gracefully', () => {
       const emptyResults: unknown[] = [];
       const jsonContent = JSON.stringify(emptyResults, null, 2);
-      const csvContent =
-        'question_id,question_text,answering_model,parsing_model,completed_without_errors,verify_result\n';
+      const csvContent = 'question_id,question_text,answering_model,parsing_model,success,verify_result\n';
 
       expect(jsonContent).toBe('[]');
       expect(csvContent).toContain('question_id,question_text');
@@ -349,9 +348,10 @@ describe('BenchmarkTab Filters and Export', () => {
             question_id: 'test1',
             template_id: 'test1-template',
             question_text: 'Test question',
-            answering_model: 'model1',
-            parsing_model: 'model2',
-            completed_without_errors: true,
+            answering: { interface: 'langchain', model_name: 'model1', tools: [] },
+            parsing: { interface: 'langchain', model_name: 'model2', tools: [] },
+            failure: null,
+            caveats: [],
           },
           template: {
             raw_llm_response: 'Test response',

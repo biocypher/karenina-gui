@@ -200,8 +200,8 @@ describe('Verification Workflow', () => {
       expect(results.length).toBeGreaterThan(1);
 
       // Should have mix of success and failure
-      const successes = results.filter((r) => r.metadata.completed_without_errors);
-      const failures = results.filter((r) => !r.metadata.completed_without_errors);
+      const successes = results.filter((r) => r.metadata.failure === null);
+      const failures = results.filter((r) => r.metadata.failure !== null);
 
       expect(successes.length).toBeGreaterThan(0);
       expect(failures.length).toBeGreaterThan(0);
@@ -513,8 +513,9 @@ describe('Verification Workflow', () => {
       );
 
       expect(q2FailedReplicate).toBeDefined();
-      expect(q2FailedReplicate![1].metadata.completed_without_errors).toBe(false);
-      expect(q2FailedReplicate![1].metadata.error).toBe('Parsing error: invalid format');
+      expect(q2FailedReplicate![1].metadata.failure).not.toBeNull();
+      expect(q2FailedReplicate![1].metadata.failure?.reason).toBe('Parsing error: invalid format');
+      expect(q2FailedReplicate![1].metadata.failure?.category).toBe('parsing');
       expect(q2FailedReplicate![1].template.parsed_llm_response).toBeNull();
     });
 
@@ -825,7 +826,7 @@ describe('Verification Workflow', () => {
         const passedResults = Object.values(testResults).filter((r) => r.template.verify_result === true).length;
         const failedResults = Object.values(testResults).filter((r) => r.template.verify_result === false).length;
         const errorResults = Object.values(testResults).filter(
-          (r) => r.template.verify_result === null || r.metadata.completed_without_errors === false
+          (r) => r.template.verify_result === null || r.metadata.failure !== null
         ).length;
 
         // Verify statistics computed correctly
@@ -843,7 +844,7 @@ describe('Verification Workflow', () => {
 
         // Simulate clicking on "error" statistic
         const errorFilter = Object.values(testResults).filter(
-          (r) => r.template.verify_result === null || r.metadata.completed_without_errors === false
+          (r) => r.template.verify_result === null || r.metadata.failure !== null
         );
 
         // Verify filtering produces correct subsets
@@ -905,7 +906,7 @@ describe('Verification Workflow', () => {
         const testResults = loadMockedVerificationResults('partial-completion');
 
         const total = Object.keys(testResults).length;
-        const completed = Object.values(testResults).filter((r) => r.metadata.completed_without_errors).length;
+        const completed = Object.values(testResults).filter((r) => r.metadata.failure === null).length;
         const percentage = Math.round((completed / total) * 100);
 
         // Verify completion percentage calculation

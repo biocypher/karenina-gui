@@ -170,6 +170,37 @@ export interface SchemaOrgDataFeed extends JsonLdContext {
   rating?: SchemaOrgRating[]; // Global rubric traits as Rating objects
   dataFeedElement: SchemaOrgDataFeedItem[];
   additionalProperty?: SchemaOrgPropertyValue[]; // format version, conversion metadata
+  hasPart?: Array<{
+    '@type': string;
+    name: string;
+    description?: string;
+    entryNode: string;
+    nodes: Record<
+      string,
+      {
+        '@type': string;
+        nodeId: string;
+        question: SchemaOrgQuestion;
+        modelOverride?: Record<string, unknown> | null;
+        agentIdentity?: string | null;
+        metadata?: Record<string, unknown>;
+      }
+    >;
+    edges: Array<{
+      source: string;
+      target: string;
+      condition?: Record<string, unknown> | null;
+      conditionSource?: string | null;
+      handover?: string | null;
+    }>;
+    outcomeCriteria?: Array<{
+      name: string;
+      description?: string;
+      check?: Record<string, unknown> | null;
+      evaluateSource?: string | null;
+    }>;
+    metadata?: Record<string, unknown>;
+  }>;
 }
 
 // Type alias for the complete JSON-LD checkpoint

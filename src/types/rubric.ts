@@ -52,11 +52,20 @@ export interface MetricRubricTrait {
   repeated_extraction?: boolean; // Whether to deduplicate excerpts (default: true)
 }
 
+export interface AgenticRubricTrait {
+  name: string;
+  description: string;
+  summary?: string;
+  kind?: TraitKind;
+  higher_is_better?: boolean;
+}
+
 export interface Rubric {
   llm_traits: LLMRubricTrait[];
   regex_traits?: RegexRubricTrait[];
   callable_traits?: CallableRubricTrait[];
   metric_traits?: MetricRubricTrait[];
+  agentic_traits?: AgenticRubricTrait[];
 }
 
 export interface RubricEvaluation {

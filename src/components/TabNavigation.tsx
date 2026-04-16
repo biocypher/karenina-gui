@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TabValue = 'generator' | 'curator' | 'benchmark' | 'docs';
+export type TabValue = 'generator' | 'curator' | 'benchmark' | 'review' | 'docs';
 
 export interface TabNavigationProps {
   activeTab: TabValue;
@@ -35,8 +35,11 @@ export function TabNavigation({ activeTab, onTabSwitch, unsavedCount }: TabNavig
       <button onClick={() => onTabSwitch('benchmark')} className={getTabClassName('benchmark')}>
         3. Benchmark
       </button>
+      <button onClick={() => onTabSwitch('review')} className={getTabClassName('review')}>
+        4. Review
+      </button>
       <button onClick={() => onTabSwitch('docs')} className={getTabClassName('docs')}>
-        4. Docs
+        5. Docs
       </button>
     </div>
   );
