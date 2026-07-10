@@ -37,7 +37,7 @@ export type FailureCategory =
  * Informational flags attached to a verification result regardless of verdict.
  * Mirrors the Python Caveat enum in karenina.schemas.results.caveat.
  */
-export type Caveat = 'partial_content' | 'embedding_override' | 'retries_used';
+export type Caveat = 'partial_content' | 'embedding_override' | 'retries_used' | 'parse_decision_malformed';
 
 /**
  * Structured non-pass verdict for a verification run.
