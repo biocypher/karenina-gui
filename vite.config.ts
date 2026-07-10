@@ -1,8 +1,14 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+
+const apiProxyTarget = process.env.VITE_DEV_API_PROXY_TARGET || 'http://localhost:8080';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Keep the production build same-origin friendly. The packaged FastAPI
+  // server mounts static files at /assets and API routes at /api, so the
+  // built app must not bake in a localhost API origin.
+  base: '/',
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
@@ -11,12 +17,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: apiProxyTarget,
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'http://localhost:8080',
+        target: apiProxyTarget,
         changeOrigin: true,
         secure: false,
         ws: true,
