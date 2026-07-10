@@ -1,4 +1,4 @@
-i# Karenina GUI
+# Karenina GUI
 
 React/TypeScript web application for the [Karenina](https://github.com/biocypher/karenina) LLM benchmarking system.
 
@@ -49,11 +49,33 @@ For those who want to run this package independently:
 npm install
 
 # Development mode
-npm run dev          # Runs on http://localhost:5173
+npm run dev          # Runs on http://localhost:5173 and proxies /api to http://localhost:8080
+
+# Use a different backend while developing
+VITE_DEV_API_PROXY_TARGET=http://localhost:9000 npm run dev
 
 # Production build
 npm run build        # Outputs to dist/
+npm run check:packaged-dist
 ```
+
+### Packaged Webapp Contract
+
+`karenina-gui` is also the static frontend source for the installable Karenina webapp. The `karenina-server` Python package builds this project and bundles `dist/` into its wheel so end users can install and serve the complete stack with:
+
+```bash
+pip install "karenina[webapp]"
+karenina serve
+```
+
+Packaged builds must remain same-origin friendly:
+
+- API calls should use relative `/api/...` paths.
+- WebSocket/progress fallbacks should use relative same-origin paths where possible.
+- Built assets must be emitted under `dist/assets/` and referenced by `dist/index.html`.
+- The production bundle must not bake in `localhost` API URLs.
+
+Run `npm run build && npm run check:packaged-dist` before updating the bundled server assets.
 
 ### Testing & Development
 
